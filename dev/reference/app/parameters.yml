@@ -1,0 +1,37 @@
+# Paramètres de l'application de référence, copiés dans app/config/ par install-app.sh.
+# Ceux de parameters.yml.dist, sauf la base (le serveur de référence, sous le rôle bdoh), le
+# courriel (le transport null n'envoie rien) et les secrets, factices : rien ne sort de la
+# référence.
+parameters:
+    database_driver:   pdo_pgsql
+    database_host:     db
+    database_port:     5432
+    database_name:     bdoh
+    database_user:     bdoh
+    database_password: ~
+    database_server_version: 9.6
+
+    mailer_transport:  'null'
+    mailer_host:       ~
+    mailer_user:       ~
+    mailer_password:   ~
+    mailer_port:       ~
+    mailer_encryption: ~
+
+    secret:            not-a-secret
+
+    trusted_proxies:    []
+
+    dev_toolbar:       false
+    project_guest_path: /var/www
+    project_host_path:  .
+
+    theia_password_secret_key: '0000000000000000000000000000000000000000000000000000000000000000'
+    uri_theia_ozcar: https://in-situ.theia-land.fr
+    uri_theia_send_data: https://in-situ.theia-land.fr/data/
+    uri_theia_ozcar_schema_json: https://in-situ.theia-land.fr/json-schema/pivotSchemaDraft7.json
+    logo_long_web_link: images/Logo_INRAE_REPUBLIQUE.png
+    logo_short_web_link: images/Logo_INRAE.png
+    mini_logo_sonata: images/MiniLogo_INRAE_REPUBLIQUE.png
+
+    router.request_context.host: 'bdoh.dvp'

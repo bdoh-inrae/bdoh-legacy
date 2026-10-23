@@ -1,0 +1,63 @@
+# La référence : l'ancien BDOH au commit en production, sur les bases anonymisées, avec les
+# versions de la production (PHP 7.1, PostgreSQL 11, PostGIS 2.5). Le réseau est interne : rien
+# n'en sort, ni courriel ni envoi vers Theia ; le poste joint l'application à son adresse fixe,
+# http://172.30.25.10/.
+#
+# Se pilote par le Makefile (reference-db, reference-app, reference-start, reference-stop), qui
+# fournit REFERENCE_DIR (dumps, fichiers du serveur, code de l'application), HOST_UID et HOST_GID :
+# les conteneurs tournent aux droits de l'utilisateur, qui possède tout ce qu'ils écrivent.
+name: bdoh-reference
+
+x-app: &app
+  image: bdoh-reference-app
+  build: app
+  user: "${HOST_UID:?}:${HOST_GID:?}"
+  volumes:
+    - ${REFERENCE_DIR:?}/app:/var/www/bdoh
+  depends_on:
+    db:
+      condition: service_healthy
+  restart: unless-stopped
+
+services:
+  db:
+    image: postgis/postgis:11-2.5
+    container_name: bdoh-reference-db
+    user: "${HOST_UID:?}:${HOST_GID:?}"
+    environment:
+      POSTGRES_HOST_AUTH_METHOD: trust
+    volumes:
+      - /etc/passwd:/etc/passwd:ro
+      - ${REFERENCE_DIR:?}/postgres:/var/lib/postgresql/data
+      - ${REFERENCE_DIR:?}:/in:ro
+    healthcheck:
+      # Par TCP : le serveur provisoire de la première initialisation n'écoute que sur le socket.
+      test: [CMD, pg_isready, -h, 127.0.0.1, -U, postgres, -q]
+      interval: 2s
+      retries: 60
+    restart: unless-stopped
+    networks: [reference]
+
+  app:
+    <<: *app
+    container_name: bdoh-reference-app
+    networks:
+      reference:
+        ipv4_address: 172.30.25.10
+
+  # La file de tâches, lancée comme par le service de production (app/config/bdoh-job-worker.service),
+  # qui la relance quand elle s'arrête au bout d'une heure.
+  worker:
+    <<: *app
+    container_name: bdoh-reference-worker
+    command: [php, app/console, jms-job-queue:run, --max-concurrent-jobs=2, --max-runtime=3600,
+              --env=prod, --no-interaction, -vv]
+    networks: [reference]
+
+networks:
+  reference:
+    name: bdoh-reference
+    internal: true
+    ipam:
+      config:
+        - subnet: 172.30.25.0/24
