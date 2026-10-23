@@ -6,12 +6,11 @@ Code de référence : commit `523cf8e32` de l'ancien dépôt (version 5.0.3, fé
 
 ## En cours
 
-- **Base de référence anonymisée**, tirée du dump de production du 21 octobre 2026.
-  1. Lou extrait la structure seule du dump (`pg_restore --schema-only`, aucune ligne de données).
-  2. Claude classe chaque colonne de texte et chaque table : garder, remplacer, vider. Une colonne non classée arrête le script, pour qu'aucune ne passe par oubli.
-  3. Claude écrit le script. Il restaure le dump dans une base temporaire, dans un conteneur sans réseau ; remplace les données personnelles et les secrets par des valeurs factices qui gardent les liens entre tables et le nombre de lignes ; ne touche pas aux séries de mesures ; produit un dump anonymisé et un rapport fait de comptes ; détruit la base temporaire. Le dump d'origine n'est que lu, son empreinte est vérifiée avant et après.
-  4. Lou le lance et transmet le rapport. Claude contrôle le dump anonymisé avant de s'en servir.
-  - Ensuite, la base d'OTHU, de la même façon.
+- **Base de référence anonymisée**, tirée du dump de production du 21 octobre 2026 : `make anonymize` (`dev/anonymize/`). Le script est écrit d'après la structure de la base de production (138 tables) et essayé sur une base de cette structure remplie de lignes inventées.
+  - [ ] Lou le lance sur le dump et transmet le rapport, fait de comptes.
+  - [ ] Claude contrôle le dump anonymisé avant de s'en servir.
+  - [ ] Ensuite, la base d'OTHU, de la même façon ; une colonne qui n'existe que là arrêtera le script, à classer.
+  - La base `bdoh-messenger`, à part, n'est pas reprise.
 
 ## À faire
 
@@ -30,5 +29,4 @@ Code de référence : commit `523cf8e32` de l'ancien dépôt (version 5.0.3, fé
 
 ## À décider
 
-- **Licence**, avant de publier. Le `LICENSE` de l'ancien dépôt est celui de Symfony, pas celui de BDOH ; une copie d'OpenBDOH (2024) porte l'AGPL v3. À confirmer avec INRAE.
 - **Nom et forge** du dépôt.
