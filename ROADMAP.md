@@ -15,6 +15,7 @@ Code de référence : commit `523cf8e32` de l'ancien dépôt (version 5.0.3, fé
 ## À faire
 
 - **Faire tourner la référence.** L'ancien BDOH en local (`../bdoh/`, commit `523cf8e32`) sur la base anonymisée.
+- **Base de travail réduite**, tirée de la base anonymisée : toutes les métadonnées, tous les comptes et toutes les chroniques, mais les mesures sur une fenêtre de temps commune, à choisir d'après les tailles du rapport d'anonymisation. Elle sert à itérer vite ; la base complète sert aux comparaisons étendues, à la fin de chaque module.
 - **Outil de comparaison.** Il joue les mêmes requêtes sur l'ancien et le nouveau BDOH et compare les sorties : pages publiques et visualiseur, exports (chaque format, chaque pas de temps), imports (fichiers de `dev/exemples/` de l'ancien dépôt), droits d'accès selon le profil. Les sorties de l'ancien sont enregistrées dans `../bdoh_reference/`.
 - **PostgreSQL 11 vers la version de Debian 13**, avec l'ancien code d'abord, PostGIS compris.
 - **Portage, module par module**, chacun validé par la comparaison avant le suivant :

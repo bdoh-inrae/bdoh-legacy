@@ -295,7 +295,17 @@ BEGIN
         item := 'lignes ' || c.table_name;
         EXECUTE format('SELECT count(*) FROM bdoh.%I', c.table_name) INTO n;
         RETURN NEXT;
+        item := 'Mo ' || c.table_name;  -- index compris
+        n := pg_total_relation_size(format('bdoh.%I', c.table_name)::regclass) / 1048576;
+        RETURN NEXT;
     END LOOP;
+    item := 'Mo schéma temp (tables laissées par des imports)';
+    SELECT coalesce(sum(pg_total_relation_size(format('temp.%I', table_name)::regclass)), 0)::bigint / 1048576
+      INTO n FROM information_schema.tables WHERE table_schema = 'temp';
+    RETURN NEXT;
+    item := 'Mo base entière';
+    n := pg_database_size(current_database()) / 1048576;
+    RETURN NEXT;
 
     -- Courriels hors example.invalid et numéros de téléphone, dans toute colonne de texte restante,
     -- hors tables gardées en bloc (celles de PostGIS, dont les chaînes de projection ressemblent à
