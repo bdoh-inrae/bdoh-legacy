@@ -1,0 +1,14 @@
+# Écarts avec l'ancien BDOH
+
+Ce que le nouveau BDOH fait autrement que l'ancien, exprès : bogues de l'ancien corrigés au passage, améliorations, écarts dus aux nouvelles versions de PHP et de PostgreSQL. L'outil de comparaison admet ces écarts et eux seuls ; tout autre écart est une régression. Chaque entrée dit ce que faisait l'ancien, ce que fait le nouveau, pourquoi, son état et comment il est vérifié.
+
+## Bogues de l'ancien BDOH
+
+- **Seuils de validité arrondis.** L'ancien arrondit `minimumValide` et `maximumValide` à 3 décimales à chaque enregistrement d'une chronique dans l'administration (`BdohAdminBundle/Admin/Data/Chronique.php`, `'precision' => 3`) ; pour un paramètre à petites valeurs, le seuil change sans que personne l'ait voulu. Le nouveau garde la valeur saisie. Décidé le 2026-10-23 ; à faire. Vérification : enregistrer une chronique dont un seuil a plus de 3 décimales et relire la valeur stockée.
+- **Nombres écrits avec une virgule.** L'ancien règle `setlocale(LC_ALL, 'fr_FR.UTF-8')` dans `slugify` ; sous PHP 7.1, tout nombre décimal converti ensuite en texte dans la même requête prend une virgule (point d'une station construit par concaténation, `StationRepository.php`). Le nouveau ne règle plus `LC_ALL`, et PHP 8 ignore la langue dans cette conversion. État : corrigé par PHP 8 ; à vérifier sur l'enregistrement d'une station.
+
+## Écarts dus aux nouvelles versions
+
+- **Arrondis à la limite.** PHP 8.4 arrondit autrement certaines valeurs, et lit les `float8` en valeurs exactes là où PostgreSQL 11 les arrondissait à 15 chiffres (audit du 23 octobre, constat 4). Un export peut différer d'une unité sur le dernier chiffre, seulement quand la valeur exacte tombe à la limite d'un arrondi. L'ancien peut écrire `-0.000`, le nouveau écrit `0.000`.
+- **Valeurs suivies d'espaces.** Depuis PHP 8.0, `is_numeric` accepte un nombre suivi d'espaces : un import que l'ancien refusait pour cette raison peut passer, et PostgreSQL lit correctement la valeur. À confirmer format par format (l'import au format BDOH nettoie déjà ses champs).
+- **Ordre des éléments égaux.** Les tris de PHP 8 sont stables : des éléments égaux peuvent sortir dans un autre ordre.

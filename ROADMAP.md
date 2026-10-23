@@ -31,8 +31,7 @@ Code de référence : commit `523cf8e32` de l'ancien dépôt (version 5.0.3, fé
 ## À décider
 
 - **Nom et forge** du dépôt.
-- **Seuils de validité** des chroniques : l'ancien BDOH les arrondit à 3 décimales à chaque enregistrement (audit, constat 8). Recommandé : le nouveau garde la valeur saisie.
 
 ## À relever sur les serveurs (Lou)
 
-- `date.timezone` de PHP pour Apache et pour la ligne de commande (audit, constat 5).
+- `date.timezone` de PHP (audit, constat 5). Production, 23 octobre : `Europe/Paris` pour la ligne de commande, donc la file de tâches ; aucune ligne dans le `php.ini` d'Apache. Reste à voir si un autre fichier le fixe pour Apache (`grep -rn date.timezone /etc/php/7.1/apache2/ /etc/apache2/`) : sinon, les pages tournent en UTC, défaut de PHP, et le nouveau BDOH doit reproduire ce fuseau là où il compte (formulaire d'export, contrôle des dates d'import). Puis les autres serveurs.
