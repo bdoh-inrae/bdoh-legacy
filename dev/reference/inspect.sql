@@ -3,7 +3,7 @@
 -- (avant et après un changement de version de PostgreSQL, ou la bascule) : les comptes doivent
 -- rester égaux. Lecture seule, hors deux tables et une fonction temporaires.
 --
---   docker exec -i bdoh-reference-db psql -U postgres -d bdoh -v ON_ERROR_STOP=1 -At -F '|' < dev/reference/inspect.sql
+--   make inspect [BASE=bdoh_othu]
 --
 -- Les longues requêtes parcourent une fois chacune les tables de mesures et de plages.
 

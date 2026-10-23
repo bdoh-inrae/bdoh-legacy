@@ -57,7 +57,7 @@ Conséquence pour la comparaison : les nombres se comparent comme des nombres. U
 ### 5. Les dates
 
 - Les dates des mesures sont des `timestamp(3)`, avec millisecondes, lues et écrites comme du texte par un type Doctrine propre à BDOH (`DateTimeMsType`) et les transformateurs de `BdohBundle/DataTransformer/`. Le type `datetime` standard de Doctrine perd les millisecondes : à ne pas employer pour ces colonnes.
-- Le fuseau par défaut de PHP intervient à plusieurs endroits : conversions de `DateTimeUtil`, dates de début et de fin des exports (`AbstractExportCommand.php`, formulaire d'export avec `model_timezone` UTC et fuseau d'affichage par défaut), contrôle « date postérieure à maintenant » des imports. L'image Docker de développement fixe `Europe/Paris` (`dev/docker/app/prepare-php`). Sur les serveurs, la valeur n'est pas connue, et elle peut différer entre Apache et la ligne de commande, sous laquelle tourne la file de tâches. Le nouveau BDOH fixe `Europe/Paris` dans son code.
+- Le fuseau par défaut de PHP intervient à plusieurs endroits : conversions de `DateTimeUtil`, dates de début et de fin des exports (`AbstractExportCommand.php`, formulaire d'export avec `model_timezone` UTC et fuseau d'affichage par défaut), contrôle « date postérieure à maintenant » des imports. L'image Docker de développement fixe `Europe/Paris` (`dev/docker/app/prepare-php`). Sur les serveurs, la valeur n'est pas connue, et elle peut différer entre Apache et la ligne de commande, sous laquelle tourne la file de tâches. Le nouveau BDOH fixe `Europe/Paris` dans son code. (Relevé le jour même sur les deux serveurs de production : pages en UTC, file de tâches en `Europe/Paris`. Le nouveau BDOH reproduit ce partage par défaut ; voir `dev/differences.md`.)
 
 ### 6. Doctrine et la structure de la base
 
@@ -76,7 +76,7 @@ Conséquence pour la comparaison : les nombres se comparent comme des nombres. U
 
 ## Ce que ça appelle
 
-- Le socle part de la structure de la production. Il fixe le fuseau `Europe/Paris` et ne règle pas `LC_ALL`.
+- Le socle part de la structure de la production. Il fixe le fuseau dans son code (au relevé : comme en production, voir la note du constat 5) et ne règle pas `LC_ALL`.
 - La comparaison couvre l'état de la base après chaque écriture, avec la règle de comparaison des nombres du constat 4. Elle joue des fichiers d'import variés : ceux de `dev/exemples/`, et des variantes avec espaces, fins de ligne Windows, virgules décimales, valeurs invalides, dates au changement d'heure, fuseaux.
 - Le remplacement de la file de tâches garde l'exécution une à une par chronique, et passe l'essai du constat 3, avant le portage des imports.
 - Une migration générée par Doctrine n'est jamais appliquée sans avoir été lue.
