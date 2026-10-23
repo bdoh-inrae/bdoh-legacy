@@ -1,9 +1,8 @@
 doctrine:
     dbal:
         url: '%env(resolve:DATABASE_URL)%'
-        # Comme l'ancien : n'accède qu'aux tables du schéma bdoh, sans la table interp_qualite ; ni,
-        # désormais, aux tables de l'ancienne file de tâches (jms_*), que rien ne lit plus.
-        schema_filter: '/^(?:bdoh\.)?(?!interp_qualite|jms_)[^.]+$/i'
+        # Comme l'ancien : n'accède qu'aux tables du schéma bdoh, sans la table interp_qualite.
+        schema_filter: '/^(?:bdoh\.)?(?!interp_qualite)[^.]+$/i'
         types:
             # Dates à millisecondes, passées en texte
             datetimems: Irstea\BdohDataBundle\Doctrine\DBAL\Types\DateTimeMsType
@@ -26,6 +25,12 @@ doctrine:
         naming_strategy: doctrine.orm.naming_strategy.default
         auto_mapping: false
         mappings:
+            # La file de tâches (dev/plans/2026-10-23_jobs-exports.md)
+            IrsteaBdohBundle:
+                type: xml
+                is_bundle: false
+                dir: '%kernel.project_dir%/src/Irstea/BdohBundle/Resources/config/doctrine'
+                prefix: 'Irstea\BdohBundle\Job'
             IrsteaBdohDataBundle:
                 type: xml
                 is_bundle: false

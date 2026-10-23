@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- La table de JMS JobQueue, que l'ancien BDOH employait, reprise telle quelle
+     (dev/plans/2026-10-23_jobs-exports.md). Les colonnes stackTrace et les dépendances entre tâches
+     ne servent pas à BDOH et ne sont pas lues. -->
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping http://doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+  <entity repository-class="Irstea\BdohBundle\Job\JobRepository" name="Irstea\BdohBundle\Job\Job" table="jms_jobs">
+    <entity-listeners>
+      <entity-listener class="Irstea\BdohBundle\Job\JobRelatedEntities"/>
+    </entity-listeners>
+    <id name="id" type="bigint" column="id">
+      <generator strategy="SEQUENCE"/>
+      <sequence-generator sequence-name="jms_jobs_id_seq" allocation-size="1" initial-value="1"/>
+    </id>
+    <field name="state" type="string" column="state" length="15"/>
+    <field name="queue" type="string" column="queue" length="50"/>
+    <field name="priority" type="smallint" column="priority"/>
+    <field name="createdAt" type="datetime" column="createdAt"/>
+    <field name="startedAt" type="datetime" column="startedAt" nullable="true"/>
+    <field name="checkedAt" type="datetime" column="checkedAt" nullable="true"/>
+    <field name="workerName" type="string" column="workerName" length="50" nullable="true"/>
+    <field name="executeAfter" type="datetime" column="executeAfter" nullable="true"/>
+    <field name="closedAt" type="datetime" column="closedAt" nullable="true"/>
+    <field name="command" type="string" column="command"/>
+    <field name="args" type="json_array" column="args"/>
+    <field name="output" type="text" column="output" nullable="true"/>
+    <field name="errorOutput" type="text" column="errorOutput" nullable="true"/>
+    <field name="exitCode" type="smallint" column="exitCode" nullable="true"/>
+    <field name="maxRuntime" type="smallint" column="maxRuntime"/>
+    <field name="maxRetries" type="smallint" column="maxRetries"/>
+    <field name="runtime" type="integer" column="runtime" nullable="true"/>
+    <field name="memoryUsage" type="integer" column="memoryUsage" nullable="true"/>
+    <field name="memoryUsageReal" type="integer" column="memoryUsageReal" nullable="true"/>
+    <many-to-one field="originalJob" target-entity="Irstea\BdohBundle\Job\Job">
+      <join-columns>
+        <join-column name="originalJob_id" referenced-column-name="id"/>
+      </join-columns>
+    </many-to-one>
+  </entity>
+</doctrine-mapping>

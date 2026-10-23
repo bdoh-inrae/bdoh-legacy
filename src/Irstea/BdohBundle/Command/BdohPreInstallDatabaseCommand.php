@@ -13,13 +13,13 @@ class BdohPreInstallDatabaseCommand extends Command
 {
     protected $conn;
 
-    protected function configure()
+    protected function configure(): void
     {
         $this->setName('bdoh:preinstall:database');
         $this->setDescription('Installs PostGis and schemas temp, bdoh');
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $this->conn = $this->getContainer()->get('doctrine')->getEntityManager()->getConnection();
 

@@ -392,7 +392,13 @@ def run_pages(args):
             if args.profile and profile != args.profile:
                 continue
             clients = Client(old, email, slug), Client(new, email, slug)
-            fetch = lambda path: [page_lines(client.side.url, *client.get(path)) for client in clients]
+
+            def fetch(path):
+                # Le choix de la langue change la session : il passe par une session à lui, sans
+                # quoi les pages demandées en même temps changeraient de langue d'un côté seulement.
+                pair = (Client(old, None, slug), Client(new, None, slug)) if path.startswith('/select_lang/') else clients
+                return [page_lines(client.side.url, *client.get(path)) for client in pair]
+
             for path, lines in zip(paths, pool.map(fetch, paths)):
                 report.add(f'{profile} {path}', *lines)
     report.close()
