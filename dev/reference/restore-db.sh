@@ -4,33 +4,37 @@
 #
 #   dev/reference/restore-db.sh DUMP_ANONYMISÉ
 #
-# N'accepte qu'un dump sorti de dev/anonymize (nom en *-anon.dump). La base vit dans le volume
-# bdoh-reference-db ; le script refuse d'en écraser une existante. Pour repartir de zéro :
-#   docker rm -f bdoh-reference-db && docker volume rm bdoh-reference-db
+# N'accepte qu'un dump sorti de dev/anonymize (nom en *-anon.dump). Les fichiers de la base vivent
+# à côté du dump, dans postgres/, et appartiennent à l'utilisateur courant : on les voit et on les
+# supprime comme le reste du projet. Le script refuse d'écraser une base existante. Pour repartir
+# de zéro :
+#   docker rm -f bdoh-reference-db && rm -rf DOSSIER_DU_DUMP/postgres
 set -euo pipefail
 
 if [[ $# -ne 1 ]]; then
-    sed -n '2,10p' "$0" | sed 's/^# \{0,1\}//'
+    sed -n '2,12p' "$0" | sed 's/^# \{0,1\}//'
     exit 1
 fi
 
 dump=$(realpath "$1")
+data=$(dirname "$dump")/postgres
 image=postgis/postgis:11-2.5
 network=bdoh-reference
 container=bdoh-reference-db
-volume=bdoh-reference-db
 
 [[ -f $dump ]] || { echo "Dump introuvable : $dump" >&2; exit 1; }
 [[ $dump == *-anon.dump ]] || { echo "N'accepte qu'un dump anonymisé (*-anon.dump)." >&2; exit 1; }
-if docker volume inspect "$volume" >/dev/null 2>&1; then
-    echo "La base de référence existe déjà (volume $volume)." >&2
+if [[ -e $data ]] || docker container inspect "$container" >/dev/null 2>&1; then
+    echo "La base de référence existe déjà ($data, conteneur $container)." >&2
     exit 1
 fi
+mkdir -m 700 "$data"
 
 docker network inspect "$network" >/dev/null 2>&1 || docker network create --internal "$network" >/dev/null
 docker run -d --name "$container" --network "$network" \
+    --user "$(id -u):$(id -g)" -v /etc/passwd:/etc/passwd:ro \
     -e POSTGRES_HOST_AUTH_METHOD=trust \
-    -v "$volume":/var/lib/postgresql/data \
+    -v "$data":/var/lib/postgresql/data \
     -v "$dump":/in/reference.dump:ro \
     "$image" >/dev/null
 for _ in $(seq 120); do

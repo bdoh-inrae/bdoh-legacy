@@ -34,4 +34,4 @@ Code de référence : commit `523cf8e32` de l'ancien dépôt (version 5.0.3, fé
 
 ## À relever sur les serveurs (Lou)
 
-- `date.timezone` de PHP (audit, constat 5). Production, 23 octobre : `Europe/Paris` pour la ligne de commande, donc la file de tâches ; aucune ligne dans le `php.ini` d'Apache. Reste à voir si un autre fichier le fixe pour Apache (`grep -rn date.timezone /etc/php/7.1/apache2/ /etc/apache2/`) : sinon, les pages tournent en UTC, défaut de PHP, et le nouveau BDOH doit reproduire ce fuseau là où il compte (formulaire d'export, contrôle des dates d'import). Puis les autres serveurs.
+- `date.timezone` de PHP (audit, constat 5) sur le serveur d'OTHU : `php -i | grep date.timezone` et `sudo grep -Rn date.timezone /etc/php/7.1/apache2/ /etc/apache2/`. En production, relevé le 23 octobre : pages en UTC, file de tâches en `Europe/Paris` (`dev/differences.md`).

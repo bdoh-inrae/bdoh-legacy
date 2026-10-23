@@ -169,6 +169,9 @@ INSERT INTO anon.rules VALUES
     ('bdoh', 'unite',                'libelle',               'keep',     NULL),
     ('bdoh', 'unite',                'libelleen',             'keep',     NULL),
 
+    -- Selon les bases, la table des migrations de Doctrine est dans le schéma public.
+    ('public', 'migration_versions', 'version',               'keep',     NULL),
+
     -- Tables de PostGIS.
     ('public',   'spatial_ref_sys',  '*',                     'keep',     NULL),
     ('topology', '*',                '*',                     'keep',     NULL);
@@ -183,7 +186,9 @@ SELECT c.table_schema AS schema_name, c.table_name, c.column_name
    AND c.udt_name IN ('text', 'varchar', 'bpchar', 'name', 'json', 'jsonb', 'xml', 'bytea',
                       '_text', '_varchar', '_bpchar', '_json', '_jsonb');
 
--- Arrêt si une colonne de texte n'est pas classée, ou si une règle vise une colonne absente.
+-- Arrêt si une colonne de texte n'est pas classée. Une règle qui vise une colonne absente (les
+-- bases de production et d'OTHU diffèrent un peu) est signalée et ignorée : une faute de frappe
+-- laisserait de toute façon sa vraie colonne non classée.
 DO $$
 DECLARE
     unclassified text;
@@ -210,7 +215,13 @@ BEGIN
                           AND c.table_name = r.table_name
                           AND c.column_name = r.column_name);
     IF unknown IS NOT NULL THEN
-        RAISE EXCEPTION 'Règles sur des colonnes absentes de la base : %', unknown;
+        RAISE WARNING 'Règles ignorées, sur des colonnes absentes de cette base : %', unknown;
+        DELETE FROM anon.rules r
+         WHERE r.column_name <> '*'
+           AND NOT EXISTS (SELECT 1 FROM information_schema.columns c
+                            WHERE c.table_schema = r.schema_name
+                              AND c.table_name = r.table_name
+                              AND c.column_name = r.column_name);
     END IF;
 END $$;
 
