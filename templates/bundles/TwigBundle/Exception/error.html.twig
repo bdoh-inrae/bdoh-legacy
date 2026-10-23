@@ -1,0 +1,33 @@
+{% extends 'layout.html.twig' %}
+
+{% set DOMAIN = 'errors' %}
+{% set PARAMS = {
+    '%code%': status_code,
+    '%text%': status_text,
+    '%message%': exception.message
+} %}
+
+{% set key = 'http.' ~ (status_code|default("fallback")) ~ '.' %}
+
+{% set titleKey = key ~ "title" %}
+{% set title = titleKey|trans(PARAMS, DOMAIN) %}
+
+{% if title == titleKey %}
+    {% set key = 'http.fallback.' %}
+    {% set title = 'http.fallback.title'|trans(PARAMS, DOMAIN) %}
+{% endif %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block main %}
+    <h1>{{ title }}</h1>
+    <div class="alert alert-{{ (key ~ "alert")|trans(PARAMS, DOMAIN) }}">
+        <h2>
+            <span class="glyphicon glyphicon-{{ (key ~ "icon")|trans(PARAMS, DOMAIN) }}"></span>
+            {{ (key ~ "body")|trans(PARAMS, DOMAIN) -}}
+        </h2>
+        {% if app.request.server.has('UNIQUE_ID') %}
+            <p>Request id&nbsp;: <code>{{ app.request.server.get('UNIQUE_ID') }}</code></p>
+        {% endif %}
+    </div>
+{% endblock %}

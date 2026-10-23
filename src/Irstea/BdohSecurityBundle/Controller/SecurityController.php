@@ -9,7 +9,7 @@ namespace Irstea\BdohSecurityBundle\Controller;
 use Symfony\Component\Routing\Attribute\Route;
 use Irstea\BdohBundle\Controller\Controller;
 use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\Security\Core\Security as CoreSecurity;
+use Symfony\Component\Security\Http\SecurityRequestAttributes as CoreSecurity;
 
 /**
  * Class SecurityController.

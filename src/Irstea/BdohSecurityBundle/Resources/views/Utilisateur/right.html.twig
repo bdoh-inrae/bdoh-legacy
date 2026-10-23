@@ -51,7 +51,7 @@
                 </h2>
             </legend>
             <form action="{{ path('bdoh_security_utilisateur_right', {'email': utilisateur.email}) }}" method="post"
-                  class="form-horizontal" {{ form_enctype(form) }}>
+                  class="form-horizontal" {% if form.vars.multipart %}enctype="multipart/form-data"{% endif %}>
                 <div id="needs" style="margin-bottom:1em" class="row">
                     {% if besoinsATraiter or besoinsTraite %}
                         <ul class="nav nav-tabs" id="switch-traites-a-traiter">

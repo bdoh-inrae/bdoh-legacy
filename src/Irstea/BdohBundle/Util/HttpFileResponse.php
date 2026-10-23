@@ -43,7 +43,7 @@ class HttpFileResponse extends Response
     /**
      * Shortcut of send() method.
      */
-    public function __toString()
+    public function __toString(): string
     {
         $this->send();
 
@@ -65,10 +65,12 @@ class HttpFileResponse extends Response
     /**
      * Sends HTTP headers and file content.
      */
-    public function send()
+    public function send(bool $flush = true): static
     {
         $this->sendHeaders();
         $this->sendFile();
+
+        return $this;
     }
 
     /**

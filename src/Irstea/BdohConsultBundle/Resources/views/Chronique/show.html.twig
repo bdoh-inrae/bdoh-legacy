@@ -175,11 +175,11 @@
                                         <span class="info-high">{{ 'checkpoints'|trans }}
                                             <sup class="checkpointsInfo" title="{{ 'checkpointsInfo'|trans }}" >(?)</sup>{{ 'deux_points'|trans }} </span>
                                         {% if checkpointStats.number > 0 %}
-                                            {{ 'checkpointStats(%num%, %first%, %last%)'|transchoice(checkpointStats.number, {
+                                            {{ 'checkpointStats(%num%, %first%, %last%)'|trans({'%count%': checkpointStats.number}|merge({
                                                 '%num%': checkpointStats.number,
                                                 '%first%': checkpointStats.first|date('transformation.bareme.dateBareme'|trans, false),
                                                 '%last%': checkpointStats.last|date('transformation.bareme.dateBareme'|trans, false)
-                                            })|raw }}
+                                            }))|raw }}
                                         {% else %}
                                             {{ 'none'|trans }}
                                         {% endif %}

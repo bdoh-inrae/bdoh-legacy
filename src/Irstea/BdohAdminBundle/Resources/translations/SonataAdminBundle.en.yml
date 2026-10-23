@@ -1,0 +1,7 @@
+dashboard       : Dashboard
+AdminCenter     : Main data
+AdminGeographic : Geographic data
+AdminPeripheral : Peripheral data
+AdminTechnical  : Technical data
+AdminTheia      : Theia data
+AdminUser       : Users

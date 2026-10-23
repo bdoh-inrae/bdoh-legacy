@@ -1,5 +1,5 @@
 parameters:
-    irstea_bdoh_data.measure_export.document_base_path: "%kernel.root_dir%/../web"
+    irstea_bdoh_data.measure_export.document_base_path: "%kernel.project_dir%/public"
 
     # The description file of measures export formats (relative to the web dir)
     irstea_bdoh_data.measure_export.formats_export_file: documents/FormatsExport.pdf
@@ -21,3 +21,19 @@ parameters:
 
     # Parameters for the viewers
     irstea_bdoh_data.viewers.max_valid_display_points: 50000
+
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+
+    # Les contrôleurs ; ceux de l'export et des tâches attendent la file de tâches (module 3).
+    Irstea\BdohDataBundle\Controller\:
+        resource: '../../Controller/'
+        exclude: '../../Controller/{ExportController,JobController}.php'
+
+    # Écouteurs d'entités, déclarés dans la correspondance d'Observatoire et de Partenaire
+    Irstea\BdohDataBundle\Doctrine\Listener\DocumentedEntityListener:
+        tags: [doctrine.orm.entity_listener]
+    Irstea\BdohDataBundle\Doctrine\Listener\ObservatoireStylesheetListener:
+        tags: [doctrine.orm.entity_listener]

@@ -6,16 +6,12 @@
 
 namespace Irstea\BdohSecurityBundle\Security\Voter;
 
-use JMS\DiExtraBundle\Annotation as DI;
 use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
 use Symfony\Component\Security\Core\Authorization\Voter\RoleHierarchyVoter;
 use Symfony\Component\Security\Core\Role\RoleHierarchyInterface;
 
 /**
  * Class SuperAdminVoter.
- *
- * @DI\Service
- * @DI\Tag("security.voter")
  */
 class SuperAdminVoter extends RoleHierarchyVoter
 {
@@ -23,17 +19,18 @@ class SuperAdminVoter extends RoleHierarchyVoter
      * SuperAdminVoter constructor.
      *
      * @param RoleHierarchyInterface $roleHierarchy
-     * @DI\InjectParams({"roleHierarchy" = @DI\Inject("security.role_hierarchy")})
      */
     public function __construct(RoleHierarchyInterface $roleHierarchy)
     {
-        parent::__construct($roleHierarchy, '*');
+        // Sous Symfony 7, le préfixe filtre les rôles demandés : ROLE_ laisse passer ROLE_SUPER_ADMIN, que
+        // vote() demande (le '*' de l'ancien ne jouait pas, supportsAttribute() passant outre).
+        parent::__construct($roleHierarchy, 'ROLE_');
     }
 
     /**
      * {@inheritdoc}
      */
-    public function supportsAttribute($attribute)
+    public function supportsAttribute(string $attribute): bool
     {
         return is_string($attribute);
     }
@@ -41,7 +38,7 @@ class SuperAdminVoter extends RoleHierarchyVoter
     /**
      * {@inheritdoc}
      */
-    public function vote(TokenInterface $token, $object, array $attributes)
+    public function vote(TokenInterface $token, mixed $object, array $attributes): int
     {
         $vote = parent::vote($token, $object, ['ROLE_SUPER_ADMIN']);
 

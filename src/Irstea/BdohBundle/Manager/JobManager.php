@@ -25,8 +25,6 @@ use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInt
 
 /**
  * Class JobManager.
- *
- * @DI\Service("irstea_bdoh.job_manager")
  */
 class JobManager implements JobManagerInterface
 {

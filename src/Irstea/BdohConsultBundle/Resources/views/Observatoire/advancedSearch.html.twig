@@ -309,7 +309,7 @@
                                     <div class="col-md-6">{{ chronique.station.commune }}</div>
                                     <div class="col-md-3"><em>
                                             {{ chroniquesNumber[chronique.station.id] }}
-                                            {{ 'chronique(s)'|transchoice(chroniquesNumber[chronique.station.id])|lower }}
+                                            {{ 'chronique(s)'|trans({'%count%': chroniquesNumber[chronique.station.id]})|lower }}
                                         </em></div>
                                     {% if chronique.station.commentaire %}
                                         <div class="col-md-3"><em><a class="tooltipCommentaire" {{ attachTooltip(chronique.station.commentaire) }}>
@@ -327,12 +327,12 @@
                             {{ textField(chronique.station.commune | default(false), 'noneFeminine') }}
                             {# colonne 3 #}
                             <td>
-                                {% spaceless %}
+                                {% apply spaceless %}
                                     {%- for site in chronique.station.sites -%}
                                         {{- site.nom -}}
                                         {{- loop.last ? '' : '##' -}}
                                     {%- endfor -%}
-                                {% endspaceless %}
+                                {% endapply %}
                             </td>
                             {# colonne 4 #}
                             <td>{{ chronique.code }}</td>

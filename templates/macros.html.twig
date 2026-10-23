@@ -45,7 +45,7 @@
  # @param string attr               Extra attributes for the link.
  #}
 {%- macro richLink(href, title, icon, display, tooltip_placement, attr) %}
-{%- spaceless %}
+{%- apply spaceless %}
     {%- import _self as macros %}
     <a href="{{ href }}" class="iconText" {{ attr | default('') | raw }}>
     {%- if display == 'both' -%}
@@ -56,7 +56,7 @@
         {{ macros.tooltipedIcon(icon, title, tooltip_placement) }}
     {%- endif -%}
     </a>
-{%- endspaceless %}
+{%- endapply %}
 {%- endmacro %}
 
 {##
@@ -184,13 +184,13 @@
  # Macro to display an entity's label either with default locale or in English
  #}
 {% macro i18nEntityLabel(entity, property, defaultMessage) %}
-{% spaceless %}
+{% apply spaceless %}
     {% if app.session.get('_locale')|slice(0, 2) == 'en' %}
         {{ attribute(entity, property~'En')|default(attribute(entity, property))|default(defaultMessage|trans)|replace({"\n":"<br>"})|raw }}
     {% else %}
         {{ attribute(entity, property)|default(defaultMessage|trans)|replace({"\n":"<br>"})|raw }}
     {% endif %}
-{% endspaceless %}
+{% endapply %}
 {% endmacro %}
 
 {##############################################################################}

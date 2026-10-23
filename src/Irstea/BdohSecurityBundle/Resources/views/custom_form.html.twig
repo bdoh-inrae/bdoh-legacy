@@ -1,10 +1,10 @@
 {% block captcha_widget %}
-    {% spaceless %}
+    {% apply spaceless %}
         {{ form_widget(form) }}
-    {% endspaceless %}
+    {% endapply %}
 {% endblock %}
 {% block captcha_row %}
-    {% spaceless %}
+    {% apply spaceless %}
         <div class="form-group{% if (not compound or force_error|default(false)) and not valid %} has-error{% endif %}">
             {{ form_label(form, null, {'label_attr': {'class': 'custom-captcha-label-class'}}) }}
             <div class="col-sm-4" style="text-align:center;">
@@ -15,7 +15,7 @@
                 {{ form_errors(form) }}
             </div>
         </div>
-    {% endspaceless %}
+    {% endapply %}
 {% endblock %}
 {# problème de traduction des erreurs d'où le redefinition de form_errors #}
 {% block form_errors -%}

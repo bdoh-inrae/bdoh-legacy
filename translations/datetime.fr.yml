@@ -1,0 +1,32 @@
+
+status:
+    ok: ''
+    required: 'Veuillez saisir une date.'
+    invalid: "'%input%' n'est pas une date valide."
+    beforeMinDate: 'Veuillez choisir une date antérieure ou égale au %minDate%.'
+    afterMaxDate: 'Veuillez choisir une date postérieure ou égale au %maxDate%.'
+
+start.status:
+    ok: ''
+    required: 'Veuillez saisir une date de début.'
+    invalid: "'%input%' n'est pas une date de début valide."
+    beforeMinDate: 'Veuillez choisir une date de début antérieure ou égale au %minDate%.'
+    afterMaxDate: 'Veuillez choisir une date de début postérieure ou égale au %maxDate%.'
+
+end.status:
+    ok: ''
+    required: 'Veuillez saisir une date de fin.'
+    invalid: "'%input%' n'est pas une date de fin valide."
+    beforeMinDate: 'Veuillez choisir une date de fin antérieure ou égale au %minDate%.'
+    afterMaxDate: 'Veuillez choisir une date de fin postérieure ou égale au %maxDate%.'
+
+placeholder: 'JJ/MM/AAAA HH:MM:SS'
+
+format:
+    long: 'DD/MM/YYYY HH:mm:ss'
+    short: 'DD/MM/YYYY'
+
+buttons:
+    set-min: Fixer la date au minimum.
+    set-max: Fixer la date au maximum.
+    reset: Effacer la date.

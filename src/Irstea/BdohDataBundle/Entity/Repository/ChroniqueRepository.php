@@ -382,6 +382,9 @@ SQL;
             ->andWhere('ch.dataset = :dataset')
             ->setParameter('dataset', $dataset)
             ->orderBy('ch.station', 'ASC')
+            // L'ancien ne triait pas les chroniques d'une station : leur ordre dépendait de PostgreSQL
+            // (dev/differences.md, « Listes sans tri »).
+            ->addOrderBy('ch.code', 'ASC')
             ->getQuery()
             ->getResult();
     }

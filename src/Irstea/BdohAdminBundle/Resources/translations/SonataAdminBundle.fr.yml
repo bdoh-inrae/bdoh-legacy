@@ -1,0 +1,7 @@
+dashboard       : Tableau de bord
+AdminCenter     : Données principales
+AdminGeographic : Données géographiques
+AdminPeripheral : Données périphériques
+AdminTechnical  : Données techniques
+AdminTheia      : Données Theia/OZCAR
+AdminUser       : Utilisateurs

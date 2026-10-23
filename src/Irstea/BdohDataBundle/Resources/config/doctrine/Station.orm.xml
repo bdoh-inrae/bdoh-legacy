@@ -30,6 +30,10 @@
           <join-column name="site_id" referenced-column-name="id"/>
         </inverse-join-columns>
       </join-table>
+      <!-- Absent de l'ancien : l'ordre dépendait de PostgreSQL (dev/differences.md, « Listes sans tri ») -->
+      <order-by>
+        <order-by-field name="id" direction="ASC"/>
+      </order-by>
     </many-to-many>
   </entity>
 </doctrine-mapping>

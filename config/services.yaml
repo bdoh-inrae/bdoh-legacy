@@ -8,6 +8,34 @@ imports:
     - { resource: '../src/Irstea/BdohSecurityBundle/Resources/config/services.yml' }
     - { resource: '../src/Irstea/BdohLoggerBundle/Resources/config/services.yml' }
 
+# Repris des paramètres de app/config/config.yml de l'ancien BDOH
+parameters:
+    locale: fr
+
+    # Logos des pages (parameters.yml.dist de l'ancien)
+    logo_long_web_link: images/Logo_INRAE_REPUBLIQUE.png
+    logo_short_web_link: images/Logo_INRAE.png
+    mini_logo_sonata: images/MiniLogo_INRAE_REPUBLIQUE.png
+
+    absent_quality_codes:
+        VALID:     a
+        Hydro2:    0
+
+    # Format is
+    #   time_series_sampling:
+    #       samplings: [sampling_1, sampling_2]  that is, allowed samplings at export
+    #       steps: [[value_1, unit_1], [value_2, unit_2], ...]  that is, allowed time steps at export
+    default_allowed_exports:
+        instantaneous:
+            samplings: ['instantaneous', 'mean']
+            steps: [[1, 'hour'], [6, 'hour'], [1, 'day'], [1, 'month'], [1, 'year'], [1, 'event']]
+        mean:
+            samplings: ['mean', 'cumulative']
+            steps: [[1, 'day'], [1, 'month'], [1, 'year'], [1, 'event']]
+        cumulative:
+            samplings: ['cumulative']
+            steps: [[1, 'day'], [1, 'month'], [1, 'year'], [1, 'event']]
+
 services:
     _defaults:
         autowire: true

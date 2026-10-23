@@ -45,6 +45,8 @@ SIDES = {
     # les heures (--max-runtime, comme en production), ce qui couperait une commande en cours.
     'reference': Side('http://172.30.25.10',
                       ['docker', 'exec', 'bdoh-reference-app', 'php', 'app/console']),
+    # Le nouveau BDOH (service app de compose.yaml), sur PostgreSQL 17.
+    'new': Side('http://172.30.26.10', ['docker', 'exec', 'bdoh-app', 'php', 'bin/console']),
     # L'ancien code sur PostgreSQL 17 (service reference-app-17 de compose.yaml).
     'reference-17': Side('http://172.30.26.17',
                          ['docker', 'exec', 'bdoh-reference-app-17', 'php', 'app/console']),
@@ -254,6 +256,8 @@ class Extract(html.parser.HTMLParser):
         (self.script if self.raw else self.text).append(data)
 
 
+QUERY = re.compile(r'(\S+?\?)([^\s#]*)')
+
 NORMALIZE = [
     (re.compile(r'(/assets/[\w/.-]+?)\.[0-9a-f]{8,20}(\.\w+)'), r'\1\2'),  # empreintes des fichiers
     (re.compile(r'\bs[0-9a-f]{13}\b'), 's<uniqid>'),  # identifiants de formulaires de Sonata
@@ -275,11 +279,24 @@ def page_lines(site, status, headers, body):
         parser.flush()
         lines += parser.lines
     elif kind == 'application/json':
-        lines += json.dumps(json.loads(body), indent=1, sort_keys=True, ensure_ascii=False).splitlines()
+        try:
+            lines += json.dumps(json.loads(body), indent=1, sort_keys=True, ensure_ascii=False).splitlines()
+        except ValueError:
+            lines += ['JSON illisible :', *body.decode('utf-8', 'replace').splitlines()]
+    elif 'javascript' in kind:
+        # Les traductions pour le JavaScript (/translations/…) : l'ordre des clés suit l'ordre de
+        # chargement des catalogues, qui a changé ; triées, seules leurs valeurs comptent.
+        lines += sorted(body.decode('utf-8', 'replace').splitlines())
     else:
         lines += body.decode('utf-8', 'replace').splitlines()
     for pattern, repl in NORMALIZE:
         lines = [pattern.sub(repl, line) for line in lines]
+    # Symfony 7 ne code pas les paramètres d'adresse comme Symfony 2 (%20 ou +, %2C ou virgule…) :
+    # même adresse, comparée sous une forme canonique (dev/differences.md).
+    lines = [QUERY.sub(lambda m: m.group(1) + urllib.parse.urlencode(
+                 urllib.parse.parse_qsl(m.group(2), keep_blank_values=True)), line)
+             if line[:2] in ('A ', 'F ', 'D ', 'S ', 'L ', 'G ') else line
+             for line in lines]
     return [line.replace(site, '<site>') for line in lines]
 
 
@@ -308,19 +325,20 @@ def same_but_rounding(a, b):
 
 
 def compare(old, new):
-    """Écarts entre deux suites de lignes : (lignes de diff, nombre de lignes à un arrondi près).
+    """Écarts entre deux suites de lignes : (lignes de diff, lignes à un arrondi près, ordre seul).
 
     Deux suites de même longueur se comparent ligne à ligne ; le diff complet, coûteux sur une
-    longue page, ne sert que s'il reste un écart."""
+    longue page, ne sert que s'il reste un écart. « Ordre seul » : les mêmes lignes, ou les mêmes
+    éléments d'une liste, dans un autre ordre (listes que l'ancien ne triait pas)."""
     rounding = 0
-    new = list(new)
+    original, new = list(new), list(new)
     if len(old) == len(new):
         for k, (a, b) in enumerate(zip(old, new)):
             if a != b and same_but_rounding(a, b):
                 new[k] = a
                 rounding += 1
         if old == new:
-            return [], rounding
+            return [], rounding, False
     else:
         matcher = difflib.SequenceMatcher(None, old, new)
         for op, i1, i2, j1, j2 in matcher.get_opcodes():
@@ -329,26 +347,34 @@ def compare(old, new):
                     if same_but_rounding(old[i1 + k], new[j1 + k]):
                         new[j1 + k] = old[i1 + k]
                         rounding += 1
+    # Le type de ligne (T, A…) reste en tête ; les éléments qui suivent se trient.
+    key = lambda line: line[:2] + '##'.join(sorted(line[2:].split('##'))) if '##' in line else line
+    sorted_old, sorted_new = sorted(map(key, old)), sorted(map(key, original))
+    order_only = len(old) == len(new) and all(
+        a == b or same_but_rounding(a, b) for a, b in zip(sorted_old, sorted_new))
     diff = list(difflib.unified_diff(old, new, 'ancien', 'nouveau', n=2, lineterm=''))
-    return diff, rounding
+    return diff, rounding, order_only
 
 
 class Report:
     def __init__(self, kind):
         self.dir = OUT / f"{datetime.datetime.now():%Y-%m-%d_%H%M%S}_{kind}"
         self.dir.mkdir(parents=True)
-        self.counts = {'identiques': 0, 'à un arrondi près': 0, 'différents': 0}
+        self.counts = {'identiques': 0, 'à un arrondi près': 0, 'même contenu, autre ordre': 0, 'différents': 0}
         self.summary = []
 
     def add(self, name, old, new):
-        diff, rounding = compare(old, new)
-        key = 'différents' if diff else 'à un arrondi près' if rounding else 'identiques'
+        diff, rounding, order_only = compare(old, new)
+        if diff:
+            key = 'même contenu, autre ordre' if order_only else 'différents'
+        else:
+            key = 'à un arrondi près' if rounding else 'identiques'
         self.counts[key] += 1
         if diff or rounding:
             slug = re.sub(r'[^\w.-]+', '_', name).strip('_')[:150]
             (self.dir / f'{slug}.diff').write_text('\n'.join([name, *diff, '']))
-            self.summary.append(f"{key:<18} {name}" + (f'  ({rounding} arrondis)' if rounding else ''))
-        print(f"{'.' if not diff else 'X'}", end='', flush=True)
+            self.summary.append(f"{key:<26} {name}" + (f'  ({rounding} arrondis)' if rounding else ''))
+        print('X' if key == 'différents' else '.', end='', flush=True)
 
     def close(self):
         text = '\n'.join([*(f'{n:>6} {k}' for k, n in self.counts.items()), '', *self.summary, ''])
@@ -363,6 +389,8 @@ def run_pages(args):
     report = Report('pages')
     with concurrent.futures.ThreadPoolExecutor(args.jobs) as pool:
         for profile, email in profiles(args.base).items():
+            if args.profile and profile != args.profile:
+                continue
             clients = Client(old, email, slug), Client(new, email, slug)
             fetch = lambda path: [page_lines(client.side.url, *client.get(path)) for client in clients]
             for path, lines in zip(paths, pool.map(fetch, paths)):
@@ -397,6 +425,7 @@ def main():
     parser.add_argument('--base', default='bdoh_small', help='base où tirer les cas')
     parser.add_argument('--only', default='', help='ne garder que les cas qui contiennent ce texte')
     parser.add_argument('--jobs', type=int, default=6, help='requêtes menées en parallèle')
+    parser.add_argument('--profile', help='un seul profil (anonyme, utilisateur, gestionnaire, administrateur)')
     args = parser.parse_args()
     {'pages': run_pages, 'exports': run_exports}[args.what](args)
 

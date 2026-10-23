@@ -1,0 +1,32 @@
+
+status:
+    ok: ''
+    required: 'Please enter a date.'
+    invalid: "'%input%' is not a valid date."
+    beforeMinDate: 'Please select a date after or equal to %minDate%.'
+    afterMaxDate: 'Please select a date before or equal to %maxDate%.'
+
+start.status:
+    ok: ''
+    required: 'Please enter a starting date.'
+    invalid: "'%input%' is not a valid starting date."
+    beforeMinDate: 'Please select a starting date before or equal to %minDate%.'
+    afterMaxDate: 'Please select a starting date after or equal to %maxDate%.'
+
+end.status:
+    ok: ''
+    required: 'Please enter a ending date.'
+    invalid: "'%input%' is not a valid ending date."
+    beforeMinDate: 'Please select a ending date before or equal to %minDate%.'
+    afterMaxDate: 'Please select a ending date after or equal to %maxDate%.'
+
+placeholder: 'DD/MM/YYYY HH:MM:SS'
+
+format:
+    long: 'DD/MM/YYYY HH:mm:ss'
+    short: 'DD/MM/YYYY'
+
+buttons:
+    set-min: Set the date to the minimum.
+    set-max: Set the date to the maximum.
+    reset: Reset the date.

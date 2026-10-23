@@ -1,0 +1,22 @@
+
+http:
+    fallback:
+        title: Ooops !
+        body: Une erreur s'est produite.
+        alert: warning
+        icon: alert
+    403:
+        title: Accès refusé
+        body: Vous n'avez pas la permission d'accéder à cette information ou d'effectuer cette action.
+        alert: warning
+        icon: minus-sign
+    404:
+        title: Pas trouvé !
+        body: La page ou l'information que vous cherchez n'est pas à cet endroit.
+        alert: warning
+        icon: search
+    500:
+        title: Kaboom !
+        body: Le serveur a eu un gros souci ! Merci de réessayer utlérieurement !
+        alert: danger
+        icon: fire

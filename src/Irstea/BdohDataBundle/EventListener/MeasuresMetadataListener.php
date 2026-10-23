@@ -13,8 +13,6 @@ use Symfony\Bridge\Doctrine\RegistryInterface;
 
 /**
  * Class MeasuresMetadataListener.
- *
- * @DI\Service()
  */
 class MeasuresMetadataListener
 {

@@ -1,6 +1,6 @@
 # Historique, avec l'administration, module 6 du portage (ROADMAP.md).
-# Routes d'attente : mêmes noms et adresses que l'ancien BDOH, elles répondent « pas encore
-# porté » (App\Controller\PendingController) jusqu'au portage du module. Tirées de
+# Routes d'attente : mêmes noms, adresses et valeurs par défaut que l'ancien BDOH, elles répondent
+# « pas encore porté » (App\Controller\PendingController) jusqu'au portage du module. Tirées de
 # « app/console debug:router » de la référence.
 
 irstea_bdoh_logger_advancedSearch:

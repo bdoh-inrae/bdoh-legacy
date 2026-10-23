@@ -1,9 +1,16 @@
+# La commande de création d'un compte et le contrôle du mot de passe reviennent avec les comptes
+# (module 5) ; le gestionnaire de droits de Sonata, avec l'administration (module 6).
 services:
-    irstea_bdoh_security_bundle_user_create:
-        class: Irstea\BdohSecurityBundle\Command\UtilisateurNewCreateCommand
-        arguments:
-            - "@doctrine.orm.default_entity_manager"
-            - "@security.encoder_factory"
-        tags:
-            - { name: console.command }
+    _defaults:
+        autowire: true
+        autoconfigure: true
 
+    Irstea\BdohSecurityBundle\Controller\:
+        resource: '../../Controller/'
+
+    # Voteurs de droits et gestionnaire de connexion
+    Irstea\BdohSecurityBundle\Security\:
+        resource: '../../Security/'
+        exclude: '../../Security/BdohSecurityHandler.php'
+
+    irstea_bdoh_security.security.success_handler: '@Irstea\BdohSecurityBundle\Security\BdohAuthenticationHandler'

@@ -27,6 +27,11 @@ services:
     build: docker
     container_name: bdoh-app
     user: "${HOST_UID:?}:${HOST_GID:?}"
+    # Comme la référence et la production : environnement prod ; la console s'emploie en dev avec
+    # « docker exec -e APP_ENV=dev bdoh-app php bin/console … ».
+    environment:
+      APP_ENV: prod
+      APP_DEBUG: 0
     volumes:
       - .:/var/www/bdoh
     depends_on:

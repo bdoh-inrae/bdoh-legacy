@@ -47,7 +47,7 @@
                                         <b class="caret"></b>
                                         <i class="fam-brick"></i>
                                         {{ parameter }}
-                                        <small> &nbsp;&nbsp;&#8210;&nbsp;&nbsp; {{ chroniques|length }} {{ 'chronique(s)'|transchoice(chroniques|length)|lower }}</small>
+                                        <small> &nbsp;&nbsp;&#8210;&nbsp;&nbsp; {{ chroniques|length }} {{ 'chronique(s)'|trans({'%count%': chroniques|length})|lower }}</small>
                                     </h3>
                                 </a>
                             </div>
@@ -333,7 +333,7 @@
                                 <b class="caret"></b>
                                 <i class="fam-brick"></i>
                                 {{ parameter }}
-                                <small> &nbsp;&nbsp;&#8210;&nbsp;&nbsp; {{ chroniques|length }} {{ 'chronique(s)'|transchoice(chroniques|length)|lower }}</small>
+                                <small> &nbsp;&nbsp;&#8210;&nbsp;&nbsp; {{ chroniques|length }} {{ 'chronique(s)'|trans({'%count%': chroniques|length})|lower }}</small>
                             </h3>
                         </a>
                     </div>

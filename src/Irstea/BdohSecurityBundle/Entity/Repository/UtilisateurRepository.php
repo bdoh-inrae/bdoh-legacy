@@ -11,6 +11,7 @@ use Irstea\BdohDataBundle\Entity\Repository\EntityRepository;
 use Irstea\BdohSecurityBundle\Entity\Role;
 use Irstea\BdohSecurityBundle\Entity\RoleObservatoire;
 use Irstea\BdohSecurityBundle\Entity\Utilisateur;
+use Symfony\Bridge\Doctrine\Security\User\UserLoaderInterface;
 use Symfony\Component\Security\Core\Exception\UnsupportedUserException;
 use Symfony\Component\Security\Core\Exception\UserNotFoundException;
 use Symfony\Component\Security\Core\User\UserInterface;
@@ -19,7 +20,7 @@ use Symfony\Component\Security\Core\User\UserProviderInterface;
 /**
  * Class UtilisateurRepository.
  */
-class UtilisateurRepository extends EntityRepository implements UserProviderInterface
+class UtilisateurRepository extends EntityRepository implements UserProviderInterface, UserLoaderInterface
 {
     /**
      * Forces to retrieve the 'password' and 'salt' fields of a given 'Utilisateur'.

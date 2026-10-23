@@ -52,6 +52,9 @@ services:
             -
                 import_dirs: "%irstea_bdoh.less.import_dirs%"
                 cache_dir:   "%irstea_bdoh.less.cache_dir%"
+                # Les divisions toujours calculées, comme less.php 1.7 de l'ancien (LESS 3 ne les
+                # calcule plus hors de parenthèses)
+                math:        always
             -
                 primaryColor: "#003A80"
                 secondaryColor: "#009E00"

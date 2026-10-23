@@ -1,4 +1,11 @@
 services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+
+    Irstea\BdohInternationalisationBundle\Controller\:
+        resource: '../../Controller/'
+
     bdoh_locale.locale_listener:
         class: Irstea\BdohInternationalisationBundle\EventListener\LocaleListener
         arguments: ["%kernel.default_locale%"]

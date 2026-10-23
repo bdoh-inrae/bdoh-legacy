@@ -33,7 +33,7 @@
 
 
         <form action="{{ path('bdoh_security_utilisateur_new') }}" method="post"
-              class="form-horizontal" {{ form_enctype(form) }}>
+              class="form-horizontal" {% if form.vars.multipart %}enctype="multipart/form-data"{% endif %}>
 
             <!-- Login fields -->
             <div class="alert alert-warning">

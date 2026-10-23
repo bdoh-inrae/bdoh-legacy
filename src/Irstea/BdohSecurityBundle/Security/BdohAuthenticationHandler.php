@@ -6,20 +6,18 @@
 
 namespace Irstea\BdohSecurityBundle\Security;
 
-use Doctrine\ORM\EntityManager;
+use Doctrine\ORM\EntityManagerInterface;
 use Irstea\BdohSecurityBundle\Entity\Repository\UtilisateurRepository;
 use Irstea\BdohSecurityBundle\Entity\Utilisateur;
-use JMS\DiExtraBundle\Annotation as DI;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\RouterInterface;
 use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
 use Symfony\Component\Security\Http\Authentication\AuthenticationSuccessHandlerInterface;
 
 /**
  * Custom authentication success handler.
- *
- * @DI\Service("irstea_bdoh_security.security.success_handler", public=false)
  */
 class BdohAuthenticationHandler implements AuthenticationSuccessHandlerInterface
 {
@@ -36,14 +34,10 @@ class BdohAuthenticationHandler implements AuthenticationSuccessHandlerInterface
     /**
      * Constructor.
      *
-     * @param RouterInterface $router
-     * @param EntityManager   $em
-     * @DI\InjectParams({
-     *     "router" = @DI\Inject("router"),
-     *     "em" = @DI\Inject("doctrine.orm.entity_manager"),
-     * })
+     * @param RouterInterface        $router
+     * @param EntityManagerInterface $em
      */
-    public function __construct(RouterInterface $router, EntityManager $em)
+    public function __construct(RouterInterface $router, EntityManagerInterface $em)
     {
         $this->router = $router;
         $this->em = $em;
@@ -52,7 +46,7 @@ class BdohAuthenticationHandler implements AuthenticationSuccessHandlerInterface
     /**
      * {@inheritdoc}
      */
-    public function onAuthenticationSuccess(Request $request, TokenInterface $token)
+    public function onAuthenticationSuccess(Request $request, TokenInterface $token): ?Response
     {
         $user = $token->getUser();
         if ($user instanceof Utilisateur) {

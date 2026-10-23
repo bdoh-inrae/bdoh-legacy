@@ -9,7 +9,6 @@ namespace Irstea\BdohSecurityBundle\Security\Voter;
 use Irstea\BdohDataBundle\Entity\Observatoire;
 use Irstea\BdohSecurityBundle\Entity\Role;
 use Irstea\BdohSecurityBundle\Entity\Utilisateur;
-use JMS\DiExtraBundle\Annotation as DI;
 use JMS\JobQueueBundle\Entity\Job;
 use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
 use Symfony\Component\Security\Core\Authorization\Voter\Voter;
@@ -18,9 +17,6 @@ use Symfony\Component\Security\Core\Authorization\Voter\Voter;
  * Contrôle d'accès sur les jobs.
  *
  * Gère les droits de la forme JOBS_* sur les Job.
- *
- * @DI\Service
- * @DI\Tag("security.voter")
  */
 class JobVoter extends Voter
 {
@@ -32,7 +28,7 @@ class JobVoter extends Voter
     /**
      * {@inheritdoc}
      */
-    protected function supports($attribute, $subject)
+    protected function supports(string $attribute, mixed $subject): bool
     {
         switch ($attribute) {
             case self::LIST_PERM:
@@ -51,7 +47,7 @@ class JobVoter extends Voter
     /**
      * {@inheritdoc}
      */
-    protected function voteOnAttribute($attribute, $subject, TokenInterface $token)
+    protected function voteOnAttribute(string $attribute, mixed $subject, TokenInterface $token): bool
     {
         $user = $token->getUser();
         if (!$user instanceof Utilisateur) {

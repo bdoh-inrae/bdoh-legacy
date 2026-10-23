@@ -1,0 +1,6 @@
+# Traductions pour le JavaScript, comme dans app/config/config.yml de l'ancien BDOH
+bazinga_js_translation:
+    locale_fallback: "%locale%"
+    default_domain: messages
+    active_locales: [fr, en]
+    active_domains: [messages, viewer, export, datetime]

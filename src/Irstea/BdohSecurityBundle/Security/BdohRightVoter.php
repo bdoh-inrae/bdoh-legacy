@@ -6,7 +6,7 @@
 
 namespace Irstea\BdohSecurityBundle\Security;
 
-use Doctrine\ORM\EntityManager;
+use Doctrine\ORM\EntityManagerInterface;
 use Irstea\BdohBundle\Manager\ObservatoireManagerInterface;
 use Irstea\BdohDataBundle\Entity\Bareme;
 use Irstea\BdohDataBundle\Entity\Bassin;
@@ -35,15 +35,11 @@ use Irstea\BdohDataBundle\Entity\TypeParametre;
 use Irstea\BdohDataBundle\Entity\Unite;
 use Irstea\BdohSecurityBundle\Entity\Role;
 use Irstea\BdohSecurityBundle\Entity\Utilisateur;
-use JMS\DiExtraBundle\Annotation as DI;
 use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
 use Symfony\Component\Security\Core\Authorization\Voter\VoterInterface;
 
 /**
  * {@inheritdoc}
- *
- * @DI\Service
- * @DI\Tag("security.voter")
  */
 class BdohRightVoter implements VoterInterface
 {
@@ -133,12 +129,8 @@ class BdohRightVoter implements VoterInterface
      *
      * @param ObservatoireManagerInterface $manager
      * @param EntityManager                $em
-     * @DI\InjectParams({
-     *     "manager" = @DI\Inject("irstea_bdoh.manager.observatoire"),
-     *     "em" = @DI\Inject("doctrine.orm.entity_manager"),
-     * })
      */
-    public function __construct(ObservatoireManagerInterface $manager, EntityManager $em)
+    public function __construct(ObservatoireManagerInterface $manager, EntityManagerInterface $em)
     {
         $this->obsManager = $manager;
         $this->em = $em;
@@ -628,7 +620,7 @@ class BdohRightVoter implements VoterInterface
     /**
      * {@inheritdoc}
      */
-    public function vote(TokenInterface $token, $object, array $attributes)
+    public function vote(TokenInterface $token, mixed $object, array $attributes): int
     {
         if (in_array('RIGHT', $attributes, true) && is_array($object)) {
             $actualObject = $object[1];

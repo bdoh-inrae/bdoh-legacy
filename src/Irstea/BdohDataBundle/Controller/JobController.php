@@ -20,7 +20,7 @@ use JMS\DiExtraBundle\Annotation as DI;
 use JMS\JobQueueBundle\Entity\Job;
 use JMS\JobQueueBundle\Entity\Repository\JobRepository;
 use Symfony\Bridge\Doctrine\RegistryInterface;
-use Symfony\Bundle\FrameworkBundle\Controller\Controller;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController as Controller;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;

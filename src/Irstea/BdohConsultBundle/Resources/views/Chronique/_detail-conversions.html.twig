@@ -21,7 +21,7 @@
                                 {{ 'UTC'|trans }}{{ 'deux_points'|trans }}
                             </strong>
                             {% set paramConversionMinuntes = conversion.paramConversion // 60 %}
-                            {{ paramConversionMinuntes }} {{ 'minute'|transchoice(paramConversionMinuntes) }}
+                            {{ paramConversionMinuntes }} {{ 'minute'|trans({'%count%': paramConversionMinuntes}) }}
                             {% if paramConversionMinuntes >= 60 %}
                                 ({{ conversion.paramConversion|durationFormat }})
                             {% endif %}

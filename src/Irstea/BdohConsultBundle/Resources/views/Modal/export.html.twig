@@ -1,7 +1,7 @@
 {% from 'macros.html.twig' import submit, richLink %}
 
 {% set modalId     = 'export-' ~ random() %}
-{% set exportTitle = 'measure.export.title'|transchoice(chroniques|length) %}
+{% set exportTitle = 'measure.export.title'|trans({'%count%': chroniques|length}) %}
 {% set nbChroniques = chroniques|length %}
 {% set allowVigilance = false %}
 {% set hasWithValueLimits = false %}
@@ -178,7 +178,7 @@
                     <div class="form-group row" style="margin-bottom:0;">
                         <div class="col-md-6">
                             <label class="control-label"
-                                   for="{{ modalId }}chroniques">{{ 'chronique(s)'|transchoice(chroniques|length) }}</label>
+                                   for="{{ modalId }}chroniques">{{ 'chronique(s)'|trans({'%count%': chroniques|length}) }}</label>
                         </div>
 
                         <div class="col-md-18">

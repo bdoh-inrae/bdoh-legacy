@@ -8,3 +8,7 @@
 /node_modules/
 /public/bundles/
 __pycache__/
+/public/assets/
+/public/js/
+/public/css/themes/
+/public/uploads/

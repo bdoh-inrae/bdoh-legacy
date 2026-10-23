@@ -13,8 +13,6 @@ use Symfony\Bridge\Doctrine\RegistryInterface;
 
 /**
  * Class ChronicleListener.
- *
- * @DI\Service()
  */
 class ChronicleListener
 {
@@ -33,10 +31,6 @@ class ChronicleListener
      *
      * @param JobManagerInterface $jobManager
      * @param RegistryInterface   $doctrine
-     * @DI\InjectParams({
-     *  "jobManager"=@DI\Inject("irstea_bdoh.job_manager"),
-     *  "doctrine"=@DI\Inject("doctrine")
-     * })
      */
     public function __construct(JobManagerInterface $jobManager, RegistryInterface $doctrine)
     {

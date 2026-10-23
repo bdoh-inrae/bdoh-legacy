@@ -42,8 +42,8 @@
                             <div class="col-md-24">
                                 <input id="{{ modalId }}_propagateid" name="propagate" value="propagate" type="checkbox" checked="checked" style="vertical-align:-3px;">
                                 <label for="{{ modalId }}_propagateid">
-                                    {{ 'measure.import.question.computeChildren'|transchoice(childrenCount) }}
-                                    <i class="childrenHelp fam-help" data-original-title="{{ 'measure.import.help.children'|transchoice(childrenCount) }}"
+                                    {{ 'measure.import.question.computeChildren'|trans({'%count%': childrenCount}) }}
+                                    <i class="childrenHelp fam-help" data-original-title="{{ 'measure.import.help.children'|trans({'%count%': childrenCount}) }}"
                                        data-content="{{ childrenList }}" style="vertical-align:-3px;"></i>
                                 </label>
                             </div>

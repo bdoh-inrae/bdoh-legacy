@@ -1,7 +1,7 @@
 {% block choice_widget_options %}
     {% set invisible_text = " (invisible)" %}
     {% set invisible_text_length = invisible_text|length %}
-    {% spaceless %}
+    {% apply spaceless %}
         {% for group_label, choice in options %}
             {% if choice is iterable %}
                 <optgroup label="{{ group_label|trans({}, translation_domain) }}">
@@ -22,5 +22,5 @@
                 </option>
             {% endif %}
         {% endfor %}
-    {% endspaceless %}
+    {% endapply %}
 {% endblock %}

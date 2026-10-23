@@ -7,7 +7,6 @@
 namespace Irstea\BdohSecurityBundle\Security;
 
 use Irstea\BdohDataBundle\Entity\Commune;
-use JMS\DiExtraBundle\Annotation as DI;
 use Sonata\AdminBundle\Admin\AdminInterface;
 use Sonata\AdminBundle\Security\Handler\SecurityHandlerInterface;
 use Symfony\Component\Security\Core\Authorization\AuthorizationCheckerInterface;
@@ -15,8 +14,6 @@ use Symfony\Component\Security\Core\Exception\AuthenticationCredentialsNotFoundE
 
 /**
  * Class BdohSecurityHandler.
- *
- * @DI\Service("irstea_bdoh_security.admin.security.handler")
  */
 class BdohSecurityHandler implements SecurityHandlerInterface
 {
@@ -27,9 +24,6 @@ class BdohSecurityHandler implements SecurityHandlerInterface
 
     /**
      * @param AuthorizationCheckerInterface $authorizationChecker
-     * @DI\InjectParams({
-     *     "authorizationChecker" = @DI\Inject("security.authorization_checker")
-     * })
      */
     public function __construct(AuthorizationCheckerInterface $authorizationChecker)
     {

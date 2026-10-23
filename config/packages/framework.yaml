@@ -2,11 +2,10 @@
 framework:
     secret: '%env(APP_SECRET)%'
 
-    # Note that the session will be started ONLY if you read or write from it.
-    session: true
-
-    #esi: true
-    #fragments: true
+    # Comme l'ancien : sessions de PHP ; Debian les nettoie lui-même, d'où gc_probability à 0.
+    session:
+        handler_id: null
+        gc_probability: 0
 
 when@test:
     framework:

@@ -29,7 +29,7 @@
  # Displays a rate.
  #}
 {%- macro display_rate(rate, label, discontinue, overlap) -%}
-    {%- spaceless -%}
+    {%- apply spaceless -%}
 
         {%- if discontinue -%}
 
@@ -54,7 +54,7 @@
             {%- endif -%}
 
             {%- if label -%}
-                &nbsp;{{ 'consult.fillingRateMesure'|transchoice(rate|default(0)) }}
+                &nbsp;{{ 'consult.fillingRateMesure'|trans({'%count%': rate|default(0)}) }}
             {%- endif -%}
 
             {%- if not rate and not overlap -%}
@@ -77,7 +77,7 @@
 
         {%- endif -%}
 
-    {%- endspaceless -%}
+    {%- endapply -%}
 {%-endmacro -%}
 
 {##############################################################################}
@@ -97,7 +97,7 @@
  #}
 {%- macro display_linkedDatedRate(rate, beginDate, endDate, anchorId, label, discontinue, overlap) -%}
     {%- from _self import display_rate -%}
-    {%- spaceless -%}
+    {%- apply spaceless -%}
         {%- if rate is not null and not (discontinue|default(false) and not overlap|default(false)) -%}
             <a{%- if anchorId is not null %} href="#{{ anchorId }}" {% endif -%}
                 class="fillingRate{% if discontinue|default(false) %} discontinue{% endif %}{% if label|default('') %} textLabel{% endif %}"
@@ -112,7 +112,7 @@
         {%- else -%}
             </div>
         {%- endif -%}
-    {%- endspaceless -%}
+    {%- endapply -%}
 {%- endmacro -%}
 
 {##############################################################################}
@@ -123,10 +123,10 @@
  # Some information and actions for 'Avanced search'.
  #}
 {%- macro advancedSearch_link(type, value) -%}
-    {%- spaceless -%}
+    {%- apply spaceless -%}
         {%- set value = value|trim -%}
         <a class='advancedSearchLink' href="{{ path('bdoh_consult_advancedSearch', {(type): value}) }}">{{ value }}</a>
-    {%- endspaceless -%}
+    {%- endapply -%}
 {%- endmacro -%}
 
 {##############################################################################}
@@ -168,7 +168,7 @@
 
 {# Info : 'station' is active ? #}
 {% macro station_isActive(station, divider_left, divider_right, tooltip_placement) %}
-    {% spaceless %}
+    {% apply spaceless %}
         {% if not station.estActive %}
 
             {% from 'macros.html.twig' import tooltipedIcon %}
@@ -182,7 +182,7 @@
                 <div class="divider-vertical"></div>{% endif %}
 
         {% endif %}
-    {% endspaceless %}
+    {% endapply %}
 {% endmacro %}
 
 {# Action : edit #}
@@ -217,7 +217,7 @@
 
 {# Info : 'chronique' is visible ? #}
 {% macro chronique_isVisible(chronique, divider_left, divider_right, tooltip_placement) %}
-    {% spaceless %}
+    {% apply spaceless %}
         {% if not chronique.estVisible %}
 
             {% from 'macros.html.twig' import tooltipedIcon %}
@@ -231,7 +231,7 @@
                 <div class="divider-vertical"></div>{% endif %}
 
         {% endif %}
-    {% endspaceless %}
+    {% endapply %}
 {% endmacro %}
 
 {# Action : edit #}

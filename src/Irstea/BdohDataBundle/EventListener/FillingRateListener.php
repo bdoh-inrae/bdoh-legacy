@@ -12,8 +12,6 @@ use JMS\DiExtraBundle\Annotation as DI;
 
 /**
  * Class FillingRateListener.
- *
- * @DI\Service()
  */
 class FillingRateListener
 {

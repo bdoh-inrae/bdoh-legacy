@@ -1,6 +1,6 @@
 # Consultation publique et visualiseur
 
-État : en préparation, le 2026-10-23. Point 2 du portage dans `ROADMAP.md` ; suit le socle (`dev/plans/2026-10-23_socle.md`).
+État : en cours, commencé le 2026-10-23. Point 2 du portage dans `ROADMAP.md` ; suit le socle (`dev/plans/2026-10-23_socle.md`).
 
 But : les pages que l'on consulte sans administrer, servies par le nouveau BDOH à l'identique de l'ancien, pour chaque profil (anonyme, utilisateur, gestionnaire, administrateur) : `compare.py pages` sans écart hors de `dev/differences.md`.
 
@@ -23,3 +23,9 @@ Pour les comparer par profil, il faut se connecter : la connexion par formulaire
 ## Suivi
 
 - 2026-10-23 : plan écrit.
+- 2026-10-23 : pages servies par le nouveau BDOH, en environnement prod comme la référence.
+  - Échafaudage temporaire, à retirer module par module : les routes des modules à venir (`config/routes_pending/`, mêmes noms, adresses et valeurs par défaut que l'ancien, réponse 501), pour que les pages portées y renvoient ; `PendingJobManager`, qui tient la place de la file de tâches (aucune tâche en cours) ; `BdohAdminBundle` déclaré pour ses seules traductions, que les gabarits de consultation emploient.
+  - JavaScript et feuilles de style : pour l'instant, les fichiers compilés par l'installation de la référence, copiés dans `public/assets/` et `public/js/` ; les paquets JavaScript de l'ancien (`package.json`, `package-lock.json`) installés par `npm ci`, pour les sources LESS de Bootstrap 3 que `CssManager` compile.
+  - Repris de l'ancien : la page d'erreur de BDOH (`templates/bundles/TwigBundle/`), ses traductions, celles de `app/Resources/translations` ; et, par un écouteur, la réponse JSON aux erreurs des requêtes JSON, que Symfony 7 n'a plus.
+  - Profil anonyme : 216 pages identiques sur 250 avant la page de connexion ; restent le choix de la langue (l'erreur 500 de l'ancien, corrigée), les données des chroniques non visibles (réglé par l'écouteur JSON) et la page de connexion (portée).
+  - Le filtre Twig `spaceless`, déprécié depuis Twig 3.12, reste dans les gabarits : à remplacer avant Twig 4.

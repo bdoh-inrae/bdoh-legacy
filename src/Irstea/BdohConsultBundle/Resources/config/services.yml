@@ -1,15 +1,12 @@
 parameters:
     irstea_bdoh_consult.json_schema.cache_lifeTime: 1200
 
+# Les services des schémas JSON de Theia (irstea_bdoh_consult.json_schema.*) reviennent avec l'envoi
+# des fiches vers Theia/OZCAR, module 7 du portage.
 services:
-    irstea_bdoh_consult.json_schema.loader:
-        class: Irstea\BdohConsultBundle\Service\JsonSchema\HttpLoader
-    irstea_bdoh_consult.json_schema.apcucache:
-        class: Doctrine\Common\Cache\ApcuCache
-    irstea_bdoh_consult.json_schema.caching_loader:
-        class: Irstea\BdohConsultBundle\Service\JsonSchema\CachingLoader
-        decorates: irstea_bdoh_consult.json_schema.loader
-        public: false
-        arguments:
-            - '@irstea_bdoh_consult.json_schema.caching_loader.inner'
-            - "%irstea_bdoh_consult.json_schema.cache_lifeTime%"
+    _defaults:
+        autowire: true
+        autoconfigure: true
+
+    Irstea\BdohConsultBundle\Controller\:
+        resource: '../../Controller/'

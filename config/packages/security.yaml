@@ -1,39 +1,53 @@
+# Repris de app/config/security.yml de l'ancien BDOH. Les mots de passe restent en bcrypt de coût 10,
+# sans nouveau hachage à la connexion : la colonne password n'est pas réécrite.
 security:
-    # https://symfony.com/doc/current/security.html#registering-the-user-hashing-passwords
     password_hashers:
-        Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface: 'auto'
+        Irstea\BdohSecurityBundle\Entity\Utilisateur:
+            algorithm: bcrypt
+            cost: 10
 
-    # https://symfony.com/doc/current/security.html#loading-the-user-the-user-provider
     providers:
-        users_in_memory: { memory: null }
+        main:
+            entity:
+                class: Irstea\BdohSecurityBundle\Entity\Utilisateur
+
+    role_hierarchy:
+        ROLE_ADMIN_TECH:  [ROLE_ADMIN_FCT, ROLE_SUPER_ADMIN]
+        ROLE_ADMIN_FCT:   ROLE_ADMIN
+        ROLE_SUPER_ADMIN: [ROLE_ADMIN, ROLE_ALLOWED_TO_SWITCH]
+        ROLE_ADMIN:       ROLE_USER
 
     firewalls:
         dev:
-            # Ensure dev tools and static assets are always allowed
-            pattern: ^/(_profiler|_wdt|assets|build)/
+            pattern:  ^/(_(profiler|wdt)|css|images|js)/
             security: false
-        main:
-            lazy: true
-            provider: users_in_memory
 
-            # Activate different ways to authenticate:
-            # https://symfony.com/doc/current/security.html#the-firewall
+        # Ouvert à tous (l'« anonymous » de Symfony 2), avec connexion par formulaire
+        secured_area:
+            pattern:  ^/
+            lazy:     true
+            provider: main
+            form_login:
+                use_referer: true
+                login_path: bdoh_security_login
+                check_path: bdoh_security_login_check
+                default_target_path: bdoh_home
+                success_handler: irstea_bdoh_security.security.success_handler
+            logout:
+                path:   bdoh_security_logout
+                target: bdoh_home
 
-            # https://symfony.com/doc/current/security/impersonating_user.html
-            # switch_user: true
-
-    # Note: Only the *first* matching rule is applied
+    # Order is important : FIFO !
     access_control:
-        # - { path: ^/admin, roles: ROLE_ADMIN }
-        # - { path: ^/profile, roles: ROLE_USER }
+        - { path: /admin/shape/import, roles: ROLE_USER }
+        - { path: /admin/station, roles: [ROLE_USER] }
+        - { path: /admin/jobs, roles: ROLE_SUPER_ADMIN }
+        - { path: /admin, roles: [ROLE_ADMIN, ROLE_SUPER_ADMIN] }
+        - { path: /historique, roles: ROLE_ADMIN }
 
 when@test:
     security:
         password_hashers:
-            # Password hashers are resource-intensive by design to ensure security.
-            # In tests, it's safe to reduce their cost to improve performance.
-            Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface:
-                algorithm: auto
-                cost: 4 # Lowest possible value for bcrypt
-                time_cost: 3 # Lowest possible value for argon
-                memory_cost: 10 # Lowest possible value for argon
+            Irstea\BdohSecurityBundle\Entity\Utilisateur:
+                algorithm: bcrypt
+                cost: 4
