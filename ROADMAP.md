@@ -6,16 +6,14 @@ Code de référence : commit `523cf8e32` de l'ancien dépôt (version 5.0.3, fé
 
 ## En cours
 
-- **Base de référence anonymisée**, tirée du dump de production du 21 octobre 2026 : `make anonymize` (`dev/anonymize/`). Le script est écrit d'après la structure de la base de production (138 tables) et essayé sur une base de cette structure remplie de lignes inventées.
-  - [x] Production : `../bdoh_reference/bdoh-205-2026-10-21-anon.dump` (23 octobre). Rapport sans fuite ni contrôle en échec ; contrôle par Claude : aucun courriel réel hors des mesures, numéros repérés tous faux positifs (géométries, dates, coordonnées). 257 millions de mesures, base de 35,7 Go restaurée.
-  - [ ] La base d'OTHU, de la même façon ; une colonne qui n'existe que là arrêtera le script, à classer.
-  - La base `bdoh-messenger`, à part, n'est pas reprise.
+- **Faire tourner la référence** : l'ancien BDOH en local, au commit `523cf8e32`, sur les bases anonymisées.
+  - Point de départ (23 octobre). Les dumps anonymisés de la production et d'OTHU sont dans `../bdoh_reference/`, avec leurs rapports. Le serveur de référence `bdoh-reference-db` (PostgreSQL 11, PostGIS 2.5, réseau Docker interne `bdoh-reference`, fichiers dans `../bdoh_reference/postgres/`) porte les deux bases, `bdoh` et `bdoh_othu` ; après un redémarrage du poste : `docker start bdoh-reference-db`. L'image `bdoh-app:latest` (ancien BDOH, PHP 7.1) est gardée pour l'application ; l'ancienne installation Docker de `../bdoh/` et sa base de préproduction ont été supprimées.
+  - L'application de référence rejoint le réseau interne, sans accès à l'extérieur : aucun courriel ni envoi vers Theia ne peut partir. Le dossier `../bdoh/` n'est pas modifié ; ce qu'il faut pour la lancer vit ici, dans `dev/reference/`.
+  - Les comptes ont tous le mot de passe `bdoh-test`.
 
 ## À faire
 
-- **Faire tourner la référence.** L'ancien BDOH en local (`../bdoh/`, commit `523cf8e32`) sur la base anonymisée.
 - **Base de travail réduite**, tirée de la base anonymisée : toutes les métadonnées, tous les comptes et toutes les chroniques, mais les mesures sur une fenêtre de temps commune, à choisir d'après les tailles du rapport d'anonymisation. Elle sert à itérer vite ; la base complète sert aux comparaisons étendues, à la fin de chaque module.
-- **Contrôles d'intégrité** (`dev/reference/inspect.sql`) : faits sur la base de production anonymisée, voir [dev/audits/2026-10-23_reference-db.md](dev/audits/2026-10-23_reference-db.md) ; à refaire sur celle d'OTHU.
 - **Outil de comparaison.** Il joue les mêmes requêtes sur l'ancien et le nouveau BDOH et compare les sorties : pages publiques et visualiseur, exports (chaque format, chaque pas de temps), imports, droits d'accès selon le profil ; et, après chaque écriture, l'état des tables touchées. Les nombres se comparent selon la règle de l'audit (constat 4). Les imports jouent les fichiers de `dev/exemples/` de l'ancien dépôt et des variantes (espaces, fins de ligne Windows, virgules, valeurs invalides, changement d'heure, fuseaux). Les sorties de l'ancien sont enregistrées dans `../bdoh_reference/`.
 - **PostgreSQL 11 vers la version de Debian 13**, avec l'ancien code d'abord, PostGIS compris (procédure du raster, audit constat 7).
 - **Portage, module par module**, chacun validé par la comparaison avant le suivant :
@@ -32,6 +30,7 @@ Code de référence : commit `523cf8e32` de l'ancien dépôt (version 5.0.3, fé
 
 - **Nom et forge** du dépôt.
 
-## À relever sur les serveurs (Lou)
+## Plus tard, après la bascule
 
-- `date.timezone` de PHP (audit, constat 5) sur le serveur d'OTHU : `php -i | grep date.timezone` et `sudo grep -Rn date.timezone /etc/php/7.1/apache2/ /etc/apache2/`. En production, relevé le 23 octobre : pages en UTC, file de tâches en `Europe/Paris` (`dev/differences.md`).
+- **Lacunes à -9999 dans la base.** Les fonctions de calcul écrivent -9999 comme valeur des lacunes (3,9 millions de mesures de chroniques calculées), alors que les imports y mettent `NULL` : la base a deux conventions, et une valeur sentinelle qu'un calcul fait hors de BDOH peut prendre pour une vraie mesure. Passer à `NULL` partout touche neuf fonctions de calcul et ces mesures : à faire une fois le nouveau BDOH identique à l'ancien, comme chantier à part, vérifié par la comparaison. -9999 reste la valeur des lacunes dans les fichiers d'import et d'export, format public que les utilisateurs emploient.
+- **Critique des données, pour les gestionnaires.** L'inspection des bases relève des mesures valides hors des seuils de validité, et, sur OTHU, des lots de mesures au minimum et au maximum inversés ([dev/audits/2026-10-23_reference-db.md](dev/audits/2026-10-23_reference-db.md)). Hors du portage ; un retour aux gestionnaires d'observatoire est possible à partir de cette trace.

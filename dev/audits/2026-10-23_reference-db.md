@@ -41,8 +41,14 @@ Aucune mesure n'a de millisecondes : le format le permet, la production ne s'en 
 - **Configurations incomplètes.** 28 chroniques calculées n'ont pas de première transformation, et une chronique convertie n'a pas de conversion. Le nouveau BDOH doit les afficher sans erreur, comme l'ancien, et refuser proprement de les recalculer.
 - **Qualité des données, pour les gestionnaires plutôt que pour le portage.** 902 485 mesures de qualité valide sortent des seuils de validité de leur chronique (le contrôle à l'import est désactivé dans le code) ; 115 875 ont une valeur hors de leur propre minimum et maximum ; 14 mesures valides n'ont pas de valeur ; une a un minimum supérieur à son maximum. Le portage ne change rien à ces mesures.
 
+## La base d'OTHU
+
+Mêmes contrôles sur la base d'OTHU du 21 octobre, anonymisée de la même façon et restaurée dans le même serveur (base `bdoh_othu`) : 106 006 788 mesures, 119 chroniques, toutes continues, un observatoire, 19 comptes. Les mêmes contrôles sont sains, et les mêmes cinq séquences sont en retard. Pas de chronique calculée, convertie ni discontinue, donc pas de lacune à -9999 ; pas de date antérieure à 1900 ; 8 tables laissées par des imports.
+
+Un point propre à OTHU : 645 040 mesures de 9 chroniques ont un minimum supérieur à leur maximum. Ce n'est le cas d'aucune chronique entière, mais de lots de mesures ; et pour 550 179 d'entre elles, la valeur est comprise entre les deux bornes. Le minimum et le maximum semblent donc avoir été inversés à l'import, dans les fichiers ou par l'un des formats d'import. À signaler aux gestionnaires d'OTHU ; la comparaison des imports dira si un format de BDOH en est la cause.
+
 ## Ce que ça appelle
 
 - Recaler les cinq séquences, comme bogue corrigé au passage (`dev/differences.md`).
-- Inclure dans la comparaison les deux chroniques antérieures à 1900, les chroniques calculées et leurs lacunes à -9999, et les chroniques à configuration incomplète.
-- Repasser `inspect.sql` sur la base d'OTHU, puis après chaque changement de version de PostgreSQL et à la bascule : les comptes doivent rester égaux.
+- Inclure dans la comparaison les deux chroniques antérieures à 1900, les chroniques calculées et leurs lacunes à -9999, et les chroniques à configuration incomplète ; pour les imports, vérifier qu'aucun format n'inverse le minimum et le maximum.
+- Repasser `inspect.sql` après chaque changement de version de PostgreSQL et à la bascule, sur les deux bases : les comptes doivent rester égaux.
