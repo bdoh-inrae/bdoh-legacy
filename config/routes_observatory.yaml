@@ -1,0 +1,29 @@
+# Les routes propres à un observatoire, sous /{_observatoire}, dans l'ordre de l'ancien
+# app/config/routing_observatory.yml. Celles des modules pas encore portés attendent dans
+# config/routes_pending/ (dev/plans/2026-10-23_consultation.md).
+irstea_bdoh_admin:
+    resource: routes_pending/admin.yaml
+    prefix:   /admin
+
+bdoh_security_login_check:
+    path: /login_check
+
+bdoh_security_logout:
+    path: /logout
+
+irstea_bdoh_security:
+    resource: "@IrsteaBdohSecurityBundle/Controller/"
+    type:     attribute
+
+irstea_bdoh_logger:
+    resource: routes_pending/logger.yaml
+
+irstea_bdoh_data:
+    resource: "@IrsteaBdohDataBundle/Resources/config/routing.yml"
+
+irstea_bdoh:
+    resource: "@IrsteaBdohBundle/Resources/config/routing.yml"
+
+irstea_bdoh_consult:
+    resource: "@IrsteaBdohConsultBundle/Controller/"
+    type:     attribute

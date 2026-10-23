@@ -1,0 +1,15 @@
+<form class="form-horizontal" action="{{ path('resetting_reset', {'token': token}) }}" {{ form_enctype(form) }} method="POST">
+    <div class="alert alert-warning">
+        {{ form_widget(form.password) }}
+    </div>
+    <!-- Captcha -->
+    <div class="alert alert-danger">
+        {{ form_row(form.captcha) }}
+    </div>
+
+    {{ form_rest(form) }}
+
+    <div style="display:flex;margin-bottom:10px;">
+        <div><input class="btn btn-success" type="submit" value="{{ 'resetting.reset.submit'|trans }}"/></div>
+    </div>
+</form>

@@ -1,0 +1,7 @@
+services:
+    # BDOH class for log management
+    irstea_bdoh_logger.logger:
+        class: Irstea\BdohLoggerBundle\Logger\BdohLogger
+        arguments:
+            - "@doctrine.orm.entity_manager"
+            - "@translator"

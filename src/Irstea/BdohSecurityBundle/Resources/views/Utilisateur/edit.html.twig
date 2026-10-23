@@ -1,0 +1,59 @@
+{% extends '@IrsteaBdohSecurity/layout.html.twig' %}
+{% from 'macros.html.twig' import submit, cancelForm, pageTitle %}
+
+{% form_theme form '@IrsteaBdohSecurity/custom_form.html.twig' %}
+
+{% block title %}
+    {{ pageTitle('security.utilisateur.edit.title'|trans) }}
+{% endblock %}
+
+{% block breadcrumb %}
+    <ul class="breadcrumb">
+        {# Home #}
+        <li><a href="{{ path('bdoh_home') }}">{{ 'home'|trans }}</a></li>
+        {# Edition of the logged user account #}
+        <li class="active">{{ 'account.edit'|trans }}</li>
+    </ul>
+{% endblock %}
+
+
+{% block main %}
+    <div id="security-utilisateur-edit">
+
+        <h1>{{ 'security.utilisateur.edit.title' | trans }}</h1>
+
+        <form action="{{ path('bdoh_security_utilisateur_edit') }}" method="post"
+              class="form-horizontal" {{ form_enctype(form) }}>
+
+            <!-- Login fields (with possibility to change password) -->
+            <div class="alert alert-warning">
+                <h4 class="alert-heading" style="margin-bottom:25px;">{{ 'security.utilisateur.loginInfo'|trans }}</h4>
+                {{ form_row(form.email) }}
+                <div style="margin-bottom:15px;">
+                    <strong>{{ 'security.utilisateur.edit.info.changePassword'|trans|raw }}</strong>
+                </div>
+                {{ form_row(form.oldPassword) }}
+                {{ form_widget(form.password) }}
+            </div>
+
+            <!-- Identification fields -->
+            <div class="alert alert-warning">
+                <h4 class="alert-heading" style="margin-bottom:25px;">{{ 'security.utilisateur.personalInfo'|trans }}</h4>
+                {{ form_row(form.prenom) }}
+                {{ form_row(form.nom) }}
+                {{ form_row(form.organisme) }}
+                {{ form_row(form.categorie) }}
+                {{ form_row(form.telephone) }}
+                {{ form_row(form.adresse) }}
+            </div>
+
+            {{ form_rest(form) }}
+
+            <div style="display:flex;margin-bottom:10px;">
+                <div>{{ submit('security.utilisateur.edit.submit'|trans, 'btn btn-success') }}</div>
+                <div style="margin-left:15px;">{{ cancelForm('bdoh_home') }}</div>
+            </div>
+        </form>
+
+    </div>
+{% endblock main %}

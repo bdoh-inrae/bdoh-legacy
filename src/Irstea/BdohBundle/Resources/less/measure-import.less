@@ -1,0 +1,49 @@
+#measure-import {
+    h2 {
+        margin: 0;
+    }
+    h3:not(.popover-title) {
+        line-height: 0px;
+    }
+
+    div[name = "chroniques"] .well {
+        padding: 0.5em;
+        border: 1px solid @gray;
+
+        & > div {
+            margin-bottom: 1em;
+            text-align: center;
+            border-bottom: 1px solid @gray;
+        }
+    }
+}
+
+#format-description > * {
+    display: none;
+}
+
+form.form-horizontal[name="main"] .form-group {
+    margin-left:0;
+    margin-right:0;
+}
+div#measure-import div.panel-body > div > div:last-of-type{
+    margin-bottom:0;
+}
+.import-title{
+    border-radius:4px;
+    background-color:grey;
+    color:white;
+    padding:0 5px;
+}
+a.import-title:hover,
+a.import-title:focus{
+    cursor:pointer;
+    text-decoration:none;
+    color:white;
+}
+a.import-title b.caret{
+    transition:transform 0.3s ease-in-out;
+}
+a.import-title.collapsed b.caret{
+    transform:rotate(-90deg);
+}

@@ -1,0 +1,360 @@
+{% extends '@IrsteaBdohConsult/layout.html.twig' %}
+{% import '@IrsteaBdohConsult/macros.html.twig' as macros %}
+{% import 'macros.html.twig' as app_macros %}
+{% from '@IrsteaBdohConsult/macros.html.twig' import advancedSearch_link%}
+{% from 'macros.html.twig' import i18nEntityLabel %}
+
+
+
+{% block javascripts %}
+    {{ parent() }}
+    <script src="{{ asset('assets/consult/station.js') }}"></script>
+{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <link rel="stylesheet" href="{{ asset('assets/consult/station.css') }}"/>
+{% endblock %}
+
+{# Build the families / types / times series boxes #}
+{% macro familyTreeDataset(familyTable, families, chroniquesByParam, dates) %}
+    {% import _self as self %}
+    {% for family in families %}
+        <div class="panel panel-default panel-famille">
+            {% set idGroupFamille = 'famille-' ~ family %}
+            {# Family Header #}
+            <div class="panel-heading">
+                <a class="dropdown-toggle collapse-title" data-toggle="collapse" href="#{{ idGroupFamille }}">
+                    <h3 class="panel-title">
+                        <b class="caret"></b>
+                        <i class="fam-bricks"></i>
+                        {{ familyTable[family]['nom'] }}
+                    </h3>
+                </a>
+            </div>
+            {# Family content (sub-family and/or types) #}
+            <div id="{{ idGroupFamille }}" class="panel-collapse collapse in">
+                <div class="panel-body">
+                    {{ self.familyTreeDataset(familyTable, familyTable[family]['children'], chroniquesByParam, dates) }}
+                    {% for parameter in familyTable[family]['types'] %}
+                        {% set chroniques = chroniquesByParam[parameter] %}
+                        <div class="panel panel-default panel-param">
+                            {% set idGroup = 'param-' ~ family ~ '-' ~ loop.index %}
+                            {# Type Header #}
+                            <div class="panel-heading">
+                                <a class="dropdown-toggle collapse-title" data-toggle="collapse" href="#{{ idGroup }}">
+                                    <h3 class="panel-title">
+                                        <b class="caret"></b>
+                                        <i class="fam-brick"></i>
+                                        {{ parameter }}
+                                        <small> &nbsp;&nbsp;&#8210;&nbsp;&nbsp; {{ chroniques|length }} {{ 'chronique(s)'|transchoice(chroniques|length)|lower }}</small>
+                                    </h3>
+                                </a>
+                            </div>
+                            {# 'Chroniques' list for the current 'TypeParametre' #}
+                            <div id="{{ idGroup }}" class="panel-collapse collapse in">
+                                <div class="panel-body">
+                                    {% for chronique in chroniques %}
+                                        <div class="{{ loop.index0 is even ? 'even' : 'odd' }}">
+                                            {% include '@IrsteaBdohConsult/Dataset/_chronique-inList.html.twig'
+                                                with {'dates': dates[chronique.id] | default('')} %}
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+{% endmacro %}
+
+{% import _self as selfmacros %}
+
+{% block breadcrumb %}
+    <ul class="breadcrumb">
+        {# Home #}
+        <li><a href="{{ path('bdoh_home') }}">{{ 'home'|trans }}</a></li>
+        {# Advanced search #}
+        <li><a href="{{ path('bdoh_consult_advancedSearch') }}">{{ 'advancedSearch'|trans }}</a></li>
+        {# Station #}
+        <li class="active">{{ dataset.titre }}</li>
+    </ul>
+{% endblock %}
+
+{% block title %}
+    {{ app_macros.pageTitle(('dataset'|trans)~' '~('open_quote'|trans)~dataset.titre~('close_quote'|trans)) }}
+{% endblock %}
+
+{% block main %}
+    <div id="consult-dataset">
+
+        <!-- One "Terms of Uses" modal for all export modal -->
+        {% include '@IrsteaBdohConsult/Modal/terms-of-uses.html.twig' %}
+
+        <!-- 'Help' window for time series export -->
+        {% include '@IrsteaBdohConsult/Chronique/_export-help.html.twig' %}
+
+        <!-- Toolbox for 'station' -->
+        <div class="toolbox-btns pull-right">
+            {% if is_granted('EDIT', dataset) %}
+                {{ macros.dataset_edit(dataset) }}
+            {% endif %}
+
+            {# désactivation de l'export de chroniques au niveau de la station pour la première mise en prod TODO #}
+            {% if false and datasetFirstDate and datasetLastDate and is_granted('DOWNLOAD', dataset) %}
+                {{ macros.chroniques_export(chroniquesHavingMeasures, datasetFirstDate, datasetLastDate, null, null, null, false, 'both') }}
+            {% endif %}
+        </div>
+        {% from 'macros.html.twig' import i18nEntityLabel %}
+        <!-- Title -->
+        <h1>{{ 'dataSet' | trans }} <em>{{ 'open_quote'|trans }}{{ i18nEntityLabel(dataset, 'titre', 'noDescription') }}{{ 'close_quote'|trans }}</em></h1>
+
+        <!-- First section : identification / map -->
+        <div class="row">
+
+            <div class="col-md-12">
+                <div class="panel panel-default">
+                    <div class="panel-heading">
+                        <h3 class="panel-title"><i class="fam-information"></i> {{ 'info'|trans }}
+                        </h3>
+                    </div>
+                    <div class="panel-body" id="identification">
+
+                        <div class="row">
+
+                            <div class="col-sm-24">
+
+                                <!-- Titre -->
+                                <div class="row">
+                                    <div class="info-high col-sm-12">{{ 'titre'|trans }}{{ 'deux_points'|trans }}</div>
+                                    <div class="span col-sm-12">{{ i18nEntityLabel(dataset, 'titre', 'noDescription') }}</div>
+                                </div>
+
+                                <!-- Description -->
+                                <div class="row">
+                                    <div class="info-high col-sm-12">{{ 'description'|trans }}{{ 'deux_points'|trans }}</div>
+                                    <div class="span col-sm-12">{{ i18nEntityLabel(dataset, 'description', 'noDescription') }}</div>
+                                </div>
+
+                                <!-- Généalogie -->
+                                <div class="row">
+                                    <div class="info-high col-sm-12">{{ 'genealogie'|trans }}{{ 'deux_points'|trans }}</div>
+                                    <div class="span col-sm-12">{{ i18nEntityLabel(dataset, 'genealogie', 'noDescription') }}</div>
+                                </div>
+
+                                <!-- DataCOnstraints -->
+                                <div class="row">
+                                    <div class="info-high col-sm-12">{{ 'dataConstraint'|trans }}{{ 'deux_points'|trans }}</div>
+                                    <div class="span col-sm-12">{{ dataset.dataConstraint }}</div>
+                                </div>
+
+                                <!-- doi  -->
+                                <div class="row">
+                                    <div class="info-high col-sm-12">{{ 'doi'|trans }}{{ 'deux_points'|trans }}</div>
+                                    <div class="span col-sm-12">{{ dataset.doi | default('none'|trans) }}</div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="info-high col-sm-12">{{ 'stations'|trans }}{{ 'deux_points'|trans }}</div>
+                                    <div class="span col-sm-12">
+                                        <ul>
+                                            {% set newArray = [] %}
+                                            {% for chroniques in dataset.chroniques %}
+                                                {% if chroniques.station not in newArray %}
+                                                <li>
+                                                    {{ macros.station_view(chroniques.station, chroniques.station.nom, 'text') }}
+                                                </li>
+
+                                                    {% set newArray = newArray|merge([chroniques.station]) %}
+                                                {% endif %}
+                                            {% endfor %}
+                                        </ul>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="info-high col-sm-12">{{ 'SiteExperimental'|trans({}, 'entitiesPlurals') }}{{ 'deux_points'|trans }}</div>
+                                    <div class="span col-sm-12">
+                                        <ul>
+                                            {% set newArray = [] %}
+                                            {% for chroniques in dataset.chroniques %}
+                                                {% for sites in chroniques.station.sites %}
+                                                    {% if sites not in newArray %}
+                                            <li><strong>{{ macros.advancedSearch_link('site', sites.nom) }}</strong> {{ 'deux_points'|trans }} {{ sites.description }}</li>
+
+
+                                                        {% set newArray = newArray|merge([sites]) %}
+                                                    {% endif %}
+                                                {% endfor %}
+
+                                            {% endfor %}
+                                        </ul>
+                                    </div>
+                                </div>
+
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- END_Identification box -->
+            <div class="col-md-12">
+                <div class="panel panel-default">
+                    <div class="panel-heading">
+                        <h3 class="panel-title"><i class="fam-user-green"></i> {{ 'contact'|trans }}</h3>
+                    </div>
+                    <div class="panel-body" id="comment">
+                        <!-- principalInvestigator -->
+                        <div class="row">
+                            <div class="info-high col-sm-12">{{ 'principalInvestigators'|trans }}{{ 'deux_points'|trans }}</div>
+                            <div class="span col-sm-12">
+                                <ul>
+                                    {% for principalInvestigator in dataset.principalInvestigators %}
+                                        <li><strong>{{ principalInvestigator }}</strong></li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        </div>
+                        <!-- dataManager -->
+                        <div class="row">
+                            <div class="info-high col-sm-12">{{ 'dataManagers'|trans }}{{ 'deux_points'|trans }}</div>
+                            <div class="span col-sm-12">
+                                <ul>
+                                    {% if dataset.dataManagers is empty %}
+                                        {{ 'none'|trans }}
+                                    {% else %}
+                                        {% for dataManager in dataset.dataManagers %}
+                                            <li>{{ dataManager }} </li>
+                                        {% endfor %}
+                                    {% endif %}
+                                </ul>
+                            </div>
+                        </div>
+                        <!-- projectMember -->
+                        <div class="row">
+                            <div class="info-high col-sm-12">{{ 'projectMembers'|trans }}{{ 'deux_points'|trans }}</div>
+                            <div class="span col-sm-12">
+                                <ul>
+                                    {% if dataset.projectMembers is empty %}
+                                        {{ 'none'|trans }}
+                                    {% else %}
+                                        {% for projectMember in dataset.projectMembers %}
+                                            <li>{{ projectMember }} </li>
+                                        {% endfor %}
+                                    {% endif %}
+                                </ul>
+                            </div>
+                        </div>
+                        <!-- dataCollector -->
+                        <div class="row">
+                            <div class="info-high col-sm-12">{{ 'dataCollectors'|trans }}{{ 'deux_points'|trans }}</div>
+                            <div class="span col-sm-12">
+                                <ul>
+                                    {% if dataset.dataCollectors is empty %}
+                                        {{ 'none'|trans }}
+                                    {% else %}
+                                        {% for dataCollector in dataset.dataCollectors %}
+                                            <li>{{ dataCollector }} </li>
+                                        {% endfor %}
+                                    {% endif %}
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="panel-heading">
+                        <h3 class="panel-title"><i class="fam-book-open"></i> {{ 'keywords'|trans }}</h3>
+                    </div>
+                    <div class="panel-body" id="comment">
+                        <!-- portailSearchCriteriaGeology -->
+                        <div class="row">
+                            <div class="info-high col-sm-12">{{ 'portailSearchCriteriaGeology'|trans }}{{ 'deux_points'|trans }}</div>
+                            <div class="span col-sm-12">
+                                <ul>
+                                    {% for portailSearchCriteriaGeology in dataset.portailSearchCriteriaGeology %}
+                                        <li>{{ portailSearchCriteriaGeology }} </li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        </div>
+
+                        <!-- portailSearchCriteriaClimat -->
+                        <div class="row">
+                            <div class="info-high col-sm-12">{{ 'portailSearchCriteriaClimat'|trans }}{{ 'deux_points'|trans }}</div>
+                            <div class="span col-sm-12">
+                                <ul>
+                                    {% for portailSearchCriteriaClimat in dataset.portailSearchCriteriaClimat %}
+                                        <li>{{ portailSearchCriteriaClimat }} </li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        </div>
+
+                        <!-- themeInpire  -->
+                        <div class="row">
+                            <div class="info-high col-sm-12">{{ 'inspireTheme'|trans }}{{ 'deux_points'|trans }}</div>
+                            <div class="span col-sm-12">
+                                <ul>
+                                    <li>{{ dataset.inspireTheme | default('none'|trans) }}</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <!-- topicCat  -->
+                        <div class="row">
+                            <div class="info-high col-sm-12">{{ 'topicCategories'|trans }}{{ 'deux_points'|trans }}</div>
+                            <div class="span col-sm-12">
+                                <ul>
+                                    {% for topicCat in dataset.topicCategories %}
+                                        <li>{{ topicCat }} </li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+        <!-- END_First section : identification / map -->
+
+        <!-- 'Chroniques' list -->
+        {# les types sans famille pour la transition vers les familles de paramètres #}
+        {% for parameter, chroniques in chroniquesByParam %}
+            {% if parameter in typesWithoutFamily %}
+                <div class="panel panel-default panel-param">
+                    {% set idGroup = 'param-0-' ~ loop.index %}
+                    {# Type Header #}
+                    <div class="panel-heading">
+                        <a class="dropdown-toggle collapse-title" data-toggle="collapse" href="#{{ idGroup }}">
+                            <h3 class="panel-title">
+                                <b class="caret"></b>
+                                <i class="fam-brick"></i>
+                                {{ parameter }}
+                                <small> &nbsp;&nbsp;&#8210;&nbsp;&nbsp; {{ chroniques|length }} {{ 'chronique(s)'|transchoice(chroniques|length)|lower }}</small>
+                            </h3>
+                        </a>
+                    </div>
+                    {# 'Chroniques' list for the current 'TypeParametre' #}
+                    <div id="{{ idGroup }}" class="panel-collapse collapse in">
+                        <div class="panel-body">
+                            {% for chronique in chroniques %}
+                                <div class="{{ loop.index0 is even ? 'even' : 'odd' }}">
+                                    {% include '@IrsteaBdohConsult/Dataset/_chronique-inList.html.twig'
+                                        with {'dates': dates[chronique.id] | default('')} %}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        {% endfor %}
+        {# les types dans des familles #}
+        {{ selfmacros.familyTreeDataset(familyTable, rootFamilies, chroniquesByParam, dates) }}
+        <!-- END_'Chronique' list -->
+
+    </div>
+    <!-- END_consult-station -->
+{% endblock main %}

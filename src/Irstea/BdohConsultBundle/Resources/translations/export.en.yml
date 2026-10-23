@@ -1,0 +1,18 @@
+validation:
+    select-a-date: Please selact a date.
+    end-after-start: The end date must be posterior to the start date.
+    out-of-valid-range: The selected period is out of bounds.
+    invalid-time-step: This time step is out of bounds.
+    invalid-time-span: The time step is too with regard to the selected period.
+    check-term-of-uses: Please accept the terms of use before downloading.
+    select-a-chronique: Please select at least one time series.
+    start:
+        required: 'Please enter the start date.'
+        invalid: 'The start date is not valid.'
+        beforeMinDate: 'The start date is after the end date and/or after the end of the time series.'
+        afterMaxDate: 'The start date is before the begining of the time series.'
+    end:
+        required: 'Please enter the end date.'
+        invalid: 'The end date is not valid.'
+        beforeMinDate: 'The end date is after the end of the time series.'
+        afterMaxDate: 'The end date is before the start date and/or before the begining of the time series.'

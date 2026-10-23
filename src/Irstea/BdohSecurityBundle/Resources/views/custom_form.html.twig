@@ -1,0 +1,31 @@
+{% block captcha_widget %}
+    {% spaceless %}
+        {{ form_widget(form) }}
+    {% endspaceless %}
+{% endblock %}
+{% block captcha_row %}
+    {% spaceless %}
+        <div class="form-group{% if (not compound or force_error|default(false)) and not valid %} has-error{% endif %}">
+            {{ form_label(form, null, {'label_attr': {'class': 'custom-captcha-label-class'}}) }}
+            <div class="col-sm-4" style="text-align:center;">
+                <img src="{{ captcha_code }}" title="captcha" width="{{ captcha_width }}" height="{{ captcha_height }}" />
+            </div>
+            <div class="col-sm-14">
+                {{ form_widget(form) }}
+                {{ form_errors(form) }}
+            </div>
+        </div>
+    {% endspaceless %}
+{% endblock %}
+{# problème de traduction des erreurs d'où le redefinition de form_errors #}
+{% block form_errors -%}
+    {% if errors|length > 0 -%}
+        {% if form is not rootform %}<span class="help-block">{% else %}<div class="alert alert-danger">{% endif %}
+        <ul class="list-unstyled">
+        {%- for error in errors -%}
+            <li><span class="glyphicon glyphicon-exclamation-sign"></span> {{ error.message|trans }}</li>
+        {%- endfor -%}
+    </ul>
+        {% if form is not rootform %}</span>{% else %}</div>{% endif %}
+    {%- endif %}
+{%- endblock form_errors %}

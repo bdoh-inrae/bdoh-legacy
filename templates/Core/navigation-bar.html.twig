@@ -1,0 +1,25 @@
+{#-- Navigation bar
+================================================== -#}
+<nav id="navbar" class="navbar navbar-default">
+    {#-- Links
+    ================================================== -#}
+    <ul class="nav navbar-nav">
+        {% if currentObservatoire() %}
+            <li><a href="{{ path('bdoh_home') }}">{{ currentObservatoire().nom }}</a></li>
+            {% if currentObservatoire().hasChronique() %}
+                <li class="divider"></li>
+                <li><a href="{{ path('bdoh_consult_advancedSearch') }}">{{ 'dataAccess'|trans }}</a></li>
+            {% endif %}
+        {% endif %}
+    </ul>
+
+    {#-- Contact and language(later) links  -#}
+    <ul class="nav navbar-nav navbar-right">
+        {% if currentObservatoire() %}
+            <li><a href="{{ path('bdoh_consult_contact') }}"><small>{{ 'contactHelp'|trans }}</small></a></li>
+            <li class="divider"></li>
+        {% endif %}
+        {% include "@IrsteaBdohInternationalisation/select-lang.html.twig" %}
+    </ul>
+</nav>
+{#-- END_Navigation bar -#}

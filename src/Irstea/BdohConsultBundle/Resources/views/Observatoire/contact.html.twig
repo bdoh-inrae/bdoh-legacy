@@ -1,0 +1,39 @@
+{% extends '@IrsteaBdohConsult/layout.html.twig' %}
+
+{% from 'macros.html.twig' import pageTitle %}
+
+{% block title %}
+    {{ pageTitle('contactHelp'|trans) }}
+{% endblock %}
+
+{% block breadcrumb %}
+    <ul class="breadcrumb">
+        <li><a href="{{ path('bdoh_home') }}">{{ 'home'|trans }}</a></li>
+        <li class="active">{{ 'contactHelp'|trans }}</li>
+    </ul>
+{% endblock %}
+
+{% block main %}
+    <div class="well">
+        <h2>{{ 'contactGestionnaire'|trans }}</h2>
+        <br/>
+        <table style="width:50%;margin:0 0 0 100px;">
+            {% for gestionnaire in dataToShow %}
+                <tr>
+                    <td>{{ gestionnaire['firstName'] }}</td>
+                    <td>{{ gestionnaire['lastName'] }}</td>
+                    <td>
+                        {%- if is_granted('ROLE_USER') -%}
+                            <a href="mailto:{{ gestionnaire['email'] }}">{{ gestionnaire['email'] }}</a>
+                        {%- endif -%}
+                    </td>
+                </tr>
+            {% endfor %}
+        </table>
+        <br/>
+    </div>
+    <div class="alert alert-info" style="margin-bottom:14px;">
+        <p>{{ 'userManual(%link%)'|trans({'%link%':path('bdoh_user_manual')})|raw }}</p>
+        <p>{{ 'technicalContact'|trans|raw }}</p>
+    </div>
+{% endblock main %}

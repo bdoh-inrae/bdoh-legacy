@@ -1,0 +1,179 @@
+{%- autoescape false -%}
+    {%- import _self as report_macros -%}
+    {# Attention, le placement des retours à la ligne et des indentations jouent énormément sur le résultat. #}
+{{- report_macros.header(format, date, begin, end, timezone) -}}
+    {%- if observatoire.dois.count > 0 %}
+
+
+
+{{ report_macros.doi(observatoire) -}}
+    {%- endif -%}
+    {%- for entry in chroniques -%}
+        {%- set chronique = entry.chronique -%}
+        {%- set report = entry.report %}
+
+
+
+{{ report_macros.chronique_header(chronique, chronique.calculee) -}}
+        {%- if report.error is defined %}
+
+
+    {{ report_macros.chronique_error(report.error) -}}
+        {%- else %}
+
+
+    {{ report_macros.chronique_report(chronique, report.number, report.first, report.last, report.filename, timezone) -}}
+            {%- if chronique.genealogie is not empty %}
+
+
+    {{ report_macros.genealogie(chronique.genealogie) -}}
+            {%- endif -%}
+            {%- if extractor != 'identical' %}
+
+
+    {{ report_macros.resample_info(extractor, timestep, report.count.measures + report.count.gaps) -}}
+            {%- endif -%}
+            {%- if chronique.calculee %}
+
+
+    {{ report_macros.transformations(chronique) -}}
+            {%- endif -%}
+        {%- endif -%}
+    {%- endfor -%}
+{%- endautoescape -%}
+
+{####################}
+
+{%- macro header(format, date, begin, end, timezone) -%}
+    {%- set date = date|date('transformation.bareme.dateBareme'|trans, false) -%}
+    {%- set begin = begin|date('transformation.bareme.dateBareme'|trans, false) -%}
+    {%- set end = end|date('transformation.bareme.dateBareme'|trans, false) -%}
+    {%- set timezone = 'UTC'|trans ~ timezone.name -%}
+    {%- set format = ('export.'~format|capitalize)|trans -%}
+    {%- trans -%}measure.export.report.headline.1(%format%, %date%){% endtrans %}
+
+{% trans %}measure.export.report.headline.2(%begin%, %end%){% endtrans %}
+
+{% trans %}measure.export.report.headline.3(%timezone%){%- endtrans -%}
+{%- endmacro -%}
+
+{####################}
+
+{%- macro doi(observatoire) -%}
+    {%- set dois = observatoire.dois -%}
+    {%- trans -%}measure.export.report.doi.header(%observatoire%){%- endtrans -%}
+    {%- for item in dois -%}
+        {%- set doi = item.identifiant -%}
+        {%- set description = item.description %}
+
+ - {% trans %}measure.export.report.doi.item(%doi%,%description%}{%- endtrans -%}
+    {%- endfor -%}
+{%- endmacro -%}
+
+{####################}
+
+{%- macro chronique_header(chronique, calculee) -%}
+    {%  if calculee -%}
+    {%- trans -%}measure.export.report.chroniqueCalculee(%chronique%){%- endtrans -%}
+    {%- else -%}
+    {%- trans -%}measure.export.report.chronique(%chronique%){%- endtrans -%}
+    {%- endif -%}
+{%- endmacro -%}
+
+{####################}
+
+{%- macro chronique_error(error) -%}
+{%- trans -%}measure.export.report.error{% endtrans %}
+
+    {{ error|raw -}}
+{%- endmacro -%}
+
+{####################}
+
+{%- macro chronique_report(chronique, number, first, last, file, timezone) -%}
+    {%- set first = first|date('transformation.bareme.dateBareme'|trans, timezone.name) ~ ' ' ~ 'UTC'|trans ~ timezone.name -%}
+    {%- set last = last|date('transformation.bareme.dateBareme'|trans, timezone.name) ~ ' ' ~ 'UTC'|trans ~ timezone.name -%}
+    {%- transchoice number %}measure.export.report.measures(%number%,%first%,%last%){%- endtranschoice -%}
+    {%- if number > 0 %}
+
+
+    {% trans %}measure.export.report.file(%file%){%- endtrans -%}
+    {%- endif -%}
+{%- endmacro -%}
+
+{####################}
+
+{%- macro genealogie(genealogie) -%}
+    {%- trans -%}genealogie{% endtrans %}
+
+        {{ genealogie|replace({'\n': '\n        '}) -}}
+{%- endmacro -%}
+
+{####################}
+
+{%- macro resample_info(extractor, timestep, count) -%}
+    {%- set type = ('measure.export.report.resampled.types.' ~ extractor)|trans -%}
+{%- trans -%}measure.export.report.resampled.header{% endtrans %}
+
+        {% trans %}measure.export.report.resampled.type(%type%){% endtrans %}
+
+        {% trans %}measure.export.report.resampled.timestep{%- endtrans -%}
+    {%- if extractor == 'instantaneous' %}
+ {% transchoice timestep -%}measure.export.report.resampled.timestep-var(%timestep%){%- endtranschoice -%}
+    {%- else %}
+ {{ timestep -}}
+{%- endif %}
+
+        {% transchoice count -%}measure.export.report.resampled.count(%count%){%- endtranschoice -%}
+{%- endmacro -%}
+
+{####################}
+
+{%- macro transformations(chronique) -%}
+    {%- import _self as report_macros -%}
+    {%- if chronique.secondeEntree is not empty -%}
+        {{- report_macros.transformation('first', chronique.premiereEntree) }}
+
+    {{ report_macros.transformation('second', chronique.secondeEntree) -}}
+    {%- else -%}
+        {{- report_macros.transformation('unique', chronique.premiereEntree) }}
+    {%- endif -%}
+{%- endmacro -%}
+
+{####################}
+
+{%- macro transformation(libelle, transfo) -%}
+    {%- set chronique = transfo.entree -%}
+    {%- set jeuBareme = transfo.jeuBaremeActuel -%}
+    {{- ('measure.export.report.calculated.input.' ~ libelle ~ '(%chronique%)') | trans({'%chronique%': chronique})|raw -}}
+    {%- set limitPolicy = jeuBareme.valueLimitTransformationType | default(null) -%}
+    {%- if limitPolicy is not empty %}
+
+        {% trans with { '%limitPolicy%': ('measure.export.report.' ~ limitPolicy) | trans } %}measure.export.report.calculated.limit_policy(%limitPolicy%){%- endtrans -%}
+        {%- if limitPolicy == constant('LQ_LD_PLACEHOLDER', jeuBareme) -%} {{ jeuBareme.valueLimitPlaceholder }}{%- endif -%}
+    {%- endif -%}
+
+    {%- for bjb in jeuBareme.baremeJeuBaremes -%}
+        {%- set bareme = bjb.bareme -%}
+        {%- set dateDebut = bjb.debutValidite|date('transformation.bareme.dateBareme'|trans, false) -%}
+        {%- if bareme.observatoire is not empty -%}
+            {%- set nom = bareme.nom -%}
+            {%- set dateCreation = bareme.dateCreation|date('transformation.bareme.dateBareme'|trans, false) -%}
+        {%- else -%}
+            {%- set nom = ('transformation.bareme.baremeTechnique.' ~ bareme.nom) | trans -%}
+            {%- set dateCreation = null -%}
+        {%- endif %}
+
+        {% trans with {'%bareme%': nom} %}measure.export.report.calculated.bareme.header(%bareme%){%- endtrans -%}
+        {%- if dateCreation is not empty -%}
+            {%- trans -%}measure.export.report.calculated.bareme.created(%dateCreation%){%- endtrans -%}
+        {%- endif -%}
+            {%- trans -%}measure.export.report.calculated.bareme.applied{%- endtrans -%}
+        {%- if bjb.finValidite is not empty -%}
+            {%- set dateFin = bjb.finValidite|date('transformation.bareme.dateBareme'|trans, false) -%}
+            {%- trans -%}measure.export.report.calculated.bareme.range(%dateDebut%,%dateFin%){%- endtrans -%}
+        {%- else -%}
+            {%- trans -%}measure.export.report.calculated.bareme.from(%dateDebut%){%- endtrans -%}
+        {%- endif -%}
+    {%- endfor -%}
+{%- endmacro -%}

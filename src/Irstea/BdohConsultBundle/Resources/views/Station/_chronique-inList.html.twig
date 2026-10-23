@@ -1,0 +1,104 @@
+{% import 'macros.html.twig' as app_macros %}
+{% import '@IrsteaBdohConsult/macros.html.twig' as macros %}
+
+<div class="row">
+    {# Toolbox #}
+    <div class="toolbox-btns pull-right">
+        {# 'Chronique' is visible ? #}
+        <span class="isvisible">{{ macros.chronique_isVisible(chronique) }}</span>
+        {% if is_granted('CONSULT_TIMESERIES', chronique) %}
+            {{ macros.chronique_view(chronique) }}
+        {% endif %}
+
+        {% if is_granted('EDIT', chronique) %}
+            {{ macros.chronique_edit(chronique) }}
+        {% endif %}
+
+        {# désactivation de l'export de chroniques au niveau de la station pour la première mise en prod TODO #}
+        {% if false and dates.first is defined and dates.last is defined %}
+            {% if is_granted('DOWNLOAD', chronique) %}
+                {{ macros.chroniques_export([chronique], dates.first, dates.last) }}
+            {% endif %}
+        {% endif %}
+    </div>
+
+    {# 'Chronique' description #}
+    <h3>
+        {{ chronique.code }}{{ 'deux_points'|trans }} {{ app_macros.i18nEntityLabel(chronique, 'libelle') }}
+    </h3>
+</div>
+
+
+{# Various information #}
+<div class="row">
+    <div class="col-sm-6">
+        {# Unité #}
+        <div>
+            <div class="col-md-8">{{ 'unite'|trans }}{{ 'deux_points'|trans }}</div>
+            <div class="col-md-16 info-high">{{ chronique.unite.libelle | default('') }}</div>
+        </div>
+
+        {# Type of 'chronique' #}
+        <div>
+            <div class="col-md-8">{{ 'type'|trans }}{{ 'deux_points'|trans }}</div>
+            <div class="col-md-16 info-high">{{ ('type.' ~ chronique.dtype)|trans }}</div>
+        </div>
+    </div>
+
+    <div class="col-sm-6">
+        {# First date #}
+        <div>
+            <div class="col-md-8">{{ 'begin'|trans }}{{ 'deux_points'|trans }}</div>
+            <div class="col-md-16 info-high">
+                {% if dates.first is defined %}
+                    {{ dates.first|date('transformation.bareme.dateBareme'|trans, false) }} <sup>{{ 'UTC'|trans }}</sup>
+                {% else %}
+                    {{ 'none'|trans }}
+                {% endif %}
+            </div>
+        </div>
+
+        {# Last date #}
+        <div>
+            <div class="col-md-8">{{ 'end'|trans }}{{ 'deux_points'|trans }}</div>
+            <div class="col-md-16 info-high">
+                {% if dates.last is defined %}
+                    {{ dates.last|date('transformation.bareme.dateBareme'|trans, false) }} <sup>{{ 'UTC'|trans }}</sup>
+                {% else %}
+                    {{ 'none'|trans }}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    {% if is_granted('ROLE_ADMIN') %}
+        <div class="col-sm-6">
+            {# Minimum valide #}
+            <div>
+                <div class="col-md-12">{{ 'minimumValide'|trans }}{{ 'deux_points'|trans }}</div>
+                <div class="col-md-12 info-high">{{ chronique.minimumValide | default('none'|trans) }}</div>
+            </div>
+
+            {# Maximum valide #}
+            <div>
+                <div class="col-md-12">{{ 'maximumValide'|trans }}{{ 'deux_points'|trans }}</div>
+                <div class="col-md-12 info-high">{{ chronique.maximumValide | default('none'|trans) }}</div>
+            </div>
+        </div>
+    {% endif %}
+
+    <div class="col-sm-6">
+        {# Producteur #}
+        <div>
+            <div class="col-md-16">{{ 'producteur'|trans }}{{ 'deux_points'|trans }}</div>
+            <div class="col-md-16 info-high">
+                {% if chronique.producteur.nom is defined %}
+                    {{ macros.advancedSearch_link('producteur', chronique.producteur.nom) }}
+                {% else %}
+                    {{ 'none'|trans }}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{# END_Various information #}

@@ -1,0 +1,62 @@
+site: Site
+station: Station
+select-station-to-see-chronicles: Veuillez sélectionner une station pour voir la liste des chroniques disponibles.
+select-and-drag-chronicles: |
+    Pour ajouter des chroniques à afficher, sélectionnez-les dans la liste de gauche et glissez-les vers celle de droite.
+click-cross-remove-chronicle: Pour retirer une chronique, cliquez sur la croix correspondante dans la liste de droite.
+chronicles-must-be-compatible: |
+    Attention : l'axe ne peut comporter que des chroniques de même unité physique et s'affichant avec
+    la même orientation de l'axe Y.
+available-chronicles: Chroniques disponibles
+selected-chronicles: Chroniques sélectionnées
+select-at-least-one-chronicle: Veuillez sélectionner au moins une chronique
+chart-loading: Chargement en cours...
+chronicle: Chronique
+left-axis: Axe de gauche
+right-axis: Axe de droite
+edit-selection: Choisir les chroniques
+closeThisPane: Fermer ce panneau
+time-series-hidden-at-date-range: |
+    Les chroniques suivantes ne sont plus affichées car elles ne contienne
+    pas de mesures dans la plage de temps nouvellement sélectionnée :
+time-series-has-no-measure: |
+    Cette chronique ne peut être affichée car elle
+    ne contient aucune mesure dans la plage de temps sélectionnée.
+toggle-checkpoints: Afficher/masquer les points de contrôle
+graph:
+    state:
+        processing: Rafraîchissement en cours...
+        empty: Veuillez sélectionner une ou plusieurs chroniques.
+        all-hidden: Toutes les chroniques sont cachées.
+        no-measures: Aucune mesure sur la période sélectionnée.
+        error: "Erreur : %message%"
+selector:
+    graph: Graphe
+    chroniques:
+        emptySelection: Veuillez sélectionner une station.
+        noChronicles: Ces stations n'ont pas de chroniques.
+        noMoreChronicles: Aucune chronique ne contient de mesures sur l'intervalle de temps sélectionné.
+        noCompatibleChronicles: Aucune autre chronique à afficher sur le même axe.
+consult.help.range:
+    too-small: Veuillez sélectionnez un intervalle d'un jour minimum.
+    too-big: Veuillez sélectionnez un intervalle de moins de 5 ans.
+subsampledInfo(%num%): >+
+    En raison du nombre élevé de mesures non lacunaires (%num%), la chronique a été sous-échantillonnée.
+    Veuillez sélectionner un intervalle de temps plus court pour éviter un sous-échantillonnage.
+subsampledInfoHelp(%num%): >+
+    En raison du nombre élevé de mesures non lacunaires (<span class="subsampledHelp">%num%</span>), la chronique a été sous-échantillonnée.
+    Veuillez sélectionner un intervalle de temps plus court pour éviter un sous-échantillonnage.
+subsampledHelp: >+
+    La limite de sous échantillonnage est de 50 000 points pour une représentation instantanée et de 25 000 points pour une représentation en moyennes.
+chroniqueTitle(%station%, %typeParam%): >+
+    Station : %station%<br/>Paramètre : %typeParam%
+hideDisplayButton: Afficher/masquer la chronique
+histogramTimeStepsIs(%ts%): Etant donnée la longueur de la plage<br>de temps sélectionnée, le pas de temps<br>de l'histogramme est de %ts%.
+timeSeriesNoMeasures: Cette chronique n'a pas de mesure<br>sur la période sélectionnée.
+titleDataType:
+    discontinuous:
+    instantaneous: Données de type instantané.
+    meanPast: Données de type moyenne sur pas de temps précédent.
+    meanNext: Données de type moyenne sur pas de temps suivant.
+    cumulativePast: Données de type cumul sur pas de temps précédent.
+    cumulativeNext: Données de type cumul sur pas de temps suivant.

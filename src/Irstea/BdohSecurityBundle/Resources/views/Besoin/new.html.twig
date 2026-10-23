@@ -1,0 +1,93 @@
+{% extends '@IrsteaBdohSecurity/layout.html.twig' %}
+{% from 'macros.html.twig' import submit, cancelForm, pageTitle %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <style type="text/css">
+        div#security-besoin-new div.row div.col-md-12 .form-group label.control-label{
+            width:25%;
+        }
+        div#security-besoin-new div.row div.col-md-12 .form-group label.control-label + div{
+            width:75%;
+        }
+        div#security-besoin-new div.row .form-group label.control-label{
+            width:20%;
+        }
+        div#security-besoin-new div.row .form-group label.control-label + div{
+            width:80%;
+        }
+    </style>
+{% endblock %}
+
+{% block title %}
+    {{ pageTitle('security.besoin.create.title'|trans) }}
+{% endblock %}
+
+{% block breadcrumb %}
+    <ul class="breadcrumb">
+        {# Home #}
+        <li><a href="{{ path('bdoh_home') }}">{{ 'home'|trans }}</a></li>
+        {# Ask an access #}
+        <li class="active">{{ 'askDataAccess'|trans }}</li>
+    </ul>
+{% endblock %}
+
+
+{% block main %}
+    <div id="security-besoin-new">
+
+        <h1>{{ 'security.besoin.create.title' | trans }}</h1>
+
+
+        <div class="alert alert-info">
+            <h4 class="alert-heading">{{ 'information'|trans }}{{ 'deux_points'|trans }}</h4>
+            <ul>
+                <li>{{ 'security.besoin.scope(%observatoire%)' | trans({ '%observatoire%': currentObservatoire().nom }) | raw }}</li>
+            </ul>
+        </div>
+
+
+        <form action="{{ path('bdoh_security_besoin_new') }}" method="post"
+              class="form-horizontal" {{ form_enctype(form) }}>
+
+            <div class="alert alert-warning">
+                <div class="row">
+                    <div class="col-md-12">{{ form_row(form.parametres) }}</div>
+                    <div class="col-md-12">{{ form_row(form.stations) }}</div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-12">{{ form_row(form.objectif) }}</div>
+                    <div class="col-md-12">{{ form_row(form.type) }}</div>
+                </div>
+
+                <div class="row besoin-duree">
+                    <div class="span">{{ form_row(form.duree) }}</div>
+                </div>
+
+                <div class="row besoin-infos">
+                    <div class="span">{{ form_row(form.details) }}</div>
+                </div>
+
+                {{ form_rest(form) }}
+
+                <!-- Link which triggers the modal for Terms of Uses -->
+                <div class="row">
+                    <div class="pull-right">
+                        <input id="checkboxbesoinid" type="checkbox" name="termsOfUses" required="required" style="vertical-align:-3px;">
+                        <label for="checkboxbesoinid">
+                            {{ 'IAgreeWith'|trans }}
+                            <a href="{{ path('bdoh_data_observatoire_conditions_export') }}">{{ 'TermsOfUses(the)'|trans }}</a>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div style="display:flex;margin-bottom:10px;">
+                <div>{{ submit('security.besoin.create.submit'|trans, 'btn btn-success') }}</div>
+                <div style="margin-left:15px;">{{ cancelForm('bdoh_home') }}</div>
+            </div>
+        </form>
+
+
+    </div>
+{% endblock main %}

@@ -1,0 +1,66 @@
+{% extends 'layout.html.twig' %}
+{% import '@IrsteaBdohData/Job/macros.html.twig' as Job %}
+{% from 'macros.html.twig' import pageTitle %}
+
+{% block title %}
+    {{ pageTitle('job.title.list'|trans) }}
+{% endblock %}
+
+{% block breadcrumb %}
+    <ul class="breadcrumb">
+        <li><a href="{{ path('bdoh_home') }}">{% trans %}home{% endtrans %}</a></li>
+        <li class="active">{% trans %}job.title.list{% endtrans %}</li>
+    </ul>
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script src="{{ asset('assets/data/job/all.js') }}"></script>
+{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <link rel="stylesheet" href="{{ asset('assets/data/job/all.css') }}"/>
+    <style type="text/css">
+        button.btn-refresh-page{
+            margin:-7.5px -7.5px 0 0;
+            background-image:initial;
+        }
+    </style>
+{% endblock %}
+
+{% block main %}
+    <div class="alert alert-info">
+        {{ 'job.refreshInfo'|trans }}
+        <button class="btn btn-info pull-right btn-refresh-page" onclick="window.location.reload(true);">
+            {{ 'job.refreshPage'|trans }}
+        </button>
+    </div>
+    <h1>{% trans %}job.title.list{% endtrans %}</h1>
+    <table id="jobs" class="table">
+        <thead>
+        <tr>
+            <th>{% trans %}job.id{% endtrans %}</th>
+            <th>{% trans %}job.description{% endtrans %}</th>
+            <th>{% trans %}job.observatoire{% endtrans %}</th>
+            <th>{% trans %}job.chronicles{% endtrans %}</th>
+            <th>{% trans %}job.created_at{% endtrans %} [{{ 'UTC'|trans }}]</th>
+            <th>{% trans %}job.owner{% endtrans %}</th>
+            <th class="text-right">{% trans %}job.state{% endtrans %}</th>
+        </tr>
+        </thead>
+        <tbody>
+        {%- for job in jobs %}
+            <tr>
+                <td data-order="{{ job.entity.id }}" data-search="{{ job.entity.id }}">{{ Job.id(job) }}</td>
+                <td>{{ Job.describe(job.entity) }}</td>
+                <td>{{ Job.observatory(job) }}</td>
+                <td>{{ Job.chronicles(job) }}</td>
+                <td data-order="{{ job.entity.createdAt.timestamp }}">{{ Job.created_at(job.entity) }}</td>
+                <td>{{ job.owner }}</td>
+                <td class="text-right">{{ Job.state(job) }}</td>
+            </tr>
+        {%- endfor %}
+        </tbody>
+    </table>
+{% endblock main %}

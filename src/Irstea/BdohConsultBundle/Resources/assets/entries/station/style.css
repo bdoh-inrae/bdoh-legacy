@@ -1,0 +1,88 @@
+#consult-station div.panel-body#identification{
+    margin-bottom:0;
+}
+div#identification div.info-high.col-sm-12 + div.span.col-sm-12{
+    padding-right:0;
+    margin-bottom:0.5em;
+}
+div#identification div.span.col-sm-12 ul{
+    margin-left:0;
+    margin-bottom:0;
+    padding-left:0;
+}
+div#identification div.span.col-sm-12 ul li{
+    list-style-position:inside;
+}
+div.panel-famille, div.panel-param {
+    margin-bottom:10px;
+}
+div.panel-param + div.panel-famille,
+div.panel-famille + div.panel-param,
+div.panel-famille + div.panel-famille {
+    margin-top:18px;
+}
+div.panel-famille > div > div.panel-body > div.panel-default:first-of-type {
+    margin-top:8px;
+}
+div.panel-famille > div > div.panel-body > div.panel-default:last-of-type{
+    margin-bottom:0;
+}
+a.collapse-title{
+    color:#444444;
+}
+a.collapse-title:hover,
+a.collapse-title:focus{
+    cursor:pointer;
+    text-decoration:none;
+    color:#444444;
+}
+a.collapse-title b.caret{
+    margin:0;
+    padding:0;
+    vertical-align:3px;
+    transition:transform 0.3s ease-in-out;
+}
+a.collapse-title.collapsed b.caret{
+    transform:rotate(-90deg);
+}
+a.collapse-title h3.panel-title small{
+    color:#777;
+}
+div.panel-collapse div.panel-body{
+    padding:10px;
+}
+div.panel-collapse div.panel-body div.even,
+div.panel-collapse div.panel-body div.odd{
+    margin:0 0 5px;
+    padding:0 5px 5px;
+}
+div.panel-collapse div.panel-body div.even:first-of-type{
+    margin-top:-5px;
+}
+div.panel-collapse div.panel-body div.even:last-of-type,
+div.panel-collapse div.panel-body div.odd:last-of-type{
+    margin-bottom:0;
+}
+div.panel-collapse div.panel-body div.odd{
+    background:#f0f0f0;
+}
+div.panel-collapse div.panel-body div.row{
+    margin:0;
+}
+div.panel-collapse div.panel-body div div.row div.toolbox-btns.pull-right{
+    background:transparent;
+    margin-top:5px;
+    margin-bottom:-5px;
+}
+div.panel-collapse div.panel-body div.row div.toolbox-btns span.isvisible{
+    display:inline-block;
+    padding:6px 0;
+    margin:0;
+    border:0;
+    font-size:11px;
+    line-height:1;
+    vertical-align:top;
+}
+h3.panel-title i[class^='fam-']{
+    vertical-align:text-top;
+}

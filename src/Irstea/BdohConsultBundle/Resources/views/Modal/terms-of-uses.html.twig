@@ -1,0 +1,28 @@
+{% from 'macros.html.twig' import submit %}
+
+<!-- The modal for Terms Of Uses -->
+<div class="modal hide fade" id="TermsOfUses" tabindex="-1" role="dialog" aria-hidden="true"
+     data-width="800px" data-max-height="500px">
+
+    <!-- Modal header -->
+    <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+        <h1>
+            {{ 'TermsOfUses'|trans }}<br/>
+            <small>{{ 'Observatoire'|trans }} {{ 'open_quote'|trans }}{{ currentObservatoire() }}{{ 'close_quote'|trans }}</small>
+        </h1>
+    </div>
+
+    <!-- Modal body -->
+    <div class="modal-body">
+        {{ currentObservatoire().conditionsUtilisation | default('TermsOfUses.none'|trans) | raw }}
+    </div>
+    <!-- END_Modal body -->
+
+    <!-- Modal footer -->
+    <div class="modal-footer">
+        <button type="button" class="btn" data-dismiss="modal" aria-hidden="true">{{ 'close'|trans }}</button>
+    </div>
+
+</div>
+<!-- END_The modal for Terms Of Uses -->

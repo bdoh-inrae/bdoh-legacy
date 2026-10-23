@@ -1,0 +1,82 @@
+
+.chart-state {
+    background: rgb(221, 221, 221);
+    border-radius: 6px;
+    position: relative;
+}
+
+.chart-state .chart-state-inner {
+    position: absolute;
+    width: 50%;
+    height: 4em;
+    margin: auto;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+}
+
+.chart-processing {
+    cursor: wait !important;
+}
+
+div#viewer .jqplot-axis,
+div#complex-viewer .jqplot-axis {
+    font-size: 0.95em;
+}
+
+div#viewer .jqplot-highlighter-tooltip,
+div#viewer .jqplot-canvasOverlay-tooltip,
+div#complex-viewer .jqplot-highlighter-tooltip,
+div#complex-viewer .jqplot-canvasOverlay-tooltip {
+    font-size: 0.95em;
+    white-space: pre;
+    background: rgba(255,255,212,1);
+    padding: 0 4px;
+}
+
+div#complex-viewer div.panels div[id^="chart"] {
+    margin: 0 auto;
+}
+div#complex-viewer div.panels div#chart1 {
+    background-color: rgba(255,255,0,0.2);
+    margin-top: -1px;
+}
+div#complex-viewer div.panel-container > div.panel.row:not(:first-of-type) {
+    margin-top: 10px;
+}
+div#complex-viewer div.panels > div.row.panel-buttons {
+    margin-top: 1em;
+}/*
+div#viewer span.tooltip_unite{
+    display: none;
+}*/
+div#viewer > fieldset,
+div#viewer > fieldset > div.alert-danger.feedback,
+div#complex-viewer > fieldset > div.alert-danger.feedback{
+    margin-bottom: 0;
+}
+/* gestion d'un bug sur la selection et le click sur les graphs dans chrome */
+/* potentiellement également présent sur les autres */
+div#viewer div.graph,
+div#complex-viewer div.graph{
+    -webkit-user-select:none;
+    -moz-user-select:none;
+    -ms-user-select:none;
+    user-select:none;
+}
+/* legende des graphes */
+div#complex-viewer div.graph table.jqplot-table-legend{
+    display:none;
+}
+div#viewer div.graph table.jqplot-table-legend{
+    margin:0;
+    border:0;
+    font-size: 0.95em;
+}
+div#viewer div.graph table.jqplot-table-legend td.jqplot-table-legend-label{
+    padding:5px 15px 5px 5px !important;
+}
+div#viewer div.graph table.jqplot-table-legend td.jqplot-table-legend-label:last-child{
+    padding-right:0 !important;
+}

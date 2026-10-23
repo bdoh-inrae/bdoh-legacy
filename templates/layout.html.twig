@@ -1,0 +1,78 @@
+{%- from 'macros.html.twig' import pageTitle, logoObservatoire %}
+
+<!DOCTYPE html>
+<html lang="{{ app.request.locale|split('_')[0] }}">
+<head>
+    {% block htmlmeta %}
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    {% endblock %}
+    <link rel="shortcut icon" href="{{ asset('favicon.ico') }}"/>
+    <title>{% block title %}{{ pageTitle() }}{% endblock title %}</title>
+
+    {#-- Common stylesheets #}
+    <link rel="stylesheet" href="{{ asset('assets/bdoh.css') }}" />
+
+    {#-- Additionnal stylesheets #}
+    {%- block stylesheets %}{% endblock stylesheets -%}
+
+    {#-- Customized theme stylesheets #}
+    <link rel="stylesheet" href="{{ asset(themeCssFile()) }}">
+</head>
+<body>
+<div id="page" class="container">
+
+    {#-- Header
+    ================================================== #}
+    <div id="header" class="row">
+        <div id="logo" class="col-md-3">{{ logoObservatoire(currentObservatoire()) }}</div>
+        <div id="header-bars" class="col-md-21">
+            {% include "Core/navigation-bar.html.twig" -%}
+            {% include "Core/user-bar.html.twig" -%}
+        </div>
+    </div>
+    {#-- END_Header --#}
+
+    {#-- Breadcrumb
+    ================================================== #}
+    {% block breadcrumb -%}
+    {% endblock breadcrumb -%}
+
+    {#-- Notice
+    ================================================== #}
+    <div id="notices" data-notices="{{ app.session.flashbag.all() | default([]) | json_encode | e('html_attr') }}"></div>
+
+    {#-- Main content
+    ================================================== #}
+    <div id="main" class="row">
+        {% block main -%}
+        {% endblock main -%}
+    </div>
+    {#-- END_Main content #}
+
+
+    {#-- Footer
+    ================================================== #}
+    <div id="footer">
+        {% include "Core/partenaires.html.twig" %}
+    </div>
+    {#-- END_Footer #}
+
+    {% include "Core/mentionLegale.html.twig" %}
+</div>
+
+{% block body_tail -%}
+{% endblock body_tail -%}
+
+{#-- Common javascript #}
+{% if app.debug %}
+    <script src="http://{{ app.request.host }}:35729/livereload.js"></script>
+{% endif %}
+<script src="{{ asset('assets/manifest.js') }}"></script>
+<script src="{{ asset('assets/vendor.js') }}"></script>
+<script src="{{ asset('assets/bdoh.js') }}"></script>
+<script src="{{ asset('assets/locales/' ~ (app.request.locale[:2]) ~ '.js') }}"></script>
+
+{#-- Additionnal javascript #}
+{%- block javascripts -%}{% endblock javascripts -%}
+</body>
+</html>

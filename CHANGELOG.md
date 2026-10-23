@@ -10,5 +10,7 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/). Numéros de v
 - Serveur de référence local, PostgreSQL 11 et PostGIS 2.5 comme la production, sur un réseau Docker interne (`make db`) ; base de travail réduite (`make db-small`).
 - Application de référence : l'ancien BDOH au commit en production, installé comme le faisait le déploiement, sur les bases anonymisées, avec sa file de tâches, sans accès à l'extérieur (`make reference-app`, `reference-start`, `reference-stop`). Pages en UTC et file de tâches en `Europe/Paris`, comme en production.
 - Outil de comparaison de deux BDOH (`dev/compare/compare.py`) : pages publiques et visualiseur par profil, exports en ligne de commande ; les cas sont tirés de la base par des règles, et les écarts écrits hors du dépôt.
+- Essai de PostgreSQL 17 et PostGIS 3.5 (Debian 13) avec l'ancien code : la base complète s'y restaure sans erreur et donne les mêmes comptes d'intégrité ; une fois corrigé `EXTRACT` (ci-dessous), les exports sont identiques à ceux de PostgreSQL 11, et les pages aussi, à l'ordre des listes sans tri et au seizième chiffre près.
+- Migrations du nouveau BDOH, à appliquer à la bascule : les compteurs d'identifiants en retard recalés, et `EXTRACT(EPOCH …)` ramené au type de PostgreSQL 11 dans les fonctions de calcul, sans quoi les exports en moyenne et en cumul échouent sous PostgreSQL 14 et plus.
 - Contrôles d'intégrité d'une base BDOH, qui ne sortent que des comptes (`make inspect`, `dev/reference/inspect.sql`).
 - Licence GNU AGPL v3.

@@ -1,0 +1,5 @@
+irstea_bdoh_internationalisation:
+    path:  /select_lang/{_locale}
+    defaults: { _controller: Irstea\BdohInternationalisationBundle\Controller\InternationalisationController::selectLangAction }
+    requirements:
+        _locale:  en|fr

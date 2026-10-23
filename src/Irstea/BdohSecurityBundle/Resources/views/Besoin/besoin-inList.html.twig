@@ -1,0 +1,63 @@
+{% from 'macros.html.twig' import i18nEntityLabel %}
+{% if besoins %}
+    {% for besoin in besoins %}
+        {% set nomBesoin=[nomBesoinMain,besoin.id]|join %}
+        <div class="row box">
+            <div class="col-md-14">
+                <div class="col-md-10">
+                    <b>{{ 'besoin.duree' | trans }}{{ 'deux_points'|trans }}</b>
+                </div>
+                <div class="col-md-14">
+                    {{ besoin.duree }}
+                </div>
+                <div class="col-md-10">
+                    <b>{{ 'besoin.objectif' | trans }}{{ 'deux_points'|trans }}</b>
+                </div>
+                <div class="col-md-14">
+                    {{ besoin.objectif }}
+                </div>
+                <div class="col-md-10">
+                    <b>{{ 'besoin.type' | trans }}{{ 'deux_points'|trans }}</b>
+                </div>
+                <div class="col-md-14">
+                    {{ besoin.type }}
+                </div>
+                <div class="col-md-24">
+                    <br/>
+                </div>
+                <div class="col-md-4">
+                    <b>{{ 'besoin.parametres' | trans }}{{ 'deux_points'|trans }}</b>
+                </div>
+                <div class="col-md-8">
+                    {%- for param in besoin.parametres -%}
+                        {{- i18nEntityLabel(param, 'nom', '') -}}
+                        {%- if not loop.last -%}<br/>{% endif -%}
+                    {%- endfor -%}
+                </div>
+                <div class="col-md-3">
+                    <b>{{ 'besoin.stations' | trans }}{{ 'deux_points'|trans }}</b>
+                </div>
+                <div class="col-md-9">
+                    {%- for station in besoin.stations -%}
+                        {{- station.nom -}}
+                        {%- if not loop.last -%}<br/>{% endif -%}
+                    {%- endfor -%}
+                </div>
+            </div>
+            <div class="col-md-10">
+                <div class="col-md-24"><b>{{ 'besoin.details' | trans }}{{ 'deux_points'|trans }}</b></div>
+                <div class="col-md-24"> {{ besoin.details }} </div>
+                {% if nomBesoinMain ==  'besoinATraiter' %}
+                    <div class="col-md-24">
+                        <br/>
+                    </div>
+                    <div class="col-md-24">{{ form_widget(attribute(form, nomBesoin)) }}</div>
+                {% endif %}
+            </div>
+        </div>
+    {% endfor %}
+{% else %}
+    <div class="row box">
+        <h2>{{ 'besoin.none'|trans }}</h2>
+    </div>
+{% endif %}

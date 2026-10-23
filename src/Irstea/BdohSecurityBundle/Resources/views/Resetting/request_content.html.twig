@@ -1,0 +1,11 @@
+<div class="well" style="margin-bottom:14px;">
+    <form action="{{ path('resetting_send_email') }}" method="POST" class="resetting_request">
+        <div class="form-group">
+            <label for="email">{{ 'resetting.request.email'|trans }}</label>
+            <input style="width:25%;" class="form-control" type="text" id="email" name="email" required="required"/>
+        </div>
+        <div>
+            <input class="btn btn-success" type="submit" value="{{ 'resetting.request.submit'|trans }}"/>
+        </div>
+    </form>
+</div>

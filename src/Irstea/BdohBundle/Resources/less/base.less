@@ -1,0 +1,357 @@
+// From bootstrap
+@import (reference) "bootstrap.less";
+@import "theme.less";
+
+// BDOH custom
+@import "bdoh-variables.less";
+@import "consult.less";
+@import "measure-import.less";
+
+/******************************************************************************
+ * Overloads of bootstrap CSS properties
+ */
+
+.sonata-bc h1 {
+    font-size: 24px;
+    line-height: 36px;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    margin-top: (@line-height-computed / 2);
+
+    small {
+        font-size: 85%;
+    }
+}
+
+.accordion {
+    h2, h3, h4 {
+        line-height: 0px;
+    }
+
+    .accordion-heading {
+        border: 1px solid @primaryColor;
+        background-color: @gray-lighter;
+    }
+
+    .accordion-inner {
+        .odd, .even {
+            margin-top: 0.5em;
+            padding: 0.5em;
+        }
+        .odd {
+            background-color: @gray-lighter;
+        }
+    }
+}
+
+a.accordion-toggle {
+    text-decoration: none;
+}
+
+.table .highlight {
+    background-color: @gray-lighter;
+}
+
+.controls-text {
+    padding-top: 5px;
+}
+
+.tooltip-inner {
+    max-width: none;
+}
+
+.collapse {
+    position: static;
+}
+
+/******************************************************************************
+ * Bootstrap Popovers
+ */
+div.popover {
+    min-width:150px;
+}
+
+h3.popover-title{
+    text-align:center;
+}
+
+/******************************************************************************
+ * Generics
+ */
+h1, .sonata-bc h1 {
+    color: @primaryColor;
+}
+
+.td-center {
+    padding: 0.5em;
+    text-align: center;
+    vertical-align: middle;
+}
+
+.info-high {
+    font-weight: bold;
+}
+
+.inactive {
+    color: #c5c5c5;
+}
+
+.inputs-list-inline li,
+.sonata-bc .inputs-list-inline li {
+    width: 150px;
+    float: left;
+}
+
+/******************************************************************************
+ * Toolbox
+ */
+.iconText {
+    & > * {
+        display: inline-block;
+        float: left;
+    }
+
+    & > .divider-vertical {
+        height: @line-height-base - 4px;
+        margin: 2px 0.3em 2px 0;
+        border-left: 1px solid @gray;
+        border-right: 1px solid @gray;
+    }
+}
+
+.toolbox-btns {
+    background: white;
+    padding: 0 @padding-base-horizontal;
+    &.pull-left {
+        padding-left: 0;
+    }
+    &.pull-right {
+        padding-right: 0;
+    }
+
+    & > a {
+        .btn;
+        .btn-default;
+        .btn-sm;
+        padding: @padding-small-vertical;
+        line-height: 1.0 !important;
+        background-image: inherit;
+        background-repeat: unset;
+        .reset-filter();
+
+        [class^="fam-"] {
+            margin: 0 !important;
+        }
+    }
+}
+
+.btn {
+    background-image: inherit;
+    background-repeat: unset;
+    .reset-filter();
+}
+
+/******************************************************************************
+ * A box for any content
+ */
+.box {
+    margin-bottom:15px;
+    padding: 1em;
+    border-radius: 5px;
+    border: 1px solid @primaryColor;
+
+    legend {
+        width: auto;
+        margin: 0;
+        padding-left: 0.5em;
+        padding-right: 0.5em;
+        border: 0 none;
+        color: @text-color;
+        line-height: @line-height-base;
+    }
+}
+
+/******************************************************************************
+ * Page container
+ */
+#page {
+    margin-top: 1em;
+    margin-bottom: 2em;
+}
+
+/******************************************************************************
+ * Header
+ */
+#header {
+    #logo {
+        text-align: center;
+        img {
+            height: 80px;
+        }
+    }
+
+    #header-bars {
+        margin-left: 0;
+    }
+}
+
+/******************************************************************************
+ * Navigation bar
+ */
+
+.navbar-nav > .divider {
+    border: solid @navbar-default-link-color 1px;
+    margin-top: 7px;
+    margin-bottom: 7px;
+    height: @navbar-height - 14;
+}
+
+#navbar {
+    a {
+        font-weight: bold;
+        font-size: 1.2em;
+    }
+}
+
+#userbar .dropdown-menu .divider{
+    margin:5px 0;
+}
+
+/******************************************************************************
+ * Breadcrumb
+ */
+.breadcrumb {
+    margin-top: 0;
+    margin-bottom: 2px;
+    padding: 0 0.5em;
+    background: none;
+    border: 0;
+    text-align: right;
+    font-size: 0.8em;
+}
+
+/******************************************************************************
+ * Notice
+ */
+#notices {
+    padding-top: 0.5em;
+}
+
+/************************************************
+ * Main content
+ */
+#main {
+    margin: 0;
+    padding-bottom: 1em;
+
+    h1 {
+        margin-bottom: 1em;
+        border-bottom: 1px solid @primaryColor;
+    }
+}
+
+/******************************************************************************
+ * Footer
+ */
+#footer {
+    padding: 0.5em;
+    border-radius: 0 0 15px 15px;
+    .box-shadow(0 2px 5px rgba(0, 0, 0, .50));
+    background-color: @primaryColor;
+
+    table#partenaires {
+        border-collapse: separate;
+        border-spacing: 0.5em;
+
+        td {
+            .td-center;
+            border-radius: 5px;
+            .box-shadow(inset 0 0 5px #888);
+            background-color: white;
+            img {
+                height: 60px;
+            }
+        }
+    }
+}
+
+/******************************************************************************
+ * Misc
+ */
+
+.logo {
+    max-width: 100%;
+}
+
+select[multiple=multiple] {
+    height: 9em;
+}
+
+.nav.nav-pills > li > a {
+    padding: 5px 8px;
+}
+
+// Home page
+.nav-tabs.tabs-left {
+    padding-right: 0;
+    border-bottom: none;
+    border-right: @nav-tabs-border-color solid 1px;
+
+    & > li {
+        float: none;
+        margin: 0 -1px 0 0;
+
+        & > a {
+            margin: 0;
+            border-radius: @border-radius-base 0 0 @border-radius-base;
+        }
+
+        &.active > a,
+        & > a:hover,
+        & > a:focus {
+            border: 1px solid @nav-tabs-border-color;
+            border-right-color: transparent;
+        }
+    }
+}
+
+// affichage des select
+select.form-control{
+    appearance:none;
+    -moz-appearance:none;
+    -webkit-appearance:none;
+    background-image:url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAcAAAAICAYAAAA1BOUGAAAAR0lEQVQI132NwQ2AMAwDzx2DZToPTOARPAHrwgekNircJ4nOVuAHJdmBc%2BEOASS5qrGt9uy9uA6g9xrbtgXQhvRW5szq9yc3Jn0OUtofitcAAAAASUVORK5CYII%3D");
+    background-repeat:no-repeat;
+    background-position:right 5px center;
+    padding-right:15px;
+}
+select.form-control.input-sm{
+    line-height:15px;
+}
+select.form-control option{
+    /*padding-left:0;
+    padding-right:0;*/
+    appearance:none;
+    -moz-appearance:none;
+    -webkit-appearance:none;
+}
+select.form-control optgroup option{
+    /*padding-left:25px;*/
+}
+// correction alignement navbar-right ?
+.navbar-right{
+    margin-right:0;
+}
+// desactivation de l'effet sur le focus des tabs (c'est moche)
+ul.nav-tabs.nav li a:focus{
+    outline:0;
+}
+// taille du label du captcha
+label.custom-captcha-label-class.control-label {
+    width:25%;
+}
+// dernière div des boîte alerte sans marge
+div.alert > div:last-of-type{
+    margin-bottom:0;
+}

@@ -1,0 +1,25 @@
+.panels .panel.row {
+    margin-bottom: 0;
+}
+div#complex-viewer div.form-inline div.input-group.col-md-8 span.input-group-addon + span.input-group-btn {
+    width: 1%;
+}
+div#complex-viewer div.form-inline div.input-group.col-md-8 span.input-group-addon + span.input-group-btn > a.btn {
+    border-radius: 0;
+    border-right: 0;
+}
+div#complex-viewer div.form-inline div.input-group.col-md-8 input.form-control + span.input-group-btn > a.btn {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    border-left: 0;
+}
+tr.chronique div.tooltip-inner{
+    max-width:300px;
+}
+table.table tbody tr.chronique td{
+    vertical-align:middle;
+}
+tr.chronique div.toolbox-btns{
+    padding:0;
+    margin:-5px 0;
+}

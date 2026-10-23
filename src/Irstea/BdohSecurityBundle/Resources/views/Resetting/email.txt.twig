@@ -1,0 +1,11 @@
+{% block subject %}
+{% autoescape false %}
+BDOH{{ 'deux_points'|trans }} {{ 'resetting.email.subject'|trans }}
+{% endautoescape %}
+{% endblock %}
+{% block body_text %}
+{% autoescape false %}
+{{ 'resetting.email.message'|trans({'%username%': user, '%confirmationUrl%': confirmationUrl})|raw }}
+{% endautoescape %}
+{% endblock %}
+{% block body_html %}{% endblock %}

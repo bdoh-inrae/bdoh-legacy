@@ -1,0 +1,7 @@
+{{'security.utilisateur.newMailUtilisateur.body.hello'|trans}} {{ user.prenom|default('') }} {{ user.nom|default('') }},<br/><br/>
+{{ 'security.utilisateur.newMailUtilisateur.body.step1'|trans|raw }}<br/><br/>
+{{ 'security.utilisateur.newMailUtilisateur.body.step2'|trans|raw }}<br/><br/>
+{{ 'askDataAccess'|trans }}{{ 'deux_points'|trans }} <a href="{{ url('bdoh_security_besoin_new') }}">{{ url('bdoh_security_besoin_new') }}</a><br/>
+{{ 'askManager'|trans }}{{ 'deux_points'|trans }} <a href="{{ url('bdoh_consult_contact') }}">{{ url('bdoh_consult_contact') }}</a><br/>
+<h5>{{ 'security.utilisateur.newMailUtilisateur.body.step3'|trans|raw }}
+{{ 'security.utilisateur.newMailUtilisateur.body.step4'|trans|raw }}</h5>

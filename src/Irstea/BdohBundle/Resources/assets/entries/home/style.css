@@ -1,0 +1,14 @@
+li[href="#accueil"]:after{
+    content:"";
+    display:block;
+    margin:0 auto 8px;
+    padding:8px 0 0;
+    width:80%;
+    border-bottom:1px solid #e5e5e5;
+}
+div#main ul.nav.nav-tabs li a{
+    padding:8px 15px;
+}
+div#main ul.nav.nav-tabs li a:focus{
+    background-color:#fff;
+}

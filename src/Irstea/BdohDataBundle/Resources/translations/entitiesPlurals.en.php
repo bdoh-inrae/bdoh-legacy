@@ -1,0 +1,47 @@
+<?php
+/*
+ * Copyright (C) 2012-2019 IRSTEA
+ * All rights reserved.
+ */
+
+return [
+    'Observatoire'                                          => 'Observatories',
+    'Doi'                                                   => 'DOI',
+    'Partenaire'                                            => 'Partners',
+    'SiteExperimental'                                      => 'Experimental sites',
+    'Station'                                               => 'Stations',
+    'Chronique'                                             => 'All Time series',
+    'ChroniqueDiscontinue'                                  => 'Discontinuous time series',
+    'ChroniqueContinue'                                     => 'Continuous time series',
+    'ChroniqueCalculee'                                     => 'Calculated time series',
+    'ChroniqueConvertie'                                    => 'Converted time series',
+    'Commune'                                               => 'Towns',
+    'FamilleParametres'                                     => 'Parameter categories',
+    'TypeParametre'                                         => 'Parameter types',
+    'Unite'                                                 => 'Units',
+    'Mesure'                                                => 'Data points',
+    'PointControle'                                         => 'Checkpoints',
+    'Echantillonnage'                                       => 'Sampling',
+    'PasEchantillonnage'                                    => 'Time steps',
+    'LigneCalcul'                                           => 'Calculation lines',
+    'Bareme'                                                => 'Scales',
+    'PeriodeValidite'                                       => 'Validity periods',
+    'Plage'                                                 => 'Ranges',
+    'Qualite'                                               => 'Qualities',
+    'JeuQualite'                                            => 'Sets of qualities',
+    'Bassin'                                                => 'Basins',
+    'CoursEau'                                              => 'Rivers',
+    'TauxRemplissage'                                       => 'Data completeness',
+    'DataSet'                                               => 'Datasets',
+    'Milieu'                                                => 'Environments',
+    'DataConstraint'                                        => 'Data Constraints',
+    'CriteriaGeology'                                       => 'Criteria Geologies',
+    'CriteriaClimat'                                        => 'Criteria Climates',
+    'InspireTheme'                                          => 'INSPIRE Themes',
+    'TopicCategory'                                         => 'INSPIRE Topic Categories',
+    'TypeFunding'                                           => 'Type Fundings',
+    'ContactOrganisationRole'                               => 'Organisations Roles',
+    'RolePersonneTheia'                                     => 'Users Roles',
+    'PersonneTheia'                                         => 'Theia Users',
+    'TheiaCategories'                                       => 'Connections TheiaCategories',
+];

@@ -1,0 +1,24 @@
+<!-- The date range -->
+<div class="form-group row daterangeselector">
+    <input name="beginDate" type="hidden" required/>
+    <input name="endDate" type="hidden" required/>
+    <div class="col-md-6">
+        <label for="{{ modalId }}dateRange">{{ 'period'|trans }}</label>
+    </div>
+
+    <div class="col-md-18 daterange">
+        <div class="input-group">
+            <input required id="{{ modalId }}dateRange" type="text" class="form-control start" data-alt-input="beginDate"/>
+        </div>
+        <div class="input-group">
+            <input required type="text" class="form-control end" data-alt-input="endDate"/>
+        </div>
+    </div>
+
+    <div class="col-md-24 has-error">
+        <div class="col-md-6"></div>
+        <div class="error-report help-block col-md-18" style="margin-bottom:0;">
+            <div class="errors"></div>
+        </div>
+    </div>
+</div>

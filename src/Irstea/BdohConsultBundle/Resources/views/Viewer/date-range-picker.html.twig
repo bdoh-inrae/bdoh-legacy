@@ -1,0 +1,35 @@
+{% block viewerDateRangePicker %}
+    <fieldset class="row box date-range-picker">
+        <legend>{{ 'selectStartEndDates'|trans }}</legend>
+
+        <div class="alert alert-info">
+            {{ 'consult.help.chronique.selectionOfDatesRange'|trans|raw }}
+        </div>
+
+        <div class="form-inline">
+
+            <label>{{ 'period'|trans }}&nbsp;:</label>
+
+            <div class="input-group col-md-8">
+                <span class="input-group-addon">{{ 'from'|trans }}</span>
+                <input type="text" required class="form-control start"/>
+            </div>
+            <div class="input-group col-md-8">
+                <span class="input-group-addon">{{ 'to'|trans }}</span>
+                <input type="text" required class="form-control end"/>
+            </div>
+
+            {% block viewerDateRangePickerButtons %}
+                <a href="javascript:void(0);" class="submit btn btn-success validated">
+                    <i class="glyphicon glyphicon-search"></i>&nbsp;
+                    {{- 'consult.buttons.view'|trans -}}
+                </a>
+            {% endblock %}
+        </div>
+
+        <div class="alert alert-danger feedback" style="display:none; margin-top: 1em">
+            <i class="glyphicon glyphicon-remove"></i>
+            <span class="msg">...</span>
+        </div>
+    </fieldset>
+{% endblock viewerDateRangePicker %}

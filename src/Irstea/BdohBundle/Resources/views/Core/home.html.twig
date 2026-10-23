@@ -1,0 +1,69 @@
+{% extends 'layout.html.twig' %}
+{% from 'macros.html.twig' import i18nEntityLabel, doi_list, logo, logoObservatoire %}
+
+{% block title %}{{ 'accueilObservatoires'|trans }}{% endblock title %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script src="{{ asset('assets/home.js') }}"></script>
+{% endblock javascripts %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <link rel="stylesheet" href="{{ asset('assets/home.css') }}"  type="text/css"/>
+{% endblock stylesheets %}
+
+{% block main %}
+    <h1>{{ 'home.title'|trans }}</h1>
+
+    <div>
+        <ul class="nav nav-tabs tabs-left col-md-6">
+            <li class="active" href="#accueil" data-hover-tab="true">
+                <a href="#">{{ 'presentation'|trans }}</a>
+            </li>
+            {% for obs in allObservatoires() %}
+                <li href="#{{ obs.slug }}" data-hover-tab="true">
+                    <a href="{{ path('bdoh_home', {'_observatoire' : obs.slug}) }}">{{ obs.nom }}</a>
+                </li>
+            {% endfor %}
+        </ul>
+        <div class="tab-content col-md-18">
+            <div class="tab-pane active" id="accueil">
+                <div class="row" style="margin:0 10px">
+                    <div class="col-md-16">
+                        <h1>{{ 'presentation'|trans }}</h1>
+                        <div>
+                            {{ 'accueilMessage'|trans|replace({"\n": "<br />"})|raw }}
+                        </div><!--
+                        <div class="alert alert-info" style="text-align:center;margin:25px 0 0;padding:5px;">
+                            {{ 'survolez'|trans }}
+                        </div>-->
+                    </div>
+                    <div class="col-md-8 text-center pull-right">
+                        {{ logo('Irstea', logo_short_link_parameters) }}
+                    </div>
+                </div>
+            </div>
+
+            {% for obs in allObservatoires() %}
+                <div class="tab-pane centPC" id="{{ obs.slug }}">
+                    <div class="row" style="margin:0 10px">
+                        <div class="col-md-18">
+                            <h1>{{ obs.nom }}</h1>
+                            <div class="description">
+                                {{ i18nEntityLabel(obs, 'description', 'noDescription') }}
+                                {{ doi_list(obs.dois) }}
+                            </div>
+                        </div>
+                        <div class="col-md-6 text-center pull-right">
+                            <p>{{ logoObservatoire(obs) }}</p>
+                            <a class="btn btn-success" href="{{ path('bdoh_home', {'_observatoire' : obs.slug}) }}">
+                                {{ 'enSavoirPlus'|trans }}
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+{% endblock main %}

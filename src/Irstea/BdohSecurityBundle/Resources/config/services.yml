@@ -1,0 +1,9 @@
+services:
+    irstea_bdoh_security_bundle_user_create:
+        class: Irstea\BdohSecurityBundle\Command\UtilisateurNewCreateCommand
+        arguments:
+            - "@doctrine.orm.default_entity_manager"
+            - "@security.encoder_factory"
+        tags:
+            - { name: console.command }
+

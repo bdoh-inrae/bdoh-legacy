@@ -1,0 +1,72 @@
+{% extends '@IrsteaBdohSecurity/layout.html.twig' %}
+{% from 'macros.html.twig' import submit, cancelForm, pageTitle %}
+
+{% form_theme form '@IrsteaBdohSecurity/custom_form.html.twig' %}
+
+{% block title %}
+    {{ pageTitle('security.utilisateur.create.title'|trans) }}
+{% endblock %}
+
+{% block breadcrumb %}
+    <ul class="breadcrumb">
+        {# Home #}
+        <li><a href="{{ path('bdoh_home') }}">{{ 'home'|trans }}</a></li>
+        {# Creation of a user account #}
+        <li class="active">{{ 'account.create'|trans }}</li>
+    </ul>
+{% endblock %}
+
+
+{% block main %}
+    <div id="security-utilisateur-new">
+
+        <h1>{{ 'security.utilisateur.create.title' | trans }}</h1>
+
+
+        <div class="alert alert-info">
+            <h4 class="alert-heading">{{ 'information'|trans }}{{ 'deux_points'|trans }}</h4>
+            <ul>
+                <li>{{ 'security.utilisateur.create.info.isTheFirstStep'|trans|raw }}</li>
+                <li>{{ 'security.utilisateur.create.info.yourIdentifier'|trans|raw }}</li>
+            </ul>
+        </div>
+
+
+        <form action="{{ path('bdoh_security_utilisateur_new') }}" method="post"
+              class="form-horizontal" {{ form_enctype(form) }}>
+
+            <!-- Login fields -->
+            <div class="alert alert-warning">
+                <h4 class="alert-heading" style="margin-bottom:25px;">{{ 'security.utilisateur.loginInfo'|trans }}</h4>
+                {{ form_row(form.email) }}
+                {{ form_widget(form.password) }}
+            </div>
+
+            <!-- Identification fields -->
+            <div class="alert alert-warning">
+                <h4 class="alert-heading" style="margin-bottom:25px;">{{ 'security.utilisateur.personalInfo'|trans }}</h4>
+                {{ form_row(form.prenom) }}
+                {{ form_row(form.nom) }}
+                {{ form_row(form.organisme) }}
+                {{ form_row(form.categorie) }}
+                {{ form_row(form.telephone) }}
+                {{ form_row(form.adresse) }}
+            </div>
+
+            <!-- Captcha -->
+            <div class="alert alert-danger">
+                <h4 class="alert-heading" style="margin-bottom:25px;">{{ 'captcha.security'|trans }}</h4>
+                {{ form_row(form.captcha) }}
+            </div>
+
+            {{ form_rest(form) }}
+
+            <div style="display:flex;margin-bottom:10px;">
+                <div>{{ submit('security.utilisateur.create.submit'|trans, 'btn btn-success') }}</div>
+                <div style="margin-left:15px;">{{ cancelForm('bdoh_home') }}</div>
+            </div>
+        </form>
+
+
+    </div>
+{% endblock main %}

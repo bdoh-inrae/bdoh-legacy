@@ -1,0 +1,73 @@
+{% extends '@IrsteaBdohConsult/layout.html.twig' %}
+{% from 'macros.html.twig' import submit%}
+
+{% block main %}
+
+    {% if is_granted('ROLE_ADMIN') %}
+    <h2>{{ 'admin.sendJson.result'|trans }}</h2>
+    {% if result.valid %}
+        <p style="color:#44bb01; font-size: 20px">{{ 'admin.sendJson.resultMessage'|trans }}</p>
+        <button type="button" class="btn btn-success">
+            <a href="{{ path('bdoh_admin_observatoire_edit_envoieJson', {'id' :app.request.attributes.get('_route_params')['id']}) }}" style="color: mintcream">
+                <strong>{{ 'admin.sendJson.send'|trans }}</strong>
+            </a>
+        </button>
+
+        <button type="button" class="btn btn-success">
+            <a href="{{ path('bdoh_admin_observatoire_download_envoieJson', {'id' :app.request.attributes.get('_route_params')['id']}) }}" style="color: mintcream">
+                <strong>{{ 'admin.sendJson.download'|trans }}</strong>
+            </a>
+        </button>
+
+{#Feature pas encore implantée #}
+{#    {% if miseajourAutomatique == false and is_granted('ROLE_ADMIN')%}#}
+{#        <br><br>#}
+{#<form class="form-horizontal" name="main" action="{{ path('bdoh_admin_observatoire_save_miseajour', {'id' :app.request.attributes.get('_route_params')['id']}) }}"#}
+{#      method="post" enctype="multipart/form-data" id="miseajourAutomatiqueId">#}
+{#            <fieldset>#}
+{#                <input id="miseajourAutomatiqueId" name="miseajourAutomatique" value="miseajourAutomatique" type="checkbox" >#}
+{#                <label>{{ 'admin.sendJson.saveMessage'|trans }}</label>#}
+{#                <br>#}
+{#            </fieldset>#}
+
+{#        #}{#  attribution des role pour le bouton#}
+
+{#        <button type="submit" class="btn btn-success" >#}
+{#            <strong>{{ 'admin.sendJson.save'|trans }}</strong></button>#}
+{#    {% endif %}#}
+
+
+        </form>
+    {% else %}
+        <p style="color:#bb0117; font-size: 20px">{{ 'admin.sendJson.resultMessageFail'|trans }}</p>
+        <p>{{ result.totalErrors }} erreur(s) de validation. Voici les {{ result.errors | length }} premières:</p>
+        <table>
+            <thead>
+                <th>Type</th>
+                <th>Chemin</th>
+                <th>Valeur</th>
+                <th>Détails</th>
+                <th>Sous-erreurs</th>
+            </thead>
+            <tbody>
+            {% for error in result.errors %}
+                <tr>
+                    <td>{{ error.keyword }}</td>
+                    <td><code>{{ error.dataPointer | join('.') }}</code></td>
+                    <td><code>{{ error.data | json_encode }}</code></td>
+                    <td><code>{{ error.keywordArgs | json_encode }}</code></td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        </ul>
+    {% endif %}
+    <br><br>
+    <h2>{{ 'admin.sendJson.schema'|trans }}</h2>
+    <li><a href="{{ schemas }}">{{ schemas }}</a></li>
+    <br><br>
+    <h2>JSON</h2>
+    <div><code><pre>{{ json }}</pre></code></div>
+    {% endif %}
+{% endblock %}
+

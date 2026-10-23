@@ -1,0 +1,269 @@
+{###############################################################################
+ #
+ # Some useful Twig macros for consultation.
+ #
+ ##############################################################################}
+
+
+
+{##
+ # Generic macros to edit, view and display icon, with tooltip.
+ #}
+
+{% macro edit(href, title, display, tooltip_placement) %}
+    {% from 'macros.html.twig' import richLink %}
+    {{ richLink(href, title, 'pencil', display, tooltip_placement) }}
+{% endmacro %}
+
+{% macro view(href, title, display, tooltip_placement) %}
+    {% from 'macros.html.twig' import richLink %}
+    {{ richLink(href, title, 'magnifier', display, tooltip_placement) }}
+{% endmacro %}
+
+
+{##############################################################################}
+
+
+
+{##
+ # Displays a rate.
+ #}
+{%- macro display_rate(rate, label, discontinue, overlap) -%}
+    {%- spaceless -%}
+
+        {%- if discontinue -%}
+
+            {%- if label -%}
+                {{- label -}}
+            {%- endif -%}
+
+            {%- if not rate and not overlap -%}
+                <span style="color:#999;">
+            {%- endif -%}
+
+            {%- if label -%}
+                &nbsp;&nbsp;-&nbsp;&nbsp;
+            {%- endif -%}
+
+            {%- if rate is null -%}
+                {{- 'noneSmall'|trans -}}
+            {%- elseif rate or overlap -%}
+                <b>{{- rate -}}</b>
+            {% else %}
+                {{- rate -}}
+            {%- endif -%}
+
+            {%- if label -%}
+                &nbsp;{{ 'consult.fillingRateMesure'|transchoice(rate|default(0)) }}
+            {%- endif -%}
+
+            {%- if not rate and not overlap -%}
+                </span>
+            {%- endif -%}
+
+        {%- else -%}
+
+            {%- if rate is null -%}
+                {{- 'noneSmall'|trans -}}
+            {%- else -%}
+                {%- set roundedRate = 10 * round(rate / 10) -%}
+                {%- set imageRate = asset('images/consult/rate' ~ roundedRate ~ '.png') -%}
+                {%- if label -%}
+                    {{- label -}}&nbsp;
+                {%- endif -%}
+                <img src="{{ imageRate }}"/>
+                <sub style="margin-left:0.3em;">{{ round(rate) | number_format(0) }}%</sub>
+            {%- endif -%}
+
+        {%- endif -%}
+
+    {%- endspaceless -%}
+{%-endmacro -%}
+
+{##############################################################################}
+
+
+
+{##
+ # Displays a dated rate, with a link towards a given anchor.
+ #
+ # @param float|null  rate
+ # @param string      beginDate A textual date usable by the javascript "Date" class
+ # @param string      endDate   A textual date usable by the javascript "Date" class
+ # @param string      anchorId
+ # @param string      label
+ # @param bool        discontinue
+ # @param bool        overlap
+ #}
+{%- macro display_linkedDatedRate(rate, beginDate, endDate, anchorId, label, discontinue, overlap) -%}
+    {%- from _self import display_rate -%}
+    {%- spaceless -%}
+        {%- if rate is not null and not (discontinue|default(false) and not overlap|default(false)) -%}
+            <a{%- if anchorId is not null %} href="#{{ anchorId }}" {% endif -%}
+                class="fillingRate{% if discontinue|default(false) %} discontinue{% endif %}{% if label|default('') %} textLabel{% endif %}"
+                data-begin="{{ beginDate|date('Y-m-d\\TH:i:s\\Z', 'UTC') }}"
+                data-end="{{ endDate|date('Y-m-d\\TH:i:s\\Z', 'UTC') }}">
+        {%- else -%}
+            <div class="fillingRate{% if discontinue|default(false) %} discontinue{% endif %}{% if label|default('') %} textLabel{% endif %}">
+        {%- endif -%}
+        {{ display_rate(rate, label|default(''), discontinue|default(false), overlap|default(false)) }}
+        {%- if rate is not null and not (discontinue|default(false) and not overlap|default(false)) -%}
+            </a>
+        {%- else -%}
+            </div>
+        {%- endif -%}
+    {%- endspaceless -%}
+{%- endmacro -%}
+
+{##############################################################################}
+
+
+
+{##
+ # Some information and actions for 'Avanced search'.
+ #}
+{%- macro advancedSearch_link(type, value) -%}
+    {%- spaceless -%}
+        {%- set value = value|trim -%}
+        <a class='advancedSearchLink' href="{{ path('bdoh_consult_advancedSearch', {(type): value}) }}">{{ value }}</a>
+    {%- endspaceless -%}
+{%- endmacro -%}
+
+{##############################################################################}
+
+{# ######################################################################### #}
+
+{##
+ # Some information and actions for 'Dataset'.
+#}
+{# Action : view #}
+
+{% macro dataset_view(dataset, title, display, tooltip_placement) %}
+    {% from _self import view %}
+    {{ view(
+        path('bdoh_consult_dataset', {'dataset': dataset.uuid}),
+        title | default('viewDataset'),
+        display,
+        tooltip_placement
+    ) }}
+{% endmacro %}
+
+{# Action : edit #}
+{% macro dataset_edit(dataset, title, display, tooltip_placement) %}
+    {%- from _self import edit %}
+    {{ edit(
+        path('bdoh_admin_dataset_edit', {'id': dataset.id}),
+        title | default('editDataset'),
+        display,
+        tooltip_placement
+    ) }}
+{% endmacro %}
+
+
+{##############################################################################}
+
+{##
+ # Some information and actions for 'Station'.
+ #}
+
+{# Info : 'station' is active ? #}
+{% macro station_isActive(station, divider_left, divider_right, tooltip_placement) %}
+    {% spaceless %}
+        {% if not station.estActive %}
+
+            {% from 'macros.html.twig' import tooltipedIcon %}
+
+            {% if divider_left | default(false) %}
+                <div class="divider-vertical"></div>{% endif %}
+
+            {{ tooltipedIcon('cog-error', 'consult.help.station.notActive'|trans, tooltip_placement) }}
+
+            {% if divider_right | default(false) %}
+                <div class="divider-vertical"></div>{% endif %}
+
+        {% endif %}
+    {% endspaceless %}
+{% endmacro %}
+
+{# Action : edit #}
+{% macro station_edit(station, title, display, tooltip_placement) %}
+    {%- from _self import edit %}
+    {{ edit(
+        path('bdoh_admin_station_edit', {'id': station.id}),
+        title | default('editStation'),
+        display,
+        tooltip_placement
+    ) }}
+{% endmacro %}
+
+{# Action : view #}
+{% macro station_view(station, title, display, tooltip_placement) %}
+    {% from _self import view %}
+    {{ view(
+        path('bdoh_consult_station', {'station': station.code}),
+        title | default('viewStation'),
+        display,
+        tooltip_placement
+    ) }}
+{% endmacro %}
+
+
+
+
+
+{##
+ # Some information and actions for 'Chronique'.
+ #}
+
+{# Info : 'chronique' is visible ? #}
+{% macro chronique_isVisible(chronique, divider_left, divider_right, tooltip_placement) %}
+    {% spaceless %}
+        {% if not chronique.estVisible %}
+
+            {% from 'macros.html.twig' import tooltipedIcon %}
+
+            {% if divider_left | default(false) %}
+                <div class="divider-vertical"></div>{% endif %}
+
+            {{ tooltipedIcon('lock', 'consult.help.chronique.notVisible'|trans, tooltip_placement) }}
+
+            {% if divider_right | default(false) %}
+                <div class="divider-vertical"></div>{% endif %}
+
+        {% endif %}
+    {% endspaceless %}
+{% endmacro %}
+
+{# Action : edit #}
+{% macro chronique_edit(chronique, title, display, tooltip_placement) %}
+    {% from _self import edit %}
+    {{ edit(
+        path('bdoh_admin_chronique' ~ chronique.dtype ~ '_edit', {'id': chronique.id}),
+        title | default('editChronique'),
+        display,
+        tooltip_placement
+    ) }}
+{% endmacro %}
+
+{# Action : view #}
+{% macro chronique_view(chronique, title, display, tooltip_placement) %}
+    {% from _self import view %}
+    {{ view(
+        path('bdoh_consult_chronique', {'station': chronique.station.code, 'chronique': chronique.code}),
+        title | default('viewChronique'),
+        display,
+        tooltip_placement
+    ) }}
+{% endmacro %}
+
+{# Action : export #}
+{% macro chroniques_export(chroniques, dateFirst, dateLast, exportSamplings, exportTimeSteps, displayStartField,
+    termsOfUses, display, tooltip_placement) %}
+    {% include '@IrsteaBdohConsult/Modal/export.html.twig' %}
+{% endmacro %}
+
+{# Action : cut #}
+{% macro chronique_cut(chronique, dateFirst, dateLast, chroniqueContinue, hasChildren, childrenList, childrenCount,
+    display, tooltip_placement) %}
+    {% include '@IrsteaBdohConsult/Modal/cut.html.twig' %}
+{% endmacro %}

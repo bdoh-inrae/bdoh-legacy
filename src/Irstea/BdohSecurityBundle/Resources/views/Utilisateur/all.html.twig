@@ -1,0 +1,145 @@
+{% extends '@IrsteaBdohSecurity/layout.html.twig' %}
+{% from 'macros.html.twig' import submit, cancelForm, pageTitle, richLink %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script src="{{ asset('assets/security/utilisateur/all.js') }}">
+    </script>
+{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <link rel="stylesheet" href="{{ asset('assets/security/utilisateur/all.css') }}">
+    <style type="text/css">
+        div#main ul.nav.nav-tabs{
+            margin-bottom:15px;
+        }
+    </style>
+{% endblock %}
+
+{% block breadcrumb %}
+    <ul class="breadcrumb">
+        {# Home #}
+        <li><a href="{{ path('bdoh_home') }}">{{ 'home'|trans }}</a></li>
+        {# Edition of the logged user account #}
+        <li class="active">{{ 'security.utilisateur.gestion'|trans }}</li>
+    </ul>
+{% endblock %}
+
+{% block title %}
+    {{ pageTitle('security.utilisateur.all.title'|trans) }}
+{% endblock %}
+
+{% macro doHaveRole(content) %}
+    <span class="label label-success">{{ content }}</span>
+{% endmacro %}
+
+{% macro dontHaveRole() %}
+    {%- trans %}no{% endtrans %}
+{% endmacro %}
+
+{% macro boolRole(enabled) %}
+    {%- import _self as macros %}
+    {%- if enabled %}
+        {{- macros.doHaveRole('yes'|trans) }}
+    {%- else %}
+        {{- macros.dontHaveRole() }}
+    {%- endif %}
+{% endmacro %}
+
+{% macro listRole(targets) %}
+    {%- import _self as macros %}
+    {%- if targets is not empty %}
+        {%- for target in targets %}
+            {{- macros.doHaveRole(target) }}
+        {%- endfor %}
+    {%- else %}
+        {{- macros.dontHaveRole() }}
+    {%- endif %}
+{% endmacro %}
+
+{% block main %}
+    {%- import _self as macros %}
+
+    <div id="security-utilisateur-all">
+
+        <h1>{{ 'security.utilisateur.all.title' | trans }}</h1>
+
+        <ul class="nav nav-tabs">
+            <li class="active"><a href="#courant" data-toggle="tab">
+                    {{ 'security.utilisateur.all.OfObservatory(%observatory%)'|trans({'%observatory%': obs}) }}
+                </a></li>
+            <li><a href="#autres" data-toggle="tab">
+                    {{ 'security.utilisateur.all.OtherUsers'|trans }}
+                </a></li>
+        </ul>
+        <div class="tab-content">
+            <div id="courant" class="tab-pane active">
+                <div id="consult-advancedSearch">
+                    <table class="table">
+                        <!-- Columns header -->
+                        <thead>
+                            <tr>
+                                <th>{{ 'Utilisateur'|trans }}</th>
+                                <th class="text-center">{{ 'security.utilisateur.all.gestionnaireObservatoires'|trans }}</th>
+                                <th class="text-center">{{ 'security.utilisateur.all.gestionnaireObservatoire'|trans }}</th>
+                                <th class="text-center">{{ 'security.utilisateur.all.gestionnaireSite'|trans }}</th>
+                                <th class="text-center">{{ 'security.utilisateur.all.contributeurSite'|trans }}</th>
+                                <th class="text-center">{{ 'security.utilisateur.all.utilisateurDeConfiance'|trans }}</th>
+                                <th class="text-center">{{ 'security.utilisateur.all.utilisateurChronique'|trans }}</th>
+                                <th class="text-center">{{ 'security.utilisateur.all.besoin'|trans }}</th>
+
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for user in users %}
+                                <tr>
+                                    <td data-order="{{ user.nom }} {{ user.prenom }}">
+                                        <a href={{ path('bdoh_security_utilisateur_right', {'email' : user.email}) }}>
+                                            {{ user.prenom }} {{ user.nom }}
+                                        </a>
+                                        <br/>
+                                        ({{ user.email }})
+                                    </td>
+                                    <td class="text-center">{{ macros.boolRole(user.isgestionnairedetouslesobservatoires) }}</td>
+                                    <td class="text-center">{{ macros.boolRole(user.isgestionnairedelobservatoire) }}</td>
+                                    <td class="text-center">{{ macros.listRole(user.sitesgestionnaire) }}</td>
+                                    <td class="text-center">{{ macros.listRole(user.sitescontributeur) }}</td>
+                                    <td class="text-center">{{ macros.boolRole(user.isutilisateurdeconfiance) }}</td>
+                                    <td class="text-center">{{ macros.boolRole(user.isutilisateurdechroniques) }}</td>
+                                    <td class="text-center">{{ macros.boolRole(user.hasbesoins) }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="autres" class="tab-pane">
+                <div id="consult-advancedSearch">
+                    <table class="table">
+                        <!-- Columns header -->
+                        <thead>
+                            <tr>
+                                <th>{{ 'Utilisateur'|trans }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for user in autres %}
+                                <tr>
+                                    <td data-order="{{ user.nom }} {{ user.prenom }}">
+                                        <a href={{ path('bdoh_security_utilisateur_right', {'email' : user.email}) }}>
+                                            {{ user.prenom }} {{ user.nom }}
+                                        </a>
+                                        <br/>
+                                        ({{ user.email }})
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock main %}

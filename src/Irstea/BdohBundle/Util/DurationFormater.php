@@ -49,7 +49,7 @@ class DurationFormater
             if ($duration >= $time) {
                 $nb = intdiv($duration, $time);
                 $duration %= $time;
-                $text .= $nb . ' ' . $this->translator->transChoice($label, $nb);
+                $text .= $nb . ' ' . $this->translator->trans($label, ['%count%' => $nb]);
             }
         }
 

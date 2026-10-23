@@ -1,0 +1,47 @@
+<?php
+/*
+ * Copyright (C) 2012-2019 IRSTEA
+ * All rights reserved.
+ */
+
+return [
+    'Observatoire'                                          => "de l'",
+    'Doi'                                                   => 'du ',
+    'Partenaire'                                            => 'du ',
+    'SiteExperimental'                                      => 'du ',
+    'Station'                                               => 'de la ',
+    'Chronique'                                             => 'de la ',
+    'ChroniqueDiscontinue'                                  => 'de la ',
+    'ChroniqueContinue'                                     => 'de la ',
+    'ChroniqueCalculee'                                     => 'de la ',
+    'ChroniqueConvertie'                                    => 'de la ',
+    'Commune'                                               => 'de la ',
+    'FamilleParametres'                                     => 'de la ',
+    'TypeParametre'                                         => 'du ',
+    'Unite'                                                 => "de l'",
+    'Mesure'                                                => 'de la ',
+    'PointControle'                                         => 'du ',
+    'Echantillonnage'                                       => "de l'",
+    'PasEchantillonnage'                                    => 'du ',
+    'LigneCalcul'                                           => 'de la ',
+    'Bareme'                                                => 'du ',
+    'PeriodeValidite'                                       => 'de la ',
+    'Plage'                                                 => 'de la ',
+    'Qualite'                                               => 'de la ',
+    'JeuQualite'                                            => 'du ',
+    'Bassin'                                                => 'du ',
+    'CoursEau'                                              => 'du ',
+    'TauxRemplissage'                                       => 'du ',
+    'DataSet'                                               => 'du ',
+    'Milieu'                                                => 'du ',
+    'DataConstraint'                                        => 'du ',
+    'CriteriaGeology'                                       => 'du ',
+    'CriteriaClimat'                                        => 'du ',
+    'InspireTheme'                                          => 'du ',
+    'TopicCategory'                                         => 'de la ',
+    'TypeFunding'                                           => 'du ',
+    'ContactOrganisationRole'                               => 'du ',
+    'RolePersonneTheia'                                     => 'du ',
+    'PersonneTheia'                                         => 'de la ',
+    'TheiaCategories'                                       => 'de la ',
+];

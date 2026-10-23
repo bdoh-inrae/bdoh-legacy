@@ -1,0 +1,10 @@
+{{ user.prenom|default('') }} {{ user.nom|default('') }}
+{%- if type == 'besoin' %}
+ {{ 'security.utilisateur.newNeedMail.body'|trans|raw }}
+{% endif %}
+{%- if type == 'compte' %}
+ {{ 'security.utilisateur.newAccountMail.body'|trans|raw }}
+{% endif %}
+{{ url('bdoh_security_utilisateur_right', {'email': user.email}) }}
+
+{{ 'security.utilisateur.mailFooter'|trans|raw }}

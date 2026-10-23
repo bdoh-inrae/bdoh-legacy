@@ -1,0 +1,67 @@
+{% extends '@IrsteaBdohConsult/layout.html.twig' %}
+
+{% from 'macros.html.twig' import submit, reset, button, pageTitle, loadJsI18N %}
+{% import '@IrsteaBdohConsult/macros.html.twig' as macros %}
+
+{% use '@IrsteaBdohConsult/Viewer/date-range-picker.html.twig' %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script src="{{ asset('assets/consult/complex-viewer.js') }}"></script>
+{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <link rel="stylesheet" href="{{ asset('assets/consult/complex-viewer.css') }}"/>
+{% endblock %}
+
+{% block title %}
+    {{ pageTitle('complexViewer'|trans) }}
+{% endblock %}
+
+{% block breadcrumb %}
+    <ul class="breadcrumb">
+        <li><a href="{{ path('bdoh_home') }}">{{ 'home'|trans }}</a></li>
+        <li><a href="{{ path('bdoh_consult_advancedSearch') }}">{{ 'advancedSearch'|trans }}</a></li>
+        <li class="active">{{ 'complexViewer'|trans }}</li>
+    </ul>
+{% endblock %}
+
+{% block main %}
+
+    <div id="complex-viewer"
+         {%- if minDate is not empty %}data-min-date="{{ minDate | e('html_attr') }}"{% endif %}
+        {%- if maxDate is not empty %}data-max-date="{{ maxDate | e('html_attr') }}"{% endif %}
+         data-metadata-url="{{ path('bdoh_consult_loadComplexViewerData') | e('html_attr') }}"
+         data-measure-url="{{ path('bdoh_data_chronique_measures', {id: '-ID-'})| e('html_attr') }}"
+    >
+        {{ block('viewerDateRangePicker') }}
+
+        <div class="panels">
+            <div class="panel-container">
+            </div>
+            <div class="row">
+                <div class="col-md-17">
+                    <div class="x-axis"></div>
+                </div>
+            </div>
+            <div class="row panel-buttons" style="display:none";>
+                <button class="add-pane btn">
+                    <i class="glyphicon glyphicon-plus"></i>
+                    {{ 'consult.buttons.add-pane'|trans }}
+                </button><!-- TODO export du graphe en image
+                <button class="export-to-image btn" disabled="disabled">
+                    <i class="glyphicon glyphicon-picture"></i>
+                    {{ 'consult.buttons.export-image'|trans }}
+                </button>-->
+            </div>
+        </div>
+    </div>
+
+{% endblock %}
+
+{% block body_tail -%}
+    {{ parent() }}
+    {% include '@IrsteaBdohConsult/Viewer/selector-template.html.twig' %}
+    {% include '@IrsteaBdohConsult/Viewer/panel-template.html.twig' %}
+{% endblock body_tail -%}

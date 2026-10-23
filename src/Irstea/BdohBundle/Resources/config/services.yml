@@ -1,0 +1,69 @@
+parameters:
+    # Where to store the cached data of the LESS compiler
+    irstea_bdoh.less.cache_dir: "%kernel.cache_dir%/less"
+
+    # The list of LESS files to compile, and their URI path.
+    irstea_bdoh.less.files:
+        "%kernel.project_dir%/src/Irstea/BdohBundle/Resources/less/base.less": "%irstea_bdoh.less.css_path%"
+
+    # The list of directories to imports, and their URI path.
+    irstea_bdoh.less.import_dirs:
+        "%kernel.project_dir%/node_modules/bootstrap/less": ''
+
+    # Where to store the CSS files, relative to the web directory.
+    irstea_bdoh.less.css_path: /css/themes/
+
+    # Directory path (relative to the web dir) where to put uploaded image files.
+    irstea_bdoh.uploaded.image_dir: uploads/images/
+
+    # Directory path (relative to the web dir) where to put uploaded document files.
+    irstea_bdoh.uploaded.document_dir: uploads/documents/
+
+    # The user manual (relative to the web dir)
+    irstea_bdoh.user_manual: documents/DocumentationBDOH.pdf
+
+# Les services sont repérés par l'autowiring ; les identifiants de l'ancien BDOH restent des alias.
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+
+    Irstea\BdohBundle\:
+        resource: '../../'
+        exclude:
+            - '../../{Command,DataTransformer,Exception,Model,Resources}'
+            - '../../Manager/JobManager.php'
+            - '../../IrsteaBdohBundle.php'
+
+    # 'Observatoire' manager
+    Irstea\BdohBundle\Manager\ObservatoireManager:
+        tags:
+            # Priority = 10 : after Router (32) ; before Firewall (8)
+            - { name: kernel.event_listener, event: kernel.request, method: loadContext, priority: 10 }
+    Irstea\BdohBundle\Manager\ObservatoireManagerInterface: '@Irstea\BdohBundle\Manager\ObservatoireManager'
+    irstea_bdoh.manager.observatoire: '@Irstea\BdohBundle\Manager\ObservatoireManager'
+
+    # css manager
+    Irstea\BdohBundle\Manager\CssManager:
+        arguments:
+            - "%irstea_bdoh.less.files%"
+            - "%irstea_bdoh.less.css_path%"
+            - "%kernel.project_dir%/public"
+            -
+                import_dirs: "%irstea_bdoh.less.import_dirs%"
+                cache_dir:   "%irstea_bdoh.less.cache_dir%"
+            -
+                primaryColor: "#003A80"
+                secondaryColor: "#009E00"
+            - "%kernel.debug%"
+    irstea_bdoh.manager.css: '@Irstea\BdohBundle\Manager\CssManager'
+
+    # Bdoh twig extension
+    irstea_bdoh.twig.bdoh_extension: '@Irstea\BdohBundle\Twig\BdohExtension'
+
+    # duration formater
+    irstea_bdoh.util.duration_formater: '@Irstea\BdohBundle\Util\DurationFormater'
+
+    # La file de tâches, en attente de son portage (module 3) ; voir PendingJobManager.
+    irstea_bdoh.job_manager: '@Irstea\BdohBundle\Manager\PendingJobManager'
+    Irstea\BdohBundle\Manager\JobManagerInterface: '@Irstea\BdohBundle\Manager\PendingJobManager'

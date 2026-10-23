@@ -1,0 +1,120 @@
+{%- autoescape false -%}{{- 'security.utilisateur.newRightMail.body.hello'|trans }} {{ user.prenom|default('') }} {{ user.nom|default('') -}}{{- 'security.utilisateur.newRightMail.body.part1'|trans -}}
+
+
+{# date de fin de validité #}
+{%- set endOfValidityDate = user.getFinAcces() -%}
+{%- if endOfValidityDate -%}
+{%- set endOfValidityDate = endOfValidityDate|date('formatDate'|trans, false) -%}
+{%- else -%}
+{%- set endOfValidityDate = 'security.utilisateur.noValidityDate'|trans -%}
+{%- endif -%}
+
+
+{#- bloc gestionnaire de TOUS les observatoires -#}
+{%- if gestionnaireDesObservatoires %}
+
+
+
+{{ 'security.utilisateur.newRightMail.body.youAre1'|trans -}}{{- 'security.utilisateur.gestionnaireDesObservatoires'|trans -}}
+{%- endif -%}
+{#- fin du bloc gestionnaire de TOUS les observatoires -#}
+
+{#- bloc observatoire -#}
+{%- set obs_block = block('obs_block')|trim -%}
+{%- if obs_block is not empty %}
+
+
+
+{{ 'security.utilisateur.aboutTheObservatory'|trans }} {{ 'open_quote'|trans }}{{ obs.nom }}{{ 'close_quote'|trans }}{{ 'security.utilisateur.newRightMail.body.youAre2'|trans -}}
+{%- endif -%}
+{%- block obs_block -%}
+
+{#- roles sur l'observatoire -#}
+{%- if user.rolesObservatoire|length > 0 -%}
+{%- for role in user.rolesObservatoire -%}
+
+{#- gestionnaire sur l'observatoire -#}
+{%- if role.valeur == roleGestionnaire and role.observatoire == obs %}
+
+
+{{ 'security.utilisateur.gestionnaireObservatoire'|trans -}}
+{%- endif -%}
+
+{#- utilisateur de confiance sur l'observatoire -#}
+{%- if role.valeur == roleUtilisateur and role.observatoire == obs %}
+
+
+{{ 'security.utilisateur.utilisateurObservatoire'|trans -}}
+{%- endif -%}
+
+{%- endfor -%}
+{%- endif -%}
+{#- fin des roles sur l'observatoire -#}
+
+{#- roles sur les sites de l'observatoire -#}
+{%- if user.rolesSite|length > 0 -%}
+
+{#- roles gestionnaire sur les sites de l'observatoire -#}
+{%- set firstRoleGestionnaireSite=0 -%}
+{%- for role in user.rolesSite -%}
+{%- if role.site.observatoire == obs and role.valeur == roleGestionnaire -%}
+{%- if firstRoleGestionnaireSite == 0 %}
+
+
+{{ 'security.utilisateur.gestionnaireSite'|trans }}{{ 'deux_points'|trans -}}
+{%- set firstRoleGestionnaireSite=1 -%}
+{%- endif %}
+
+    - {{ role.site.nom -}}
+{%- endif -%}
+{%- endfor -%}
+{#- fin des roles gestionnaire sur les sites de l'observatoire -#}
+
+{#- roles contributeur sur les sites de l'observatoire -#}
+{%- set firstRoleContributeurSite=0 -%}
+{%- for role in user.rolesSite -%}
+{%- if role.site.observatoire == obs and role.valeur == roleContributeur -%}
+{%- if firstRoleContributeurSite == 0 %}
+
+
+{{ 'security.utilisateur.contributeurSite'|trans }}{{ 'deux_points'|trans -}}
+{%- set firstRoleContributeurSite=1 -%}
+{%- endif %}
+
+    - {{ role.site.nom -}}
+{%- endif -%}
+{%- endfor -%}
+{#- fin des roles contributeur sur les sites de l'observatoire -#}
+
+{%- endif -%}
+{#- fin des roles sur les sites de l'observatoire -#}
+
+{#- roles utilisateur sur les chroniques  de l'observatoire -#}
+{%- if user.rolesChronique|length > 0 -%}
+{%- set firstRoleUtilisateurChronique=0 -%}
+{%- for role in user.rolesChronique -%}
+{%- if role.chronique in chroniques and role.valeur == roleUtilisateur -%}
+{%- if firstRoleUtilisateurChronique == 0 %}
+
+
+{{ 'security.utilisateur.utilisateurChronique'|trans }}{{ 'deux_points'|trans -}}
+{%- set firstRoleUtilisateurChronique=1 -%}
+{%- endif %}
+
+    - {{ role.chronique.station.code -}}/{{- role.chronique.code-}}
+{%- endif -%}
+{%- endfor -%}
+{%- endif -%}
+{#- fin des roles utilisateur sur les chroniques  de l'observatoire -#}
+
+{%- endblock obs_block -%}
+{#- fin du bloc observatoire #}
+
+
+
+{{ 'security.utilisateur.validityDate'|trans }} {{ endOfValidityDate }}
+
+
+{{ 'security.utilisateur.newRightMail.body.part2'|trans -}}{%- endautoescape %}
+
+{{ url('bdoh_home') -}}

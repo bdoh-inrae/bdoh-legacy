@@ -1,0 +1,23 @@
+{
+  "sEmptyTable":     "Aucune donnée à afficher.",
+  "sInfo":           "Lignes _START_ à _END_ sur _TOTAL_",
+  "sInfoEmpty":      "Aucune ligne affichée",
+  "sInfoFiltered":   "(recherche effectuée sur _MAX_ lignes)",
+  "sInfoPostFix":    "",
+  "sInfoThousands":  " ",
+  "sLengthMenu":     "Afficher _MENU_ lignes par page",
+  "sLoadingRecords": "Chargement en cours...",
+  "sProcessing":     "Traitement en cours...",
+  "sSearch":         "Mots-clés&nbsp;:",
+  "sZeroRecords":    "Aucune ligne ne correspond au critère de recherche.",
+  "oPaginate": {
+    "sFirst":      "Premier",
+    "sLast":       "Dernier",
+    "sNext":       "Suivant",
+    "sPrevious":   "Pr&eacute;c&eacute;dent"
+  },
+  "oAria": {
+    "sSortAscending":  ": activer pour trier la colonne par ordre croissant",
+    "sSortDescending": ": activer pour trier la colonne par ordre d&eacute;croissant"
+  }
+}

@@ -1,0 +1,37 @@
+{%- import '@IrsteaBdohConsult/macros.html.twig' as macros -%}
+{% if chronique.secondeEntree %}
+    {% set transformations = {
+    'bareme.firstParentChronicle': chronique.premiereEntree,
+    'bareme.secondParentChronicle': chronique.secondeEntree
+    } %}
+{% else %}
+    {% set transformations = {
+    'bareme.parentChronicle': chronique.premiereEntree
+    } %}
+{% endif %}
+
+{% for label, transformation in transformations %}
+    {% set chronique_mere = transformation.entree %}
+    <div class="col-sm-12">
+        <div class="span">
+            <strong>{{ label|trans }}{{ 'deux_points'|trans }}</strong>{% if chronique.secondeEntree %}<br>{% endif %}
+            {% if is_granted('CONSULT_TIMESERIES', chronique_mere)  %}
+                <a href="{{ path('bdoh_consult_chronique', {station: chronique_mere.station.code, chronique: chronique_mere.code}) }}"
+                   class="viewChroniqueMere"
+                   title="{{ 'viewChronique'|trans }}">
+                    {{- chronique_mere -}}
+                </a>
+            {% else %}
+                {{- chronique_mere -}}
+            {% endif %}
+            {{- macros.chronique_isVisible(chronique_mere) -}}
+        </div>
+    </div>
+{% endfor %}
+<div class="col-sm-24" style="margin-top:15px;">
+    <a class="btn btn-info btn-open-modal" href="#" data-toggle="modal" data-target="#detail-jeux-baremes">
+        {{ 'bareme.seeBaremeLogs'|trans }}
+    </a>
+</div>
+{% include '@IrsteaBdohConsult/Chronique/_detail-jeux-baremes.html.twig' %}
+

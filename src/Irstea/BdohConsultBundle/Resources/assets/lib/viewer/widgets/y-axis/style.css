@@ -1,0 +1,11 @@
+
+.selection .toggle {
+    text-decoration: line-through;
+    line-height: 1em;
+    padding: 3px 4px;
+}
+
+.selection .toggle:before {
+    content: "\25AC\25AC";
+    vertical-align: middle;
+}

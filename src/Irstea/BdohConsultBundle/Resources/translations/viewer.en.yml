@@ -1,0 +1,62 @@
+site: Site
+station: Station
+select-station-to-see-chronicles: Please select a station to see the list of available time series.
+select-and-drag-chronicles: |
+    To add time series, please select them in the list and drag and drop them to the window on the right.
+click-cross-remove-chronicle: To remove a time series, please click on the corresponding close button icon.
+chronicles-must-be-compatible: |
+    Warning: only time series of the same parameter and
+    same unit can be displayed together.
+available-chronicles: Available time series
+selected-chronicles: Selected time series
+select-at-least-one-chronicle: Please select at least one time series
+chart-loading: Loading...
+chronicle: Time series
+left-axis: Left axis
+right-axis: Right axis
+edit-selection: Choose time series
+closeThisPane: Close this panel
+time-series-hidden-at-date-range: |
+    The following time series are no longer displayed because
+    they have no data in the newly selected time range:
+time-series-has-no-measure: |
+    This time series cannot be displayed because it contains
+    no data in the selected time range.
+toggle-checkpoints: Show/hide checkpoints
+graph:
+    state:
+        processing: Processing...
+        empty: Please select one or more time series.
+        all-hidden: All the time series are hidden.
+        no-measures: No data on the selected time range.
+        error: "Error: %message%"
+selector:
+    graph: Graph
+    chroniques:
+        emptySelection: Please select a station.
+        noChronicles: Those stations hove no time series.
+        noMoreChronicles: No time series have data on the selected time range.
+        noCompatibleChronicles: No time series left to display on this axis.
+consult.help.range:
+    too-small: Please select at least a one-day-long time range.
+    too-big: Please select a time range less than 5 years.
+subsampledInfo(%num%): >+
+    Due to the high number of non-gap data (%num%), the data set has been subsampled.
+    Please select a narrower date range in order to avoid subsampling.
+subsampledInfoHelp(%num%): >+
+    Due to the high number of non-gap data (<span class="subsampledHelp">%num%</span>), the data set has been subsampled.
+    Please select a narrower date range in order to avoid subsampling.
+subsampledHelp: >+
+    The limit before subsampling is 50,000 points for instantaneous representations and 25,000 points for mean representations.
+chroniqueTitle(%station%, %typeParam%): >+
+    Station: %station%<br/>Parameter: %typeParam%
+hideDisplayButton: Show/hide this time series
+histogramTimeStepsIs(%ts%): Given the span of the currently<br>selected time range, the time<br>step for the histogram is %ts%.
+timeSeriesNoMeasures: This time series does not have any<br>data on the selected time range.
+titleDataType:
+    discontinuous:
+    instantaneous: Instantaneous data sampling.
+    meanPast: Mean data sampling on previous time step.
+    meanNext: Mean data sampling on next time step.
+    cumulativePast: Cumulative data sampling on previous time step.
+    cumulativeNext: Cumulative data sampling on next time step.

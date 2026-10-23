@@ -1,11 +1,15 @@
-# yaml-language-server: $schema=../vendor/symfony/routing/Loader/schema/routing.schema.json
+# Les routes, dans l'ordre de app/config/routing.yml de l'ancien BDOH : la première qui correspond
+# l'emporte, et celles de BdohBundle, dont l'accueil, restent les dernières. Les traductions pour le
+# JavaScript (/translations/…) viennent de config/routes/js_translation.yaml.
+irstea_bdoh_internationalisation:
+    resource: "@IrsteaBdohInternationalisationBundle/Resources/config/routing.yml"
 
-# This file is the entry point to configure the routes of your app.
-# Methods with the #[Route] attribute are automatically imported.
-# See also https://symfony.com/doc/current/routing.html
+observatoires:
+    resource: routes_observatory.yaml
+    prefix:   /{_observatoire}
+    requirements:
+        _observatoire: '[A-Z0-9_-]+'
 
-# To list all registered routes, run the following command:
-#   bin/console debug:router
-
-controllers:
-    resource: routing.controllers
+irstea_bdoh_main:
+    resource: "@IrsteaBdohBundle/Controller/"
+    type:     attribute

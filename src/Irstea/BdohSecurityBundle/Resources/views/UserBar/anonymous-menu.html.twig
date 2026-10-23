@@ -1,0 +1,7 @@
+{% from 'macros.html.twig' import richLink %}
+
+<!-- Navigation Menu for an anonymous user.
+================================================== -->
+<li>{{ richLink(path('bdoh_security_login'), 'account.login'|trans, 'user', 'both') }}</li>
+<li class="navbar-text">{{ 'or'|trans }}</li>
+<li><a href="{{ path('bdoh_security_utilisateur_new') }}">{{ 'account.create'|trans }}</a></li>

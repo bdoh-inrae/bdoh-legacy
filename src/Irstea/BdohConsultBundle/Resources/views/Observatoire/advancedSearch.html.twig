@@ -1,0 +1,382 @@
+{% extends '@IrsteaBdohConsult/layout.html.twig' %}
+{% import '@IrsteaBdohConsult/macros.html.twig' as macros %}
+{% from 'macros.html.twig' import pageTitle, i18nEntityLabel, attachTooltip %}
+
+{% macro dateField(date) %}
+    {%- if date %}
+        {%- set ts = date|date('U', false) %}
+        <td data-type="num" data-order="{{ ts }}" data-search="{{ ts }}"> {{ date|date('formatDate'|trans, false) }}</td>
+    {%- else %}
+        <td data-order="0" data-search="">-</td>
+    {%- endif %}
+{%- endmacro %}
+
+{% macro textField(value, defaultLabel) %}
+    <td>{{ value | default(defaultLabel | default('none') | trans) }}</td>
+{% endmacro %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script src="{{ asset('assets/consult/advanced-search.js') }}"></script>
+{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <link rel="stylesheet" href="{{ asset('assets/consult/advanced-search.css') }}" />
+    <style type="text/css">
+        #main-table.table tr.group{
+            padding:0;
+        }
+        #main-table.table tr.group td div.row{
+            margin:0;
+        }
+        #main-table.table tr.group td div.row > div:first-of-type{
+            padding-left:0;
+        }
+        #main-table.table tr.group td div.row div.toolbox-btns.pull-right{
+            margin:-5px 1px -5px 0;
+            background:transparent;
+        }
+        #main-table.table tr td div.toolbox-btns.pull-right{
+            background:transparent;
+            margin-top:-5px;
+            margin-bottom:-7px;
+        }
+        #main-table.table tr td div.toolbox-btns.pull-right span.isvisible{
+            display:inline-block;
+            padding:6px 0;
+            margin:0;
+            border:0;
+            font-size:11px;
+            line-height:1;
+            vertical-align:top;
+        }
+        a.tooltipCommentaire{
+            cursor:default;
+            text-decoration:none;
+        }
+        #main-table div.tooltip-inner{
+            max-width:270px;
+        }
+    </style>
+{% endblock %}
+
+{% block title %}
+    {{ pageTitle('advancedSearch'|trans) }}
+{% endblock %}
+
+{% block breadcrumb %}
+    <ul class="breadcrumb">
+        <li><a href="{{ path('bdoh_home') }}">{{ 'home'|trans }}</a></li>
+        <li class="active">{{ 'advancedSearch'|trans }}</li>
+    </ul>
+{% endblock %}
+
+{% block main %}
+    {% from _self import dateField, textField %}
+    <div id="consult-advancedSearch">
+
+        <h1>{{ 'complexViewer'|trans }}</h1>
+        <h2>
+            <i class="fam-chart-curve"></i>
+            <a href="{{ path('bdoh_consult_complexViewer') }}">{{ 'TextLinkToCV'|trans|raw }}</a>
+        </h2>
+        <br/>
+
+        <h1>{{ 'advancedSearch'|trans }}</h1>
+
+        <div class="async">
+            <div class="waiting"><span class="glyphicon glyphicon-hourglass"></span></div>
+            <div class="result">
+                <fieldset class="box">
+                    <legend>{{ 'searchPeriod'|trans }}</legend>
+
+                    <div class="row form-inline">
+                        <div id="filter-date-range" class="form-group">
+                            <label>{{ 'displayOnlyInPeriod'|trans }}</label>
+
+                            <div class="input-group">
+                                <span class="input-group-addon">{{ 'from'|trans }}</span>
+                                <input class="form-control start" data-set-buttons="false"/>
+                            </div>
+
+                            <div class="input-group">
+                                <span class="input-group-addon">{{ 'to'|trans }}</span>
+                                <input class="form-control end" data-set-buttons="false"/>
+                            </div>
+
+                            <label style="color: #0e90d2; font-size: 10px" ><br>{{ 'astuceDate'|trans }}</label>
+                        </div>
+                    </div>
+                </fieldset>
+
+                <fieldset id="column-filters" class="box">
+
+                    <div class="row form-inline" style="margin-bottom:5px">
+
+                        <div class="form-group col-md-5">
+                            {# N.B. : le style="width:100%" est obligatoire pour être pris en compte par select2 #}
+                            <select id="station-filter" name="station"
+                                    data-placeholder="{{ 'advancedSearch.stations'|trans }}"
+                                    class="column-filter form-control" multiple style="width:100%">
+                            </select>
+                        </div>
+
+                        <div class="form-group col-md-4">
+                            <select id="active-station-filter" name="estActive"
+                                    data-placeholder="{{ 'advancedSearch.enActivite'|trans }}"
+                                    class="column-filter form-control" style="width:100%">
+                                <option value="" selected>-</option>
+                                <option>{% trans %}yes{% endtrans %}</option>
+                                <option>{% trans %}no{% endtrans %}</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group col-md-5">
+                            <select id="commune-filter" name="commune"
+                                    data-placeholder="{{ 'advancedSearch.communes'|trans }}"
+                                    class="column-filter form-control" multiple style="width:100%">
+                            </select>
+                        </div>
+
+                        <div class="form-group col-md-5">
+                            <select id="sites-filter" name="site"
+                                    data-placeholder="{{ 'advancedSearch.sites'|trans }}"
+                                    class="column-filter form-control" multiple style="width:100%">
+                            </select>
+                        </div>
+
+                        <div class="form-group col-md-5">
+                            <select id="producteur-filter" name="producteur"
+                                    data-placeholder="{{ 'advancedSearch.producteurs'|trans }}"
+                                    class="column-filter form-control" multiple style="width:100%">
+                            </select>
+                        </div>
+
+                    </div>
+                    <div class="row form-inline" style="margin-bottom:5px">
+
+                        <div class="form-group col-md-5">
+                            <select id="famille-filter" name="famille"
+                                    data-placeholder="{{ 'advancedSearch.famillesParametres'|trans }}"
+                                    class="column-filter form-control" multiple style="width:100%">
+                            </select>
+                        </div>
+
+                        <div class="form-group col-md-5">
+                            <select id="parametersStudied-filter" name="parametre"
+                                    data-placeholder="{{ 'advancedSearch.typesParametres'|trans }}"
+                                    class="column-filter form-control" multiple style="width:100%">
+                            </select>
+                        </div>
+
+                        <div class="form-group col-md-4">
+                            <select id="type-filter" name="type"
+                                    data-placeholder="{{ 'advancedSearch.typesChroniques'|trans }}"
+                                    class="column-filter form-control" multiple style="width:100%">
+                            </select>
+                        </div>
+
+                        <div class="form-group col-md-5">
+                            <select id="onBassin-filter" name="bassin"
+                                    data-placeholder="{{ 'advancedSearch.bassins'|trans }}"
+                                    class="column-filter form-control" multiple style="width:100%">
+                            </select>
+                        </div>
+
+                        <div class="form-group col-md-5">
+                            <select id="onCoursEau-filter" name="coursEau"
+                                    data-placeholder="{{ 'advancedSearch.courseau'|trans }}"
+                                    class="column-filter form-control" multiple style="width:100%">
+                            </select>
+                        </div>
+
+                    </div>
+                    <div class="row form-inline" style="margin-bottom:5px">
+
+                        <div class="form-group col-md-24">
+                            <select id="dataset-filter" name="dataset"
+                                    data-placeholder="{{ 'advancedSearch.dataset'|trans }}"
+                                    class="column-filter form-control" multiple style="width:100%">
+                            </select>
+                        </div>
+
+                    </div>
+
+
+                </fieldset>
+
+                <table id="main-table" class="table" data-group-by="0" style="width:100%">
+                    <!-- Columns header -->
+                    <thead>
+                    <tr>
+                        {# colonne 0 la station #}
+                        <th data-group-order="17">
+                            {{ 'station'|trans }}
+                        </th>
+                        {# colonne 1 #}
+                        <th data-visible="false" data-filter-with="#active-station-filter">
+                            {{ 'station.estActive'|trans }}
+                        </th>
+                        {# colonne 2 #}
+                        <th data-visible="false"  data-filter-with="#commune-filter">>
+                            {{ 'commune'|trans }}
+                        </th>
+                        {# colonne 3 #}
+                        <th data-visible="false" data-filter-with="#sites-filter" data-value-separator="##">
+                            {{ 'sites'|trans }}
+                        </th>
+                        {# colonne 4 #}
+                        <th class="col-md-3">
+                            {{ 'chronique.code'|trans }}
+                        </th>
+                        {# colonne 5 #}
+                        <th data-visible="false" data-filter-with="#famille-filter" data-value-separator="##">
+                            {{ 'FamilleParametres'|trans }}
+                        </th>
+                        {# colonne 6 #}
+                        <th class="col-md-5" data-filter-with="#parametersStudied-filter">
+                            {{ 'parametersStudied'|trans }}
+                        </th>
+                        {# colonne 7 #}
+                        <th>
+                            {{ 'unite'|trans }}
+                        </th>
+                        {# colonne 8 #}
+                        <th data-filter-with="#producteur-filter">
+                            {{ 'producteur'|trans }}
+                        </th>
+                        {# colonne 9 #}
+                        <th data-filter-with="#type-filter">
+                            {{ 'type'|trans }}
+                        </th>
+                        {# colonne 10 #}
+                        <th style="white-space:nowrap">
+                            {{ 'begin'|trans }} [{{ 'UTC'|trans }}]
+                        </th>
+                        {# colonne 11 #}
+                        <th style="white-space:nowrap">
+                            {{ 'end'|trans }} [{{ 'UTC'|trans }}]
+                        </th>
+                        {# colonne 12 #}
+                        <th data-type="num">
+                            {{ 'measuresShort'|trans }}
+                        </th>
+                        {# colonne 12,5 #}
+
+                        <th class="col-md-3" data-filter-with="#dataset-filter">
+                            {{ 'dataset'|trans }}
+                        </th>
+
+                        {# colonne 13 #}
+                        <th class="col-md-2" data-searchable="false" data-orderable="false">
+                            {# Toolbox column #}
+                        </th>
+                        {# colonne 14 #}
+                        <th data-visible="false" data-filter-with="#onBassin-filter" data-value-separator="##">
+                            {{ 'onBassin'|trans }}
+                        </th>
+                        {# colonne 15 #}
+                        <th data-visible="false" data-filter-with="#onCoursEau-filter" data-value-separator="##">
+                            {{ 'onCoursEau'|trans }}
+                        </th>
+                        {# colonne 16 #}
+                        <th data-visible="false">
+                            {{ 'commentaire'|trans }}
+                        </th>
+                        {# colonne 17 #}
+                        <th data-visible="false" data-filter-with="#station-filter">
+                            {{ 'station'|trans }}
+                        </th>
+                    </tr>
+                    </thead>
+
+                    <tbody>
+                    {% for chronique in chroniques %}
+                        <tr>
+                            {# colonne 0 la station #}
+                            <td data-order="{{ chronique.station.nom }}">
+                                <div class="row">
+                                    <div class="col-md-10">
+                                        <strong>
+                                            {{ 'station'|trans }} {{ 'open_quote'|trans }}{{ chronique.station.nom }}{{ 'close_quote'|trans }}
+                                            ({{ chronique.station.code }})
+                                        </strong>
+                                        {% if not chronique.station.estActive %}
+                                            <em>({{ 'notActive'|trans }})</em>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-6">{{ chronique.station.commune }}</div>
+                                    <div class="col-md-3"><em>
+                                            {{ chroniquesNumber[chronique.station.id] }}
+                                            {{ 'chronique(s)'|transchoice(chroniquesNumber[chronique.station.id])|lower }}
+                                        </em></div>
+                                    {% if chronique.station.commentaire %}
+                                        <div class="col-md-3"><em><a class="tooltipCommentaire" {{ attachTooltip(chronique.station.commentaire) }}>
+                                                    {{- 'commentaire'|trans -}}
+                                                </a></em></div>
+                                    {% endif %}
+                                    <div class="toolbox-btns pull-right">
+                                        {{ macros.station_view(chronique.station) }}
+                                    </div>
+                                </div>
+                            </td>
+                            {# colonne 1 #}
+                            <td>{{ chronique.station.estActive ? 'yes'|trans : 'no'|trans }}</td>
+                            {# colonne 2 #}
+                            {{ textField(chronique.station.commune | default(false), 'noneFeminine') }}
+                            {# colonne 3 #}
+                            <td>
+                                {% spaceless %}
+                                    {%- for site in chronique.station.sites -%}
+                                        {{- site.nom -}}
+                                        {{- loop.last ? '' : '##' -}}
+                                    {%- endfor -%}
+                                {% endspaceless %}
+                            </td>
+                            {# colonne 4 #}
+                            <td>{{ chronique.code }}</td>
+                            {# colonne 5 #}
+                            {{ textField(chronique.familles | default(false), 'noneFeminine') }}
+                            {# colonne 6 #}
+                            <td>{{ i18nEntityLabel(chronique.parametre, 'nom', '') }}</td>
+                            {# colonne 7 #}
+                            <td>{{ chronique.unite.libelle | default('') }}</td>
+                            {# colonne 8 #}
+                            {{ textField(chronique.producteur.nom | default(false)) }}
+                            {# colonne 9 #}
+                            <td>{{ chronique.dType | trans }}</td>
+                            {# colonne 10 #}
+                            {{ dateField(chronique.dateDebutMesures) }}
+                            {# colonne 11 #}
+                            {{ dateField(chronique.dateFinMesures) }}
+                            {# colonne 12 #}
+                            <td class="text-right">{{ chronique.nbMesures | default('0') }}</td>
+                            {# colonne 12,5 #}
+                            <td>{{ chronique.dataset | default('Aucun') }}</td>
+                            {# colonne 13 #}
+                            <td>
+                                <div class="toolbox-btns pull-right">
+                                    <span class="isvisible">{{ macros.chronique_isVisible(chronique) }}</span>
+                                    {% if is_granted('CONSULT_TIMESERIES', chronique) %}
+                                        {{ macros.chronique_view(chronique) }}
+                                    {% endif %}
+                                </div>
+                            </td>
+                            {# colonne 14 #}
+                            {{ textField(chronique.bassins | default(false)) }}
+                            {# colonne 15 #}
+                            {{ textField(chronique.coursEaux | default(false)) }}
+                            {# colonne 16 #}
+                            <td>{{ chronique.station.commentaire }}</td>
+                            {# colonne 17 #}
+                            <td data-order="chronique.station.nom">{{ chronique.station.nom }} ({{ chronique.station.code }})</td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+{% endblock main %}

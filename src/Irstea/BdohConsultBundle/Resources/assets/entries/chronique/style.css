@@ -1,0 +1,97 @@
+div#detail-jeux-baremes div.panel.panel-default{
+    margin:10px 0 0;
+}
+div#detail-jeux-baremes div.panel.panel-default > div{
+    padding:0;
+}
+div#detail-jeux-baremes div.alert.alert-info{
+    margin:15px 0 0;
+    padding:15px 8px;
+}
+div#detail-jeux-baremes div.alert.alert-info:first-of-type{
+    margin-top:0;
+}
+table.table-jeux-baremes-infos{
+    width:100%;
+}
+table.table-jeux-baremes-infos td{
+    padding:8px;
+}
+table.table.table-jeux-baremes thead tr th,
+table.table.table-jeux-baremes tbody tr td{
+    line-height:1;
+}
+table.table.table-jeux-baremes:last-of-type{
+    margin-bottom:0;
+}
+a.collapse-title{
+    color:#444444;
+}
+a.collapse-title:hover,
+a.collapse-title:focus{
+    cursor:pointer;
+    text-decoration:none;
+    color:#444444;
+}
+a.collapse-title b.caret{
+    margin:0;
+    padding:0;
+    vertical-align:3px;
+    transition:transform 0.3s ease-in-out;
+}
+a.collapse-title.collapsed b.caret{
+    transform:rotate(-90deg);
+}
+div#viewer div.form-inline div.input-group.col-md-8 span.input-group-addon + span.input-group-btn {
+    width: 1%;
+}
+div#viewer div.form-inline div.input-group.col-md-8 span.input-group-addon + span.input-group-btn > a.btn {
+    border-radius: 0;
+    border-right: 0;
+}
+div#viewer div.form-inline div.input-group.col-md-8 input.form-control + span.input-group-btn > a.btn,
+div.daterangeselector div.daterange div.input-group input.form-control + span.input-group-btn > a.btn {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    border-left: 0;
+}
+div.daterangeselector div.daterange > div.input-group {
+    margin-bottom: 2px;
+}
+sup.checkpointsInfo, span.subsampledHelp{
+    cursor:default;
+}
+span.info-high div.tooltip-inner,
+div.graph-infos div.tooltip-inner{
+    max-width:250px;
+}
+table#fillingRates th, table#fillingRates td{
+    white-space:nowrap;
+}
+div#viewer div.graph{
+    padding-top:20px;
+}
+div#viewer div.graph-infos{
+    margin-top:15px;
+}
+div#viewer div.graph-infos div.graph-flex{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-end;
+}
+div.graph-infos div.divControlPoints input#controlPointsId{
+    margin-top:0;
+}
+div.graph-infos div.divControlPoints,
+div.graph-infos div.divControlPoints label{
+    margin-bottom:0;
+}
+div#viewer div.graph div.jqplot-table-legend-swatch{
+    width:0;
+    height:0;
+    border-width:5px 6px 5px 6px;
+    border-style:solid;
+}
+h3.panel-title i[class^='fam-']{
+    vertical-align:text-top;
+}

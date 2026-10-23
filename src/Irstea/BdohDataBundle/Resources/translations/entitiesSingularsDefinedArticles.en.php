@@ -1,0 +1,47 @@
+<?php
+/*
+ * Copyright (C) 2012-2019 IRSTEA
+ * All rights reserved.
+ */
+
+return [
+    'Observatoire'                                          => 'of the ',
+    'Doi'                                                   => 'of the ',
+    'Partenaire'                                            => 'of the ',
+    'SiteExperimental'                                      => 'of the ',
+    'Station'                                               => 'of the ',
+    'Chronique'                                             => 'of the ',
+    'ChroniqueDiscontinue'                                  => 'of the ',
+    'ChroniqueContinue'                                     => 'of the ',
+    'ChroniqueCalculee'                                     => 'of the ',
+    'ChroniqueConvertie'                                    => 'of the ',
+    'Commune'                                               => 'of the ',
+    'FamilleParametres'                                     => 'of the ',
+    'TypeParametre'                                         => 'of the ',
+    'Unite'                                                 => 'of the ',
+    'Mesure'                                                => 'of the ',
+    'PointControle'                                         => 'of the ',
+    'Echantillonnage'                                       => 'of the ',
+    'PasEchantillonnage'                                    => 'of the ',
+    'LigneCalcul'                                           => 'of the ',
+    'Bareme'                                                => 'of the ',
+    'PeriodeValidite'                                       => 'of the ',
+    'Plage'                                                 => 'of the ',
+    'Qualite'                                               => 'of the ',
+    'JeuQualite'                                            => 'of the ',
+    'Bassin'                                                => 'of the ',
+    'CoursEau'                                              => 'of the ',
+    'TauxRemplissage'                                       => 'of the ',
+    'DataSet'                                               => 'of the ',
+    'Milieu'                                                => 'of the ',
+    'DataConstraint'                                        => 'of the ',
+    'CriteriaGeology'                                       => 'of the ',
+    'CriteriaClimat'                                        => 'of the ',
+    'InspireTheme'                                          => 'of the ',
+    'TopicCategory'                                         => 'of the ',
+    'TypeFunding'                                           => 'of the ',
+    'ContactOrganisationRole'                               => 'of the ',
+    'RolePersonneTheia'                                     => 'of the ',
+    'PersonneTheia'                                         => 'of the ',
+    'TheiaCategories'                                       => 'of the ',
+];

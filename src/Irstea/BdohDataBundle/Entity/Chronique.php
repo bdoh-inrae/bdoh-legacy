@@ -19,6 +19,8 @@ use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
  * @SuppressWarnings(PHPMD.TooManyFields)
  */
 #[UniqueEntity(fields: ['code', 'station'], message: 'Chronique.code.alreadyExists', repositoryMethod: 'findAnyByStationAndCode')]
+// Les pages de recherche y accrochent des données calculées (bassins, coursEaux, familles).
+#[\AllowDynamicProperties]
 abstract class Chronique implements ChroniqueRelatedInterface, LabelledEntityInterface
 {
     use ChroniqueRelatedTrait;

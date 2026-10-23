@@ -1,0 +1,41 @@
+<div class="modal fade" id="detail-conversions" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <div class="modal-dialog modal-lg" role="document">
+
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                <h1 class="modal-title" style="margin-bottom:0;">
+                    {{ 'chroniqueConvertie.conversions(%chronique%)'|trans({'%chronique%' : chronique}) }}
+                </h1>
+            </div>
+
+            <div class="modal-body">
+                {% for conversion in conversions %}
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <strong>
+                                {{ 'chroniqueConvertie.conversionDu'|trans }}
+                                {{ conversion.dateCreation|date('transformation.bareme.dateBareme'|trans, false) }}
+                                {{ 'UTC'|trans }}{{ 'deux_points'|trans }}
+                            </strong>
+                            {% set paramConversionMinuntes = conversion.paramConversion // 60 %}
+                            {{ paramConversionMinuntes }} {{ 'minute'|transchoice(paramConversionMinuntes) }}
+                            {% if paramConversionMinuntes >= 60 %}
+                                ({{ conversion.paramConversion|durationFormat }})
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn" data-dismiss="modal" aria-hidden="true">{{ 'close'|trans }}</button>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>

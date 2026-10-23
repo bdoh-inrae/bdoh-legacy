@@ -1,0 +1,122 @@
+{% set nJeuxBaremes = (jeuxBaremes|length == 1 or jeuxBaremes[1] is null or jeuxBaremes[1]|length == 0) ? 1 : 2 %}
+<div class="modal fade" id="detail-jeux-baremes" tabindex="-1"
+     role="dialog" aria-hidden="true">
+
+    <div class="modal-dialog modal-lg" role="document">
+
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                <h1 class="modal-title" style="margin-bottom:0;">{{ 'chroniqueCalculee.baremes(%chronique%)'|trans({'%chronique%' : chronique}) }}</h1>
+            </div>
+
+            <div class="modal-body">
+                {% for i in 0..nJeuxBaremes - 1 %}
+                    <div class="alert alert-info">
+                        <strong>{{ 'chroniqueCalculee.baremesChroniqueMere'|trans }}
+                            <span style="font-weight:normal;">
+                                {% set chroniqueMere = (i == 0) ? chronique.premiereentree.entree : chronique.secondeentree.entree %}
+                                {{ chroniqueMere }}
+                            </span>
+                        </strong>
+                    </div>
+                    {% for jeuBareme in jeuxBaremes[i] %}
+                        {% set jeuBaremeId = 'jeuBaremeId' ~ jeuBareme.id %}
+                        <div class="panel panel-default">
+                            <div class="panel-heading">
+                                <table class="table-jeux-baremes-infos">
+                                    <tr>
+                                        <td>
+                                            <a data-toggle="collapse" class="dropdown-toggle collapse-title collapsed pannel-heading" href="#{{- jeuBaremeId -}}">
+                                                <strong>
+                                                    <b class="caret"></b>
+                                                    {{ 'transformation.jeu-baremes-du(%date%)'|trans({'%date%':
+                                                        jeuBareme.dateCreation|date('transformation.bareme.dateBareme'|trans, false)}) }} {{ 'UTC'|trans }}
+                                                    {% set additional_info = [] %}
+
+                                                    {% if nJeuxBaremes > 1 %}
+                                                        {% set additional_info = additional_info|merge([
+                                                            ('transformation.delaiPropagation'|trans)~' : '~(jeuBareme.delaiPropagation|default(0))
+                                                        ]) %}
+                                                    {% endif %}
+
+                                                    {% if jeuBareme.valueLimitTransformationType is not empty %}
+                                                        {% set additional_info = additional_info|merge([
+                                                            ('bareme.limitTransfoAbbr.'~(jeuBareme.valueLimitTransformationType))|trans({
+                                                                '%placeholder%': jeuBareme.valueLimitPlaceholder
+                                                            })
+                                                        ]) %}
+                                                    {% endif %}
+
+                                                    {% if additional_info|length > 0 %}
+                                                        <br/>
+                                                        {{ additional_info|join(' — ')|raw }}
+                                                    {% endif %}
+                                                </strong>
+                                            </a>
+                                        </td>
+                                        <td style="text-align:right;">
+                                            {% if is_granted('DOWNLOAD', jeuBareme) %}
+                                                <form style="margin:0" method="POST"
+                                                      action="{{ path('bdoh_admin_jeu_bareme_export', {
+                                                          'jeu-bareme-id': jeuBareme.id,
+                                                          'child-chronicle-name': chronique.__toString,
+                                                          'parent-chronicle-id': chroniqueMere.id
+                                                          }) }}">
+                                                    <input type="submit" class='btn btn-info'
+                                                           value="{{ 'exporter'|trans }}"/>
+                                                </form>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                </table>
+                            </div>
+                            <div class="panel-body panel-collapse collapse" id="{{ jeuBaremeId }}">
+                                <table class="table table-jeux-baremes">
+                                    <thead>
+                                        <tr>
+                                            <th>{{ 'bareme.bareme'|trans }}</th>
+                                            <th class="col-md-4">{{ 'bareme.dateCreation'|trans }} [{{ 'UTC'|trans }}]</th>
+                                            <th class="col-md-3">{{ 'historique.debut'|trans }} [{{ 'UTC'|trans }}]</th>
+                                            <th class="col-md-3">{{ 'historique.fin'|trans }} [{{ 'UTC'|trans }}]</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for bjb in jeuBareme.baremeJeuBaremes %}
+                                            {% set bareme = bjb.bareme %}
+                                            <tr>
+                                                <td class="col-md-4">{{ bareme.observatoire ? bareme.nom :
+                                                    (('transformation.bareme.baremeTechnique.'~bareme.nom)|trans) }}</td>
+                                                <td class="col-md-3">
+                                                    {% if bareme.observatoire %}
+                                                        {{ bareme.dateCreation|date('transformation.bareme.dateBareme'|trans, false)|raw }}
+                                                    {% else %}
+                                                        &mdash;
+                                                    {% endif %}
+                                                </td>
+                                                <td class="col-md-2">
+                                                    {{ bjb.debutValidite|date('transformation.bareme.dateBareme'|trans, false)|raw }}
+                                                </td>
+                                                <td class="col-md-2">
+                                                    {% if bjb.finValidite %}
+                                                        {{ bjb.finValidite|date('transformation.bareme.dateBareme'|trans, false)|raw }}
+                                                    {% else %}
+                                                        &mdash;
+                                                    {% endif %}
+                                                </td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% endfor %}
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn" data-dismiss="modal" aria-hidden="true">{{ 'close'|trans }}</button>
+            </div>
+        </div>
+    </div>
+</div>

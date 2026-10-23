@@ -1,0 +1,222 @@
+{###############################################################################
+ #
+ # Some useful Twig macros for BDOH project.
+ #
+ ##############################################################################}
+
+{#
+# Page title: a root plus optional extra text
+#}
+{% macro pageTitle(extraText) %}
+    BDOH - {{ currentObservatoire() }}{% if extraText %} - {{ extraText }}{% endif %}
+{% endmacro pageTitle %}
+
+{##############################################################################}
+
+{# 
+ # Display the
+ #}
+{% macro logo(title, img, url) %}
+    {%- if url %}<a href="{{ url }}">{% endif -%}
+    <img class="logo" src="{{ asset(img) }}"{% if title %} alt="{{ title }}"{% endif %}>
+    {%- if url %}</a>{% endif %}
+{%- endmacro logo %}
+
+{# 
+ # Display the
+ #}
+{% macro logoObservatoire(obs) %}
+    {%- import _self as macros %}
+    {{- macros.logo(
+            obs ? obs.nom : 'Irstea',
+            obs and obs.pathLogo ? obs.pathLogo : '/images/inrae_logo.svg',
+            obs and obs.lien ? obs.lien : null
+        ) -}}
+{% endmacro logoObservatoire %}
+
+{##
+ # Rich display of a link.
+ #
+ # @param string href
+ # @param string display            Can be 'icon', 'text' or 'both'.
+ # @param string title              Depending on 'display' parameter, is displayed as text or as tooltip.
+ # @param string icon               A famfamfam icon, without the 'fam-' prefix.
+ # @param string tooltip_placement  Top, bottom, left or right.
+ # @param string attr               Extra attributes for the link.
+ #}
+{%- macro richLink(href, title, icon, display, tooltip_placement, attr) %}
+{%- spaceless %}
+    {%- import _self as macros %}
+    <a href="{{ href }}" class="iconText" {{ attr | default('') | raw }}>
+    {%- if display == 'both' -%}
+        <i class="fam-{{ icon }}"></i>&ensp;{{ title|trans }}
+    {%- elseif display == 'text' -%}
+        {{- title|trans -}}
+    {%- else -%}
+        {{ macros.tooltipedIcon(icon, title, tooltip_placement) }}
+    {%- endif -%}
+    </a>
+{%- endspaceless %}
+{%- endmacro %}
+
+{##
+ # Create a bootstrap tooltip.
+ #
+ # @param string content   Tooltip content.
+ # @param string placement Top, bottom, left or right.
+ #}
+{%- macro attachTooltip(content, placement) %}
+    {%- if content is not empty %}
+ data-toggle="tooltip" title="{{ content|trans|trim }}" data-placement="{{ placement | default('top') }}"
+    {%- endif -%}
+{%- endmacro %}
+
+{##############################################################################}
+
+
+{##
+ # Displays an icon with a bootstrap tooltip.
+ #}
+{%- macro tooltipedIcon(icon, title, placement) -%}
+    {%- import _self as macros %}
+    <i class="fam-{{ icon }}" {{ macros.attachTooltip(title, placement) }}></i>
+{%- endmacro %}
+
+{##############################################################################}
+
+
+{##
+ # A form button
+ #}
+{% macro button(name, text, classes, loading) %}
+    {% set classes = classes | default('btn') %}
+    {% set loading = loading | default('loading'|trans) %}
+
+    <input type="button" name="{{ name }}" value="{{ text }}" class="{{ classes }}"
+           data-loading-text="{{ loading }}" />
+{% endmacro %}
+
+{##############################################################################}
+
+
+{##
+ # A form submit button
+ #}
+{% macro submit(text, classes, loading) %}
+    {% set text    = text    | default('submit'|trans) %}
+    {% set classes = classes | default('btn') %}
+    {% set loading = loading | default('loading'|trans) %}
+
+    <!-- Submit button -->
+    <input type="submit" value="{{ text }}" class="{{ classes }} btn"
+           data-loading-text="{{ loading }}" />
+{% endmacro %}
+
+{##############################################################################}
+
+
+{##
+ # A form reset button
+ #}
+{% macro reset(text, classes) %}
+    {% set text    = text    | default('reset'|trans) %}
+    {% set classes = classes | default('btn') %}
+
+    <!-- Reset button -->
+    <input type="reset" value="{{ text }}" class="{{ classes }}" />
+{% endmacro %}
+
+{##############################################################################}
+
+{##
+ # A form to cancel anything : more secure than a link
+ # (eg: prevents open the target in a new browser tab).
+ #}
+{% macro cancelForm(route, text, loading) %}
+    {% set text    = text    | default('cancel'|trans) %}
+    {% set loading = loading | default('beingCanceled'|trans) %}
+    <a class="btn btn-danger" href="{{ path(route) }}" data-loading-text="{{ loading }}">{{ text }}</a>
+{% endmacro %}
+
+{##############################################################################}
+
+{##
+ # Macro to load an I18N plugin plus a set of message files in JavaScript
+ #}
+{% macro loadJsI18N(files, paths) %}
+    <script type="text/javascript" src="{{ asset('bundles/irsteabdoh/js/i18n.js') }}"></script>
+    {% set sessionLocale = app.session.get('_locale') %}
+    {% if sessionLocale %}
+        {% set locale = sessionLocale %}
+    {% endif %}
+    {% set shortLocale = locale|slice(0,2) %}
+
+    {% if not paths is iterable %}
+        {% set path = paths %}
+    {% endif %}
+
+    {% if files is iterable %}
+        {% for i in 0..(files|length - 1) %}
+            {% set file = files[i] %}
+
+            {% if paths is iterable %}
+                {% set path = paths[i] %}
+            {% endif %}
+
+            <script type="text/javascript" src="{{ asset(path~'/'~file~'.js') }}"></script>
+            <script type="text/javascript" src="{{ asset(path~'/'~file~'_'~shortLocale~'.js') }}"></script>
+            {% if locale != shortLocale %}
+                <script type="text/javascript" src="{{ asset(path~'/'~file~'_'~locale~'.js') }}"></script>
+            {% endif %}
+        {% endfor %}
+    {% else %}
+        <script type="text/javascript" src="{{ asset(path~'/'~files~'.js') }}"></script>
+        <script type="text/javascript" src="{{ asset(path~'/'~files~'_'~shortLocale~'.js') }}"></script>
+        {% if locale != shortLocale %}
+            <script type="text/javascript" src="{{ asset(path~'/'~files~'_'~locale~'.js') }}"></script>
+        {% endif %}
+    {% endif %}
+{% endmacro %}
+
+{##############################################################################}
+
+{##
+ # Macro to display an entity's label either with default locale or in English
+ #}
+{% macro i18nEntityLabel(entity, property, defaultMessage) %}
+{% spaceless %}
+    {% if app.session.get('_locale')|slice(0, 2) == 'en' %}
+        {{ attribute(entity, property~'En')|default(attribute(entity, property))|default(defaultMessage|trans)|replace({"\n":"<br>"})|raw }}
+    {% else %}
+        {{ attribute(entity, property)|default(defaultMessage|trans)|replace({"\n":"<br>"})|raw }}
+    {% endif %}
+{% endspaceless %}
+{% endmacro %}
+
+{##############################################################################}
+
+{# Macro to provide a DOI link & details #}
+{% macro doi_link(doi) %}
+    {%- import _self as macros %}
+    {% set doi_link = 'https://dx.doi.org/'~doi.identifiant %}
+    {{ macros.i18nEntityLabel(doi, 'description', 'noDescription') }} <a href="{{ doi_link }}">{{ doi_link }}</a>
+{% endmacro %}
+
+{% macro doi_list(dois) %}
+    {%- import _self as macros %}
+    {% set n_dois = dois|length %}
+    {% if n_dois > 0 %}
+        <p style="margin-bottom:0;">
+            {% if n_dois == 1 %}
+                <strong>{{ 'citeWithDoi'|trans }}</strong>
+            {% else %}
+                <strong>{{ 'citeWithDois'|trans }}</strong>
+            {% endif %}
+        </p>
+        <ul style="padding-inline-start:40px;">
+            {% for doi in dois %}
+                <li style="margin-top:4px;">{{- macros.doi_link(doi) -}}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+{% endmacro %}

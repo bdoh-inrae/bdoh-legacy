@@ -1,0 +1,13 @@
+{% extends '@IrsteaBdohSecurity/layout.html.twig' %}
+{% from 'macros.html.twig' import pageTitle %}
+
+{% form_theme form '@IrsteaBdohSecurity/custom_form.html.twig' %}
+
+{% block title %}
+    {{ pageTitle('resetting.reset.submit'|trans) }}
+{% endblock %}
+
+{% block main %}
+    <h1>{{ 'resetting.reset.submit'|trans }}</h1>
+    {% include '@IrsteaBdohSecurity/Resetting/reset_content.html.twig' %}
+{% endblock %}

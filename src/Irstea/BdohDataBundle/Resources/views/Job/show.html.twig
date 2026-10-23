@@ -1,0 +1,83 @@
+{% extends 'layout.html.twig' %}
+{% import '@IrsteaBdohData/Job/macros.html.twig' as Job %}
+{% from 'macros.html.twig' import pageTitle %}
+
+{% set id = job.entity.id %}
+{% set technical = (app.user.isAManagerOfCurrentObservatory() or app.user.isGestionnaireDesObservatoires) %}
+
+{% block htmlmeta %}
+    {{ parent() }}
+    {% if not job.final %}
+        <meta http-equiv="Refresh" content="30"/>
+    {% endif %}
+{% endblock %}
+
+{% block title %}
+    {% trans %}job.title.show(%id%){% endtrans %}
+{% endblock %}
+
+{% block breadcrumb %}
+    <ul class="breadcrumb">
+        <li><a href="{{ path('bdoh_home') }}">{% trans %}home{% endtrans %}</a></li>
+        <li><a href="{{ path('bdoh_job_list') }}">{% trans %}job.title.list{% endtrans %}</a></li>
+        <li class="active">{% trans %}job.title.show(%id%){% endtrans %}</li>
+    </ul>
+{% endblock %}
+
+{% macro field(width, label, utc=false) %}
+<div class="col-md-{{ width }}"><h2>{{ ('job.'~label)|trans }}{%  if utc %} <span style="font-size:smaller;"><sup>[{{ 'UTC'|trans }}]</sup></span>{% endif %}</h2>
+    <p>
+        {% endmacro %}
+
+        {% macro endfield() %}</p></div>{% endmacro %}
+
+{% block main %}
+    {%- import _self as macros %}
+
+    <div id="job-show">
+        <div class="toolbox-btns pull-right">
+            <div>{{ Job.actions(job) }}</div>
+        </div>
+
+        <h1>{% trans %}job.title.show(%id%){% endtrans %}</h1>
+
+        <div class="row">
+            {{ macros.field(4, 'id') }}{{ job.entity.id }}{{ macros.endfield() }}
+            {{ macros.field(4, 'description') }}{{ Job.describe(job.entity) }}{{ macros.endfield() }}
+            {{ macros.field(4, 'observatoire') }}{{ Job.observatory(job) }}{{ macros.endfield() }}
+            {{ macros.field(4, 'chronicles') }}{{ Job.chronicles(job) }}{{ macros.endfield() }}
+            {{ macros.field(4, 'owner') }}{{ job.owner }}{{ macros.endfield() }}
+            {{ macros.field(4, 'state') }}{{ Job.state(job) }}{{ macros.endfield() }}
+        </div>
+
+        <div class="row">
+            {{ macros.field(6, 'created_at', 'utc') }}{{ Job.created_at(job.entity) }}{{ macros.endfield() }}
+            {{ macros.field(6, 'started_at', 'utc') }}{{ Job.started_at(job.entity) }}{{ macros.endfield() }}
+            {{ macros.field(6, 'closed_at', 'utc') }}{{ Job.closed_at(job.entity)|default('-') }}{{ macros.endfield() }}
+            {{ macros.field(6, 'runtime') }}{{ Job.runtime(job.entity)|default('-') }}{{ macros.endfield() }}
+        </div>
+
+        {% if technical %}
+            <div class="row">
+                {{ macros.field(6, 'queue') }}<code>{{ job.entity.queue }}</code>{{ macros.endfield() }}
+                {{ macros.field(6, 'priority') }}{{ job.entity.priority }}{{ macros.endfield() }}
+                {{ macros.field(6, 'exit_code') }}{{ job.entity.exitCode|default('-') }}{{ macros.endfield() }}
+            </div>
+
+            <div class="row">
+                {{ macros.field(4, 'command') }}<code>{{ job.entity.command }}</code>{{ macros.endfield() }}
+                {{ macros.field(20, 'arguments') }}<code>{{ job.entity.args|join(" ") }}</code>{{ macros.endfield() }}
+            </div>
+
+            <div class="row">
+                {{ macros.field(24, 'output') }}
+                <pre>{{ job.entity.output }}</pre>{{ macros.endfield() }}
+            </div>
+
+            <div class="row">
+                {{ macros.field(24, 'error_output') }}
+                <pre>{{ job.entity.errorOutput }}</pre>{{ macros.endfield() }}
+            </div>
+        {% endif %}
+    </div>
+{% endblock main %}

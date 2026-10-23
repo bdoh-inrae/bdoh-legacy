@@ -1,0 +1,92 @@
+recalculate: Recalcul des taux
+recalculationInProgress: Calcul des taux de remplissage en cours
+canTakeAWhile: Cette opération peut prendre plusieurs minutes
+pleaseWait: Veuillez patienter...
+continue: Continue
+discontinue: Discontinue
+calculee: Calculée
+convertie: Convertie
+notCalculatedYet: Cette chronique n'a pas encore été calculée.
+notConvertedYet: Cette chronique n'a pas encore été convertie.
+dataCountByMonth: Nombre de mesures commençant dans le mois
+emptyChronique: Supprimer des mesures
+emptyChroniqueContinueInfo: >+
+    Pour une chronique continue la période de suppression est inclusive, tous les points de mesure contenus dans la
+    période seront remplacés par des points en lacune sauf si la période de suppression inclut une borne de la chronique,
+    dans ce cas, les points de mesure sont supprimés.
+emptyChroniqueDiscontinueInfo: >+
+    Pour une chronique discontinue la periode de suppression inclut toutes les plages de mesures qui chevauchent
+    entièrement ou en partie la période de suppression à l'exception des plages qui ne chevauchent la période de
+    suppression que sur une borne et qui ne sont pas des points. Les plages de mesures concernées sont entièrement
+    supprimées, elles ne sont pas tronquées.
+empty: Vide
+doEmpty: Vider
+removedMeasures(%removed%): >+
+    {0}Aucune mesure n'a été supprimée.
+    |{1}Une mesure a été supprimée.
+    |]1,Inf]%removed% mesures ont été supprimées.
+changedMeasures(%changed%): >+
+    {0}Aucune mesure n'a été modifiée.
+    |{1}Une mesure a été changée en lacune.
+    |]1,Inf]%changed% mesures ont été changées en lacune.
+consult:
+    help:
+        chronique:
+            noGenealogie: Aucune généalogie
+            notVisible: Cette chronique n'est pas publique
+            selectionOfDatesRange: >+
+                <b>Attention</b> : pour des raisons de performance vous ne pouvez sélectionner
+                qu'un intervalle de dates de <b>5 ans maximum</b>.
+            double-clic-unzoom: Pour revenir au niveau de zoom initial, double-cliquez sur le graphe.
+            display-checkpoints: Afficher les points de contrôle
+            time-step-depends-on-span: >+
+                Pour changer le pas de temps de l'histogramme veuillez modifier
+                les dates de début et fin sélectionnées ci-dessus.
+            no-data-to-plot: Pas de mesure à afficher dans cet intervalle de dates
+            checkpointsOnCumulative: Les points de contrôle ne sont pas affichés sur les représentations en cumuls.
+        station:
+            notActive: Cette station n'est pas active
+            noCommentaire: Aucun commentaire
+    buttons:
+        view: Visualiser
+        export-image: Afficher en tant qu'image
+        add-pane: Ajouter un panneau
+        ok: OK
+        cancel: Annuler
+    fillingRateMesure: mesure|mesures
+chroniqueCalculee:
+    baremes(%chronique%): "Historique des jeux de barèmes de « %chronique% »"
+    baremesChroniqueMere: "Jeux de barèmes pour la chronique mère :"
+chroniqueConvertie:
+    seeConversionLogs: Voir l'historique du seuil de lacune
+    conversions(%chronique%): Historique du seuil de lacune de « %chronique% »
+    conversionDu: Seuil de lacune du
+    paramConversion: "Seuil de lacune :"
+activeJobsInfo(%jobPageLink%): >+
+    <b>Attention :</b> au moins un job concernant directement cette chronique est en cours,
+    les informations affichées peuvent ne pas être à jour.
+    Vous pouvez vérifier la fin de ce(s) job(s) depuis <a href="%jobPageLink%">la page des jobs</a>.
+checkpointStats(%num%, %first%, %last%): >+
+    %num% point<br/>
+    <span style="padding:0 0 0 15px">le %first% <sup>UTC</sup></span>
+    |%num% points<br/>
+    <span style="padding:0 0 0 15px">du %first% <sup>UTC</sup></span><br/>
+    <span style="padding:0 0 0 15px">au %last% <sup>UTC</sup></span>
+checkpointsInfo: >+
+    Les points de contrôle sont des mesures ponctuelles effectuées in-situ et que l’on
+    peut superposer à une chronique pour vérifier la bonne adéquation des mesures.
+searchInfo: >+
+    La recherche par mot-clé prend aussi en compte, pour chaque chronique, toutes les informations de la station dont
+    le contenu du commentaire, la commune, les sites expérimentaux et les cours d'eau et bassins proches.
+advancedSearch:
+    stations: Stations
+    enActivite: Stations en activité
+    communes: Communes
+    sites: Sites expérimentaux
+    producteurs: Producteurs
+    typesChroniques: Types de chroniques
+    famillesParametres: Familles de paramètres
+    typesParametres: Paramètres étudiés
+    bassins: Bassins
+    courseau: Cours d'eau
+    dataset: Jeu de données

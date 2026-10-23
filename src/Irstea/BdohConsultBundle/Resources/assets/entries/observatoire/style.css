@@ -1,0 +1,44 @@
+div#photos.carousel a.carousel-control{
+    display:flex;
+    justify-content:center;
+    align-items:center;
+}
+div#photos.carousel a.carousel-control span.carousel-control-button{
+    display:block;
+}
+div#photos.carousel > .carousel-inner > .item > img{
+    margin: 0 auto;
+}
+div#consult-observatoire > ul{
+    background:white;
+    padding-left:12px;
+}
+div.box ul{
+    margin-left:0;
+    padding-left:25px;
+}
+div.box ul li{
+    /*list-style-type:disc;*/
+    /* tentative d'homogénéiser le rendu entre chrome et firefox */
+    list-style-image:url("/images/disc.png");
+}
+div.box ul li.famille{
+    list-style:none;
+}
+div.box ul li.famille span.famille{
+    margin-left:-13px;
+}
+div.box ul li.famille span.famille a.advancedSearchLink{
+    font-weight:bold;
+}
+div.box ul li.famille span.famille a b.caret{
+    cursor:pointer;
+    color:#444444;
+    margin-left:0;
+    margin-right:5px;
+    vertical-align:3px;
+    transition:transform 0.3s ease-in-out;
+}
+div.box ul li.famille span.famille a.collapsed b.caret{
+    transform:rotate(-90deg);
+}

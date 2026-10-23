@@ -1,0 +1,17 @@
+{% from 'macros.html.twig' import logo %}
+{#-- 'Partenaires' line
+================================================== -#}
+<table id="partenaires">
+    <tr>
+        <td>{{ logo('Irstea', logo_long_link_parameters, 'https://www.inrae.fr/') }}</td>
+        {% if currentObservatoire() %}
+            {% for partenaire in currentObservatoire().partenaires %}
+                {% if partenaire.pathLogo %}
+                    <td>{{ logo(partenaire.nom, partenaire.pathLogo, partenaire.lien) }}</td>
+                {% endif %}
+            {% endfor %}
+
+        {%endif%}
+    </tr>
+</table>
+{#-- END_'Partenaires' line -#}

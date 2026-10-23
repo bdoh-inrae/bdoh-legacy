@@ -1,0 +1,21 @@
+{% extends 'layout.html.twig' %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <style type="text/css">
+        .a-little-right-margin {
+            margin-right: 18px;
+        }
+        div.export-help-content {
+            margin-right: 1em;
+        }
+        div.export-help-content > ul > li {
+            margin-top: 0.75em;
+        }
+        a.btn-export-help {
+            float: right;
+            margin-right: 3em;
+            color: blue;
+        }
+    </style>
+{% endblock %}

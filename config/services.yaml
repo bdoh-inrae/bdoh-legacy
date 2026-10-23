@@ -1,6 +1,17 @@
 # Les services de l'application. Ceux de chaque bundle sont dans son Resources/config/services.yml,
 # importé ici, comme dans l'ancien BDOH.
+imports:
+    - { resource: '../src/Irstea/BdohBundle/Resources/config/services.yml' }
+    - { resource: '../src/Irstea/BdohDataBundle/Resources/config/services.yml' }
+    - { resource: '../src/Irstea/BdohConsultBundle/Resources/config/services.yml' }
+    - { resource: '../src/Irstea/BdohInternationalisationBundle/Resources/config/services.yml' }
+    - { resource: '../src/Irstea/BdohSecurityBundle/Resources/config/services.yml' }
+    - { resource: '../src/Irstea/BdohLoggerBundle/Resources/config/services.yml' }
+
 services:
     _defaults:
         autowire: true
         autoconfigure: true
+
+    App\Controller\:
+        resource: '../src/Controller/'

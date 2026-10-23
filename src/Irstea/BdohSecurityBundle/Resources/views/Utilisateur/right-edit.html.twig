@@ -1,0 +1,14 @@
+{% from 'macros.html.twig' import submit, cancelForm %}
+
+<div class="row">
+    <fieldset id="identification" class="box">
+        <legend><i class="fam-application-edit"></i> {{ 'security.utilisateur.right.role' | trans }}</legend>
+        {{ form_errors(form) }}
+
+        {{ form_rest(form) }}
+    </fieldset>
+</div>
+<div style="display:flex;">
+    <div>{{ submit('security.utilisateur.right.submit'|trans, 'btn btn-success') }}</div>
+    <div style="margin-left:15px;">{{ cancelForm('bdoh_security_utilisateur_all') }}</div>
+</div>

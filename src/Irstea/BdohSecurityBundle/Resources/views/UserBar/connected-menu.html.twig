@@ -1,0 +1,157 @@
+{% from 'macros.html.twig' import richLink %}
+
+<!-- Navigation Menu for a connected user.
+================================================== -->
+
+<!-- Edit user account + display user name -->
+<li class="info-high" data-toggle="tooltip" rel="tooltip" data-original-title="{{ 'account.edit'|trans }}" data-placement="bottom">
+    {{ richLink(path('bdoh_security_utilisateur_edit'), app.user , 'user-edit', 'both') }}
+</li>
+
+<li class="divider"></li>
+
+<!-- Logout -->
+<li>{{ richLink(path('bdoh_security_logout'), 'account.logout', 'disconnect', 'both') }}</li>
+
+{% set userIsAllManager = app.user.isGestionnaireDesObservatoires() %}
+{% set userIsManager = app.user.isAManagerOfCurrentObservatory() %}
+{% set userIsSiteManager = app.user.isASiteManagerOfCurrentObservatory() %}
+{% set userIsContributor = app.user.isAContributorOfCurrentObservatory() %}
+{% set userIsTrusted = app.user.isATrustedUserOfCurrentObservatory() %}
+{% set userCanJobList = is_granted('JOB_LIST', currentObservatoire()) %}
+
+{# The following is depending on User rights #}
+
+{% set entity_admin_links = block('entity_admin_links')|trim %}
+{% set data_admin_links = block('data_admin_links')|trim %}
+
+{% if entity_admin_links is not empty %}
+    <li class="divider"></li>
+    <li><a href="{{ path('sonata_admin_dashboard') }}">{{ 'dashboard'|trans({}, 'SonataAdminBundle') }}</a></li>
+    <li class="divider"></li>
+    <li class="dropdown">
+        <a href="#" class="dropdown-toggle" data-toggle="dropdown">{{ 'administration'|trans }} <b class="caret"></b></a>
+        <ul class="dropdown-menu">
+            {% block entity_admin_links %}
+
+                {# les observatoires #}
+                {% if userIsAllManager %}
+                    <li><a href="{{ path('bdoh_admin_observatoire_list') }}">{{ 'Observatoire'|trans({}, 'entitiesPlurals') }}</a></li>
+                    <li><a href="{{ path('bdoh_admin_colors') }}">{{ 'colors.title'|trans }}</a></li>
+                    <li class="divider"></li>
+                {% endif %}
+
+                {% if userIsManager or userIsSiteManager %}
+                    {# l'observatoire et les sites #}
+                    {% if userIsManager %}
+                        <li><a href="{{ path('bdoh_admin_observatoire_edit', {'id' : currentObservatoire().id}) }}">{{ 'observatoire'|trans }}</a></li>
+                        <li><a href="{{ path('bdoh_admin_siteexperimental_list') }}">{{ 'SiteExperimental'|trans({}, 'entitiesPlurals') }}</a></li>
+                        <li><a href="{{ path('bdoh_admin_dataset_list') }}">{{ 'DataSet'|trans({}, 'entitiesPlurals') }}</a></li>
+                    {% endif %}
+                    {# les stations #}
+                    {% if userIsManager or userIsSiteManager %}
+                        <li><a href="{{ path('bdoh_admin_station_list') }}">{{ 'Station'|trans({}, 'entitiesPlurals') }}</a></li>
+                    {% endif %}
+                    <li class="divider"></li>
+                    {% if userIsManager and currentObservatoire().theiaCode == true %}
+                        <li><a href="{{ path('bdoh_admin_observatoire_edit', {'id' : currentObservatoire().id}) }}">{{ 'validateurJSON'|trans }}</a></li>
+                        <li class="divider"></li>
+                    {% endif %}
+                {% endif %}
+
+                {# les chroniques #}
+                {% if userIsManager or userIsSiteManager or userIsContributor %}
+                    <li><a href="{{ path('bdoh_admin_chroniquecontinue_list') }}">{{ 'ChroniqueContinue'|trans({}, 'entitiesPlurals') }}</a></li>
+                    <li><a href="{{ path('bdoh_admin_chroniquediscontinue_list') }}">{{ 'ChroniqueDiscontinue'|trans({}, 'entitiesPlurals') }}</a></li>
+                    <li><a href="{{ path('bdoh_admin_chroniquecalculee_list') }}">{{ 'ChroniqueCalculee'|trans({}, 'entitiesPlurals') }}</a></li>
+                    <li><a href="{{ path('bdoh_admin_chroniqueconvertie_list') }}">{{ 'ChroniqueConvertie'|trans({}, 'entitiesPlurals') }}</a></li>
+                    <li class="divider"></li>
+                {% endif %}
+
+                {# les bassins, cours d'eau et communes #}
+                {% if userIsAllManager or userIsManager %}
+                    {% if userIsManager %}
+                        <li><a href="{{ path('bdoh_admin_bassin_list') }}">{{ 'Bassin'|trans({}, 'entitiesPlurals') }}</a></li>
+                        <li><a href="{{ path('bdoh_admin_courseau_list') }}">{{ 'CoursEau'|trans({}, 'entitiesPlurals') }}</a></li>
+                    {% endif %}
+                    {% if userIsAllManager %}
+                        <li><a href="{{ path('bdoh_admin_commune_list') }}">{{ 'Commune'|trans({}, 'entitiesPlurals') }}</a></li>
+                    {% endif %}
+                    <li class="divider"></li>
+                {% endif %}
+
+                {# les DOI et les partenaires #}
+                {% if userIsAllManager or userIsManager %}
+                    {% if userIsManager %}
+                        <li><a href="{{ path('bdoh_admin_doi_list') }}">{{ 'Doi'|trans({}, 'entitiesPlurals') }}</a></li>
+                    {% endif %}
+                    <li><a href="{{ path('bdoh_admin_partenaire_list') }}">{{ 'Partenaire'|trans({}, 'entitiesPlurals') }}</a></li>
+                    <li class="divider"></li>
+                {% endif %}
+
+                {# les utilisateurs : création et droits #}
+                {% if userIsAllManager or userIsManager or userIsSiteManager %}
+                    {% if userIsAllManager or userIsManager %}
+                        <li><a href="{{ path('bdoh_admin_utilisateur_create') }}">{{ 'security.utilisateur.creation'|trans({}, 'messages') }}</a></li>
+                    {% endif %}
+                    <li><a href="{{ path('bdoh_security_utilisateur_all') }}">{{ 'security.utilisateur.gestion'|trans({}, 'messages') }}</a></li>
+                    <li class="divider"></li>
+                {% endif %}
+
+                {# les historiques #}
+                {% if userIsAllManager or userIsManager or userIsSiteManager or userIsContributor %}
+                    <li><a href="{{ path('irstea_bdoh_logger_advancedSearch') }}">{{ 'historique.advancedSearch'|trans }}</a></li>
+                    <li><a href="{{ path('irstea_bdoh_logger_advancedSearch_recent') }}">{{ 'historique.advancedSearchRecent'|trans }}</a></li>
+                {% endif %}
+
+            {% endblock entity_admin_links %}
+        </ul>
+    </li>
+{% endif %}
+
+{% if data_admin_links is not empty %}
+    <li class="divider"></li>
+    <li class="dropdown">
+        <a href="#" class="dropdown-toggle" data-toggle="dropdown">{{ 'data.management'|trans }}<b class="caret"></b></a>
+        <ul class="dropdown-menu">
+            {% block data_admin_links %}
+
+                {# import de mesures et de points de contrôle #}
+                {% if userIsManager or userIsSiteManager or userIsContributor %}
+                    <li><a href="{{ path('bdoh_admin_measure_import') }}">{{ 'admin.measuresImport'|trans }}</a></li>
+                    <li><a href="{{ path('bdoh_admin_controle_import') }}">{{ 'admin.controleImport'|trans }}</a></li>
+                    <li class="divider"></li>
+                {% endif %}
+
+                {# import de données géographiques #}
+                {% if userIsManager %}
+                    <li><a href="{{ path('bdoh_admin_shape_import') }}">{{ 'admin.shapeImport'|trans }}</a></li>
+                    <li class="divider"></li>
+                {% endif %}
+
+                {# calcul de chroniques #}
+                {% if userIsManager or userIsSiteManager or userIsContributor %}
+                    <li><a href="{{ path('bdoh_admin_transformation') }}">{{ 'CalculChroniques'|trans }}</a></li>
+                    <li><a href="{{ path('bdoh_admin_conversion') }}">{{ 'ConversionChroniques'|trans }}</a></li>
+                    {% if userCanJobList %}
+                        <li class="divider"></li>
+                    {% endif %}
+                {% endif %}
+
+                {# liste des jobs #}
+                {% if userCanJobList %}
+                    <li><a href="{{ path('bdoh_job_list') }}">{{ 'job.title.list'|trans }}</a></li>
+                {% endif %}
+
+            {% endblock data_admin_links %}
+        </ul>
+    </li>
+{% endif %}
+
+{# Simple user only #}
+{% if entity_admin_links is empty and data_admin_links is empty and not userIsTrusted %}
+    {% if currentObservatoire().hasChronique() %}
+        <li class="divider"></li>
+        <li><a href="{{ path('bdoh_security_besoin_new') }}">{{ 'askDataAccess'|trans }}</a></li>
+    {% endif %}
+{% endif %}

@@ -1,0 +1,42 @@
+{% extends '@IrsteaBdohSecurity/layout.html.twig' %}
+{% from 'macros.html.twig' import submit, cancelForm, pageTitle %}
+
+{% block title %}
+    {{ pageTitle('security.login_form.connection'|trans) }}
+{% endblock %}
+
+{% block main %}
+    <div id="security-utilisateur-login">
+
+        <h1>{{ 'security.login_form.title' | trans }}</h1>
+
+        {% if error %}
+            <div class="alert alert-danger">
+                {{ error.message|trans|raw }}
+            </div>
+        {% endif %}
+
+        <div class="well" style="margin-bottom:14px;">
+            <form action="{{ path('bdoh_security_login_check') }}" method="post" autocomplete="off">
+
+                <!-- Username -->
+                <div class="form-group">
+                    <label for="_username">{{ 'security.login_form.username' | trans }}</label>
+                    <input style="width:25%;" class="form-control" type="text" id="_username" name="_username" value="{{ last_username }}" required="required" autocomplete="off"/>
+                </div>
+
+                <!-- Password -->
+                <div class="form-group">
+                    <label for="_password">{{ 'security.login_form.password' | trans }}</label>
+                    <input style="width:25%;" class="form-control" type="password" id="_password" name="_password" required="required" autocomplete="off"/>
+                </div>
+                <div style="display:flex;">
+                    <div>{{ submit('security.login_form.connectTo'|trans, 'btn btn-success') }}</div>
+                    <div style="margin-left:15px;"><a class="btn btn-info" href="{{ path('resetting_request') }}">{{ 'security.login_form.lostPassword'|trans }}</a></div>
+                    <div style="margin-left:15px;">{{ cancelForm('bdoh_home') }}</div>
+                </div>
+            </form>
+        </div>
+
+    </div>
+{% endblock main %}

@@ -1,0 +1,16 @@
+{#-- User bar
+================================================== -#}
+<div id="userbar" class="navbar navbar-inverse">
+    {% if currentObservatoire() is not null %}
+        <ul class="nav navbar-nav">
+            {% include is_granted('ROLE_USER') ?
+               '@IrsteaBdohSecurity/UserBar/connected-menu.html.twig' :
+               '@IrsteaBdohSecurity/UserBar/anonymous-menu.html.twig'
+            %}
+        </ul>
+    {% endif %}
+    <ul class="nav navbar-nav navbar-right">
+        {% include "Core/observatoires-selector.html.twig" %}
+    </ul>
+</div>
+{#-- END_User bar -#}

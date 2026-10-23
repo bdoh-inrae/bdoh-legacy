@@ -1,0 +1,79 @@
+{% extends '@IrsteaBdohSecurity/layout.html.twig' %}
+{% from 'macros.html.twig' import pageTitle %}
+
+{% form_theme form '@IrsteaBdohSecurity/Utilisateur/chroniques-utilisateur-widget.html.twig' %}
+
+{% block title %}
+    {{ pageTitle('security.utilisateur.right.title'|trans) }}
+{% endblock %}
+
+{% block breadcrumb %}
+    <ul class="breadcrumb">
+        {# Home #}
+        <li><a href="{{ path('bdoh_home') }}">{{ 'home'|trans }}</a></li>
+        <li><a href="{{ path('bdoh_security_utilisateur_all') }}">{{ 'security.utilisateur.gestion'|trans }}</a></li>
+        {# Edition of the logged user account #}
+        <li class="active">{{ 'security.utilisateur.right.role'|trans }}</li>
+    </ul>
+{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <style type="text/css">
+        .option-with-lock {
+            background-image: url('/images/main/icon_padlock.gif');
+            background-repeat: no-repeat;
+            background-position: center right;
+        }
+        div#main div.row{
+            margin-left:0;
+            margin-right:0;
+        }
+        div#main ul.nav.nav-tabs{
+            margin-bottom:15px;
+        }
+        div#main select#form_utilisateurChronique{
+            height:20em;
+        }
+    </style>
+{% endblock %}
+
+{% block main %}
+    <div id="security-utilisateur-right" class="row">
+
+        <h1>{{ 'security.utilisateur.right.title' | trans }}</h1>
+        <fieldset>
+            <legend>
+                <h2>
+                    {{ utilisateur.prenom | capitalize }} {{ utilisateur.nom | capitalize }}
+                    {%- if utilisateur.categorie is not empty %}, {{ utilisateur.categorie | lower }}{% endif %}
+                    {%- if utilisateur.organisme is not empty %} ({{ utilisateur.organisme | capitalize }}){% endif %}
+                </h2>
+            </legend>
+            <form action="{{ path('bdoh_security_utilisateur_right', {'email': utilisateur.email}) }}" method="post"
+                  class="form-horizontal" {{ form_enctype(form) }}>
+                <div id="needs" style="margin-bottom:1em" class="row">
+                    {% if besoinsATraiter or besoinsTraite %}
+                        <ul class="nav nav-tabs" id="switch-traites-a-traiter">
+                            <li class="active"><a href="#besoinATraiter"
+                                                  data-toggle="tab">{{ 'besoin.besoinsATraiter'|trans }}</a></li>
+                            <li><a href="#besoinTraite" data-toggle="tab">{{ 'besoin.besoinsTraites'|trans }}</a></li>
+                        </ul>
+
+                        <div class="tab-content">
+                            <div id="besoinATraiter" class="tab-pane active">
+                                {% include '@IrsteaBdohSecurity/Besoin/besoin-inList.html.twig'
+                                with {nomBesoinMain:'besoinATraiter' , besoins: besoinsATraiter } %}
+                            </div>
+                            <div id="besoinTraite" class="tab-pane">
+                                {% include '@IrsteaBdohSecurity/Besoin/besoin-inList.html.twig'
+                                with {nomBesoinMain: 'besoinTraite', besoins: besoinsTraite } %}
+                            </div>
+                        </div>
+                    {% endif %}
+                    {% include '@IrsteaBdohSecurity/Utilisateur/right-edit.html.twig' %}
+                </div>
+            </form>
+        </fieldset>
+    </div>
+{% endblock main %}

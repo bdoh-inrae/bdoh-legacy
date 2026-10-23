@@ -1,0 +1,18 @@
+validation:
+    select-a-date: Veuillez sélectionner une date.
+    end-after-start: La date de fin doit être après la date de début.
+    out-of-valid-range: La période sélectionnée dépasse celle de la chronique.
+    invalid-time-step: Ce pas de temps est trop élevé ou trop faible.
+    invalid-time-span: Le pas de temps est trop faible par rapport à la période sélectionnée.
+    check-term-of-uses: Veuillez accepter les conditions d'utilisation pour pouvoir exporter des mesures.
+    select-a-chronique: Veuillez sélectionner au moins une chronique.
+    start:
+        required: 'Veuillez renseigner la date de début.'
+        invalid: "La date de début n'est pas valide."
+        beforeMinDate: 'La date de début est après la date de fin et/ou après la fin de la chronique.'
+        afterMaxDate: 'La date de début est avant le début de la chronique '
+    end:
+        required: 'Veuillez renseigner la date de fin.'
+        invalid: "La date de fin n'est pas valide."
+        beforeMinDate: 'La date de fin est après la fin de la chronique.'
+        afterMaxDate: 'La date de fin est avant la date de début et/ou avant le début de la chronique'

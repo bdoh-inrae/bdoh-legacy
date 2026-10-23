@@ -1,0 +1,354 @@
+{% extends '@IrsteaBdohConsult/layout.html.twig' %}
+
+{%- from 'macros.html.twig' import submit, reset, button, pageTitle, i18nEntityLabel, loadJsI18N -%}
+{%- import '@IrsteaBdohConsult/macros.html.twig' as macros -%}
+{%- from 'macros.html.twig' import richLink -%}
+
+{%- use '@IrsteaBdohConsult/Viewer/date-range-picker.html.twig' -%}
+
+{% if dateFirst is not empty %}
+    {%- set dateFirst = dateFirst ~ 'Z' -%}
+{%- endif -%}
+{% if dateLast is not empty %}
+    {%- set dateLast = dateLast ~ 'Z' -%}
+{%- endif -%}
+
+{%- set canDownload = dateFirst and dateLast and is_granted('DOWNLOAD', chronique) -%}
+
+{% block viewerDateRangePickerButtons %}
+    {{ parent() }}
+    {% if canDownload %}
+        <button class="graph-export-button btn btn-info validated">
+            <i class="glyphicon glyphicon-download"></i>&nbsp;
+            {{- 'export'|trans -}}
+        </button>
+    {% endif %}
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script src="{{ asset('assets/consult/chronique.js') }}"></script>
+{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <link rel="stylesheet" href="{{ asset('assets/consult/chronique.css') }}"/>
+{% endblock %}
+
+{% block title %}
+    {{ pageTitle(('Chronique'|trans)~' '~('open_quote'|trans)~chronique~('close_quote'|trans)) }}
+{% endblock %}
+
+{% block breadcrumb %}
+    <ul class="breadcrumb">
+        <li><a href="{{ path('bdoh_home') }}">{{ 'home'|trans }}</a></li>
+        <li><a href="{{ path('bdoh_consult_advancedSearch') }}">{{ 'advancedSearch'|trans }}</a></li>
+        <li>{{ macros.station_view(chronique.station, chronique.station.nom, 'text') }}</li>
+        <li class="active">{{ chronique.code }}</li>
+    </ul>
+{% endblock %}
+
+{% block main %}
+
+    <div id="consult-chronique">
+
+        <div class="toolbox-btns pull-right">
+            {% if is_granted('EDIT', chronique) %}
+                {{ macros.chronique_edit(chronique) }}
+            {% endif %}
+
+            {% if is_granted('REMOVE_DATA', chronique) %}
+                {{ macros.chronique_cut(chronique, dateFirst, dateLast, chroniqueContinue, hasChildren, childrenList, childrenCount, true, 'both') }}
+            {% endif %}
+
+            {% if canDownload %}
+                {{ macros.chroniques_export([chronique], dateFirst, dateLast, exportSamplings, exportTimeSteps, displayStartField, true, 'both') }}
+            {% endif %}
+        </div>
+
+        <h1>{{ 'Chronique' | trans }} <em>{{ 'open_quote'|trans }}{{ chronique }}{{ 'close_quote'|trans }}</em></h1>
+
+        {% if hasActiveJobs and is_granted('JOB_LIST', currentObservatoire()) %}
+            <div class="col-md-24 alert alert-info">
+                {{ 'activeJobsInfo(%jobPageLink%)'|trans({'%jobPageLink%':jobPage})|raw }}
+            </div>
+        {% endif %}
+
+        <div class="row">
+
+            <div class="col-md-12">
+                <div class="panel panel-default">
+                    <div class="panel-heading">
+                        <h3 class="panel-title"><i
+                            class="fam-application-view-list"></i> {{ 'identification'|trans }}
+                        </h3>
+                    </div>
+                    <div class="panel-body" id="identification" style="margin-bottom:5px;">
+                        <div class="row">
+
+                            <div class="col-sm-24">
+                                <div class="info-high">
+                                    [ {{ ('chronique.type.' ~ chronique.dtype)|trans }} ]
+                                    {{ macros.chronique_isVisible(chronique) }}
+                                </div>
+                            </div>
+
+                            <div class="col-sm-24 info-high">
+                                <span style="font-size:larger">{{ i18nEntityLabel(chronique, 'libelle') }}</span>
+                            </div>
+
+                            <div class="col-sm-24">
+
+                                <div class="col-sm-12">
+                                    <span class="info-high ">{{ 'station'|trans }}{{ 'deux_points'|trans }} </span>
+                                    {{ macros.station_view(chronique.station, chronique.station.nom, 'text') }}
+                                </div>
+
+                                <div class="col-sm-12">
+                                    <span class="info-high ">{{ 'producteur'|trans }}{{ 'deux_points'|trans }} </span>
+                                    {{ (chronique.producteur.nom is defined) ? macros.advancedSearch_link('producteur', chronique.producteur.nom) : 'none'|trans }}
+                                </div>
+
+                            </div>
+
+                            <div class="col-sm-24">
+
+                                <div class="col-sm-12">
+                                    <span class="info-high ">{{ 'parametre'|trans }}{{ 'deux_points'|trans }} </span>
+                                    {{ macros.advancedSearch_link('parametre', i18nEntityLabel(chronique.parametre, 'nom', '')) }}
+                                </div>
+
+                                <div class="col-sm-12">
+                                    <span class="info-high ">{{ 'unite'|trans }}{{ 'deux_points'|trans }} </span>
+                                    {{ i18nEntityLabel(chronique.unite, 'libelle') | default('none'|trans) }}
+                                </div>
+
+                            </div>
+
+                                {% if is_granted('ROLE_ADMIN') %}
+                                    <div class="col-sm-24">
+
+                                        <div class="col-sm-12">
+                                            <span class="info-high">{{ 'minimumValide'|trans }}{{ 'deux_points'|trans }} </span>
+                                            {{ chronique.minimumValide | default('none'|trans) }}
+                                        </div>
+
+                                        <div class="col-sm-12">
+                                            <span class="info-high">{{ 'maximumValide'|trans }}{{ 'deux_points'|trans }} </span>
+                                            {{ chronique.maximumValide | default('none'|trans) }}
+                                        </div>
+
+                                    </div>
+                                {% endif %}
+
+                            <div class="col-sm-24">
+
+                                <div class="col-sm-12">
+                                    <span class="info-high">{{ 'begin'|trans }}{{ 'deux_points'|trans }} </span>
+                                    {% if dateFirst is empty %}
+                                        {{ 'none'|trans }}
+                                    {% else %}
+                                        {{ dateFirst|date('transformation.bareme.dateBareme'|trans, false) }} <sup>{{ 'UTC'|trans }}</sup>
+                                    {% endif %}
+                                </div>
+
+                                <div class="col-sm-12">
+                                    <span class="info-high">{{ 'end'|trans }}{{ 'deux_points'|trans }} </span>
+                                    {% if dateLast is empty %}
+                                        {{ 'none'|trans }}
+                                    {% else %}
+                                        {{ dateLast|date('transformation.bareme.dateBareme'|trans, false) }} <sup>{{ 'UTC'|trans }}</sup>
+                                    {% endif %}
+                                </div>
+
+                            </div>
+
+                            <div class="col-sm-24">
+
+                                <div class="col-sm-12">
+                                    <span class="info-high">{{ 'measuresNumber'|trans }}{{ 'deux_points'|trans }} </span>
+                                    {{ measuresNumber | number_format(0, '', ' ') }}
+                                </div>
+
+                                <div class="col-sm-12">
+                                    {% if checkpointStats is defined and is_granted('CONSULT_CHECKPOINTS', chronique) %}
+                                        <span class="info-high">{{ 'checkpoints'|trans }}
+                                            <sup class="checkpointsInfo" title="{{ 'checkpointsInfo'|trans }}" >(?)</sup>{{ 'deux_points'|trans }} </span>
+                                        {% if checkpointStats.number > 0 %}
+                                            {{ 'checkpointStats(%num%, %first%, %last%)'|transchoice(checkpointStats.number, {
+                                                '%num%': checkpointStats.number,
+                                                '%first%': checkpointStats.first|date('transformation.bareme.dateBareme'|trans, false),
+                                                '%last%': checkpointStats.last|date('transformation.bareme.dateBareme'|trans, false)
+                                            })|raw }}
+                                        {% else %}
+                                            {{ 'none'|trans }}
+                                        {% endif %}
+                                    {% endif %}
+                                </div>
+
+                            </div>
+
+                            {% if chronique.dtype == 'calculee' %}
+                                <div class="col-sm-24">
+                                    <hr/>
+                                    {% if chronique.premiereentree %}
+                                        {% include '@IrsteaBdohConsult/Chronique/_detail-chroniques-meres.html.twig' %}
+                                    {% else %}
+                                        <div class="col-sm-24">
+                                            <em><strong>{{ 'notCalculatedYet'|trans }}</strong></em>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            {% endif %}
+
+                            {% if chronique.dtype == 'convertie' %}
+                                <div class="col-sm-24">
+                                    <hr/>
+                                    {% if chronique.conversion %}
+                                        {% include '@IrsteaBdohConsult/Chronique/_detail-chronique-mere.html.twig' %}
+                                    {% else %}
+                                        <div class="col-sm-24">
+                                            <em><strong>{{ 'notConvertedYet'|trans }}</strong></em>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-12">
+                <div class="panel panel-default">
+                    <div class="panel-heading">
+                        <h3 class="panel-title"><i class="fam-book-open"></i> {{ 'genealogie'|trans }}</h3>
+                    </div>
+                    <div class="panel-body" id="genealogy">
+                        <div style="overflow:auto;">
+                            {% autoescape false %}
+                                {{ i18nEntityLabel(chronique, 'genealogie', 'noGenalogy') }}
+                            {% endautoescape %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% if fillingRates is not empty %}
+            {% set discontinue = chronique.dtype == 'discontinue' %}
+            {% set panelTitle = chronique.dtype == 'discontinue' ? 'dataCountByMonth' : 'TauxRemplissage' %}
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <h3 class="panel-title"><i class="fam-chart-pie"></i> {{ panelTitle|trans }}
+                    </h3>
+                </div>
+                <div class="panel-body">
+                    <table id="fillingRates" class="table">
+                        <thead>
+                        <tr class="highlight">
+                            <th style="width:110px">{{ 'Year'|trans }} / {{ 'Month'|trans }}</th>
+                            {% for month in ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] %}
+                                <th{% if discontinue|default(false) %} class="discontinue"{% endif %}>{{ month|trans }}</th>
+                            {% endfor %}
+                        </tr>
+                        </thead>
+
+                        <tbody>
+                        {% for year, info in fillingRates %}
+                            <tr>
+                                {%- set startDate = date(year~'-01-01T00:00:00Z', 'UTC') %}
+                                {%- set endDate = date((year+1)~'-01-01T00:00:00Z', 'UTC') %}
+                                <td data-order="{{ year }}">
+                                    {{- macros.display_linkedDatedRate(
+                                        info.totalTaux / info.totalPoids,
+                                        startDate,
+                                        endDate,
+                                        'measures-display',
+                                        year,
+                                        discontinue,
+                                        info.overlap
+                                    ) -}}
+                                </td>
+                                {% for month in 1..12 %}
+                                    {%- set startDate = date(year~'-'~month~'-01T00:00:00Z', 'UTC') %}
+                                    {%- set endDate = date(year~'-'~month~'-01T00:00:00Z', 'UTC')|date_modify("+1 month") %}
+                                    <td>
+                                        {{- macros.display_linkedDatedRate(
+                                            info.month[month].taux|default(null),
+                                            startDate,
+                                            endDate,
+                                            'measures-display',
+                                            '',
+                                            discontinue,
+                                            info.month[month].overlap|default(false)
+                                        ) -}}
+                                    </td>
+                                {% endfor %}
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        {% endif %}
+
+        {% if dateFirst and dateLast %}
+
+            <div id="measures-display" class="panel panel-default">
+                <div class="panel-heading">
+                    <h3 class="panel-title"><i class="fam-chart-curve"></i> {{ 'displayData'|trans }}</h3>
+                </div>
+                <div class="panel-body">
+
+                    <div id="viewer"
+                        data-chronique-id="{{ chronique.id | e('html_attr') }}"
+                        data-min-date="{{ dateFirst | default(null) | e('html_attr') }}"
+                        data-max-date="{{ dateLast | default(null) | e('html_attr') }}"
+                        data-measure-url="{{ url('bdoh_data_chronique_measures', {id: '-ID-'}) | e('html_attr') }}"
+                    >
+                        {{ block('viewerDateRangePicker') }}
+
+                        <div class="graph-infos" style="display:none;">
+                            <div class="graph-flex">
+                                <div>
+                                    <div class="divTitleDataType" style="font-weight:bold;"></div>
+                                    <div class="form-group divControlPoints" style="display:none;margin-top:5px;">
+                                        <input id="controlPointsId" class="controlPoints" type="checkbox" checked="checked" style="vertical-align:-3px;"/>
+                                        <label for="controlPointsId">{{ 'consult.help.chronique.display-checkpoints'|trans }}
+                                            <sup class="checkpointsInfo" title="{{ 'checkpointsInfo'|trans }}">(?)</sup></label>
+                                    </div>
+                                    <div class="divCheckpointsOnCumulative" style="display:none;margin-top:5px;">
+                                        {{ 'consult.help.chronique.checkpointsOnCumulative'|trans }}
+                                    </div>
+                                    <div class="divDummyFillerCheckpoints" style="display:none;margin-top:5px;">&nbsp;</div>
+                                </div>
+                                <div style="text-align:right;">
+                                    <div>{{ 'consult.help.chronique.double-clic-unzoom'|trans }}</div>
+                                    <div class="divNoticeTimeStep" style="display:none;margin-top:5px;">
+                                        {{ 'consult.help.chronique.time-step-depends-on-span'|trans }}
+                                    </div>
+                                    <div class="divDummyFillerTitle" style="display:none;margin-top:5px;">&nbsp;</div>
+                                </div>
+                            </div>
+                            <div class="divNoticeSubsampled" style="display:none;margin-top:5px;">
+                                <i class="fam-error" style="margin-right:5px;"></i><span
+                                    class="divNoticeSubsampledText" style="font-style:italic;"></span>
+                            </div>
+
+                        </div>
+                        <label style="color: #0e90d2; font-size: 10px" ><br>{{ 'astuceDate'|trans }}</label>
+
+
+                        <div class="graph" style="display:none;"></div>
+                    </div>
+
+                </div>
+
+            </div>
+
+        {% endif %}
+
+    </div>
+
+    {% include '@IrsteaBdohConsult/Chronique/_export-help.html.twig' %}
+{% endblock main %}

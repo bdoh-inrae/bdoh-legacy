@@ -1,0 +1,15 @@
+parameters:
+    irstea_bdoh_consult.json_schema.cache_lifeTime: 1200
+
+services:
+    irstea_bdoh_consult.json_schema.loader:
+        class: Irstea\BdohConsultBundle\Service\JsonSchema\HttpLoader
+    irstea_bdoh_consult.json_schema.apcucache:
+        class: Doctrine\Common\Cache\ApcuCache
+    irstea_bdoh_consult.json_schema.caching_loader:
+        class: Irstea\BdohConsultBundle\Service\JsonSchema\CachingLoader
+        decorates: irstea_bdoh_consult.json_schema.loader
+        public: false
+        arguments:
+            - '@irstea_bdoh_consult.json_schema.caching_loader.inner'
+            - "%irstea_bdoh_consult.json_schema.cache_lifeTime%"

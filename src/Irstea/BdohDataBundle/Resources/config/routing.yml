@@ -1,0 +1,11 @@
+bdoh_data_chronique_measures:
+    path:  /chronique/{id}/measures
+    defaults: { _controller: Irstea\BdohDataBundle\Controller\DataProvidingController::getChroniqueMeasuresAction }
+
+bdoh_data_observatoire_conditions_export:
+    path: /conditions
+    defaults: { _controller: Irstea\BdohDataBundle\Controller\DownloadController::conditionsAction }
+
+_annotated_controllers:
+    resource: "@IrsteaBdohDataBundle/Controller"
+    type:     attribute

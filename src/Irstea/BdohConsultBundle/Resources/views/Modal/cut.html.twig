@@ -1,0 +1,64 @@
+{% from 'macros.html.twig' import submit, richLink %}
+
+{% if dateFirst is empty or dateLast is empty %}
+{% else %}
+    {% set modalId  = 'empty-' ~ random() %}
+
+    {{ richLink('#', 'emptyChronique', 'cut-red', null, null, 'data-toggle="modal" data-target="#'~modalId~'"') }}
+
+<div id="{{ modalId }}" class="modal fade cut-modal" tabindex="-1" role="dialog" aria-hidden="true"
+     data-cut-modal="true"
+     data-debut="{{ (dateFirst is defined ? dateFirst|date('c', 'UTC') : '') | e('html_attr') }}"
+     data-fin="{{ (dateLast is defined ? dateLast|date('c', 'UTC') : '') | e('html_attr') }}"
+>
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
+                        aria-hidden="true">&times;</span></button>
+                <h1 class="modal-title" style="margin-bottom:0;">{{ 'emptyChronique'|trans }}</h1>
+            </div>
+
+            <form class="form-horizontal" method="POST"
+                  action="{{ path('bdoh_empty_chronique', {'station': chronique.station.code, 'chronique': chronique.code}) }}">
+
+                <div class="modal-body">
+                    {% include '@IrsteaBdohConsult/Modal/_date-range-selector.html.twig' %}
+
+                    <div>
+                        <div class="col-md-24 alert alert-info">
+                            <h4 class="alert-heading">{{ 'information'|trans }}{{ 'deux_points'|trans }}</h4>
+                            {% if chroniqueContinue %}
+                                {{ 'emptyChroniqueContinueInfo'|trans|raw }}
+                            {% else %}
+                                {{ 'emptyChroniqueDiscontinueInfo'|trans|raw }}
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    {% if hasChildren %}
+                        <div class="form-group row" style="margin-bottom:0;">
+                            <div class="col-md-24">
+                                <input id="{{ modalId }}_propagateid" name="propagate" value="propagate" type="checkbox" checked="checked" style="vertical-align:-3px;">
+                                <label for="{{ modalId }}_propagateid">
+                                    {{ 'measure.import.question.computeChildren'|transchoice(childrenCount) }}
+                                    <i class="childrenHelp fam-help" data-original-title="{{ 'measure.import.help.children'|transchoice(childrenCount) }}"
+                                       data-content="{{ childrenList }}" style="vertical-align:-3px;"></i>
+                                </label>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="modal-footer" style="clear:both;">
+                    <img src="{{ asset('/images/loader.gif') }}" class="loader hide" style="margin-right:20px;"/>
+                    {{ submit('doEmpty'|trans) }}
+                    <button type="button" class="btn" data-dismiss="modal"
+                            aria-hidden="true">{{ 'close'|trans }}</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}

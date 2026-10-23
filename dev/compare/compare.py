@@ -262,7 +262,8 @@ NORMALIZE = [
 ]
 
 
-def page_lines(status, headers, body):
+def page_lines(site, status, headers, body):
+    """Ce que montre une réponse, en lignes ; l'adresse de l'instance devient <site>."""
     lines = [f'statut {status}']
     if 300 <= status < 400:
         lines.append(f"redirection {headers.get('Location', '')}")
@@ -279,7 +280,7 @@ def page_lines(status, headers, body):
         lines += body.decode('utf-8', 'replace').splitlines()
     for pattern, repl in NORMALIZE:
         lines = [pattern.sub(repl, line) for line in lines]
-    return lines
+    return [line.replace(site, '<site>') for line in lines]
 
 
 # --- Comparaison ---------------------------------------------------------------------------------
@@ -307,16 +308,27 @@ def same_but_rounding(a, b):
 
 
 def compare(old, new):
-    """Écarts entre deux suites de lignes : (lignes de diff, nombre de lignes à un arrondi près)."""
+    """Écarts entre deux suites de lignes : (lignes de diff, nombre de lignes à un arrondi près).
+
+    Deux suites de même longueur se comparent ligne à ligne ; le diff complet, coûteux sur une
+    longue page, ne sert que s'il reste un écart."""
     rounding = 0
-    matcher = difflib.SequenceMatcher(None, old, new, autojunk=False)
     new = list(new)
-    for op, i1, i2, j1, j2 in matcher.get_opcodes():
-        if op == 'replace' and i2 - i1 == j2 - j1:
-            for k in range(i2 - i1):
-                if same_but_rounding(old[i1 + k], new[j1 + k]):
-                    new[j1 + k] = old[i1 + k]
-                    rounding += 1
+    if len(old) == len(new):
+        for k, (a, b) in enumerate(zip(old, new)):
+            if a != b and same_but_rounding(a, b):
+                new[k] = a
+                rounding += 1
+        if old == new:
+            return [], rounding
+    else:
+        matcher = difflib.SequenceMatcher(None, old, new)
+        for op, i1, i2, j1, j2 in matcher.get_opcodes():
+            if op == 'replace' and i2 - i1 == j2 - j1:
+                for k in range(i2 - i1):
+                    if same_but_rounding(old[i1 + k], new[j1 + k]):
+                        new[j1 + k] = old[i1 + k]
+                        rounding += 1
     diff = list(difflib.unified_diff(old, new, 'ancien', 'nouveau', n=2, lineterm=''))
     return diff, rounding
 
@@ -352,7 +364,7 @@ def run_pages(args):
     with concurrent.futures.ThreadPoolExecutor(args.jobs) as pool:
         for profile, email in profiles(args.base).items():
             clients = Client(old, email, slug), Client(new, email, slug)
-            fetch = lambda path: [page_lines(*client.get(path)) for client in clients]
+            fetch = lambda path: [page_lines(client.side.url, *client.get(path)) for client in clients]
             for path, lines in zip(paths, pool.map(fetch, paths)):
                 report.add(f'{profile} {path}', *lines)
     report.close()

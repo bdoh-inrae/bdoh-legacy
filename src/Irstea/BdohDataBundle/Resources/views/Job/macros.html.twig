@@ -1,0 +1,133 @@
+{% macro id(job) %}
+    {%- set id = job.entity.id %}
+    {%- if job.showable %}<a href="{{ path('bdoh_job_show', {id: id}) }}">{% endif %}
+    {% trans %}job.title.show(%id%){% endtrans %}
+    {%- if job.showable %}</a>{% endif %}
+{%- endmacro %}
+
+{% macro describe(job) %}
+    {{- ('job.description.' ~ job.command) | trans | default('?') -}}
+{%- endmacro %}
+
+{% macro observatory(job) %}
+    {%- if job.observatoire is not empty %}
+        <a href="{{ path('bdoh_home', {_observatoire: job.observatoire.slug}) }}">
+            {{- job.observatoire -}}
+        </a>
+    {%- else %}
+        ?
+    {%- endif %}
+{%- endmacro %}
+
+{% macro chronicle(chro) %}
+    {% from '@IrsteaBdohConsult/macros.html.twig' import chronique_isVisible %}
+    {% if is_granted('CONSULT_TIMESERIES', chro) %}
+        <a href="{{ path('bdoh_consult_chronique', {'_observatoire' : chro.observatoire.slug, station: chro.station.code, chronique: chro.code}) }}">
+            {{- chro -}}
+        </a>
+    {% else %}
+        {{- chro -}}
+    {% endif %}
+    {{ chronique_isVisible(chro) }}
+{%- endmacro %}
+
+{% macro chronicles(job) %}
+    {%- import _self as macros %}
+    {%- if job.observatoire is not empty %}
+        <div style="max-height:3em;overflow-y:auto">
+            {%- for c in job.chroniques -%}
+                {{- macros.chronicle(c) -}}
+                {%- if not loop.last %}<br/>{% endif -%}
+            {%- endfor -%}
+        </div>
+    {%- else %}
+        ?
+    {%- endif %}
+{%- endmacro %}
+
+{% macro state(job) %}
+    {%- set state_colors = {
+    new: 'info',
+    pending: 'info',
+    ready: 'info',
+    canceled: 'default',
+    running: 'primary',
+    finished: 'success',
+    failed: 'danger',
+    terminated: 'danger',
+    incomplete: 'danger'
+    } -%}
+    {% set state_icons = {
+    new: 'asterisk',
+    pending: 'time',
+    ready: 'ok-circle',
+    canceled: 'ban-circle',
+    running: 'cog',
+    finished: 'ok',
+    failed: 'remove',
+    terminated: 'hourglass',
+    incomplete: 'alert'
+    } -%}
+    <span class="label label-{{ state_colors[job.state]|default('default') }}"
+          title="{{ ('job.state.tooltip.' ~ job.state) |trans }}">
+        <i class="glyphicon glyphicon-{{ state_icons[job.state]|default("") }}"></i>
+        &nbsp;{{- ('job.state.' ~ job.state)|trans -}}
+    </span>
+{%- endmacro %}
+
+{% macro opt_date(date) %}
+    {%- if date is not null %}
+        {{- date|date('transformation.bareme.dateBareme'|trans, 'UTC') -}}
+    {%- else %}
+        -
+    {%- endif -%}
+{% endmacro %}
+
+{% macro created_at(job) %}
+    {%- import _self as macros %}
+    {{ macros.opt_date(job.createdAt) }}
+{% endmacro %}
+
+{% macro started_at(job) %}
+    {%- import _self as macros %}
+    {{ macros.opt_date(job.startedAt) }}
+{% endmacro %}
+
+{% macro closed_at(job) %}
+    {%- import _self as macros %}
+    {{ macros.opt_date(job.closedAt) }}
+{% endmacro %}
+
+{% macro runtime(job) %}
+    {{- job.runtime|default('-') -}}
+{%- endmacro %}
+
+{% macro action_button(action, label, disabled, icon, color, size) %}
+    <button name="action" value="{{ action }}"
+            class="btn btn-{{ size|default('sm') }} btn-{{ color }}
+        {%- if disabled %} disabled{% endif %}"
+        {% if disabled %} disabled{% endif %}
+    >
+        <i class="glyphicon glyphicon-{{ icon }}"></i>&nbsp;
+        {{- label|trans -}}
+    </button>
+{%- endmacro %}
+
+{% macro actions(job, size) %}
+    {%- import _self as macros %}
+    <form action="{{ path('bdoh_job_update', {id: job.entity.id}) }}" method="POST">
+        {% set list_button_margin='0' %}
+        {%- if job.retriable -%}
+            {% set list_button_margin='9px' %}
+            {{ macros.action_button('retry', 'job.button.retry', not job.retry_granted, 'repeat', 'success', size) }}
+        {%- endif -%}
+        {%- if job.cancelable %}
+            {% set list_button_margin='9px' %}
+            {{ macros.action_button('cancel', 'cancel', not job.cancel_granted, 'ban-circle', 'danger', size) }}
+        {%- endif -%}
+        <a class="btn btn-{{ size|default('sm') }} btn-info" href="{{ path('bdoh_job_list') }}" style="margin-left:{{ list_button_margin }};">
+            <i class="glyphicon glyphicon-list"></i>&nbsp;
+            {{ 'job.jobList'|trans }}
+        </a>
+    </form>
+{%- endmacro %}

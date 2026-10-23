@@ -1,0 +1,26 @@
+{% block choice_widget_options %}
+    {% set invisible_text = " (invisible)" %}
+    {% set invisible_text_length = invisible_text|length %}
+    {% spaceless %}
+        {% for group_label, choice in options %}
+            {% if choice is iterable %}
+                <optgroup label="{{ group_label|trans({}, translation_domain) }}">
+                    {% set options = choice %}
+                    {{ block('choice_widget_options') }}
+                </optgroup>
+            {% else %}
+                {% set choice_label = choice.label %}
+                {% set label_trunked_length = choice_label|length - invisible_text_length %}
+                {% if choice_label|slice(label_trunked_length, invisible_text_length) == invisible_text %}
+                    {% set choice_label = choice_label|slice(0, label_trunked_length) %}
+                    {% set html_attr = 'class=option-with-lock' %}
+                {% else %}
+                    {% set html_attr = '' %}
+                {% endif %}
+                <option value="{{ choice.value }}"{% if choice is selectedchoice(value) %} selected="selected"{% endif %} {{ html_attr }}>
+                    {{ choice_label|trans({}, translation_domain) }}
+                </option>
+            {% endif %}
+        {% endfor %}
+    {% endspaceless %}
+{% endblock %}

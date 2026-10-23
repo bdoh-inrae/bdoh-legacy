@@ -1,0 +1,63 @@
+#consult-chronique {
+    a.fillingRate, div.fillingRate {
+        color: inherit;
+        display:block;
+        text-decoration:none;
+        padding:2px 4px;
+    }
+    a.fillingRate.discontinue:not(.textLabel), div.fillingRate.discontinue:not(.textLabel) {
+        text-align:right;
+        padding-right:30%;
+    }
+    a.fillingRate.discontinue {
+        //background-color:fade(@secondaryColor, 10%);
+    }
+    a.fillingRate.discontinue:hover {
+        //background-color:fade(@primaryColor, 10%);
+    }
+    div.fillingRate {
+        cursor:default;
+    }
+    a.fillingRate:hover {
+        background-color:#e5e5e5;
+        color:#000;
+    }
+    table#fillingRates.table thead tr.highlight th.discontinue{
+        text-align:center;
+    }
+}
+
+#consult-station, #consult-chronique {
+    #identification {
+        margin-bottom: 2em;
+        .info-high {
+            margin-bottom: 0.5em;
+        }
+        & > [class*="span"] {
+            margin-left: 0;
+        }
+    }
+
+    #identification.box {
+        background-color: #e5e5e5;
+    }
+}
+
+#consult-advancedSearch {
+    .criteria {
+        margin: 1em 0;
+        background-color: #f5f5f5;
+        border: 1px solid @gray;
+        border-radius: 5px;
+    }
+
+    .column-filter-widget select {
+        width: 170px;
+    }
+    // Sized for 5 search criteria
+}
+
+.table tr.group {
+    padding: 0 0 0 0.5em;
+    background-color: #e5e5e5;
+}

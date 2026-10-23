@@ -1,0 +1,12 @@
+{#-- Observatoire selector
+================================================== -#}
+<li class="dropdown">
+    <a href="#" class="dropdown-toggle" data-toggle="dropdown">{{ 'Observatoire.selector'|trans }} <b class="caret"></b></a>
+    <ul class="dropdown-menu">
+        <li><a href="{{ path('bdoh_all_home', {_observatoire: 'ALL'}) }}">{{ 'Observatoire.Tous'|trans }}</a></li>
+        <li class="divider"></li>
+        {% for observatoire in allObservatoires() %}
+            <li><a href="{{ path('bdoh_home', {'_observatoire' : observatoire.slug}) }}">{{ observatoire.nom }}</a></li>
+        {% endfor %}
+    </ul>
+</li>

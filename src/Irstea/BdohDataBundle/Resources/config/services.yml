@@ -1,0 +1,23 @@
+parameters:
+    irstea_bdoh_data.measure_export.document_base_path: "%kernel.root_dir%/../web"
+
+    # The description file of measures export formats (relative to the web dir)
+    irstea_bdoh_data.measure_export.formats_export_file: documents/FormatsExport.pdf
+
+    # The description file of measures export formats (relative to the web dir)
+    irstea_bdoh_data.measure_export.default_termofuses_file: documents/ConditionsGeneralesUtilisation.pdf
+
+    # A map of formats and their specific exporters
+    irstea_bdoh_data.measure_export.exporters:
+        # General
+        Bdoh      : Irstea\BdohDataBundle\Exporter\Measure\BdohExporter
+        Qtvar     : Irstea\BdohDataBundle\Exporter\Measure\QtvarExporter
+        Vigilance : Irstea\BdohDataBundle\Exporter\Measure\VigilanceExporter
+
+     # A map of formats for discontinuous chronicles and their specific exporters
+    irstea_bdoh_data.measure_discontinuous_export.exporters:
+        # General
+        Bdoh      : Irstea\BdohDataBundle\Exporter\Measure\BdohExporter
+
+    # Parameters for the viewers
+    irstea_bdoh_data.viewers.max_valid_display_points: 50000

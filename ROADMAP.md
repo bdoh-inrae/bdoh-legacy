@@ -6,9 +6,8 @@ Code de référence : commit `523cf8e32` de l'ancien dépôt (version 5.0.3, fé
 
 ## En cours
 
-- **PostgreSQL 11 vers la version de Debian 13** (PostgreSQL 17, PostGIS 3.5), avec l'ancien code d'abord, PostGIS compris : la base anonymisée complète restaurée sous PostgreSQL 17 (`SERVER=new make db`), `make inspect` comparé avant et après, puis l'ancien code branché dessus (service `reference-app-17` de `compose.yaml`) et comparé à la référence par `dev/compare/compare.py`. Pas de données raster à reprendre (audit des risques, constat 7) : une restauration suffit, sans la procédure de mise à jour du raster.
-  - 23 octobre : la base complète se restaure sous PostgreSQL 17 et PostGIS 3.5.2 sans aucune erreur, et `make inspect` y donne les mêmes 51 comptes que sous PostgreSQL 11. L'ancien code y tourne (`make reference-17-start`) ; reste la comparaison des pages et des exports.
-- **Socle du nouveau BDOH**, préparé en parallèle, sans comparaison de pages : [dev/plans/2026-10-23_socle.md](dev/plans/2026-10-23_socle.md).
+- **Socle du nouveau BDOH** : [dev/plans/2026-10-23_socle.md](dev/plans/2026-10-23_socle.md).
+- **Consultation publique et visualiseur** (module 2 du portage) : [dev/plans/2026-10-23_consultation.md](dev/plans/2026-10-23_consultation.md).
 
 ## À faire
 
@@ -16,7 +15,7 @@ Code de référence : commit `523cf8e32` de l'ancien dépôt (version 5.0.3, fé
 - **Outil de comparaison, suite.** `dev/compare/compare.py` compare déjà les pages publiques et le visualiseur par profil (anonyme, utilisateur, gestionnaire, administrateur) et les exports en ligne de commande ; comparée à elle-même, la référence ne montre aucun écart. Reste à y ajouter, module par module : il joue les mêmes requêtes sur l'ancien et le nouveau BDOH et compare les sorties : pages publiques et visualiseur, exports (chaque format, chaque pas de temps), imports, droits d'accès selon le profil ; et, après chaque écriture, l'état des tables touchées. Seuls les écarts de `dev/differences.md` sont admis (règle des nombres : « Arrondis à la limite »). Les imports jouent les fichiers de `dev/exemples/` de l'ancien dépôt et des variantes (espaces, fins de ligne Windows, virgules, valeurs invalides, changement d'heure, fuseaux), et vérifient qu'aucun format n'inverse le minimum et le maximum. Les cas relevés par l'inspection des bases y entrent : séries antérieures à 1900, lacunes à -9999 des chroniques calculées, chroniques à configuration incomplète. Les sorties de l'ancien sont enregistrées dans `../bdoh_reference/`. Un export arrive par courriel, que la référence n'envoie pas : la commande d'export, lancée sans `--send-to`, l'écrit sur la sortie standard.
 - **Portage, module par module**, chacun validé par la comparaison avant le suivant :
   1. socle, en cours (ci-dessus) ;
-  2. consultation publique et visualiseur ;
+  2. consultation publique et visualiseur, en cours (ci-dessus) ;
   3. file de tâches remplacée par Symfony Messenger, avec une tâche à la fois par chronique, éprouvée par l'essai de l'audit (constat 3) ; puis les exports ;
   4. imports : mesures, barèmes, points de contrôle, shapefiles ;
   5. comptes, connexion et droits ;

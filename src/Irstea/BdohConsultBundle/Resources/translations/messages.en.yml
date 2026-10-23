@@ -1,0 +1,93 @@
+recalculate: Update data Completeness statistics
+recalculationInProgress: Calculation in progress
+canTakeAWhile: This operation can take several minutes
+pleaseWait: Please wait...
+continue: Continuous
+discontinue: Discontinuous
+calculee: Calculated
+convertie: Converted
+notCalculatedYet: This time series has not been calculated yet.
+notConvertedYet: This time series has not been converted yet.
+dataCountByMonth: Number of data values starting in the month
+emptyChronique: Delete data
+emptyChroniqueContinueInfo: >+
+    For a continuous time series the removal period is inclusive, all the data points over the
+    period will be replaced by gap values unless the removal period includes a bondary of the time series,
+    in which case the data points are removed.
+emptyChroniqueDiscontinueInfo: >+
+    For a discontinuous time series, the removal period includes all the data range that overlap
+    the removal period except for the data that overlap the period
+    only on one bondary and which are not a point. The data range are removed
+    entierly they are not truncated.
+empty: Empty
+doEmpty: Empty
+removedMeasures(%removed%): >+
+    {0}No data points have been removed.
+    |{1}One data point has been removed.
+    |]1,Inf]%removed% data points have been removed.
+changedMeasures(%changed%): >+
+    {0}No data points have been altered.
+    |{1}One data point has been changed into a gap value.
+    |]1,Inf]%changed% data points have been changed into gap values.
+consult:
+    help:
+        chronique:
+            noGenealogie: Empty
+            notVisible: This time series is not public
+            selectionOfDatesRange: >+
+                <b>Warning</b>: due to performance limitations please select
+                a maximum time span of <b>5 years</b>
+            double-clic-unzoom: To unzoom please double-click on the graph.
+            display-checkpoints: Display checkpoints
+            time-step-depends-on-span: >+
+                To change the time step of the histogram please select
+                other beginning / end dates.
+            no-data-to-plot: No data on this time span
+            checkpointsOnCumulative: Checkpoints are not displayed on cumulative representations.
+        station:
+            notActive: This station is closed
+            noCommentaire: Empty
+    buttons:
+        view: View
+        export-image: Display as image
+        add-pane: Add a panel
+        ok: OK
+        cancel: Cancel
+    fillingRateMesure: value|values
+chroniqueCalculee:
+    baremes(%chronique%): "Scale sets history for “ %chronique% ”"
+    baremesChroniqueMere: "Scale sets used for the time series:"
+chroniqueConvertie:
+    seeConversionLogs: See the gap threshold history
+    conversions(%chronique%): Gap threshold history of “ %chronique% ”
+    conversionDu: Gap threshold as of
+    paramConversion: "Gap threshold:"
+activeJobsInfo(%jobPageLink%): >+
+    <b>Warning:</b> at least one job directly about this time series is in progress,
+    the displayed information may not be not up to date.
+    You may check the end of this(these) job(s) from <a href="%jobPageLink%">the job page</a>.
+checkpointStats(%num%, %first%, %last%): >+
+    %num% point<br/>
+    <span style="padding:0 0 0 15px">on the %first% <sup>UTC</sup></span>
+    |%num% points<br/>
+    <span style="padding:0 0 0 15px">from the %first% <sup>UTC</sup></span><br/>
+    <span style="padding:0 0 0 15px">to the %last% <sup>UTC</sup></span>
+checkpointsInfo: >+
+    Checpoints are one-time data, collected in situ, that can be
+    superimposed on the time series to check the validity of the data.
+searchInfo: >+
+    The search also includes, for each time series, all the information of the station including
+    the comment, the town, the experimental sites and the close rivers and close basins.
+advancedSearch:
+    stations: Stations
+    enActivite: Active stations
+    communes: Towns
+    sites: Experimental sites
+    producteurs: Producers
+    typesChroniques: Types of time series
+    famillesParametres: Parameters categories
+    typesParametres: Parameters
+    bassins: Basins
+    courseau: Rivers
+    dataset: Datasets
+

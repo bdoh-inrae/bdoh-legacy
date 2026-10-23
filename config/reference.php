@@ -1399,6 +1399,13 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *     enable_profiler?: bool|Param, // Whether or not to enable the profiler collector to calculate and visualize migration status. This adds some queries overhead. // Default: false
  *     transactional?: bool|Param, // Whether or not to wrap migrations in a single transaction. // Default: true
  * }
+ * @psalm-type BazingaJsTranslationConfig = array{
+ *     locale_fallback?: scalar|Param|null, // Default: "en"
+ *     default_domain?: scalar|Param|null, // Default: "messages"
+ *     http_cache_time?: scalar|Param|null, // Default: "86400"
+ *     active_locales?: list<scalar|Param|null>,
+ *     active_domains?: list<scalar|Param|null>,
+ * }
  * @psalm-type ConfigType = array{
  *     imports?: ImportsConfig,
  *     parameters?: ParametersConfig,
@@ -1409,6 +1416,7 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *     twig?: TwigConfig,
  *     security?: SecurityConfig,
  *     doctrine_migrations?: DoctrineMigrationsConfig,
+ *     bazinga_js_translation?: BazingaJsTranslationConfig,
  *     "when@dev"?: array{
  *         imports?: ImportsConfig,
  *         parameters?: ParametersConfig,
@@ -1419,6 +1427,7 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *         twig?: TwigConfig,
  *         security?: SecurityConfig,
  *         doctrine_migrations?: DoctrineMigrationsConfig,
+ *         bazinga_js_translation?: BazingaJsTranslationConfig,
  *     },
  *     "when@prod"?: array{
  *         imports?: ImportsConfig,
@@ -1430,6 +1439,7 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *         twig?: TwigConfig,
  *         security?: SecurityConfig,
  *         doctrine_migrations?: DoctrineMigrationsConfig,
+ *         bazinga_js_translation?: BazingaJsTranslationConfig,
  *     },
  *     "when@test"?: array{
  *         imports?: ImportsConfig,
@@ -1441,6 +1451,7 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *         twig?: TwigConfig,
  *         security?: SecurityConfig,
  *         doctrine_migrations?: DoctrineMigrationsConfig,
+ *         bazinga_js_translation?: BazingaJsTranslationConfig,
  *     },
  *     ...<string, ExtensionType|array{ // extra keys must follow the when@%env% pattern or match an extension alias
  *         imports?: ImportsConfig,

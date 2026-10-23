@@ -1,0 +1,209 @@
+{% extends '@IrsteaBdohConsult/layout.html.twig' %}
+
+{% set observatoire = currentObservatoire() %}
+
+{% from 'macros.html.twig' import richLink, i18nEntityLabel, doi_list %}
+{% from '@IrsteaBdohConsult/macros.html.twig' import advancedSearch_link, edit, dataset_view %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script src="{{ asset('assets/consult/observatoire.js') }}"></script>
+{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <link rel="stylesheet" href="{{ asset('assets/consult/observatoire.css') }}"/>
+{% endblock %}
+
+{# Makes 'partenaires' list #}
+{% macro makePartenaires(partenaires) %}
+    <ul>
+        {% for partenaire in partenaires %}
+            <li>
+
+                {% if partenaire.lien and partenaire.lien != 'http://' %}
+                    <a href="{{ partenaire.lien }}">{{ partenaire.nom }}</a>
+                {% else %}
+                    {{ partenaire.nom }}
+                {% endif %}
+
+            </li>
+        {% else %}
+            {{ 'noOne'|trans }}
+        {% endfor %}
+    </ul>
+{% endmacro %}
+
+{# Makes 'dataset' list #}
+{% macro makeDatasets(datasets) %}
+    {% import '@IrsteaBdohConsult/macros.html.twig' as macros %}
+    {% from 'macros.html.twig' import i18nEntityLabel %}
+
+
+    <ul>
+        {% for dataset in datasets %}
+            <li>
+                <a class='datasetLinkView' href="{{ path('bdoh_consult_dataset', {'dataset': dataset.uuid}) }}">
+                    <strong>{{ i18nEntityLabel(dataset, 'titre', 'noDescription') }}</strong>
+                </a>
+                <br>
+                {{ i18nEntityLabel(dataset, 'description', 'noDescription') }}
+            </li>
+
+        {% else %}
+            {{ 'noOne'|trans }}
+        {% endfor %}
+    </ul>
+{% endmacro %}
+
+{# Displays 'photo' #}
+{% macro displaysPhoto(pathPhoto, active) %}
+    {% if pathPhoto %}
+        <div class="item {{ active|default(false) ? 'active' : '' }}">
+            <img src="{{ asset(pathPhoto) }}" alt="{{ 'illustration'|trans }}"/>
+        </div>
+    {% endif %}
+{% endmacro %}
+
+{# Build the families / types tree #}
+{% macro familyTree(familyTable, families, collapsed) %}
+    {% import _self as self %}
+    {% from '@IrsteaBdohConsult/macros.html.twig' import advancedSearch_link %}
+    {% set class_collapsed_link = collapsed ? 'collapsed' : '' %}
+    {% set class_collapsed_block = collapsed ? '' : 'in' %}
+    {% for family in families %}
+        <li class="famille">
+            <span class="famille"><a class="dropdown-toggle {{ class_collapsed_link }}" data-toggle="collapse" href="#family{{ family }}"><b class="caret"></b></a>{{- advancedSearch_link('famille', familyTable[family]['nom']) }}</span>
+            <ul class="collapse {{ class_collapsed_block }}" id="family{{ family }}">
+                {{ self.familyTree(familyTable, familyTable[family]['children'], collapsed) }}
+                {% for parameter in familyTable[family]['types'] %}
+                    <li>{{- advancedSearch_link('parametre', parameter) -}}</li>
+                {% endfor %}
+            </ul>
+        </li>
+    {% endfor %}
+{% endmacro %}
+
+{% import _self as macros %}
+
+{% block breadcrumb %}
+    <ul class="breadcrumb">
+        {# Home #}
+        <li class="active">{{ 'home'|trans }}</li>
+    </ul>
+{% endblock %}
+
+
+{% block main %}
+<div id="consult-observatoire">
+
+    {% set partenaireTab = ((not observatoire.partenaires is empty)) %}
+
+
+    <!-- Menu for variable part -->
+    <ul class="nav nav-pills pull-right">
+        <li class="active"><a href="#description" data-toggle="pill">{{ 'presentation'|trans }}</a></li>
+        {% if partenaireTab %}
+            <li><a href="#partners" data-toggle="pill">{{ 'partners'|trans }}</a></li>
+        {% endif %}
+
+        <li><a href="{{ path('bdoh_cgu_observatoires') }}">{{ 'cgu'|trans }}</a></li>
+    </ul>
+
+    <!-- Toolbox for 'observatoire' -->
+    <div class="toolbox-btns pull-left">
+        {% if is_granted('EDIT', observatoire) %}
+            {{ edit(
+            path('bdoh_admin_observatoire_edit', {'id': observatoire.id}),
+            'editObservatoire'|trans
+            ) }}
+        {% endif %}
+    </div>
+
+    <!-- Title -->
+    <h1>{{ 'open_quote'|trans }}{{ observatoire.nom }}{{ 'close_quote'|trans }}
+        <small>{{ 'welcome'|trans }}</small>
+    </h1>
+
+    <!-- Variable part : presentation / partnership -->
+    <div class="col-md-11 tab-content">
+
+        <!-- First pill : presentation -->
+        <div id="description" class="tab-pane active">
+            <h2>{{ i18nEntityLabel(observatoire, 'titre', 'noDescription') }}</h2>
+            {{ i18nEntityLabel(observatoire, 'description', 'noDescription') }}
+
+            {{ doi_list(observatoire.dois) }}
+
+            {% if observatoire.lien and observatoire.lien != 'http://' %}
+                <div>
+                    <strong>{{ 'toLearnMore'|trans }}{{ 'deux_points'|trans }}</strong>
+                    <a href="{{ observatoire.lien }}">{{ observatoire.lien }}</a>
+                </div>
+            {% endif %}
+        </div>
+
+        {% if partenaireTab %}
+            <!-- Second pill : partnership -->
+            <div id="partners" class="tab-pane">
+                {% if not observatoire.partenaires is empty %}
+                    <h2>{{ 'partenaires'|trans }}</h2>
+                    {{ macros.makePartenaires(observatoire.partenaires) }}
+                {% endif %}
+            </div>
+        {% endif %}
+
+    </div>
+
+    <!-- Permanent part : lists -->
+    <div class="col-md-11 pull-right">
+        <div class="box">
+            <!--  Sites experimentaux -->
+            <h2>{{ 'SiteExperimental'|trans({}, 'entitiesPlurals') }}</h2>
+            <ul>
+                {% for site in sites %}
+                    <li>
+                        <strong>
+                            {{ countChroniquesBySite[site.id] != 0 ? advancedSearch_link('site', site.nom) : site.nom }}
+                        </strong><br/>
+                        {{ i18nEntityLabel(site, 'description', 'noDescription') }}
+                    </li>
+                {% endfor %}
+            </ul>
+
+            <!--  Types parametres -->
+            <h2>{{ 'parametersStudied'|trans }}</h2>
+            <ul>
+                {# les types sans famille pour la transition vers les familles de paramètres #}
+                {% for parametre in parametres %}
+                    <li>{{- advancedSearch_link('parametre', i18nEntityLabel(parametre, 'nom', '')) -}}</li>
+                {% endfor %}
+                {# l'arbre des familles et des types #}
+                {{ macros.familyTree(familyTable, rootFamilies, false) }}
+            </ul>
+
+            <!-- Jeu de données-->
+            <h2>{{ 'dataSet'|trans }}</h2>
+            {{ macros.makeDatasets(observatoire.datasets) }}
+
+            <!-- Advanced search -->
+            <div class="clearfix">
+                {{ richLink(path('bdoh_consult_advancedSearch'), 'advancedSearch'|trans, 'zoom', 'both') }}
+            </div>
+        </div>
+
+        <!--  Photos -->
+        {% if observatoire.pathPhotoPrincipale or observatoire.pathPhotoSecondaire %}
+            <div id="photos" class="box carousel slide" data-ride="carousel" data-interval="false">
+                <div class="carousel-inner">
+                    {{ macros.displaysPhoto(observatoire.pathPhotoPrincipale, true) }}
+                    {{ macros.displaysPhoto(observatoire.pathPhotoSecondaire) }}
+                </div>
+                <!-- Carousel nav -->
+                <a class="carousel-control left" href="#photos" data-slide="prev"><span class="glyphicon glyphicon-chevron-left carousel-control-button" aria-hidden="true"></span></a>
+                <a class="carousel-control right" href="#photos" data-slide="next"><span class="glyphicon glyphicon-chevron-right carousel-control-button" aria-hidden="true"></span></a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock main %}

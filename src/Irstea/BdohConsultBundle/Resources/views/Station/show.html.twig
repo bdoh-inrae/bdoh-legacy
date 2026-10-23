@@ -1,0 +1,248 @@
+{% extends '@IrsteaBdohConsult/layout.html.twig' %}
+{% import '@IrsteaBdohConsult/macros.html.twig' as macros %}
+{% import 'macros.html.twig' as app_macros %}
+{% from 'macros.html.twig' import i18nEntityLabel %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script src="{{ asset('assets/consult/station.js') }}"></script>
+{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <link rel="stylesheet" href="{{ asset('assets/consult/station.css') }}"/>
+{% endblock %}
+
+{# Build the families / types / times series boxes #}
+{% macro familyTreeStation(familyTable, families, chroniquesByParam, dates) %}
+    {% import _self as self %}
+    {% for family in families %}
+        <div class="panel panel-default panel-famille">
+            {% set idGroupFamille = 'famille-' ~ family %}
+            {# Family Header #}
+            <div class="panel-heading">
+                <a class="dropdown-toggle collapse-title" data-toggle="collapse" href="#{{ idGroupFamille }}">
+                    <h3 class="panel-title">
+                        <b class="caret"></b>
+                        <i class="fam-bricks"></i>
+                        {{ familyTable[family]['nom'] }}
+                    </h3>
+                </a>
+            </div>
+            {# Family content (sub-family and/or types) #}
+            <div id="{{ idGroupFamille }}" class="panel-collapse collapse in">
+                <div class="panel-body">
+                    {{ self.familyTreeStation(familyTable, familyTable[family]['children'], chroniquesByParam, dates) }}
+                    {% for parameter in familyTable[family]['types'] %}
+                        {% set chroniques = chroniquesByParam[parameter] %}
+                        <div class="panel panel-default panel-param">
+                            {% set idGroup = 'param-' ~ family ~ '-' ~ loop.index %}
+                            {# Type Header #}
+                            <div class="panel-heading">
+                                <a class="dropdown-toggle collapse-title" data-toggle="collapse" href="#{{ idGroup }}">
+                                    <h3 class="panel-title">
+                                        <b class="caret"></b>
+                                        <i class="fam-brick"></i>
+                                        {{ parameter }}
+                                        <small> &nbsp;&nbsp;&#8210;&nbsp;&nbsp; {{ chroniques|length }} {{ 'chronique(s)'|transchoice(chroniques|length)|lower }}</small>
+                                    </h3>
+                                </a>
+                            </div>
+                            {# 'Chroniques' list for the current 'TypeParametre' #}
+                            <div id="{{ idGroup }}" class="panel-collapse collapse in">
+                                <div class="panel-body">
+                                    {% for chronique in chroniques %}
+                                        <div class="{{ loop.index0 is even ? 'even' : 'odd' }}">
+                                            {% include '@IrsteaBdohConsult/Station/_chronique-inList.html.twig'
+                                                with {'dates': dates[chronique.id] | default('')} %}
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+{% endmacro %}
+
+{% import _self as selfmacros %}
+
+{% block breadcrumb %}
+    <ul class="breadcrumb">
+        {# Home #}
+        <li><a href="{{ path('bdoh_home') }}">{{ 'home'|trans }}</a></li>
+        {# Advanced search #}
+        <li><a href="{{ path('bdoh_consult_advancedSearch') }}">{{ 'advancedSearch'|trans }}</a></li>
+        {# Station #}
+        <li class="active">{{ station.nom }}</li>
+    </ul>
+{% endblock %}
+
+{% block title %}
+    {{ app_macros.pageTitle(('Station'|trans)~' '~('open_quote'|trans)~station.nom~('close_quote'|trans)) }}
+{% endblock %}
+
+{% block main %}
+    <div id="consult-station">
+
+        <!-- One "Terms of Uses" modal for all export modal -->
+        {% include '@IrsteaBdohConsult/Modal/terms-of-uses.html.twig' %}
+
+        <!-- 'Help' window for time series export -->
+        {% include '@IrsteaBdohConsult/Chronique/_export-help.html.twig' %}
+
+        <!-- Toolbox for 'station' -->
+        <div class="toolbox-btns pull-right">
+            {% if is_granted('EDIT', station) %}
+                {{ macros.station_edit(station) }}
+            {% endif %}
+
+            {# désactivation de l'export de chroniques au niveau de la station pour la première mise en prod TODO #}
+            {% if false and stationFirstDate and stationLastDate and is_granted('DOWNLOAD', station) %}
+                {{ macros.chroniques_export(chroniquesHavingMeasures, stationFirstDate, stationLastDate, null, null, null, false, 'both') }}
+            {% endif %}
+        </div>
+
+        <!-- Title -->
+        <h1>{{ 'Station' | trans }} <em>{{ 'open_quote'|trans }}{{ station.nom }}{{ 'close_quote'|trans }}</em></h1>
+
+        <!-- First section : identification / map -->
+        <div class="row">
+
+            <div class="col-md-12">
+                <div class="panel panel-default">
+                    <div class="panel-heading">
+                        <h3 class="panel-title"><i class="fam-application-view-list"></i> {{ 'identification'|trans }}
+                        </h3>
+                    </div>
+                    <div class="panel-body" id="identification">
+                        <div class="row">
+
+                            <div class="col-sm-24">
+
+                                <!-- Code -->
+                                <div class="row">
+                                    <div class="info-high col-sm-12">{{ 'code'|trans }}{{ 'deux_points'|trans }}</div>
+                                    <div class="span col-sm-12">{{ station.code }}</div>
+                                </div>
+
+                                <!-- Codes alternatifs -->
+                                <div class="row">
+                                    <div class="info-high col-sm-12">{{ 'codeAlternatif'|trans }}{{ 'deux_points'|trans }}</div>
+                                    <div class="span col-sm-12">{{ station.codeAlternatif | default('none'|trans) }}</div>
+                                </div>
+
+                                <!-- Commune -->
+                                <div class="row">
+                                    <div class="info-high col-sm-12">{{ 'commune'|trans }}{{ 'deux_points'|trans }}</div>
+                                    <div class="span col-sm-12">
+                                        {% if station.commune is empty %}
+                                            {{ 'none'|trans }}
+                                        {% else %}
+                                            {{ macros.advancedSearch_link('commune', ('' ~ station.commune)) }}
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                                <!-- Latitude / Longitude -->
+                                <div class="row">
+                                    <div class="info-high col-sm-12">{{ 'latitude'|trans }} / {{ 'longitude'|trans }}{{ 'deux_points'|trans }}
+                                    </div>
+                                    <div class="span col-sm-12">
+                                        {{ station.latitude  | default('none'|trans) }} /
+                                        {{ station.longitude | default('none'|trans) }}
+                                        <br/>{{ 'admin.help.station.latlong'|trans }}
+                                    </div>
+                                </div>
+
+                                <!-- Altitude -->
+                                <div class="row">
+                                    <div class="info-high col-sm-12">{{ 'altitude'|trans }}{{ 'deux_points'|trans }}</div>
+                                    <div class="span col-sm-12">{{ station.altitude | default('none'|trans) }}</div>
+                                </div>
+
+                                <!-- Sites experimentaux -->
+                                <div class="row">
+                                    <div class="info-high col-sm-12">{{ 'sites'|trans }}{{ 'deux_points'|trans }}</div>
+                                    <div class="span col-sm-12">
+                                        <ul>
+                                            {% for site in station.sites %}
+                                                <li>{{ macros.advancedSearch_link('site', site.nom) }}</li>
+                                            {% endfor %}
+                                        </ul>
+                                    </div>
+                                </div>
+
+                                <!-- 'Station' is active ? -->
+                                <div class="row">
+                                    <div class="info-high col-sm-12">{{ 'estActive'|trans }}</div>
+                                    <div class="span col-sm-12">
+                                        {% set estActive = station.estActive ? 'yes'|trans : 'no'|trans %}
+                                        {{ macros.advancedSearch_link('estActive', estActive) }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- END_Identification box -->
+
+            <!-- Comment box -->
+            <div class="col-md-12">
+                <div class="panel panel-default">
+                    <div class="panel-heading">
+                        <h3 class="panel-title"><i class="fam-book-open"></i> {{ 'commentaire'|trans }}</h3>
+                    </div>
+                    <div class="panel-body" id="comment">
+                        <div style="overflow:auto;">
+                            {% autoescape false %}
+                                {{ i18nEntityLabel(station, 'commentaire', 'consult.help.station.noCommentaire'|trans) }}
+                            {% endautoescape %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- END_First section : identification / map -->
+
+        <!-- 'Chroniques' list -->
+        {# les types sans famille pour la transition vers les familles de paramètres #}
+        {% for parameter, chroniques in chroniquesByParam %}
+            {% if parameter in typesWithoutFamily %}
+                <div class="panel panel-default panel-param">
+                    {% set idGroup = 'param-0-' ~ loop.index %}
+                    {# Type Header #}
+                    <div class="panel-heading">
+                        <a class="dropdown-toggle collapse-title" data-toggle="collapse" href="#{{ idGroup }}">
+                            <h3 class="panel-title">
+                                <b class="caret"></b>
+                                <i class="fam-brick"></i>
+                                {{ parameter }}
+                                <small> &nbsp;&nbsp;&#8210;&nbsp;&nbsp; {{ chroniques|length }} {{ 'chronique(s)'|transchoice(chroniques|length)|lower }}</small>
+                            </h3>
+                        </a>
+                    </div>
+                    {# 'Chroniques' list for the current 'TypeParametre' #}
+                    <div id="{{ idGroup }}" class="panel-collapse collapse in">
+                        <div class="panel-body">
+                            {% for chronique in chroniques %}
+                                <div class="{{ loop.index0 is even ? 'even' : 'odd' }}">
+                                    {% include '@IrsteaBdohConsult/Station/_chronique-inList.html.twig'
+                                        with {'dates': dates[chronique.id] | default('')} %}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        {% endfor %}
+        {# les types dans des familles #}
+        {{ selfmacros.familyTreeStation(familyTable, rootFamilies, chroniquesByParam, dates) }}
+        <!-- END_'Chronique' list -->
+
+    </div>
+    <!-- END_consult-station -->
+{% endblock main %}

@@ -1,0 +1,61 @@
+@import '../spinning.css';
+
+.selector .modal-dialog {
+    width: 860px;
+}
+
+.selector ul.list {
+    border-style: solid;
+    border-color: darkgrey;
+    border-width: 1px;
+    border-radius: 3px;
+    height: 125px;
+    overflow-x: hidden;
+    overflow-y: auto;
+    list-style-type: none;
+    list-style-position: inside;
+    padding: 3px 3px;
+    margin: 0;
+}
+
+
+.selector .stations .loading {
+    width: 100%;
+    line-height: 125px;
+    font-size: 30px;
+    text-align: center;
+    position: absolute;
+    vertical-align: bottom;
+}
+
+.selector .chronique {
+    width: 385px;
+}
+
+.selector .stations li:not(.has-measures),
+.selector .chroniques li:not(.has-measures) {
+    color: gray;
+    font-style: italic;
+    cursor: default;
+}
+
+.selector li.ui-selected,
+.selector li.ui-selecting {
+    background: #9999FF !important;
+}
+
+.selector li.has-measures:hover {
+    background-color: #CCCCFF;
+}
+
+.selector .stations li.has-measures {
+    cursor: pointer;
+}
+
+.selector .chroniques li.has-measures  {
+    cursor: move;
+}
+
+.selector .selection li  {
+    cursor: move;
+}

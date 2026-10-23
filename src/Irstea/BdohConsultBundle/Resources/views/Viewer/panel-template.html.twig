@@ -1,0 +1,55 @@
+<template id="cv-panel-template">
+    <div class="panel row">
+        <div class="col-md-17">
+            <div class="graph"></div>
+        </div>
+        <div class="col-md-7">
+            <div class="pull-right" style="margin:-10px 0 5px;">
+                <button type="button" title="{% trans from "viewer" %}closeThisPane{% endtrans %}"
+                        class="close remove-pane">&times;</button>
+            </div>
+            {% for side in ['left', 'right'] %}
+                <div class="{{ side }}-axis" style="clear:both;">
+                    <button class="pull-right btn btn-xs select">
+                        <i class="glyphicon glyphicon-list"></i>&nbsp;
+                        {% trans from "viewer" %}edit-selection{% endtrans %}
+                    </button>
+                    <h3>{{ (side~'-axis')|trans({}, "viewer") }}</h3>
+                    <table class="table table-condensed selection">
+                        <thead>
+                            <th class="th-toggle-chronicle text-center" width="1%"><i
+                                    class="glyphicon glyphicon-eye-open"></i></th>
+                            <th width="98%">{{ 'chronicle'|trans({}, 'viewer') }}</th>
+                            <th width="1%"></th>
+                        </thead>
+                        <tbody>
+                        </tbody>
+                    </table>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</template>
+
+<template id="cv-selection-row">
+    <tr>
+        <td class="text-center">
+            <button class="btn btm-xs toggle" title="{{ 'hideDisplayButton'|trans({}, 'viewer') }}"></button>
+        </td>
+        <td>
+            <i class="fam-information infoTimeStep" style="display:none;margin-right:5px;"></i><i
+                class="fam-error downSampled" style="display:none;margin-right:5px;"></i><i
+                class="fam-exclamation noDataOnRange" style="display:none;margin-right:5px;"></i><span
+                class="title" style="cursor:default;"></span>
+        </td>
+        <td>
+            <div class="toolbox-btns">
+                <a class="iconText chroniqueLink" href="{{- path('bdoh_consult_chronique',
+                    {'station': '_STATION_CODE_', 'chronique': '_CHRONIQUE_CODE_'}) -}}"><i
+                        class="fam-magnifier chroniqueLinkIcon" data-toggle="tooltip"
+                        title="{{ 'viewChronique'|trans|trim }}"></i>
+                </a>
+            </div>
+        </td>
+    </tr>
+</template>
