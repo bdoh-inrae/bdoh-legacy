@@ -97,7 +97,7 @@ class MesureRepository extends EntityRepository implements MesureRepositoryInter
         $columns = implode(',', ['numline', 'chronique_numset', 'chronique_id', 'qualite_id', 'date', 'valeur', 'minimum', 'maximum']);
         $conn = $this->getEntityManager()->getConnection();
         $pdo = $conn->getNativeConnection();
-        $pdo->pgsqlCopyFromFile($tableName, $csvPath, $delimiter, $null, $columns);
+        $pdo->copyFromFile($tableName, $csvPath, $delimiter, $null, $columns);
     }
 
     /**

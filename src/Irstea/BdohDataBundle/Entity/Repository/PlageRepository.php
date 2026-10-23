@@ -90,7 +90,7 @@ class PlageRepository extends EntityRepository implements MesureRepositoryInterf
         $columns = implode(',', ['numline', 'chronique_numset', 'chronique_id', 'qualite_id', 'debut', 'fin', 'valeur', 'minimum', 'maximum']);
         $conn = $this->getEntityManager()->getConnection();
         $pdo = $conn->getNativeConnection();
-        $pdo->pgsqlCopyFromFile($tableName, $csvPath, $delimiter, $null, $columns);
+        $pdo->copyFromFile($tableName, $csvPath, $delimiter, $null, $columns);
     }
 
     /**

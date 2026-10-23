@@ -72,7 +72,7 @@ class CoursEauRepository extends EntityRepository
             if ($allRiversNoms !== []) {
                 $newRiversQuery .= ' WHERE toponyme NOT IN (?)';
                 $sqlParamsArray[] = $allRiversNoms;
-                $sqlTypesArray[] = \Doctrine\DBAL\Connection::PARAM_STR_ARRAY;
+                $sqlTypesArray[] = \Doctrine\DBAL\ArrayParameterType::STRING;
             } else {
                 $newRiversQuery .= ' WHERE TRUE';
             }
@@ -86,7 +86,7 @@ class CoursEauRepository extends EntityRepository
             if ($allRiversNoms !== []) {
                 $existingRiversQuery .= ' WHERE toponyme IN (?)';
                 $sqlParamsArray[] = $allRiversNoms;
-                $sqlTypesArray[] = \Doctrine\DBAL\Connection::PARAM_STR_ARRAY;
+                $sqlTypesArray[] = \Doctrine\DBAL\ArrayParameterType::STRING;
             } else {
                 $existingRiversQuery .= ' WHERE FALSE';
             }
@@ -136,7 +136,7 @@ class CoursEauRepository extends EntityRepository
         if ($allRiversNoms !== []) {
             $newRiversFilter .= ' AND t.toponyme NOT IN (?)';
             $sqlParamsArray[] = $allRiversNoms;
-            $sqlTypesArray[] = \Doctrine\DBAL\Connection::PARAM_STR_ARRAY;
+            $sqlTypesArray[] = \Doctrine\DBAL\ArrayParameterType::STRING;
         }
 
         // requête de selection des nouveaux cours d'eau

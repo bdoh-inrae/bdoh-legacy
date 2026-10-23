@@ -8,7 +8,7 @@ namespace Irstea\BdohDataBundle\Entity;
 
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
-use Doctrine\Common\Proxy\Exception\InvalidArgumentException;
+use InvalidArgumentException;
 
 /**
  * JeuBareme.

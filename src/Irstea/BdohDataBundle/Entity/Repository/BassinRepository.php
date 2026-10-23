@@ -76,7 +76,7 @@ class BassinRepository extends EntityRepository
             if ($allStationsCodes !== []) {
                 $baseStationOk = ' AND (code_exu IS NULL OR UPPER(code_exu) IN (?))';
                 $baseSqlParamsArray[] = $allStationsCodes;
-                $baseSqlTypesArray[] = \Doctrine\DBAL\Connection::PARAM_STR_ARRAY;
+                $baseSqlTypesArray[] = \Doctrine\DBAL\ArrayParameterType::STRING;
             }
             $baseOrderBy = ' ORDER BY nom ASC';
 
@@ -87,7 +87,7 @@ class BassinRepository extends EntityRepository
             if ($allBassinsNoms !== []) {
                 $newBassinsQuery .= ' WHERE nom NOT IN (?)';
                 $sqlParamsArray[] = $allBassinsNoms;
-                $sqlTypesArray[] = \Doctrine\DBAL\Connection::PARAM_STR_ARRAY;
+                $sqlTypesArray[] = \Doctrine\DBAL\ArrayParameterType::STRING;
             } else {
                 $newBassinsQuery .= ' WHERE TRUE';
             }
@@ -104,7 +104,7 @@ class BassinRepository extends EntityRepository
             if ($allBassinsNoms !== []) {
                 $existingBassinsQuery .= ' WHERE nom IN (?)';
                 $sqlParamsArray[] = $allBassinsNoms;
-                $sqlTypesArray[] = \Doctrine\DBAL\Connection::PARAM_STR_ARRAY;
+                $sqlTypesArray[] = \Doctrine\DBAL\ArrayParameterType::STRING;
             } else {
                 $existingBassinsQuery .= ' WHERE FALSE';
             }
@@ -121,7 +121,7 @@ class BassinRepository extends EntityRepository
             if ($allStationsCodes !== []) {
                 $bassinsNopeStationQuery .= ' WHERE code_exu IS NOT NULL AND UPPER(code_exu) NOT IN (?)';
                 $sqlParamsArray[] = $allStationsCodes;
-                $sqlTypesArray[] = \Doctrine\DBAL\Connection::PARAM_STR_ARRAY;
+                $sqlTypesArray[] = \Doctrine\DBAL\ArrayParameterType::STRING;
             } else {
                 $bassinsNopeStationQuery .= ' WHERE code_exu IS NOT NULL';
             }
@@ -174,7 +174,7 @@ class BassinRepository extends EntityRepository
         if ($allBassinsNoms !== []) {
             $newBassinsFilter .= ' AND t.nom NOT IN (?)';
             $sqlParamsArray[] = $allBassinsNoms;
-            $sqlTypesArray[] = \Doctrine\DBAL\Connection::PARAM_STR_ARRAY;
+            $sqlTypesArray[] = \Doctrine\DBAL\ArrayParameterType::STRING;
         }
 
         // requête de selection des nouveaux bassins AVEC station exutoire existante

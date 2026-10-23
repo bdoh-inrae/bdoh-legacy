@@ -238,11 +238,11 @@ class StationRepository extends EntityRepository
             if ($allStationsCodes !== []) {
                 $stationsQuery .= ' WHERE UPPER(code) IN (?)';
                 $sqlParamsArray[] = $allStationsCodes;
-                $sqlTypesArray[] = \Doctrine\DBAL\Connection::PARAM_STR_ARRAY;
+                $sqlTypesArray[] = \Doctrine\DBAL\ArrayParameterType::STRING;
                 if ($allStationsGeoCodes !== []) {
                     $stationsQuery .= ' AND UPPER(code) NOT IN (?)';
                     $sqlParamsArray[] = $allStationsGeoCodes;
-                    $sqlTypesArray[] = \Doctrine\DBAL\Connection::PARAM_STR_ARRAY;
+                    $sqlTypesArray[] = \Doctrine\DBAL\ArrayParameterType::STRING;
                 }
             } else {
                 $stationsQuery .= ' WHERE FALSE';
@@ -257,7 +257,7 @@ class StationRepository extends EntityRepository
             if ($allStationsGeoCodes !== []) {
                 $stationsGeoQuery .= ' WHERE UPPER(code) IN (?)';
                 $sqlParamsArray[] = $allStationsGeoCodes;
-                $sqlTypesArray[] = \Doctrine\DBAL\Connection::PARAM_STR_ARRAY;
+                $sqlTypesArray[] = \Doctrine\DBAL\ArrayParameterType::STRING;
             } else {
                 $stationsGeoQuery .= ' WHERE FALSE';
             }
@@ -271,7 +271,7 @@ class StationRepository extends EntityRepository
             if ($allStationsCodes !== []) {
                 $stationsNopeQuery .= ' WHERE UPPER(code) NOT IN (?)';
                 $sqlParamsArray[] = $allStationsCodes;
-                $sqlTypesArray[] = \Doctrine\DBAL\Connection::PARAM_STR_ARRAY;
+                $sqlTypesArray[] = \Doctrine\DBAL\ArrayParameterType::STRING;
             } else {
                 $stationsNopeQuery .= ' WHERE TRUE';
             }

@@ -10,4 +10,5 @@ return [
     Irstea\BdohSecurityBundle\IrsteaBdohSecurityBundle::class => ['all' => true],
     Irstea\BdohLoggerBundle\IrsteaBdohLoggerBundle::class => ['all' => true],
     Symfony\Bundle\SecurityBundle\SecurityBundle::class => ['all' => true],
+    Doctrine\Bundle\MigrationsBundle\DoctrineMigrationsBundle::class => ['all' => true],
 ];

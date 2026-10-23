@@ -53,7 +53,7 @@ class PointControleRepository extends EntityRepository
         $columns = implode(',', ['numline', 'chronique_id', 'date', 'valeur', 'qualite_id', 'minimum', 'maximum']);
         $conn = $this->getEntityManager()->getConnection();
         $pdo = $conn->getNativeConnection();
-        $pdo->pgsqlCopyFromFile($tableName, $csvPath, $delimiter, $null, $columns);
+        $pdo->copyFromFile($tableName, $csvPath, $delimiter, $null, $columns);
     }
 
     /**

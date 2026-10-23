@@ -1,0 +1,6 @@
+# Analyse statique du code porté : make phpstan. Le niveau monte avec le portage.
+parameters:
+    level: 1
+    paths:
+        - src
+    tmpDir: var/phpstan

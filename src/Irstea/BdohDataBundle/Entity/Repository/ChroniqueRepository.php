@@ -76,7 +76,7 @@ class ChroniqueRepository extends EntityRepository
      *
      * @return QueryBuilder
      */
-    public function createQueryBuilderFilter($alias, $indexBy = null, $dataset)
+    public function createQueryBuilderFilter($alias, $indexBy, $dataset)
     {
         if (!$currentObs = $this->getCurrentObservatoire()) {
             return parent::createQueryBuilder($alias);

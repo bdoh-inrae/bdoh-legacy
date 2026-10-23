@@ -17,7 +17,7 @@ NEW = docker compose -f compose.yaml
 COMPOSER = docker run --rm --user $(HOST_UID):$(HOST_GID) -e HOME=/tmp -v $(CURDIR):/var/www/bdoh bdoh-app composer
 DB_CONTAINER = $(if $(filter new,$(SERVER)),bdoh-db,bdoh-reference-db)
 
-.PHONY: help app-install start stop composer anonymize db db-small inspect reference-app reference-start reference-stop reference-base reference-17-start
+.PHONY: help app-install start stop composer phpstan anonymize db db-small inspect reference-app reference-start reference-stop reference-base reference-17-start
 
 help: ## Liste les commandes
 	@grep -E '^[a-z0-9-]+:.*## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*## "} {printf "  %-19s %s\n", $$1, $$2}'
@@ -35,6 +35,9 @@ stop: ## Arrête le nouveau BDOH
 
 composer: ## Lance Composer pour le nouveau BDOH : make composer ARGS="require un/paquet"
 	$(COMPOSER) $(ARGS)
+
+phpstan: ## Analyse statique du nouveau BDOH
+	docker exec bdoh-app php -d memory_limit=-1 vendor/bin/phpstan analyse --no-progress
 
 anonymize: ## Anonymise un dump de production : make anonymize SOURCE=chemin/du.dump [OUT=dossier]
 	@test -n "$(SOURCE)" || { echo "Indiquer le dump : make anonymize SOURCE=chemin/du.dump"; exit 1; }
