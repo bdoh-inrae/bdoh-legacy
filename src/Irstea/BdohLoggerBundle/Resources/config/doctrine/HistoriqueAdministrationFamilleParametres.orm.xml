@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping http://doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+  <entity repository-class="Irstea\BdohLoggerBundle\Entity\Repository\HistoriqueAdministrationFamilleParametresRepository" name="Irstea\BdohLoggerBundle\Entity\HistoriqueAdministrationFamilleParametres" table="HistoriqueAdministrationFamilleParametres">
+    <many-to-one field="familleParametres" target-entity="Irstea\BdohDataBundle\Entity\FamilleParametres" fetch="LAZY">
+      <join-columns>
+        <join-column name="familleparametres_id" referenced-column-name="id" on-delete="SET NULL"/>
+      </join-columns>
+    </many-to-one>
+    <many-to-one field="familleParente" target-entity="Irstea\BdohDataBundle\Entity\FamilleParametres" fetch="LAZY">
+      <join-columns>
+        <join-column name="familleparente_id" referenced-column-name="id" on-delete="SET NULL"/>
+      </join-columns>
+    </many-to-one>
+  </entity>
+</doctrine-mapping>

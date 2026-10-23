@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping http://doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+  <entity repository-class="Irstea\BdohDataBundle\Entity\Repository\CommuneRepository" name="Irstea\BdohDataBundle\Entity\Commune" table="Commune">
+    <unique-constraints>
+      <unique-constraint name="unique_codes" columns="codePostal,codeInsee"/>
+    </unique-constraints>
+    <id name="id" type="integer" column="id">
+      <generator strategy="SEQUENCE"/>
+      <sequence-generator sequence-name="Commune_id_seq" allocation-size="1" initial-value="1"/>
+    </id>
+    <field name="nom" type="string" column="nom"/>
+    <field name="codePostal" type="string" column="codePostal" length="5" nullable="true"/>
+    <field name="codeInsee" type="string" column="codeInsee" length="5" nullable="true"/>
+  </entity>
+</doctrine-mapping>

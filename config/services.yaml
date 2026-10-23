@@ -1,0 +1,6 @@
+# Les services de l'application. Ceux de chaque bundle sont dans son Resources/config/services.yml,
+# importé ici, comme dans l'ancien BDOH.
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true

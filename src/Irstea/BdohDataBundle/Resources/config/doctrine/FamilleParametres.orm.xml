@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping http://doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+  <entity repository-class="Irstea\BdohDataBundle\Entity\Repository\FamilleParametresRepository" name="Irstea\BdohDataBundle\Entity\FamilleParametres" table="FamilleParametres">
+    <id name="id" type="integer" column="id">
+      <generator strategy="SEQUENCE"/>
+      <sequence-generator sequence-name="FamilleParametres_id_seq" allocation-size="1" initial-value="1"/>
+    </id>
+    <field name="nom" type="string" column="nom" unique="true"/>
+    <field name="nomEn" type="string" column="nomEn" unique="true"/>
+    <field name="prefix" type="string" column="prefix" nullable="true"/>
+    <one-to-many field="typesParametres" target-entity="Irstea\BdohDataBundle\Entity\TypeParametre" mapped-by="familleParametres" fetch="LAZY"/>
+    <one-to-many field="famillesFilles" target-entity="Irstea\BdohDataBundle\Entity\FamilleParametres" mapped-by="familleParente" fetch="LAZY"/>
+    <many-to-one field="familleParente" target-entity="Irstea\BdohDataBundle\Entity\FamilleParametres" inversed-by="famillesFilles" fetch="LAZY">
+      <join-columns>
+        <join-column name="familleParente_id" referenced-column-name="id" on-delete="RESTRICT"/>
+      </join-columns>
+    </many-to-one>
+  </entity>
+</doctrine-mapping>

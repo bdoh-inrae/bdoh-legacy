@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping http://doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+  <entity name="Irstea\BdohDataBundle\Entity\BaremeJeuBareme" table="BaremeJeuBareme">
+    <id name="id" type="integer" column="id">
+      <generator strategy="SEQUENCE"/>
+      <sequence-generator sequence-name="BaremeJeuBareme_id_seq" allocation-size="1" initial-value="1"/>
+    </id>
+    <field name="debutValidite" type="datetime" column="debutValidite" nullable="true"/>
+    <field name="finValidite" type="datetime" column="finValidite" nullable="true"/>
+    <many-to-one field="bareme" target-entity="Irstea\BdohDataBundle\Entity\Bareme" inversed-by="baremeJeuBaremes" fetch="LAZY">
+      <join-columns>
+        <join-column name="bareme_id" referenced-column-name="id"/>
+      </join-columns>
+    </many-to-one>
+    <many-to-one field="jeuBareme" target-entity="Irstea\BdohDataBundle\Entity\JeuBareme" inversed-by="baremeJeuBaremes" fetch="LAZY">
+      <join-columns>
+        <join-column name="jeuBareme_id" referenced-column-name="id" on-delete="CASCADE"/>
+      </join-columns>
+    </many-to-one>
+  </entity>
+</doctrine-mapping>

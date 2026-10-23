@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping http://doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+  <entity name="Irstea\BdohDataBundle\Entity\OptionEchantillonnageSortie" table="OptionEchantillonnageSortie">
+    <unique-constraints>
+      <unique-constraint name="uniqueSamplingOption" columns="echantillonnageEntree_id,pasEchantillonnage_id"/>
+    </unique-constraints>
+    <id name="id" type="integer" column="id">
+      <generator strategy="SEQUENCE"/>
+      <sequence-generator sequence-name="OptionEchantillonnageSortie_id_seq" allocation-size="1" initial-value="1"/>
+    </id>
+    <many-to-one field="echantillonnageEntree" target-entity="Irstea\BdohDataBundle\Entity\Echantillonnage" fetch="LAZY">
+      <join-columns>
+        <join-column name="echantillonnageEntree_id" referenced-column-name="id"/>
+      </join-columns>
+    </many-to-one>
+    <many-to-one field="pasEchantillonnage" target-entity="Irstea\BdohDataBundle\Entity\PasEchantillonnage" fetch="LAZY">
+      <join-columns>
+        <join-column name="pasEchantillonnage_id" referenced-column-name="id"/>
+      </join-columns>
+    </many-to-one>
+  </entity>
+</doctrine-mapping>

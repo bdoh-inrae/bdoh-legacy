@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping http://doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+  <entity repository-class="Irstea\BdohDataBundle\Entity\Repository\JeuQualiteRepository" name="Irstea\BdohDataBundle\Entity\JeuQualite" table="JeuQualite">
+    <id name="id" type="integer" column="id">
+      <generator strategy="SEQUENCE"/>
+      <sequence-generator sequence-name="JeuQualite_id_seq" allocation-size="1" initial-value="1"/>
+    </id>
+    <field name="nom" type="string" column="nom" unique="true"/>
+    <field name="estAffectable" type="boolean" column="estAffectable"/>
+    <field name="checkpointStyle" type="json_array" column="checkpointStyle" nullable="true"/>
+    <field name="discontinuousStyle" type="json_array" column="discontinuousStyle" nullable="true"/>
+    <one-to-many field="qualites" target-entity="Irstea\BdohDataBundle\Entity\Qualite" mapped-by="jeu" index-by="code" fetch="LAZY">
+      <cascade>
+        <cascade-persist/>
+      </cascade>
+    </one-to-many>
+  </entity>
+</doctrine-mapping>

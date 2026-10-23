@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping http://doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+  <entity name="Irstea\BdohDataBundle\Entity\JeuConversion" table="JeuConversion">
+    <id name="id" type="integer" column="id">
+      <generator strategy="SEQUENCE"/>
+      <sequence-generator sequence-name="JeuConversion_id_seq" allocation-size="1" initial-value="1"/>
+    </id>
+    <field name="dateCreation" type="datetime" column="dateCreation"/>
+    <field name="paramConversion" type="integer" column="paramConversion"/>
+    <many-to-one field="conversion" target-entity="Irstea\BdohDataBundle\Entity\Conversion" inversed-by="jeuConversionsHistoriques" fetch="LAZY">
+      <join-columns>
+        <join-column name="conversion_id" referenced-column-name="id" on-delete="CASCADE"/>
+      </join-columns>
+    </many-to-one>
+  </entity>
+</doctrine-mapping>

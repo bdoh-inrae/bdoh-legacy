@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping http://doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+  <entity repository-class="Irstea\BdohDataBundle\Entity\Repository\BaremeRepository" name="Irstea\BdohDataBundle\Entity\Bareme" table="Bareme">
+    <id name="id" type="integer" column="id">
+      <generator strategy="SEQUENCE"/>
+      <sequence-generator sequence-name="Bareme_id_seq" allocation-size="1" initial-value="1"/>
+    </id>
+    <field name="nom" type="string" column="nom"/>
+    <field name="commentaire" type="string" column="commentaire" length="4000" nullable="true"/>
+    <field name="valeurs" type="bareme" column="valeurs"/>
+    <field name="dateCreation" type="datetime" column="dateCreation"/>
+    <one-to-many field="baremeJeuBaremes" target-entity="Irstea\BdohDataBundle\Entity\BaremeJeuBareme" mapped-by="bareme" fetch="LAZY"/>
+    <many-to-one field="uniteEntree" target-entity="Irstea\BdohDataBundle\Entity\Unite" fetch="LAZY">
+      <join-columns>
+        <join-column name="uniteEntree_id" referenced-column-name="id"/>
+      </join-columns>
+    </many-to-one>
+    <many-to-one field="uniteSortie" target-entity="Irstea\BdohDataBundle\Entity\Unite" fetch="LAZY">
+      <join-columns>
+        <join-column name="uniteSortie_id" referenced-column-name="id"/>
+      </join-columns>
+    </many-to-one>
+    <many-to-one field="observatoire" target-entity="Irstea\BdohDataBundle\Entity\Observatoire" fetch="LAZY">
+      <join-columns>
+        <join-column name="observatoire_id" referenced-column-name="id" on-delete="CASCADE"/>
+      </join-columns>
+    </many-to-one>
+  </entity>
+</doctrine-mapping>

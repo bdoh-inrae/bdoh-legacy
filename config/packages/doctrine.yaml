@@ -1,0 +1,61 @@
+doctrine:
+    dbal:
+        url: '%env(resolve:DATABASE_URL)%'
+        # Comme l'ancien : n'accède qu'aux tables du schéma bdoh, sans la table interp_qualite ; ni,
+        # désormais, aux tables de l'ancienne file de tâches (jms_*), que rien ne lit plus.
+        schema_filter: '/^(?:bdoh\.)?(?!interp_qualite|jms_)[^.]+$/i'
+        types:
+            # Dates à millisecondes, passées en texte
+            datetimems: Irstea\BdohDataBundle\Doctrine\DBAL\Types\DateTimeMsType
+            # Valeurs des barèmes, tableau de float8 à deux dimensions
+            bareme: Irstea\BdohDataBundle\Doctrine\DBAL\Types\BaremeType
+            # Géométries PostGIS, passées en texte
+            geometry: Irstea\BdohDataBundle\Doctrine\DBAL\Types\GeometryType
+            textarray: Irstea\BdohDataBundle\Doctrine\DBAL\Types\TextArrayType
+            # Le json_array de DBAL 2, retiré de DBAL 3
+            json_array: Irstea\BdohDataBundle\Doctrine\DBAL\Types\JsonArrayType
+        mapping_types:
+            geometry: geometry
+            timestamp: datetimems
+            _float8: bareme
+            _text: textarray
+        profiling_collect_backtrace: '%kernel.debug%'
+    orm:
+        validate_xml_mapping: true
+        # La correspondance nomme tables, colonnes et séquences (dev/decisions.md).
+        naming_strategy: doctrine.orm.naming_strategy.default
+        auto_mapping: false
+        mappings:
+            IrsteaBdohDataBundle:
+                type: xml
+                is_bundle: false
+                dir: '%kernel.project_dir%/src/Irstea/BdohDataBundle/Resources/config/doctrine'
+                prefix: 'Irstea\BdohDataBundle\Entity'
+            IrsteaBdohSecurityBundle:
+                type: xml
+                is_bundle: false
+                dir: '%kernel.project_dir%/src/Irstea/BdohSecurityBundle/Resources/config/doctrine'
+                prefix: 'Irstea\BdohSecurityBundle\Entity'
+            IrsteaBdohLoggerBundle:
+                type: xml
+                is_bundle: false
+                dir: '%kernel.project_dir%/src/Irstea/BdohLoggerBundle/Resources/config/doctrine'
+                prefix: 'Irstea\BdohLoggerBundle\Entity'
+
+when@prod:
+    doctrine:
+        orm:
+            query_cache_driver:
+                type: pool
+                pool: doctrine.system_cache_pool
+            result_cache_driver:
+                type: pool
+                pool: doctrine.result_cache_pool
+
+    framework:
+        cache:
+            pools:
+                doctrine.result_cache_pool:
+                    adapter: cache.app
+                doctrine.system_cache_pool:
+                    adapter: cache.system

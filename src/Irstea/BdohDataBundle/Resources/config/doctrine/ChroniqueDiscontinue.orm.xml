@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping http://doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+  <entity repository-class="Irstea\BdohDataBundle\Entity\Repository\ChroniqueDiscontinueRepository" name="Irstea\BdohDataBundle\Entity\ChroniqueDiscontinue" table="ChroniqueDiscontinue">
+    <one-to-many field="plages" target-entity="Irstea\BdohDataBundle\Entity\Plage" mapped-by="chronique" fetch="LAZY"/>
+    <one-to-many field="conversions" target-entity="Irstea\BdohDataBundle\Entity\Conversion" mapped-by="entree" fetch="EXTRA_LAZY"/>
+  </entity>
+</doctrine-mapping>

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping http://doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+  <entity name="Irstea\BdohDataBundle\Entity\PasEchantillonnage" table="PasEchantillonnage">
+    <unique-constraints>
+      <unique-constraint name="uniqueUnitValuePair" columns="unite,valeur"/>
+    </unique-constraints>
+    <id name="id" type="integer" column="id">
+      <generator strategy="SEQUENCE"/>
+      <sequence-generator sequence-name="PasEchantillonnage_id_seq" allocation-size="1" initial-value="1"/>
+    </id>
+    <field name="unite" type="string" column="unite"/>
+    <field name="valeur" type="integer" column="valeur"/>
+    <field name="approxSecondes" type="integer" column="approxSecondes" nullable="true"/>
+    <field name="libelle" type="string" column="libelle" nullable="true"/>
+    <field name="libelleEn" type="string" column="libelleEn" nullable="true"/>
+  </entity>
+</doctrine-mapping>

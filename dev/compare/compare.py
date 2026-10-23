@@ -14,6 +14,7 @@ dev/differences.md), compté à part pour être relu. Bibliothèque standard seu
 """
 
 import argparse
+import concurrent.futures
 import datetime
 import difflib
 import html.parser
@@ -40,8 +41,13 @@ class Side:
 
 
 SIDES = {
+    # La console tourne dans le conteneur des pages : celui de la file de tâches se relance toutes
+    # les heures (--max-runtime, comme en production), ce qui couperait une commande en cours.
     'reference': Side('http://172.30.25.10',
-                      ['docker', 'exec', 'bdoh-reference-worker', 'php', 'app/console']),
+                      ['docker', 'exec', 'bdoh-reference-app', 'php', 'app/console']),
+    # L'ancien code sur PostgreSQL 17 (service reference-app-17 de compose.yaml).
+    'reference-17': Side('http://172.30.26.17',
+                         ['docker', 'exec', 'bdoh-reference-app-17', 'php', 'app/console']),
 }
 
 
@@ -137,7 +143,7 @@ def export_cases(base):
     cases = []
     for cid, kind in picked:
         if kind == 'avant 1900':
-            period = ['1816-01-01T00:00:00+00:00', '1900-01-01T00:00:00+00:00']
+            period = ['1816-01-01T00:00:00+00:00', '1821-01-01T00:00:00+00:00']
         else:
             period = ['2024-01-01T00:00:00+00:00', '2025-01-01T00:00:00+00:00']
         formats = ['bdoh'] if kind == 'discontinue' else ['bdoh', 'qtvar', 'vigilance']
@@ -343,30 +349,31 @@ def run_pages(args):
     slug = query(args.base, "SELECT slug FROM observatoire ORDER BY id LIMIT 1")[0][0]
     paths = [p for p in page_cases(args.base) if args.only in p]
     report = Report('pages')
-    for profile, email in profiles(args.base).items():
-        clients = Client(old, email, slug), Client(new, email, slug)
-        for path in paths:
-            lines = [page_lines(*client.get(path)) for client in clients]
-            report.add(f'{profile} {path}', *lines)
+    with concurrent.futures.ThreadPoolExecutor(args.jobs) as pool:
+        for profile, email in profiles(args.base).items():
+            clients = Client(old, email, slug), Client(new, email, slug)
+            fetch = lambda path: [page_lines(*client.get(path)) for client in clients]
+            for path, lines in zip(paths, pool.map(fetch, paths)):
+                report.add(f'{profile} {path}', *lines)
     report.close()
 
 
 def run_exports(args):
     old, new = SIDES[args.old], SIDES[args.new]
+
+    def run(side, case):
+        r = subprocess.run([*side.console, *case, '--env=prod'], capture_output=True, text=True)
+        lines = [f'code de sortie {r.returncode}', *r.stdout.splitlines(), *r.stderr.splitlines()]
+        # Date de l'export et dossier temporaire changent à chaque fois.
+        return [re.sub(r'^(Export du|Export of) .*? (au format|in format)', r'\1 <date> \2', line)
+                for line in lines if not line.startswith('# Printing ')]
+
+    cases = [c for c in export_cases(args.base) if args.only in ' '.join(c)]
     report = Report('exports')
-    for case in export_cases(args.base):
-        name = ' '.join(case)
-        if args.only not in name:
-            continue
-        outputs = []
-        for side in (old, new):
-            r = subprocess.run([*side.console, *case, '--env=prod'], capture_output=True, text=True)
-            lines = [f'code de sortie {r.returncode}', *r.stdout.splitlines(), *r.stderr.splitlines()]
-            # Date de l'export et dossier temporaire changent à chaque fois.
-            lines = [re.sub(r'^(Export du|Export of) .*? (au format|in format)', r'\1 <date> \2', line)
-                     for line in lines if not line.startswith('# Printing ')]
-            outputs.append(lines)
-        report.add(name, *outputs)
+    with concurrent.futures.ThreadPoolExecutor(args.jobs) as pool:
+        both = lambda case: [run(old, case), run(new, case)]
+        for case, outputs in zip(cases, pool.map(both, cases)):
+            report.add(' '.join(case), *outputs)
     report.close()
 
 
@@ -377,6 +384,7 @@ def main():
     parser.add_argument('--new', default='reference', choices=SIDES)
     parser.add_argument('--base', default='bdoh_small', help='base où tirer les cas')
     parser.add_argument('--only', default='', help='ne garder que les cas qui contiennent ce texte')
+    parser.add_argument('--jobs', type=int, default=6, help='requêtes menées en parallèle')
     args = parser.parse_args()
     {'pages': run_pages, 'exports': run_exports}[args.what](args)
 

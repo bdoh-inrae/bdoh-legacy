@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping http://doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+  <entity repository-class="Irstea\BdohDataBundle\Entity\Repository\ObservatoireRepository" name="Irstea\BdohDataBundle\Entity\Observatoire" table="Observatoire">
+    <entity-listeners>
+      <entity-listener class="Irstea\BdohDataBundle\Doctrine\Listener\ObservatoireStylesheetListener"/>
+      <entity-listener class="Irstea\BdohDataBundle\Doctrine\Listener\DocumentedEntityListener"/>
+    </entity-listeners>
+    <id name="id" type="integer" column="id">
+      <generator strategy="SEQUENCE"/>
+      <sequence-generator sequence-name="Observatoire_id_seq" allocation-size="1" initial-value="1"/>
+    </id>
+    <field name="nom" type="string" column="nom" unique="true"/>
+    <field name="theiaCode" type="string" column="theiaCode" length="4" unique="true" nullable="true"/>
+    <field name="theiaPassword" type="string" column="theiaPassword" nullable="true"/>
+    <field name="titre" type="string" column="titre" nullable="true"/>
+    <field name="titreEn" type="string" column="titreEn" nullable="true"/>
+    <field name="email" type="string" column="email" nullable="true"/>
+    <field name="slug" type="string" column="slug" unique="true"/>
+    <field name="conditionsUtilisation" type="string" column="conditionsUtilisation" nullable="true"/>
+    <field name="description" type="text" column="description" nullable="true"/>
+    <field name="descriptionEn" type="text" column="descriptionEn" nullable="true"/>
+    <field name="lien" type="string" column="lien" nullable="true"/>
+    <field name="couleurPrimaire" type="string" column="couleurPrimaire" nullable="true"/>
+    <field name="couleurSecondaire" type="string" column="couleurSecondaire" nullable="true"/>
+    <field name="pathPhotoPrincipale" type="string" column="pathPhotoPrincipale" nullable="true"/>
+    <field name="pathPhotoSecondaire" type="string" column="pathPhotoSecondaire" nullable="true"/>
+    <field name="pathLogo" type="string" column="pathLogo" nullable="true"/>
+    <field name="miseAJourAutomatique" type="boolean" column="miseAJourAutomatique" nullable="false"/>
+    <one-to-one field="doiPrincipal" target-entity="Irstea\BdohDataBundle\Entity\Doi" fetch="LAZY">
+      <join-columns>
+        <join-column name="doiPrincipal_id" referenced-column-name="id"/>
+      </join-columns>
+    </one-to-one>
+    <one-to-many field="sites" target-entity="Irstea\BdohDataBundle\Entity\SiteExperimental" mapped-by="observatoire" fetch="LAZY"/>
+    <one-to-many field="dois" target-entity="Irstea\BdohDataBundle\Entity\Doi" mapped-by="observatoire" fetch="LAZY"/>
+    <one-to-many field="dataSets" target-entity="Irstea\BdohDataBundle\Entity\DataSet" mapped-by="observatoire" fetch="LAZY"/>
+    <one-to-many field="partenaires" target-entity="Irstea\BdohDataBundle\Entity\Partenaire" mapped-by="observatoire" fetch="LAZY"/>
+    <many-to-one field="jeu" target-entity="Irstea\BdohDataBundle\Entity\JeuQualite" fetch="LAZY">
+      <join-columns>
+        <join-column name="jeu_id" referenced-column-name="id"/>
+      </join-columns>
+    </many-to-one>
+    <many-to-one field="projectLeader" target-entity="Irstea\BdohDataBundle\Entity\PersonneTheia" fetch="LAZY">
+      <join-columns>
+        <join-column name="projectLeader_id" referenced-column-name="id"/>
+      </join-columns>
+    </many-to-one>
+    <many-to-many field="dataManagers" target-entity="Irstea\BdohDataBundle\Entity\PersonneTheia" fetch="LAZY">
+      <join-table name="observatoires_data_manager">
+        <join-columns>
+          <join-column name="observatoire_id" referenced-column-name="id" on-delete="CASCADE"/>
+        </join-columns>
+        <inverse-join-columns>
+          <join-column name="personnetheia_id" referenced-column-name="id" on-delete="CASCADE"/>
+        </inverse-join-columns>
+      </join-table>
+    </many-to-many>
+  </entity>
+</doctrine-mapping>

@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping http://doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+  <entity name="Irstea\BdohDataBundle\Entity\Conversion" table="Conversion">
+    <unique-constraints>
+      <unique-constraint name="unique_conversion" columns="entree_id,sortie_id"/>
+    </unique-constraints>
+    <id name="id" type="integer" column="id">
+      <generator strategy="SEQUENCE"/>
+      <sequence-generator sequence-name="Conversion_id_seq" allocation-size="1" initial-value="1"/>
+    </id>
+    <one-to-one field="jeuConversionActuel" target-entity="Irstea\BdohDataBundle\Entity\JeuConversion" fetch="EXTRA_LAZY">
+      <cascade>
+        <cascade-persist/>
+      </cascade>
+      <join-columns>
+        <join-column name="jeuConversionActuel_id" referenced-column-name="id"/>
+      </join-columns>
+    </one-to-one>
+    <one-to-many field="jeuConversionsHistoriques" target-entity="Irstea\BdohDataBundle\Entity\JeuConversion" mapped-by="conversion" fetch="EXTRA_LAZY">
+      <order-by>
+        <order-by-field name="dateCreation" direction="DESC"/>
+      </order-by>
+    </one-to-many>
+    <many-to-one field="entree" target-entity="Irstea\BdohDataBundle\Entity\ChroniqueDiscontinue" inversed-by="conversions" fetch="LAZY">
+      <join-columns>
+        <join-column name="entree_id" referenced-column-name="id" on-delete="CASCADE"/>
+      </join-columns>
+    </many-to-one>
+    <many-to-one field="sortie" target-entity="Irstea\BdohDataBundle\Entity\ChroniqueConvertie" fetch="LAZY">
+      <join-columns>
+        <join-column name="sortie_id" referenced-column-name="id" on-delete="CASCADE"/>
+      </join-columns>
+    </many-to-one>
+  </entity>
+</doctrine-mapping>

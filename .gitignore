@@ -1,0 +1,10 @@
+# Configuration de chaque installation : copiée de .env.example, elle peut porter des secrets.
+/.env
+/.env.local
+/.env.*.local
+/config/secrets/prod/prod.decrypt.private.php
+/var/
+/vendor/
+/node_modules/
+/public/bundles/
+__pycache__/

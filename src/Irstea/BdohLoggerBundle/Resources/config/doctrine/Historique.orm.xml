@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping http://doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+  <entity repository-class="Irstea\BdohLoggerBundle\Entity\Repository\HistoriqueRepository" name="Irstea\BdohLoggerBundle\Entity\Historique" table="Historique" inheritance-type="SINGLE_TABLE">
+    <discriminator-column name="dtype" type="string" length="255"/>
+    <discriminator-map>
+      <discriminator-mapping value="simple" class="Irstea\BdohLoggerBundle\Entity\Historique"/>
+      <discriminator-mapping value="administration" class="Irstea\BdohLoggerBundle\Entity\HistoriqueAdministration"/>
+      <discriminator-mapping value="administrationUtilisateur" class="Irstea\BdohLoggerBundle\Entity\HistoriqueAdministrationUtilisateur"/>
+      <discriminator-mapping value="administrationBareme" class="Irstea\BdohLoggerBundle\Entity\HistoriqueAdministrationBareme"/>
+      <discriminator-mapping value="administrationCommune" class="Irstea\BdohLoggerBundle\Entity\HistoriqueAdministrationCommune"/>
+      <discriminator-mapping value="administrationCoursEau" class="Irstea\BdohLoggerBundle\Entity\HistoriqueAdministrationCoursEau"/>
+      <discriminator-mapping value="administrationBassin" class="Irstea\BdohLoggerBundle\Entity\HistoriqueAdministrationBassin"/>
+      <discriminator-mapping value="administrationObservatoire" class="Irstea\BdohLoggerBundle\Entity\HistoriqueAdministrationObservatoire"/>
+      <discriminator-mapping value="administrationFamilleParametres" class="Irstea\BdohLoggerBundle\Entity\HistoriqueAdministrationFamilleParametres"/>
+      <discriminator-mapping value="administrationTypeParametre" class="Irstea\BdohLoggerBundle\Entity\HistoriqueAdministrationTypeParametre"/>
+      <discriminator-mapping value="administrationTypeFunding" class="Irstea\BdohLoggerBundle\Entity\HistoriqueAdministrationTypeFunding"/>
+      <discriminator-mapping value="administrationUnite" class="Irstea\BdohLoggerBundle\Entity\HistoriqueAdministrationUnite"/>
+      <discriminator-mapping value="administrationStation" class="Irstea\BdohLoggerBundle\Entity\HistoriqueAdministrationStation"/>
+      <discriminator-mapping value="administrationSite" class="Irstea\BdohLoggerBundle\Entity\HistoriqueAdministrationSiteExperimental"/>
+      <discriminator-mapping value="administrationChronique" class="Irstea\BdohLoggerBundle\Entity\HistoriqueAdministrationChronique"/>
+      <discriminator-mapping value="administrationDoi" class="Irstea\BdohLoggerBundle\Entity\HistoriqueAdministrationDoi"/>
+      <discriminator-mapping value="administrationDataset" class="Irstea\BdohLoggerBundle\Entity\HistoriqueAdministrationDataSet"/>
+      <discriminator-mapping value="administrationPartenaire" class="Irstea\BdohLoggerBundle\Entity\HistoriqueAdministrationPartenaire"/>
+      <discriminator-mapping value="administrationMilieu" class="Irstea\BdohLoggerBundle\Entity\HistoriqueAdministrationMilieu"/>
+      <discriminator-mapping value="administrationPersonneTheia" class="Irstea\BdohLoggerBundle\Entity\HistoriqueAdministrationPersonneTheia"/>
+      <discriminator-mapping value="administrationTopicCategory" class="Irstea\BdohLoggerBundle\Entity\HistoriqueAdministrationTopicCategory"/>
+      <discriminator-mapping value="administrationTheiaCategories" class="Irstea\BdohLoggerBundle\Entity\HistoriqueAdministrationTheiaCategories"/>
+      <discriminator-mapping value="administrationInspireTheme" class="Irstea\BdohLoggerBundle\Entity\HistoriqueAdministrationInspireTheme"/>
+      <discriminator-mapping value="administrationDataConstraint" class="Irstea\BdohLoggerBundle\Entity\HistoriqueAdministrationDataConstraint"/>
+      <discriminator-mapping value="administrationCriteriaGeology" class="Irstea\BdohLoggerBundle\Entity\HistoriqueAdministrationCriteriaGeology"/>
+      <discriminator-mapping value="administrationCriteriaClimate" class="Irstea\BdohLoggerBundle\Entity\HistoriqueAdministrationCriteriaClimate"/>
+      <discriminator-mapping value="donnees" class="Irstea\BdohLoggerBundle\Entity\HistoriqueDonnees"/>
+      <discriminator-mapping value="donneesPointControle" class="Irstea\BdohLoggerBundle\Entity\HistoriqueDonneesPointControle"/>
+      <discriminator-mapping value="donneesExport" class="Irstea\BdohLoggerBundle\Entity\HistoriqueDonneesExport"/>
+      <discriminator-mapping value="donneesImport" class="Irstea\BdohLoggerBundle\Entity\HistoriqueDonneesImport"/>
+      <discriminator-mapping value="donneesSuppression" class="Irstea\BdohLoggerBundle\Entity\HistoriqueDonneesSuppression"/>
+      <discriminator-mapping value="transformations" class="Irstea\BdohLoggerBundle\Entity\HistoriqueTransformations"/>
+      <discriminator-mapping value="baremes" class="Irstea\BdohLoggerBundle\Entity\HistoriqueBaremes"/>
+      <discriminator-mapping value="baremesImport" class="Irstea\BdohLoggerBundle\Entity\HistoriqueBaremesImport"/>
+      <discriminator-mapping value="baremesExport" class="Irstea\BdohLoggerBundle\Entity\HistoriqueBaremesExport"/>
+      <discriminator-mapping value="calculsChroniques" class="Irstea\BdohLoggerBundle\Entity\HistoriqueCalculsChroniques"/>
+      <discriminator-mapping value="conversionsChroniques" class="Irstea\BdohLoggerBundle\Entity\HistoriqueConversionsChroniques"/>
+      <discriminator-mapping value="sig" class="Irstea\BdohLoggerBundle\Entity\HistoriqueSig"/>
+    </discriminator-map>
+    <id name="id" type="integer" column="id">
+      <generator strategy="SEQUENCE"/>
+      <sequence-generator sequence-name="Historique_id_seq" allocation-size="1" initial-value="1"/>
+    </id>
+    <field name="date" type="datetime" column="date" nullable="true"/>
+    <field name="description" type="text" column="description"/>
+    <field name="lien" type="string" column="lien" nullable="true"/>
+    <many-to-one field="auteur" target-entity="Irstea\BdohSecurityBundle\Entity\Utilisateur" fetch="LAZY">
+      <join-columns>
+        <join-column name="auteur_id" referenced-column-name="id" on-delete="SET NULL"/>
+      </join-columns>
+    </many-to-one>
+    <many-to-one field="observatoire" target-entity="Irstea\BdohDataBundle\Entity\Observatoire" fetch="LAZY">
+      <join-columns>
+        <join-column name="observatoire_id" referenced-column-name="id" on-delete="SET NULL"/>
+      </join-columns>
+    </many-to-one>
+  </entity>
+</doctrine-mapping>

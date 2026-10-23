@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping http://doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+  <entity repository-class="Irstea\BdohDataBundle\Entity\Repository\ChroniqueContinueRepository" name="Irstea\BdohDataBundle\Entity\ChroniqueContinue" table="ChroniqueContinue">
+    <field name="directionMesure" type="string" column="directionMesure" nullable="true"/>
+    <one-to-many field="pointsControle" target-entity="Irstea\BdohDataBundle\Entity\PointControle" mapped-by="chronique" fetch="EXTRA_LAZY"/>
+    <one-to-many field="mesures" target-entity="Irstea\BdohDataBundle\Entity\Mesure" mapped-by="chronique" fetch="EXTRA_LAZY"/>
+    <one-to-many field="tauxRemplissage" target-entity="Irstea\BdohDataBundle\Entity\TauxRemplissage" mapped-by="chronique" fetch="EXTRA_LAZY"/>
+    <one-to-many field="transformations" target-entity="Irstea\BdohDataBundle\Entity\Transformation" mapped-by="entree" fetch="EXTRA_LAZY"/>
+    <many-to-one field="echantillonnage" target-entity="Irstea\BdohDataBundle\Entity\Echantillonnage" fetch="LAZY">
+      <join-columns>
+        <join-column name="echantillonnage_id" referenced-column-name="id"/>
+      </join-columns>
+    </many-to-one>
+    <many-to-one field="uniteCumul" target-entity="Irstea\BdohDataBundle\Entity\Unite" fetch="LAZY">
+      <join-columns>
+        <join-column name="uniteCumul_id" referenced-column-name="id"/>
+      </join-columns>
+    </many-to-one>
+    <many-to-many field="echantillonnagesSortieLicites" target-entity="Irstea\BdohDataBundle\Entity\Echantillonnage" fetch="LAZY">
+      <join-table name="EchantillonnageSortieLicite_Chronique">
+        <join-columns>
+          <join-column name="chronique_id" referenced-column-name="id"/>
+        </join-columns>
+        <inverse-join-columns>
+          <join-column name="echantillonnage_id" referenced-column-name="id"/>
+        </inverse-join-columns>
+      </join-table>
+    </many-to-many>
+    <many-to-many field="optionsEchantillonnageSortie" target-entity="Irstea\BdohDataBundle\Entity\OptionEchantillonnageSortie" fetch="LAZY">
+      <join-table name="optionEchantillonnageSortie_chronique">
+        <join-columns>
+          <join-column name="chronique_id" referenced-column-name="id"/>
+        </join-columns>
+        <inverse-join-columns>
+          <join-column name="optionEchantillonnageSortie_id" referenced-column-name="id"/>
+        </inverse-join-columns>
+      </join-table>
+    </many-to-many>
+  </entity>
+</doctrine-mapping>

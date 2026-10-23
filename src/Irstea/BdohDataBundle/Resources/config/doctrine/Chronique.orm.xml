@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping http://doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+  <entity repository-class="Irstea\BdohDataBundle\Entity\Repository\ChroniqueRepository" name="Irstea\BdohDataBundle\Entity\Chronique" table="Chronique" inheritance-type="SINGLE_TABLE">
+    <discriminator-column name="dtype" type="string" length="255"/>
+    <discriminator-map>
+      <discriminator-mapping value="simple" class="Irstea\BdohDataBundle\Entity\Chronique"/>
+      <discriminator-mapping value="continue" class="Irstea\BdohDataBundle\Entity\ChroniqueContinue"/>
+      <discriminator-mapping value="discontinue" class="Irstea\BdohDataBundle\Entity\ChroniqueDiscontinue"/>
+      <discriminator-mapping value="calculee" class="Irstea\BdohDataBundle\Entity\ChroniqueCalculee"/>
+      <discriminator-mapping value="convertie" class="Irstea\BdohDataBundle\Entity\ChroniqueConvertie"/>
+    </discriminator-map>
+    <id name="id" type="integer" column="id">
+      <generator strategy="SEQUENCE"/>
+      <sequence-generator sequence-name="Chronique_id_seq" allocation-size="1" initial-value="1"/>
+    </id>
+    <field name="code" type="string" column="code"/>
+    <field name="libelle" type="string" column="libelle"/>
+    <field name="libelleEn" type="string" column="libelleEn" nullable="true"/>
+    <field name="description" type="text" column="description" nullable="true"/>
+    <field name="genealogie" type="string" column="genealogie" length="4000" nullable="true"/>
+    <field name="genealogieEn" type="string" column="genealogieEn" length="4000" nullable="true"/>
+    <field name="estVisible" type="boolean" column="estVisible"/>
+    <field name="minimumValide" type="float" column="minimumValide" nullable="true"/>
+    <field name="maximumValide" type="float" column="maximumValide" nullable="true"/>
+    <field name="dateDebutMesures" type="datetimems" column="dateDebutMesures" nullable="true"/>
+    <field name="dateFinMesures" type="datetimems" column="dateFinMesures" nullable="true"/>
+    <field name="nbMesures" type="integer" column="nbMesures" nullable="true"/>
+    <field name="echantillonageSet" type="boolean" column="echantillonageSet" nullable="true"/>
+    <field name="allowValueLimits" type="boolean" column="allowValueLimits" nullable="true"/>
+    <many-to-one field="unite" target-entity="Irstea\BdohDataBundle\Entity\Unite" fetch="LAZY">
+      <join-columns>
+        <join-column name="unite_id" referenced-column-name="id"/>
+      </join-columns>
+    </many-to-one>
+    <many-to-one field="producteur" target-entity="Irstea\BdohDataBundle\Entity\Partenaire" fetch="LAZY">
+      <join-columns>
+        <join-column name="producteur_id" referenced-column-name="id" on-delete="SET NULL"/>
+      </join-columns>
+    </many-to-one>
+    <many-to-one field="parametre" target-entity="Irstea\BdohDataBundle\Entity\TypeParametre" inversed-by="chroniques" fetch="LAZY">
+      <join-columns>
+        <join-column name="parametre_id" referenced-column-name="id"/>
+      </join-columns>
+    </many-to-one>
+    <many-to-one field="milieu" target-entity="Irstea\BdohDataBundle\Entity\Milieu" fetch="LAZY">
+      <join-columns>
+        <join-column name="milieu_id" referenced-column-name="id" on-delete="SET NULL"/>
+      </join-columns>
+    </many-to-one>
+    <many-to-one field="station" target-entity="Irstea\BdohDataBundle\Entity\Station" inversed-by="chroniques" fetch="LAZY">
+      <join-columns>
+        <join-column name="station_id" referenced-column-name="id"/>
+      </join-columns>
+    </many-to-one>
+    <many-to-one field="dataset" target-entity="Irstea\BdohDataBundle\Entity\DataSet" inversed-by="chroniques" fetch="LAZY">
+      <join-columns>
+        <join-column name="dataset_id" referenced-column-name="id" on-delete="SET NULL"/>
+      </join-columns>
+    </many-to-one>
+  </entity>
+</doctrine-mapping>

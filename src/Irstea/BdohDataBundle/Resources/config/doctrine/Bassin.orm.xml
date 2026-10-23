@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping http://doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+  <entity repository-class="Irstea\BdohDataBundle\Entity\Repository\BassinRepository" name="Irstea\BdohDataBundle\Entity\Bassin" table="Bassin">
+    <unique-constraints>
+      <unique-constraint name="uniqueBassinObservatoire" columns="nom,observatoire_id"/>
+    </unique-constraints>
+    <id name="id" type="integer" column="id">
+      <generator strategy="SEQUENCE"/>
+      <sequence-generator sequence-name="Bassin_id_seq" allocation-size="1" initial-value="1"/>
+    </id>
+    <field name="nom" type="string" column="nom" nullable="false"/>
+    <field name="aire" type="float" column="aire" nullable="true"/>
+    <field name="perimetre" type="geometry" column="perimetre" nullable="true"/>
+    <many-to-one field="observatoire" target-entity="Irstea\BdohDataBundle\Entity\Observatoire" fetch="LAZY">
+      <join-columns>
+        <join-column name="observatoire_id" referenced-column-name="id" on-delete="CASCADE" nullable="false"/>
+      </join-columns>
+    </many-to-one>
+    <many-to-one field="stationExutoire" target-entity="Irstea\BdohDataBundle\Entity\Station" fetch="LAZY">
+      <join-columns>
+        <join-column name="stationexutoire_id" referenced-column-name="id" on-delete="SET NULL"/>
+      </join-columns>
+    </many-to-one>
+  </entity>
+</doctrine-mapping>

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping http://doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+  <entity repository-class="Irstea\BdohLoggerBundle\Entity\Repository\HistoriqueDonneesRepository" name="Irstea\BdohLoggerBundle\Entity\HistoriqueDonnees" table="HistoriqueDonnees">
+    <field name="debut" type="datetimems" column="debut" nullable="true"/>
+    <field name="fin" type="datetimems" column="fin" nullable="true"/>
+    <field name="nombreMesures" type="integer" column="nombreMesures" nullable="true"/>
+    <many-to-one field="chronique" target-entity="Irstea\BdohDataBundle\Entity\Chronique" fetch="LAZY">
+      <join-columns>
+        <join-column name="chronique_id" referenced-column-name="id" on-delete="SET NULL"/>
+      </join-columns>
+    </many-to-one>
+  </entity>
+</doctrine-mapping>

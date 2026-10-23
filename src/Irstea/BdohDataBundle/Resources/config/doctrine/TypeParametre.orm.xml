@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping http://doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+  <entity repository-class="Irstea\BdohDataBundle\Entity\Repository\TypeParametreRepository" name="Irstea\BdohDataBundle\Entity\TypeParametre" table="TypeParametre">
+    <id name="id" type="integer" column="id">
+      <generator strategy="SEQUENCE"/>
+      <sequence-generator sequence-name="TypeParametre_id_seq" allocation-size="1" initial-value="1"/>
+    </id>
+    <field name="nom" type="string" column="nom" unique="true"/>
+    <field name="nomEn" type="string" column="nomEn" unique="true"/>
+    <field name="code" type="string" column="code"/>
+    <one-to-many field="chroniques" target-entity="Irstea\BdohDataBundle\Entity\Chronique" mapped-by="parametre" fetch="LAZY"/>
+    <many-to-one field="familleParametres" target-entity="Irstea\BdohDataBundle\Entity\FamilleParametres" inversed-by="typesParametres" fetch="LAZY">
+      <join-columns>
+        <join-column name="familleParametres_id" referenced-column-name="id" on-delete="RESTRICT"/>
+      </join-columns>
+    </many-to-one>
+    <many-to-many field="unites" target-entity="Irstea\BdohDataBundle\Entity\Unite" inversed-by="parametres" fetch="LAZY">
+      <join-table name="parametres_unites">
+        <join-columns>
+          <join-column name="parametre_id" referenced-column-name="id"/>
+        </join-columns>
+        <inverse-join-columns>
+          <join-column name="unite_id" referenced-column-name="id"/>
+        </inverse-join-columns>
+      </join-table>
+    </many-to-many>
+  </entity>
+</doctrine-mapping>

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping http://doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+  <entity name="Irstea\BdohDataBundle\Entity\TauxRemplissage" table="TauxRemplissage">
+    <unique-constraints>
+      <unique-constraint name="unique_chro_date" columns="chronique_id,debut"/>
+    </unique-constraints>
+    <id name="id" type="integer" column="id">
+      <generator strategy="SEQUENCE"/>
+      <sequence-generator sequence-name="TauxRemplissage_id_seq" allocation-size="1" initial-value="1"/>
+    </id>
+    <field name="debut" type="datetimems" column="debut"/>
+    <field name="fin" type="datetimems" column="fin"/>
+    <field name="taux" type="float" column="taux"/>
+    <field name="poids" type="float" column="poids"/>
+    <many-to-one field="chronique" target-entity="Irstea\BdohDataBundle\Entity\ChroniqueContinue" inversed-by="tauxRemplissage" fetch="LAZY">
+      <join-columns>
+        <join-column name="chronique_id" referenced-column-name="id" on-delete="CASCADE"/>
+      </join-columns>
+    </many-to-one>
+  </entity>
+</doctrine-mapping>

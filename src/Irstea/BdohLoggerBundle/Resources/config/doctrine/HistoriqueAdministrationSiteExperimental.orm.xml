@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping http://doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+  <entity repository-class="Irstea\BdohLoggerBundle\Entity\Repository\HistoriqueAdministrationSiteExperimentalRepository" name="Irstea\BdohLoggerBundle\Entity\HistoriqueAdministrationSiteExperimental" table="HistoriqueAdministrationSiteExperimental">
+    <many-to-one field="siteExperimental" target-entity="Irstea\BdohDataBundle\Entity\SiteExperimental" fetch="LAZY">
+      <join-columns>
+        <join-column name="siteexperimental_id" referenced-column-name="id" on-delete="SET NULL"/>
+      </join-columns>
+    </many-to-one>
+  </entity>
+</doctrine-mapping>

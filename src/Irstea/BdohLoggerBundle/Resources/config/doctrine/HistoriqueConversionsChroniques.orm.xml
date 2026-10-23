@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping http://doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+  <entity repository-class="Irstea\BdohLoggerBundle\Entity\Repository\HistoriqueConversionsChroniquesRepository" name="Irstea\BdohLoggerBundle\Entity\HistoriqueConversionsChroniques" table="HistoriqueConversionsChroniques">
+    <field name="paramConversion" type="integer" column="paramConversion"/>
+    <many-to-one field="chroniqueConvertie" target-entity="Irstea\BdohDataBundle\Entity\ChroniqueConvertie" fetch="LAZY">
+      <join-columns>
+        <join-column name="chroniqueconvertie_id" referenced-column-name="id" on-delete="SET NULL"/>
+      </join-columns>
+    </many-to-one>
+    <many-to-one field="chroniqueMere" target-entity="Irstea\BdohDataBundle\Entity\ChroniqueDiscontinue" fetch="LAZY">
+      <join-columns>
+        <join-column name="chroniquemere_id" referenced-column-name="id" on-delete="SET NULL"/>
+      </join-columns>
+    </many-to-one>
+  </entity>
+</doctrine-mapping>

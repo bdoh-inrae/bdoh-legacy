@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping http://doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+  <entity repository-class="Irstea\BdohDataBundle\Entity\Repository\SiteExperimentalRepository" name="Irstea\BdohDataBundle\Entity\SiteExperimental" table="SiteExperimental">
+    <id name="id" type="integer" column="id">
+      <generator strategy="SEQUENCE"/>
+      <sequence-generator sequence-name="SiteExperimental_id_seq" allocation-size="1" initial-value="1"/>
+    </id>
+    <field name="nom" type="string" column="nom" unique="true"/>
+    <field name="slug" type="string" column="slug" unique="true"/>
+    <field name="description" type="text" column="description" nullable="true"/>
+    <field name="descriptionEn" type="text" column="descriptionEn" nullable="true"/>
+    <many-to-one field="observatoire" target-entity="Irstea\BdohDataBundle\Entity\Observatoire" inversed-by="sites" fetch="LAZY">
+      <join-columns>
+        <join-column name="observatoire_id" referenced-column-name="id"/>
+      </join-columns>
+    </many-to-one>
+    <many-to-many field="stations" target-entity="Irstea\BdohDataBundle\Entity\Station" mapped-by="sites" fetch="LAZY"/>
+  </entity>
+</doctrine-mapping>

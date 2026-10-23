@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping http://doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+  <entity repository-class="Irstea\BdohDataBundle\Entity\Repository\StationRepository" name="Irstea\BdohDataBundle\Entity\Station" table="Station">
+    <id name="id" type="integer" column="id">
+      <generator strategy="SEQUENCE"/>
+      <sequence-generator sequence-name="Station_id_seq" allocation-size="1" initial-value="1"/>
+    </id>
+    <field name="nom" type="string" column="nom" unique="true"/>
+    <field name="code" type="string" column="code" unique="true"/>
+    <field name="altitude" type="float" column="altitude" nullable="true"/>
+    <field name="estActive" type="boolean" column="estActive"/>
+    <field name="codeAlternatif" type="string" column="codeAlternatif" nullable="true"/>
+    <field name="commentaire" type="string" column="commentaire" length="4000" nullable="true"/>
+    <field name="commentaireEn" type="string" column="commentaireEn" length="4000" nullable="true"/>
+    <field name="point" type="geometry" column="point" nullable="true"/>
+    <field name="latitude" type="float" column="latitude" nullable="true"/>
+    <field name="longitude" type="float" column="longitude" nullable="true"/>
+    <one-to-many field="chroniques" target-entity="Irstea\BdohDataBundle\Entity\Chronique" mapped-by="station" fetch="LAZY"/>
+    <many-to-one field="commune" target-entity="Irstea\BdohDataBundle\Entity\Commune" fetch="LAZY">
+      <join-columns>
+        <join-column name="commune_id" referenced-column-name="id" on-delete="SET NULL"/>
+      </join-columns>
+    </many-to-one>
+    <many-to-many field="sites" target-entity="Irstea\BdohDataBundle\Entity\SiteExperimental" inversed-by="stations" fetch="LAZY">
+      <join-table name="stations_sites">
+        <join-columns>
+          <join-column name="station_id" referenced-column-name="id"/>
+        </join-columns>
+        <inverse-join-columns>
+          <join-column name="site_id" referenced-column-name="id"/>
+        </inverse-join-columns>
+      </join-table>
+    </many-to-many>
+  </entity>
+</doctrine-mapping>

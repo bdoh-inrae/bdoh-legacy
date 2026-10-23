@@ -12,12 +12,29 @@ export REFERENCE_DIR := $(abspath $(OUT))
 export HOST_UID := $(shell id -u)
 export HOST_GID := $(shell id -g)
 REFERENCE = docker compose -f dev/reference/compose.yaml
+NEW = docker compose -f compose.yaml
+# Composer a besoin du réseau : il tourne dans un conteneur jetable, hors du réseau interne.
+COMPOSER = docker run --rm --user $(HOST_UID):$(HOST_GID) -e HOME=/tmp -v $(CURDIR):/var/www/bdoh bdoh-app composer
 DB_CONTAINER = $(if $(filter new,$(SERVER)),bdoh-db,bdoh-reference-db)
 
-.PHONY: help anonymize db db-small inspect reference-app reference-start reference-stop reference-base
+.PHONY: help app-install start stop composer anonymize db db-small inspect reference-app reference-start reference-stop reference-base reference-17-start
 
 help: ## Liste les commandes
-	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*## "} {printf "  %-16s %s\n", $$1, $$2}'
+	@grep -E '^[a-z0-9-]+:.*## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*## "} {printf "  %-19s %s\n", $$1, $$2}'
+
+app-install: ## Installe le nouveau BDOH : image, dépendances, .env copié de .env.example
+	$(NEW) build app
+	test -f .env || cp .env.example .env
+	$(COMPOSER) install --no-interaction
+
+start: ## Lance le nouveau BDOH : http://172.30.26.10/
+	$(NEW) up -d --wait db app
+
+stop: ## Arrête le nouveau BDOH
+	$(NEW) stop
+
+composer: ## Lance Composer pour le nouveau BDOH : make composer ARGS="require un/paquet"
+	$(COMPOSER) $(ARGS)
 
 anonymize: ## Anonymise un dump de production : make anonymize SOURCE=chemin/du.dump [OUT=dossier]
 	@test -n "$(SOURCE)" || { echo "Indiquer le dump : make anonymize SOURCE=chemin/du.dump"; exit 1; }
@@ -43,3 +60,7 @@ reference-stop: ## Arrête la référence
 
 reference-base: ## Branche la référence sur une autre base : make reference-base BASE=bdoh_small
 	dev/reference/use-base.sh "$(BASE)"
+
+reference-17-start: ## L'ancien code sur PostgreSQL 17, pour l'étape de la base : http://172.30.26.17/
+	test -d $(REFERENCE_DIR)/app-17 || cp -a $(REFERENCE_DIR)/app $(REFERENCE_DIR)/app-17
+	$(NEW) --profile pg17 up -d reference-app-17

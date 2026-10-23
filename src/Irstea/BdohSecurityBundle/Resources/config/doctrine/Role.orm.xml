@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping http://doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+  <entity name="Irstea\BdohSecurityBundle\Entity\Role" table="Role" inheritance-type="SINGLE_TABLE">
+    <discriminator-column name="dtype" type="string" length="255"/>
+    <discriminator-map>
+      <discriminator-mapping value="simple" class="Irstea\BdohSecurityBundle\Entity\Role"/>
+      <discriminator-mapping value="observatoire" class="Irstea\BdohSecurityBundle\Entity\RoleObservatoire"/>
+      <discriminator-mapping value="site" class="Irstea\BdohSecurityBundle\Entity\RoleSite"/>
+      <discriminator-mapping value="chronique" class="Irstea\BdohSecurityBundle\Entity\RoleChronique"/>
+    </discriminator-map>
+    <id name="id" type="integer" column="id">
+      <generator strategy="SEQUENCE"/>
+      <sequence-generator sequence-name="Role_id_seq" allocation-size="1" initial-value="1"/>
+    </id>
+    <field name="valeur" type="string" column="valeur" nullable="false"/>
+  </entity>
+</doctrine-mapping>

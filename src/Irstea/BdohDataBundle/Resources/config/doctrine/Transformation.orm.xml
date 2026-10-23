@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping http://doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+  <entity name="Irstea\BdohDataBundle\Entity\Transformation" table="Transformation">
+    <id name="id" type="integer" column="id">
+      <generator strategy="SEQUENCE"/>
+      <sequence-generator sequence-name="Transformation_id_seq" allocation-size="1" initial-value="1"/>
+    </id>
+    <one-to-one field="jeuBaremeActuel" target-entity="Irstea\BdohDataBundle\Entity\JeuBareme" fetch="EXTRA_LAZY">
+      <cascade>
+        <cascade-persist/>
+      </cascade>
+      <join-columns>
+        <join-column name="jeuBaremeActuel_id" referenced-column-name="id"/>
+      </join-columns>
+    </one-to-one>
+    <one-to-many field="jeuBaremesHistoriques" target-entity="Irstea\BdohDataBundle\Entity\JeuBareme" mapped-by="transformation" fetch="EXTRA_LAZY">
+      <order-by>
+        <order-by-field name="dateCreation" direction="DESC"/>
+      </order-by>
+    </one-to-many>
+    <many-to-one field="entree" target-entity="Irstea\BdohDataBundle\Entity\ChroniqueContinue" inversed-by="transformations" fetch="LAZY">
+      <join-columns>
+        <join-column name="entree_id" referenced-column-name="id"/>
+      </join-columns>
+    </many-to-one>
+    <many-to-one field="sortie" target-entity="Irstea\BdohDataBundle\Entity\ChroniqueCalculee" fetch="LAZY">
+      <join-columns>
+        <join-column name="sortie_id" referenced-column-name="id" on-delete="CASCADE"/>
+      </join-columns>
+    </many-to-one>
+  </entity>
+</doctrine-mapping>

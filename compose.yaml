@@ -1,6 +1,7 @@
-# L'environnement de développement du nouveau BDOH : PostgreSQL 17 et PostGIS 3.5, les versions
-# de Debian 13, sur les bases anonymisées. Comme pour la référence (dev/reference/compose.yaml), le
-# réseau est interne et tout tourne aux droits de l'utilisateur ; se pilote par le Makefile.
+# L'environnement de développement du nouveau BDOH : PHP 8.4, PostgreSQL 17 et PostGIS 3.5, les
+# versions de Debian 13, sur les bases anonymisées ; l'application répond à http://172.30.26.10/.
+# Comme pour la référence (dev/reference/compose.yaml), le réseau est interne et tout tourne aux
+# droits de l'utilisateur ; se pilote par le Makefile.
 name: bdoh
 
 services:
@@ -20,6 +21,21 @@ services:
       retries: 60
     restart: unless-stopped
     networks: [bdoh]
+
+  app:
+    image: bdoh-app
+    build: docker
+    container_name: bdoh-app
+    user: "${HOST_UID:?}:${HOST_GID:?}"
+    volumes:
+      - .:/var/www/bdoh
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      bdoh:
+        ipv4_address: 172.30.26.10
 
   # L'ancien code sur PostgreSQL 17, pour essayer la nouvelle version de la base avant le portage :
   # une copie de l'application de référence (REFERENCE_DIR/app-17), où l'hôte db est ce serveur-ci.

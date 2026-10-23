@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping http://doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+  <entity repository-class="Irstea\BdohDataBundle\Entity\Repository\UniteRepository" name="Irstea\BdohDataBundle\Entity\Unite" table="Unite">
+    <id name="id" type="integer" column="id">
+      <generator strategy="SEQUENCE"/>
+      <sequence-generator sequence-name="Unite_id_seq" allocation-size="1" initial-value="1"/>
+    </id>
+    <field name="libelle" type="string" column="libelle" unique="true"/>
+    <field name="libelleEn" type="string" column="libelleEn" unique="true" nullable="true"/>
+    <many-to-many field="parametres" target-entity="Irstea\BdohDataBundle\Entity\TypeParametre" mapped-by="unites" fetch="LAZY"/>
+  </entity>
+</doctrine-mapping>

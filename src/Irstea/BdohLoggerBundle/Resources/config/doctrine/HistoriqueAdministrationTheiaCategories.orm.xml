@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping http://doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+  <entity repository-class="Irstea\BdohLoggerBundle\Entity\Repository\HistoriqueAdministrationTheiaCategoriesRepository" name="Irstea\BdohLoggerBundle\Entity\HistoriqueAdministrationTheiaCategories" table="HistoriqueAdministrationTheiaCategories">
+    <many-to-one field="theiaCategories" target-entity="Irstea\BdohDataBundle\Entity\TheiaCategories" fetch="LAZY">
+      <join-columns>
+        <join-column name="theiacategories_id" referenced-column-name="id" on-delete="SET NULL"/>
+      </join-columns>
+    </many-to-one>
+  </entity>
+</doctrine-mapping>

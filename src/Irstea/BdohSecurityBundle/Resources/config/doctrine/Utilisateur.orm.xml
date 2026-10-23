@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping http://doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+  <entity repository-class="Irstea\BdohSecurityBundle\Entity\Repository\UtilisateurRepository" name="Irstea\BdohSecurityBundle\Entity\Utilisateur" table="Utilisateur">
+    <id name="id" type="integer" column="id">
+      <generator strategy="SEQUENCE"/>
+      <sequence-generator sequence-name="Utilisateur_id_seq" allocation-size="1" initial-value="1"/>
+    </id>
+    <field name="email" type="string" column="email"/>
+    <field name="login" type="string" column="login" nullable="true"/>
+    <field name="password" type="string" column="password"/>
+    <field name="salt" type="string" column="salt"/>
+    <field name="prenom" type="string" column="prenom" nullable="true"/>
+    <field name="nom" type="string" column="nom" nullable="true"/>
+    <field name="organisme" type="string" column="organisme" nullable="true"/>
+    <field name="telephone" type="string" column="telephone" nullable="true"/>
+    <field name="adresse" type="string" column="adresse" nullable="true"/>
+    <field name="finAcces" type="date" column="finAcces" nullable="true"/>
+    <field name="derniereConnection" type="datetime" column="derniereConnection" nullable="true"/>
+    <field name="confirmationToken" type="string" column="confirmationToken" nullable="true"/>
+    <field name="roleAdmin" type="string" column="roleAdmin" nullable="true"/>
+    <one-to-many field="besoins" target-entity="Irstea\BdohSecurityBundle\Entity\Besoin" mapped-by="utilisateur" fetch="LAZY">
+      <cascade>
+        <cascade-persist/>
+      </cascade>
+    </one-to-many>
+    <one-to-many field="rolesObservatoire" target-entity="Irstea\BdohSecurityBundle\Entity\RoleObservatoire" mapped-by="utilisateur" fetch="LAZY">
+      <cascade>
+        <cascade-persist/>
+      </cascade>
+    </one-to-many>
+    <one-to-many field="rolesSite" target-entity="Irstea\BdohSecurityBundle\Entity\RoleSite" mapped-by="utilisateur" fetch="LAZY">
+      <cascade>
+        <cascade-persist/>
+      </cascade>
+    </one-to-many>
+    <one-to-many field="rolesChronique" target-entity="Irstea\BdohSecurityBundle\Entity\RoleChronique" mapped-by="utilisateur" fetch="LAZY">
+      <cascade>
+        <cascade-persist/>
+      </cascade>
+    </one-to-many>
+    <many-to-one field="categorie" target-entity="Irstea\BdohSecurityBundle\Entity\Categorie" fetch="LAZY">
+      <join-columns>
+        <join-column name="categorie_id" referenced-column-name="id"/>
+      </join-columns>
+    </many-to-one>
+  </entity>
+</doctrine-mapping>

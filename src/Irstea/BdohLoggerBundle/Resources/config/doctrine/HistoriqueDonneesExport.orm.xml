@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping http://doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+  <entity repository-class="Irstea\BdohLoggerBundle\Entity\Repository\HistoriqueDonneesExportRepository" name="Irstea\BdohLoggerBundle\Entity\HistoriqueDonneesExport" table="HistoriqueDonneesExport">
+    <field name="formatExport" type="string" column="formatExport" nullable="true"/>
+    <field name="typeExport" type="string" column="typeExport" nullable="true"/>
+    <field name="timestep" type="string" column="timestep" nullable="true"/>
+    <field name="fuseau" type="string" column="fuseau" nullable="true"/>
+  </entity>
+</doctrine-mapping>

@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping http://doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+  <entity repository-class="Irstea\BdohSecurityBundle\Entity\Repository\BesoinRepository" name="Irstea\BdohSecurityBundle\Entity\Besoin" table="Besoin">
+    <id name="id" type="integer" column="id">
+      <generator strategy="SEQUENCE"/>
+      <sequence-generator sequence-name="Besoin_id_seq" allocation-size="1" initial-value="1"/>
+    </id>
+    <field name="duree" type="string" column="duree" nullable="true"/>
+    <field name="details" type="string" column="details" length="1023" nullable="true"/>
+    <field name="traite" type="boolean" column="traite" nullable="true"/>
+    <many-to-one field="utilisateur" target-entity="Irstea\BdohSecurityBundle\Entity\Utilisateur" inversed-by="besoins" fetch="LAZY">
+      <join-columns>
+        <join-column name="utilisateur_id" referenced-column-name="id" on-delete="CASCADE"/>
+      </join-columns>
+    </many-to-one>
+    <many-to-one field="objectif" target-entity="Irstea\BdohSecurityBundle\Entity\ObjectifRecherche" fetch="LAZY">
+      <join-columns>
+        <join-column name="objectif_id" referenced-column-name="id"/>
+      </join-columns>
+    </many-to-one>
+    <many-to-one field="type" target-entity="Irstea\BdohSecurityBundle\Entity\TypeTravaux" fetch="LAZY">
+      <join-columns>
+        <join-column name="type_id" referenced-column-name="id"/>
+      </join-columns>
+    </many-to-one>
+    <many-to-one field="observatoire" target-entity="Irstea\BdohDataBundle\Entity\Observatoire" fetch="LAZY">
+      <join-columns>
+        <join-column name="observatoire_id" referenced-column-name="id" on-delete="CASCADE"/>
+      </join-columns>
+    </many-to-one>
+    <many-to-many field="parametres" target-entity="Irstea\BdohDataBundle\Entity\TypeParametre" fetch="LAZY">
+      <join-table name="besoins_parametres">
+        <join-columns>
+          <join-column name="besoin_id" referenced-column-name="id" on-delete="CASCADE"/>
+        </join-columns>
+        <inverse-join-columns>
+          <join-column name="parametre_id" referenced-column-name="id" on-delete="CASCADE"/>
+        </inverse-join-columns>
+      </join-table>
+    </many-to-many>
+    <many-to-many field="stations" target-entity="Irstea\BdohDataBundle\Entity\Station" fetch="LAZY">
+      <join-table name="besoins_stations">
+        <join-columns>
+          <join-column name="besoin_id" referenced-column-name="id" on-delete="CASCADE"/>
+        </join-columns>
+        <inverse-join-columns>
+          <join-column name="station_id" referenced-column-name="id" on-delete="CASCADE"/>
+        </inverse-join-columns>
+      </join-table>
+    </many-to-many>
+  </entity>
+</doctrine-mapping>
