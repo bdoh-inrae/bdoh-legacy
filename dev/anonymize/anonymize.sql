@@ -236,7 +236,10 @@ BEGIN
     value := regexp_replace(value, '(?<![0-9])(\+33\s?|0)[1-9]([\s.-]?[0-9]{2}){4}(?![0-9])',
                             '00 00 00 00 00', 'g');
     FOR piece IN SELECT (regexp_matches(value, '(<[^>]*>|&#?[A-Za-z0-9]+;|[^<&]+|[<&])', 'g'))[1] LOOP
-        IF piece ~ '^<.+>$' THEN
+        IF piece ~ '^<!' THEN
+            -- Commentaire HTML : invisible, son texte est brouillé comme le reste.
+            result := result || translate(piece, letters, masks);
+        ELSIF piece ~ '^<.+>$' THEN
             result := result || regexp_replace(piece, '=\s*("[^"]*"|''[^'']*''|[^\s>]+)', '=""', 'g');
         ELSIF piece ~ '^&#?[A-Za-z0-9]+;$' THEN
             result := result || piece;
@@ -250,9 +253,9 @@ END $$;
 DO $$
 BEGIN
     ASSERT anon.scramble('<p class="intro">Jean Dupont, 06 12 34 56 78, jean.dupont@inrae.fr, '
-                         || '&eacute;t&eacute; 2015 <a href="mailto:j@d.fr">ici</a></p>')
+                         || '&eacute;t&eacute; 2015 <a href="mailto:j@d.fr">ici</a></p><!-- Auteur : Jean -->')
          = '<p class="">Xxxx Xxxxxx, 00 00 00 00 00, masque@example.invalid, '
-           || '&eacute;x&eacute; 2015 <a href="">xxx</a></p>',
+           || '&eacute;x&eacute; 2015 <a href="">xxx</a></p><!-- Xxxxxx : Xxxx -->',
          'anon.scramble ne rend pas ce qui est attendu';
 END $$;
 

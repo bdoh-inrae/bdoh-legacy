@@ -7,9 +7,8 @@ Code de référence : commit `523cf8e32` de l'ancien dépôt (version 5.0.3, fé
 ## En cours
 
 - **Base de référence anonymisée**, tirée du dump de production du 21 octobre 2026 : `make anonymize` (`dev/anonymize/`). Le script est écrit d'après la structure de la base de production (138 tables) et essayé sur une base de cette structure remplie de lignes inventées.
-  - [ ] Lou le lance sur le dump et transmet le rapport, fait de comptes.
-  - [ ] Claude contrôle le dump anonymisé avant de s'en servir.
-  - [ ] Ensuite, la base d'OTHU, de la même façon ; une colonne qui n'existe que là arrêtera le script, à classer.
+  - [x] Production : `../bdoh_reference/bdoh-205-2026-10-21-anon.dump` (23 octobre). Rapport sans fuite ni contrôle en échec ; contrôle par Claude : aucun courriel réel hors des mesures, numéros repérés tous faux positifs (géométries, dates, coordonnées). 257 millions de mesures, base de 35,7 Go restaurée.
+  - [ ] La base d'OTHU, de la même façon ; une colonne qui n'existe que là arrêtera le script, à classer.
   - La base `bdoh-messenger`, à part, n'est pas reprise.
 
 ## À faire
