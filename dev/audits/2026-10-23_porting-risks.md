@@ -28,7 +28,7 @@ Lu dans l'ancien dépôt (`../bdoh/`), dont `src/` et `app/` ne diffèrent du co
 | Administration (Sonata)          | `BdohAdminBundle/Admin/`                                                    | métadonnées, droits, comptes               |
 | Historique                       | `DocumentedEntityListener`                                                  | `historique`                               |
 
-Chemins dans `src/Irstea/`. L'import se fait en deux temps : lecture du fichier vers une table temporaire et contrôles, puis confirmation par l'utilisateur ; l'objet d'import est sérialisé entre les deux (`Importer::__sleep`). Un import abandonné laisse sa table temporaire : la production en garde 80 dans le schéma `temp`.
+Chemins dans `src/Irstea/`. L'import se fait en deux temps : lecture du fichier vers une table temporaire et contrôles, puis confirmation par l'utilisateur ; l'objet d'import est sérialisé entre les deux (`Importer::__sleep`). Un import abandonné laisse sa table temporaire : la production en garde 72 dans le schéma `temp`.
 
 ### 2. Ce qui protège les mesures, à garder
 

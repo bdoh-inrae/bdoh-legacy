@@ -15,7 +15,7 @@ Code de référence : commit `523cf8e32` de l'ancien dépôt (version 5.0.3, fé
 
 - **Faire tourner la référence.** L'ancien BDOH en local (`../bdoh/`, commit `523cf8e32`) sur la base anonymisée.
 - **Base de travail réduite**, tirée de la base anonymisée : toutes les métadonnées, tous les comptes et toutes les chroniques, mais les mesures sur une fenêtre de temps commune, à choisir d'après les tailles du rapport d'anonymisation. Elle sert à itérer vite ; la base complète sert aux comparaisons étendues, à la fin de chaque module.
-- **Contrôles sur la base anonymisée** (audit du 23 octobre, « Ce que ça appelle ») : seuils de validité à plus de 3 décimales, absence de raster.
+- **Contrôles d'intégrité** (`dev/reference/inspect.sql`) : faits sur la base de production anonymisée, voir [dev/audits/2026-10-23_reference-db.md](dev/audits/2026-10-23_reference-db.md) ; à refaire sur celle d'OTHU.
 - **Outil de comparaison.** Il joue les mêmes requêtes sur l'ancien et le nouveau BDOH et compare les sorties : pages publiques et visualiseur, exports (chaque format, chaque pas de temps), imports, droits d'accès selon le profil ; et, après chaque écriture, l'état des tables touchées. Les nombres se comparent selon la règle de l'audit (constat 4). Les imports jouent les fichiers de `dev/exemples/` de l'ancien dépôt et des variantes (espaces, fins de ligne Windows, virgules, valeurs invalides, changement d'heure, fuseaux). Les sorties de l'ancien sont enregistrées dans `../bdoh_reference/`.
 - **PostgreSQL 11 vers la version de Debian 13**, avec l'ancien code d'abord, PostGIS compris (procédure du raster, audit constat 7).
 - **Portage, module par module**, chacun validé par la comparaison avant le suivant :
@@ -26,7 +26,7 @@ Code de référence : commit `523cf8e32` de l'ancien dépôt (version 5.0.3, fé
   5. comptes, connexion et droits ;
   6. administration (Sonata Admin 3 vers 4), le plus gros morceau ;
   7. envoi des fiches vers Theia/OZCAR, courriels.
-- **Déploiement** sur une VM neuve sous Debian 13, qui fournit PHP 8.4 et le corrige : déploiement de test, reprise des données, vérifications par des gestionnaires d'observatoire, bascule. La VM est à demander à l'équipe infra.
+- **Déploiement** sur une VM neuve sous Debian 13, sans Docker, avec le PHP 8.4 et le PostgreSQL de Debian, qui les corrige par ses mises à jour ordinaires (choix du 23 octobre ; le code reste compatible avec PHP 8.5, celui d'Ubuntu 26.04, que l'équipe infra propose par défaut) : déploiement de test, reprise des données, vérifications par des gestionnaires d'observatoire, bascule. La VM est à demander à l'équipe infra.
 
 ## À décider
 
