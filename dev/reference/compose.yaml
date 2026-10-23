@@ -3,7 +3,7 @@
 # n'en sort, ni courriel ni envoi vers Theia ; le poste joint l'application à son adresse fixe,
 # http://172.30.25.10/.
 #
-# Se pilote par le Makefile (reference-db, reference-app, reference-start, reference-stop), qui
+# Se pilote par le Makefile (db, reference-app, reference-start, reference-stop, reference-base), qui
 # fournit REFERENCE_DIR (dumps, fichiers du serveur, code de l'application), HOST_UID et HOST_GID :
 # les conteneurs tournent aux droits de l'utilisateur, qui possède tout ce qu'ils écrivent.
 name: bdoh-reference

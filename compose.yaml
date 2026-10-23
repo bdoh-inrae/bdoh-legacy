@@ -1,0 +1,46 @@
+# L'environnement de développement du nouveau BDOH : PostgreSQL 17 et PostGIS 3.5, les versions
+# de Debian 13, sur les bases anonymisées. Comme pour la référence (dev/reference/compose.yaml), le
+# réseau est interne et tout tourne aux droits de l'utilisateur ; se pilote par le Makefile.
+name: bdoh
+
+services:
+  db:
+    image: postgis/postgis:17-3.5
+    container_name: bdoh-db
+    user: "${HOST_UID:?}:${HOST_GID:?}"
+    environment:
+      POSTGRES_HOST_AUTH_METHOD: trust
+    volumes:
+      - /etc/passwd:/etc/passwd:ro
+      - ${REFERENCE_DIR:?}/postgres-17:/var/lib/postgresql/data
+      - ${REFERENCE_DIR:?}:/in:ro
+    healthcheck:
+      test: [CMD, pg_isready, -h, 127.0.0.1, -U, postgres, -q]
+      interval: 2s
+      retries: 60
+    restart: unless-stopped
+    networks: [bdoh]
+
+  # L'ancien code sur PostgreSQL 17, pour essayer la nouvelle version de la base avant le portage :
+  # une copie de l'application de référence (REFERENCE_DIR/app-17), où l'hôte db est ce serveur-ci.
+  reference-app-17:
+    image: bdoh-reference-app
+    container_name: bdoh-reference-app-17
+    user: "${HOST_UID:?}:${HOST_GID:?}"
+    volumes:
+      - ${REFERENCE_DIR:?}/app-17:/var/www/bdoh
+    depends_on:
+      db:
+        condition: service_healthy
+    profiles: [pg17]
+    networks:
+      bdoh:
+        ipv4_address: 172.30.26.17
+
+networks:
+  bdoh:
+    name: bdoh
+    internal: true
+    ipam:
+      config:
+        - subnet: 172.30.26.0/24

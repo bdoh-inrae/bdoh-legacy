@@ -1,0 +1,385 @@
+#!/usr/bin/env python3
+"""Compare deux BDOH : mêmes requêtes, sorties comparées.
+
+    dev/compare/compare.py pages   [--old SIDE] [--new SIDE] [--base BASE] [--only TEXTE]
+    dev/compare/compare.py exports [--old SIDE] [--new SIDE] [--base BASE] [--only TEXTE]
+
+SIDE nomme une instance (voir SIDES). Les cas sont tirés de la base BASE du serveur de référence,
+par des règles écrites ici : le dépôt ne contient ni données ni codes de chroniques. Le rapport et
+les écarts vont dans ../bdoh_reference/compare/, hors du dépôt.
+
+Les pages se comparent par ce qu'elles montrent (texte, liens, formulaires, attributs data-*), pas
+par leur balisage ; les nombres, à un arrondi près (règle « Arrondis à la limite » de
+dev/differences.md), compté à part pour être relu. Bibliothèque standard seulement.
+"""
+
+import argparse
+import datetime
+import difflib
+import html.parser
+import http.cookiejar
+import json
+import re
+import subprocess
+import sys
+import urllib.error
+import urllib.parse
+import urllib.request
+from dataclasses import dataclass
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+OUT = HERE.parent.parent.parent / 'bdoh_reference' / 'compare'
+PASSWORD = 'bdoh-test'  # mot de passe de tous les comptes des bases anonymisées
+
+
+@dataclass
+class Side:
+    url: str
+    console: list  # commande qui lance la console Symfony de l'instance
+
+
+SIDES = {
+    'reference': Side('http://172.30.25.10',
+                      ['docker', 'exec', 'bdoh-reference-worker', 'php', 'app/console']),
+}
+
+
+# --- Base : tirage des cas -----------------------------------------------------------------------
+
+def query(base, sql):
+    """Lignes d'une requête sur une base du serveur de référence, en listes de champs."""
+    out = subprocess.run(
+        ['docker', 'exec', '-i', 'bdoh-reference-db', 'psql', '-U', 'bdoh', '-d', base,
+         '-v', 'ON_ERROR_STOP=1', '-At', '-F', '\t', '-c', sql],
+        check=True, capture_output=True, text=True).stdout
+    return [line.split('\t') for line in out.splitlines()]
+
+
+# Observatoire de chaque chronique, par sa station et le premier site de la station.
+CHRONIQUES = """
+    SELECT DISTINCT ON (c.id) c.id, c.code, c.dtype, c.estvisible, s.code AS station, o.slug
+      FROM chronique c
+      JOIN station s ON s.id = c.station_id
+      JOIN stations_sites ss ON ss.station_id = s.id
+      JOIN siteexperimental se ON se.id = ss.site_id
+      JOIN observatoire o ON o.id = se.observatoire_id
+     ORDER BY c.id, se.observatoire_id"""
+
+
+def profiles(base):
+    """Comptes de connexion par profil : le premier compte actif de chaque sorte."""
+    active = "(u.finacces IS NULL OR u.finacces > now())"
+    found = {'anonyme': None}
+    for name, where in [
+        ('administrateur', f"u.roleadmin = 'FCT' AND {active}"),
+        ('gestionnaire', f"{active} AND EXISTS (SELECT 1 FROM role r WHERE r.utilisateur_id = u.id"
+                         " AND r.valeur = 'gestionnaire' AND r.observatoire_id IS NOT NULL)"),
+        ('utilisateur', f"{active} AND u.roleadmin IS NULL AND NOT EXISTS (SELECT 1 FROM role r"
+                        " WHERE r.utilisateur_id = u.id AND r.valeur <> 'utilisateur')"
+                        " AND EXISTS (SELECT 1 FROM role r WHERE r.utilisateur_id = u.id)"),
+    ]:
+        rows = query(base, f"SELECT u.email FROM utilisateur u WHERE {where} ORDER BY u.id LIMIT 1")
+        if rows:
+            found[name] = rows[0][0]
+    return found
+
+
+def page_cases(base):
+    """Les pages publiques et le visualiseur, pour chaque observatoire, quelques stations et chroniques."""
+    observatoires = [r[0] for r in query(base, "SELECT slug FROM observatoire ORDER BY id")]
+    paths = ['/', '/user_manual', '/select_lang/en', '/select_lang/fr', '/translations/messages.js']
+    for slug in observatoires:
+        paths += [f'/{slug}/{p}' for p in ['', 'home', 'nos-donnees', 'viewer', 'contact',
+                                            'terms_of_use', 'conditions', 'login']]
+        paths.append(f'/{slug}/_STATION_CODE_/_CHRONIQUE_CODE_')
+    stations = query(base, """
+        SELECT o.slug, s.code FROM (
+            SELECT s.id, s.code, se.observatoire_id,
+                   row_number() OVER (PARTITION BY se.observatoire_id ORDER BY s.id) AS n
+              FROM station s JOIN stations_sites ss ON ss.station_id = s.id
+              JOIN siteexperimental se ON se.id = ss.site_id) s
+          JOIN observatoire o ON o.id = s.observatoire_id
+         WHERE s.n <= 2 ORDER BY o.id, s.id""")
+    paths += [f'/{slug}/station/{code}' for slug, code in stations]
+    # Par observatoire, de chaque sorte, la première chronique visible et la première non visible.
+    chroniques = query(base, f"""
+        SELECT slug, station, code, id FROM (
+            SELECT *, row_number() OVER (PARTITION BY slug, dtype, estvisible ORDER BY id) AS n
+              FROM ({CHRONIQUES}) c) c
+         WHERE n = 1 ORDER BY slug, id""")
+    for slug, station, code, cid in chroniques:
+        paths.append(f'/{slug}/{station}/{code}')
+        paths.append(f'/{slug}/chronique/{cid}/measures?beginDate=2024-03-01T00:00:00Z'
+                     '&endDate=2024-04-01T00:00:00Z')
+    datasets = query(base, """
+        SELECT DISTINCT ON (d.id) o.slug, d.uuid FROM dataset d
+          JOIN observatoire o ON o.id = d.observatoire_id ORDER BY d.id""")
+    paths += [f'/{slug}/dataset/{uuid}' for slug, uuid in datasets]
+    for slug in observatoires[:3]:
+        paths.append(f'/{slug}/viewer/load?start=2024-03-01T00:00:00Z&end=2024-04-01T00:00:00Z')
+    return paths
+
+
+def export_cases(base):
+    """Exports en ligne de commande : chaque sorte de chronique, chaque format, chaque pas de temps."""
+    picked = query(base, f"""
+        SELECT id, dtype FROM (
+            SELECT c.id, c.dtype, row_number() OVER (PARTITION BY c.dtype ORDER BY c.id) AS n
+              FROM ({CHRONIQUES}) c JOIN chronique ch ON ch.id = c.id
+             WHERE ch.nbmesures > 0) c
+         WHERE n <= 2
+        UNION SELECT DISTINCT chronique_id, 'avant 1900' FROM mesure WHERE date < '1900-01-01'
+        UNION (SELECT m.chronique_id, 'lacunes à -9999' FROM mesure m
+                 JOIN qualite q ON q.id = m.qualite_id
+                WHERE q.ordre = 100 AND m.valeur = -9999 LIMIT 1)
+        ORDER BY 1""")
+    cases = []
+    for cid, kind in picked:
+        if kind == 'avant 1900':
+            period = ['1816-01-01T00:00:00+00:00', '1900-01-01T00:00:00+00:00']
+        else:
+            period = ['2024-01-01T00:00:00+00:00', '2025-01-01T00:00:00+00:00']
+        formats = ['bdoh'] if kind == 'discontinue' else ['bdoh', 'qtvar', 'vigilance']
+        for fmt in formats:
+            for tz in ['+01:00', '+00:00', '-05:00']:
+                options = ['--format', fmt, '--timezone', tz]
+                cases.append(['bdoh:export:identical', *period, cid, *options])
+                if fmt != 'bdoh' or tz != '+01:00':
+                    continue
+                cases.append(['bdoh:export:instantaneous', '60', *period, cid, *options])
+                for step in ['5', '7', '8', '9']:  # 1 heure, 1 jour, 1 mois, 1 an
+                    cases.append(['bdoh:export:mean', step, *period, cid, *options])
+                    cases.append(['bdoh:export:cumulative', step, *period, cid, *options])
+    return cases
+
+
+# --- Pages : récupération et extraction ----------------------------------------------------------
+
+class NoRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, *args):
+        return None
+
+
+class Client:
+    """Un navigateur sans JavaScript, connecté ou non, qui ne suit pas les redirections."""
+
+    def __init__(self, side, email, slug):
+        self.side = side
+        jar = http.cookiejar.CookieJar()
+        self.opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(jar), NoRedirect)
+        if email:
+            self.get(f'/{slug}/login')
+            status, headers, _ = self.get(f'/{slug}/login_check', urllib.parse.urlencode(
+                {'_username': email, '_password': PASSWORD}).encode())
+            if status != 302 or 'login' in headers.get('Location', ''):
+                raise RuntimeError(f'connexion refusée pour {email} sur {side.url}')
+
+    def get(self, path, data=None):
+        try:
+            with self.opener.open(self.side.url + path, data, timeout=300) as r:
+                return r.status, r.headers, r.read()
+        except urllib.error.HTTPError as e:
+            return e.code, e.headers, e.read()
+
+
+class Extract(html.parser.HTMLParser):
+    """Ce qu'une page montre, ligne à ligne : textes, liens, formulaires, attributs data-*."""
+
+    BLOCKS = {'address', 'article', 'aside', 'blockquote', 'br', 'dd', 'div', 'dl', 'dt', 'fieldset',
+              'footer', 'form', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'header', 'hr', 'label', 'legend',
+              'li', 'nav', 'ol', 'option', 'p', 'pre', 'section', 'table', 'tbody', 'td', 'tfoot',
+              'th', 'thead', 'title', 'tr', 'ul'}
+    TOKEN = re.compile(r'(^|\[)_?(csrf_)?token\]?$')
+
+    def __init__(self):
+        super().__init__(convert_charrefs=True)
+        self.lines, self.text, self.script, self.raw = [], [], None, None
+
+    def add(self, *fields):
+        self.lines.append(' '.join(f for f in fields if f))
+
+    def flush(self):
+        text = ' '.join(''.join(self.text).split())
+        if text:
+            self.add('T', text)
+        self.text = []
+
+    def handle_starttag(self, tag, attrs):
+        a = {k: v or '' for k, v in attrs}
+        if tag in self.BLOCKS:
+            self.flush()
+        if tag in ('script', 'style'):
+            self.flush()
+            self.raw = tag
+            self.script = []
+            if a.get('src'):
+                self.add('S', a['src'])
+        elif tag == 'a' and 'href' in a:
+            self.add('A', a['href'])
+        elif tag == 'form':
+            self.add('F', a.get('method', 'get').lower(), a.get('action', ''))
+        elif tag in ('input', 'button', 'select', 'textarea'):
+            value = a.get('value', '')
+            if self.TOKEN.search(a.get('name', '')) or a.get('type') == 'password':
+                value = '<jeton>' if value else ''
+            self.add('I', tag, a.get('type', ''), a.get('name', ''), value,
+                     'checked' if 'checked' in a else '', 'disabled' if 'disabled' in a else '')
+        elif tag == 'option':
+            self.add('O', a.get('value', ''), 'selected' if 'selected' in a else '')
+        elif tag == 'img':
+            self.add('G', a.get('src', ''), a.get('alt', ''))
+        elif tag == 'link':
+            self.add('L', a.get('rel', ''), a.get('href', ''))
+        data = [f'{k}={v}' for k, v in sorted(a.items()) if k.startswith('data-')]
+        if data:
+            self.add('D', tag, *data)
+
+    def handle_endtag(self, tag):
+        if tag == self.raw:
+            code = ' '.join(''.join(self.script).split())
+            if code and tag == 'script':
+                self.add('J', code)
+            self.raw = self.script = None
+        elif tag in self.BLOCKS:
+            self.flush()
+
+    def handle_data(self, data):
+        (self.script if self.raw else self.text).append(data)
+
+
+NORMALIZE = [
+    (re.compile(r'(/assets/[\w/.-]+?)\.[0-9a-f]{8,20}(\.\w+)'), r'\1\2'),  # empreintes des fichiers
+    (re.compile(r'\bs[0-9a-f]{13}\b'), 's<uniqid>'),  # identifiants de formulaires de Sonata
+    (re.compile(r'data:image/[\w+]+;base64,[\w+/=]+'), '<image>'),  # captcha
+    (re.compile(r'(data-target=#[a-z]+-)\d+'), r'\1<n>'),  # fenêtres numérotées au hasard
+]
+
+
+def page_lines(status, headers, body):
+    lines = [f'statut {status}']
+    if 300 <= status < 400:
+        lines.append(f"redirection {headers.get('Location', '')}")
+    kind = headers.get('Content-Type', '').split(';')[0]
+    lines.append(f'type {kind}')
+    if kind == 'text/html':
+        parser = Extract()
+        parser.feed(body.decode('utf-8', 'replace'))
+        parser.flush()
+        lines += parser.lines
+    elif kind == 'application/json':
+        lines += json.dumps(json.loads(body), indent=1, sort_keys=True, ensure_ascii=False).splitlines()
+    else:
+        lines += body.decode('utf-8', 'replace').splitlines()
+    for pattern, repl in NORMALIZE:
+        lines = [pattern.sub(repl, line) for line in lines]
+    return lines
+
+
+# --- Comparaison ---------------------------------------------------------------------------------
+
+NUMBER = re.compile(r'-?\d+(?:[.,]\d+)?(?:[eE][-+]?\d+)?')
+
+
+def same_but_rounding(a, b):
+    """Deux lignes qui ne diffèrent que par des nombres écrits à une unité près du dernier chiffre,
+    ou par -0 et 0 (règle « Arrondis à la limite »)."""
+    if NUMBER.sub('#', a) != NUMBER.sub('#', b):
+        return False
+    for x, y in zip(NUMBER.findall(a), NUMBER.findall(b)):
+        if x == y:
+            continue
+        if x.lstrip('-') == y.lstrip('-') and float(x.replace(',', '.')) == 0:
+            continue
+        decimals = len(x.split('.')[1]) if '.' in x else 0
+        try:
+            if abs(float(x.replace(',', '.')) - float(y.replace(',', '.'))) > 1.000001 * 10 ** -decimals:
+                return False
+        except ValueError:
+            return False
+    return True
+
+
+def compare(old, new):
+    """Écarts entre deux suites de lignes : (lignes de diff, nombre de lignes à un arrondi près)."""
+    rounding = 0
+    matcher = difflib.SequenceMatcher(None, old, new, autojunk=False)
+    new = list(new)
+    for op, i1, i2, j1, j2 in matcher.get_opcodes():
+        if op == 'replace' and i2 - i1 == j2 - j1:
+            for k in range(i2 - i1):
+                if same_but_rounding(old[i1 + k], new[j1 + k]):
+                    new[j1 + k] = old[i1 + k]
+                    rounding += 1
+    diff = list(difflib.unified_diff(old, new, 'ancien', 'nouveau', n=2, lineterm=''))
+    return diff, rounding
+
+
+class Report:
+    def __init__(self, kind):
+        self.dir = OUT / f"{datetime.datetime.now():%Y-%m-%d_%H%M%S}_{kind}"
+        self.dir.mkdir(parents=True)
+        self.counts = {'identiques': 0, 'à un arrondi près': 0, 'différents': 0}
+        self.summary = []
+
+    def add(self, name, old, new):
+        diff, rounding = compare(old, new)
+        key = 'différents' if diff else 'à un arrondi près' if rounding else 'identiques'
+        self.counts[key] += 1
+        if diff or rounding:
+            slug = re.sub(r'[^\w.-]+', '_', name).strip('_')[:150]
+            (self.dir / f'{slug}.diff').write_text('\n'.join([name, *diff, '']))
+            self.summary.append(f"{key:<18} {name}" + (f'  ({rounding} arrondis)' if rounding else ''))
+        print(f"{'.' if not diff else 'X'}", end='', flush=True)
+
+    def close(self):
+        text = '\n'.join([*(f'{n:>6} {k}' for k, n in self.counts.items()), '', *self.summary, ''])
+        (self.dir / 'rapport.txt').write_text(text)
+        print('\n' + text + f'Rapport : {self.dir}')
+
+
+def run_pages(args):
+    old, new = SIDES[args.old], SIDES[args.new]
+    slug = query(args.base, "SELECT slug FROM observatoire ORDER BY id LIMIT 1")[0][0]
+    paths = [p for p in page_cases(args.base) if args.only in p]
+    report = Report('pages')
+    for profile, email in profiles(args.base).items():
+        clients = Client(old, email, slug), Client(new, email, slug)
+        for path in paths:
+            lines = [page_lines(*client.get(path)) for client in clients]
+            report.add(f'{profile} {path}', *lines)
+    report.close()
+
+
+def run_exports(args):
+    old, new = SIDES[args.old], SIDES[args.new]
+    report = Report('exports')
+    for case in export_cases(args.base):
+        name = ' '.join(case)
+        if args.only not in name:
+            continue
+        outputs = []
+        for side in (old, new):
+            r = subprocess.run([*side.console, *case, '--env=prod'], capture_output=True, text=True)
+            lines = [f'code de sortie {r.returncode}', *r.stdout.splitlines(), *r.stderr.splitlines()]
+            # Date de l'export et dossier temporaire changent à chaque fois.
+            lines = [re.sub(r'^(Export du|Export of) .*? (au format|in format)', r'\1 <date> \2', line)
+                     for line in lines if not line.startswith('# Printing ')]
+            outputs.append(lines)
+        report.add(name, *outputs)
+    report.close()
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__.split('\n')[0])
+    parser.add_argument('what', choices=['pages', 'exports'])
+    parser.add_argument('--old', default='reference', choices=SIDES)
+    parser.add_argument('--new', default='reference', choices=SIDES)
+    parser.add_argument('--base', default='bdoh_small', help='base où tirer les cas')
+    parser.add_argument('--only', default='', help='ne garder que les cas qui contiennent ce texte')
+    args = parser.parse_args()
+    {'pages': run_pages, 'exports': run_exports}[args.what](args)
+
+
+if __name__ == '__main__':
+    sys.exit(main())

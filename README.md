@@ -11,11 +11,15 @@ Les commandes du projet sont dans le `Makefile` : `make` les liste.
 Le portage se compare à une référence : l'ancien BDOH, tel qu'il tourne en production, sur des copies anonymisées de ses bases, dans Docker et sans accès à l'extérieur (`dev/reference/`). Les dumps, les fichiers des bases et le code installé vivent hors du dépôt, dans `../bdoh_reference/`.
 
 ```
-make reference-db      restaure un dump anonymisé
+make db                restaure un dump anonymisé
+make db-small          en tire la base de travail réduite, bdoh_small
 make reference-app     installe l'ancien BDOH (à faire une fois)
 make reference-start   lance la référence : http://172.30.25.10/
+make reference-base    la branche sur une autre base (BASE=bdoh_small)
 make reference-stop    l'arrête
 ```
+
+Le nouveau BDOH aura son propre serveur de base, PostgreSQL 17 comme Debian 13 (`compose.yaml`) : `SERVER=new` y mène les commandes `db`, `db-small` et `inspect`.
 
 Tous les comptes de la base anonymisée ont le mot de passe `bdoh-test`.
 
