@@ -26,9 +26,6 @@ Code de référence : commit `523cf8e32` de l'ancien dépôt (version 5.0.3, fé
   7. envoi des fiches vers Theia/OZCAR, courriels.
 - **Déploiement** sur une VM neuve sous Debian 13, sans Docker, avec le PHP 8.4 et le PostgreSQL de Debian, qui les corrige par ses mises à jour ordinaires (choix du 23 octobre ; le code reste compatible avec PHP 8.5, celui d'Ubuntu 26.04, que l'équipe infra propose par défaut) : déploiement de test, reprise des données, vérifications par des gestionnaires d'observatoire, bascule. La VM est à demander à l'équipe infra.
 
-## À décider
-
-- **Nom et forge** du dépôt.
 
 ## Plus tard, après la bascule
 

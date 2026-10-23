@@ -1,6 +1,6 @@
-# BDOH, nouvelle base de code
+# bdoh-legacy
 
-Portage de BDOH vers Symfony 7.4 et PHP 8.4, dans un dépôt neuf destiné à être public. L'ancien code est dans `../bdoh/`, figé : c'est la référence de comportement, on ne le modifie pas pour les besoins du portage. (2026-10-23)
+Portage de BDOH vers Symfony 7.4 et PHP 8.4, dans un dépôt neuf et public, voué à l'archive une fois le nouveau BDOH (`bdoh-inrae/bdoh-*`) en service. L'ancien code est dans `../bdoh/`, figé : c'est la référence de comportement, on ne le modifie pas pour les besoins du portage. (2026-10-23)
 
 - Méthode : portage module par module dans un squelette neuf, pas de montée version par version de Symfony. Les versions intermédiaires (3.4 à 6.4) demanderaient chacune leur propre adaptation de Sonata, de la sécurité et de la file de tâches, réécrite à l'étape suivante ; la comparaison avec l'ancien BDOH localise les régressions par module aussi bien. Un module passe la comparaison avant qu'on attaque le suivant ; un écart est corrigé, ou tranché par Lou et noté dans `dev/differences.md`. (2026-10-23)
 - BDOH garde son visage : mêmes pages, mêmes adresses, mêmes formats d'import et d'export, pour ne pas perdre ses utilisateurs et utilisatrices. Un bogue trouvé en chemin, ou une amélioration nette, se prend au passage, proprement et vérifié par la comparaison, et s'inscrit dans `dev/differences.md`. (2026-10-23)
@@ -11,4 +11,4 @@ Portage de BDOH vers Symfony 7.4 et PHP 8.4, dans un dépôt neuf destiné à ê
 - Aucune donnée dans le dépôt : ni dump, ni sortie de référence (certaines séries ne sont pas publiques). Elles vivent hors dépôt, dans `../bdoh_reference/`. Rien non plus qui nomme une machine, une adresse ou un accès, ni ce qui relève du suivi d'incident. (2026-10-23)
 - Développement, référence et tests tournent dans Docker ; la production, elle, tournera sans Docker, sur les paquets de Debian 13. Les données des conteneurs vivent dans des dossiers à côté du dépôt (comme `../bdoh_reference/postgres/`), aux droits de Lou, pas dans des volumes Docker : on voit et on supprime ce qu'elles pèsent. Exception voulue : la base brute temporaire de l'anonymisation reste dans un volume réservé à root, détruit à la fin, pour que les outils de Claude ne puissent pas la lire. (2026-10-23)
 - Claude n'ouvre que des bases anonymisées. Un dump brut passe par le script d'anonymisation, que Lou lance ; Claude ne voit que son rapport, fait de comptes, et le dump qui en sort. (2026-10-23)
-- Pas de dépôt distant pour l'instant : rien n'est poussé sans l'accord de Lou. (2026-10-23)
+- Dépôt public : `github.com/bdoh-inrae/bdoh-legacy`. On travaille sur `main` tant que Lou y contribue seule, et on pousse à chaque étape cohérente ; tout ce qui part est public, d'où la règle sur les données et les machines ci-dessus. (2026-10-23)

@@ -263,8 +263,8 @@ END $$;
 
 DO $$
 BEGIN
-    ASSERT anon.scramble('<p class="intro">Jean Dupont, 06 12 34 56 78, jean.dupont@inrae.fr, '
-                         || '&eacute;t&eacute; 2015 <a href="mailto:j@d.fr">ici</a></p><!-- Auteur : Jean -->')
+    ASSERT anon.scramble('<p class="intro">Jean Dupont, 06 12 34 56 78, jean.dupont@example.org, '
+                         || '&eacute;t&eacute; 2015 <a href="mailto:j@d.example">ici</a></p><!-- Auteur : Jean -->')
          = '<p class="">Xxxx Xxxxxx, 00 00 00 00 00, masque@example.invalid, '
            || '&eacute;x&eacute; 2015 <a href="">xxx</a></p><!-- Xxxxxx : Xxxx -->',
          'anon.scramble ne rend pas ce qui est attendu';
