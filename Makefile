@@ -18,7 +18,7 @@ COMPOSER = docker run --rm --user $(HOST_UID):$(HOST_GID) -e HOME=/tmp -v $(CURD
 NPM = docker run --rm --user $(HOST_UID):$(HOST_GID) -e HOME=/tmp -v $(CURDIR):/var/www/bdoh bdoh-app npm
 DB_CONTAINER = $(if $(filter new,$(SERVER)),bdoh-db,bdoh-reference-db)
 
-.PHONY: help app-install start stop composer phpstan anonymize db db-small inspect reference-app reference-start reference-stop reference-base reference-17-start mail-start
+.PHONY: help app-install start stop composer phpstan anonymize db db-small inspect reference-app reference-start reference-stop reference-base reference-17-start mail-start worker-start
 
 help: ## Liste les commandes
 	@grep -E '^[a-z0-9-]+:.*## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*## "} {printf "  %-19s %s\n", $$1, $$2}'
@@ -39,7 +39,10 @@ start: ## Lance le nouveau BDOH : http://172.30.26.10/
 	$(NEW) up -d --wait db app
 
 stop: ## Arrête le nouveau BDOH
-	$(NEW) stop
+	$(NEW) --profile worker --profile mail --profile pg17 stop
+
+worker-start: ## Lance la file de tâches du nouveau BDOH, sur la base qu'il lit
+	$(NEW) --profile worker up -d worker
 
 composer: ## Lance Composer pour le nouveau BDOH : make composer ARGS="require un/paquet"
 	$(COMPOSER) $(ARGS)

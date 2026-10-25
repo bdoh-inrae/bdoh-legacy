@@ -42,6 +42,27 @@ services:
       bdoh:
         ipv4_address: 172.30.26.10
 
+  # La file de tâches, lancée comme par le service de production (config/bdoh-job-worker.service),
+  # qui la relance quand elle s'arrête au bout d'une heure. À part (make worker-start) : elle lit sa
+  # base au démarrage, et compare.py mène lui-même la file des copies qu'il compare.
+  worker:
+    image: bdoh-app
+    container_name: bdoh-worker
+    user: "${HOST_UID:?}:${HOST_GID:?}"
+    environment:
+      APP_ENV: prod
+      APP_DEBUG: 0
+    volumes:
+      - .:/var/www/bdoh
+    command: [php, bin/console, bdoh:jobs:run, --max-concurrent-jobs=2, --max-runtime=3600,
+              --env=prod, --no-interaction, -vv]
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    profiles: [worker]
+    networks: [bdoh]
+
   # L'ancien code sur PostgreSQL 17, pour essayer la nouvelle version de la base avant le portage :
   # une copie de l'application de référence (REFERENCE_DIR/app-17), où l'hôte db est ce serveur-ci.
   reference-app-17:

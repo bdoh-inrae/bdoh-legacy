@@ -1,0 +1,21 @@
+# La file de tâches du nouveau BDOH, comme app/config/bdoh-job-worker.service de l'ancien ; chemin
+# de l'application à revoir au déploiement. À l'arrêt, systemd ne signale que l'exécuteur
+# (KillMode=mixed), qui ne lance plus rien et laisse finir ses tâches ; au-delà de TimeoutStopSec,
+# tout est tué : une tâche coupée passe en échec, et son calcul, fait dans une transaction, est
+# annulé (dev/differences.md, « Tâche interrompue par un signal »).
+[Unit]
+Description=Exécuteur des tâches de BDOH
+Requires=postgresql.service
+After=postgresql.service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/php /var/www/bdoh/current/bin/console bdoh:jobs:run --max-concurrent-jobs=2 --max-runtime=3600 --env=prod --no-interaction -vv
+Nice=10
+Restart=always
+User=www-data
+KillMode=mixed
+TimeoutStopSec=5min
+
+[Install]
+WantedBy=multi-user.target
