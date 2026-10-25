@@ -517,6 +517,11 @@ STATE_QUERIES = {
                         THEN jsonb_build_object('erroroutput', '<erreur>') ELSE '{{}}' END)::text
           FROM jms_jobs j ORDER BY j.id""",
     'jms_job_related_entities': "SELECT * FROM jms_job_related_entities ORDER BY 1, 2, 3",
+    'bareme': "SELECT (to_jsonb(b) - 'datecreation')::text FROM bareme b ORDER BY b.id",
+    'pointcontrole': """
+        SELECT chronique_id, count(*), md5(string_agg(concat_ws(';', date, valeur, qualite_id, minimum, maximum), '|'
+                                                      ORDER BY date))
+          FROM pointcontrole GROUP BY 1 ORDER BY 1""",
 }
 
 
@@ -927,6 +932,25 @@ def controle_cases(base):
                        ('points de contrôle, trop de champs', content([full[0] + ';de trop']))]
 
 
+def bareme_cases(base, slug):
+    """Les imports de barèmes, sous l'observatoire slug : une courbe de tarage, et trois refusées
+    (unité inconnue, valeur non numérique, qualité inconnue)."""
+    entree, sortie = [r[0] for r in query(base, "SELECT libelle FROM unite ORDER BY id LIMIT 2 OFFSET 2", NEW_SERVER)]
+    quality, = query(base, f"""
+        SELECT q.code FROM qualite q JOIN observatoire o ON o.jeu_id = q.jeu_id
+         WHERE o.slug = '{slug}' AND q.code <> 'gap' ORDER BY q.id DESC LIMIT 1""", NEW_SERVER)[0]
+    def bareme(nom, unit_in=entree, points=None):
+        points = points or [(0, 0), (1, 1000), (2, 2500.5), (3.5, 4000)]
+        lines = ['Nom ; Unite entree ; Unite sortie ; Commentaire', f'{nom} ; {unit_in} ; {sortie} ; Essai',
+                 'X ; Y ; Qualite ; Min (optionnel) ; Max (optionnel)',
+                 *[f'{x} ; {y} ; {q}' for x, y, *rest in points for q in [rest[0] if rest else quality]]]
+        return ('\n'.join(lines) + '\n').encode()
+    return [('barème', bareme('Courbe essai')),
+            ('barème, unité inconnue', bareme('Courbe essai 2', unit_in='inconnue')),
+            ('barème, valeur non numérique', bareme('Courbe essai 3', points=[(0, 0), (1, 'abc')])),
+            ('barème, qualité inconnue', bareme('Courbe essai 4', points=[(0, 0, 'zz'), (1, 1)]))]
+
+
 def run_imports(args):
     """Chaque import, étape par étape, par l'ancien code sur PostgreSQL 17 et par le nouveau, chacun
     sur sa copie de BASE, au nom d'un gestionnaire de l'observatoire visé ; puis la file de tâches,
@@ -934,13 +958,6 @@ def run_imports(args):
     template = args.base
     historique = query(template, 'SELECT coalesce(max(id), 0) FROM historique', NEW_SERVER)[0][0]
     cases = [c for c in import_cases(template) if args.only in c['name']]
-    managers = {}
-    for slug in {c['slug'] for c in cases}:
-        managers[slug] = query(template, f"""
-            SELECT u.email FROM utilisateur u JOIN role r ON r.utilisateur_id = u.id
-              JOIN observatoire o ON o.id = r.observatoire_id
-             WHERE r.valeur = 'gestionnaire' AND o.slug = '{slug}' AND (u.finacces IS NULL OR u.finacces > now())
-             ORDER BY u.id LIMIT 1""", NEW_SERVER)[0][0]
     bases = {'ancien': 'bdoh_imports_old', 'nouveau': 'bdoh_imports_new'}
     for base in bases.values():
         copy_base(template, base)
@@ -951,12 +968,22 @@ def run_imports(args):
                  'nouveau': (SIDES['new'], new_console, 'bdoh:jobs:run')}
         clients = {}
 
+        def client_for(name, slug):
+            """Un navigateur par côté et par observatoire, connecté au nom d'un de ses gestionnaires."""
+            if (name, slug) not in clients:
+                manager = query(template, f"""
+                    SELECT u.email FROM utilisateur u JOIN role r ON r.utilisateur_id = u.id
+                      JOIN observatoire o ON o.id = r.observatoire_id
+                     WHERE r.valeur = 'gestionnaire' AND o.slug = '{slug}'
+                       AND (u.finacces IS NULL OR u.finacces > now())
+                     ORDER BY u.id LIMIT 1""", NEW_SERVER)[0][0]
+                clients[name, slug] = Client(sides[name][0], manager, slug)
+            return clients[name, slug]
+
         def play(name, case):
             side, console, runner = sides[name]
             slug = case['slug']
-            if (name, slug) not in clients:
-                clients[name, slug] = Client(side, managers[slug], slug)
-            client = clients[name, slug]
+            client = client_for(name, slug)
             ajax = {'X-Requested-With': 'XMLHttpRequest'}
             post = lambda step, fields: client.get(f'/{slug}/admin/mesure/import/{step}',
                                                    urllib.parse.urlencode(fields).encode(), ajax)
@@ -991,9 +1018,7 @@ def run_imports(args):
         def play_controle(name, cid, slug, content):
             """Un import de points de contrôle (deux étapes), puis l'export des points de la chronique."""
             side = sides[name][0]
-            if (name, slug) not in clients:
-                clients[name, slug] = Client(side, managers[slug], slug)
-            client = clients[name, slug]
+            client = client_for(name, slug)
             ajax = {'X-Requested-With': 'XMLHttpRequest'}
             body, kind = multipart({}, {'file': ('controle.txt', content)})
             response = client.get(f'/{slug}/admin/controle/import/step2', body, {**ajax, 'Content-Type': kind})
@@ -1009,14 +1034,29 @@ def run_imports(args):
 
         cid, slug, controles = controle_cases(template)
         if args.only in 'points de contrôle':
-            managers.setdefault(slug, query(template, f"""
-                SELECT u.email FROM utilisateur u JOIN role r ON r.utilisateur_id = u.id
-                  JOIN observatoire o ON o.id = r.observatoire_id
-                 WHERE r.valeur = 'gestionnaire' AND o.slug = '{slug}' AND (u.finacces IS NULL OR u.finacces > now())
-                 ORDER BY u.id LIMIT 1""", NEW_SERVER)[0][0])
             for title, content in controles:
                 report.add(f'import {title}', play_controle('ancien', cid, slug, content),
                            play_controle('nouveau', cid, slug, content))
+
+        def play_bareme(name, slug, content):
+            """Un import de barème, depuis la page des transformations (deux étapes)."""
+            side = sides[name][0]
+            client = client_for(name, slug)
+            ajax = {'X-Requested-With': 'XMLHttpRequest'}
+            body, kind = multipart({}, {'file': ('bareme.txt', content)})
+            response = client.get(f'/{slug}/admin/transformation/import/bareme/step2', body,
+                                  {**ajax, 'Content-Type': kind})
+            log = ['== étape 2', *step_lines(side.url, *response)]
+            if response[0] == 200 and json.loads(response[2]).get('action') == 'step3':
+                response = client.get(f'/{slug}/admin/transformation/import/bareme/step3', b'', ajax)
+                log += ['== étape 3', *step_lines(side.url, *response)]
+            # La date de création du barème, celle du moment
+            return [re.sub(r'\d\d/\d\d/\d{4} \d\d:\d\d(:\d\d)?', '<date>', line) for line in log]
+
+        if args.only in 'barème':
+            for title, content in bareme_cases(template, slug):
+                report.add(f'import {title}', play_bareme('ancien', slug, content),
+                           play_bareme('nouveau', slug, content))
         for name in sides:
             sides[name] = state_lines(bases[name], historique)
     for table in sides['ancien']:
