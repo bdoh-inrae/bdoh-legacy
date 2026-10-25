@@ -1,6 +1,6 @@
 # File de tâches et exports
 
-État : en cours, commencé le 2026-10-23. Point 3 du portage dans `ROADMAP.md`.
+État : terminé le 2026-10-25. Point 3 du portage dans `ROADMAP.md`.
 
 But : les recalculs de chroniques, les taux de remplissage, les exports et l'envoi vers Theia passent par une file de tâches qui garde la garantie de l'ancienne (une tâche à la fois par chronique, audit des risques, constat 3) ; les pages de suivi des tâches (`/{obs}/jobs/`) et les exports se comparent à l'identique.
 
@@ -48,4 +48,4 @@ Pourquoi pas Symfony Messenger, prévu au départ : Messenger transporte des mes
   - `compare.py state` joue aussi l'export demandé par le formulaire (identique, moyenne journalière, Vigilance qui échoue, Qtvar annulé), « vider une période » au nom d'un gestionnaire, la relance de la tâche en échec, et compare les courriels reçus par Mailpit (`make mail-start`), pièces jointes dépliées : tout est identique à l'ancien, et les pages de suivi de ces tâches aussi.
   - Essai de l'audit (constat 3), `compare.py queue` : trois recalculs rapprochés avec propagation, sur une chronique, sur une chronique qui en dépend et de nouveau sur la première, menés deux à la fois puis un à un, chacun sur sa copie : 106 tâches, 53 paires menées en même temps, aucune dans une même file ; même état final. À refaire avec des imports, au module 4.
   - Service de la file : `config/bdoh-job-worker.service` pour la production (comme l'ancien, plus `KillMode=mixed`) ; `worker` dans `compose.yaml`, à part (`make worker-start`), parce qu'il lit sa base à son démarrage.
-  - Reste : les exports sur la base complète.
+- 2026-10-25 : exports sur la base complète, contre l'ancien code sur PostgreSQL 17 et contre la référence sur PostgreSQL 11 : identiques, hors de la virgule de l'altitude en Qtvar. Module terminé ; l'envoi vers Theia, qui passe par la file, vient avec le module 7.

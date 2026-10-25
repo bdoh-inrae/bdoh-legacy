@@ -14,3 +14,15 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/). Numéros de v
 - Migrations du nouveau BDOH, à appliquer à la bascule : les compteurs d'identifiants en retard recalés, et `EXTRACT(EPOCH …)` ramené au type de PostgreSQL 11 dans les fonctions de calcul, sans quoi les exports en moyenne et en cumul échouent sous PostgreSQL 14 et plus.
 - Contrôles d'intégrité d'une base BDOH, qui ne sortent que des comptes (`make inspect`, `dev/reference/inspect.sql`).
 - Licence GNU AGPL v3.
+- Nouveau BDOH sous Symfony 7.4 et PHP 8.4 (paquets de Debian 13), sur la structure de base de la production, sans conversion des données. Socle : entités, types et correspondance Doctrine, lus exactement comme l'ancien les lisait (comparaison des métadonnées et des entités chargées). Plan : `dev/plans/2026-10-23_socle.md`.
+- File de tâches et exports du nouveau BDOH : recalculs, conversions, taux de remplissage, « vider une période », exports des quatre sortes aux formats BDOH et Qtvar, courriel de l'export, pages de suivi des tâches. Identiques à l'ancien sur les bases anonymisées, réduite et complète. Un exécuteur à nous sur les tables de JMS JobQueue garde une tâche à la fois par chronique (essai de l'audit passé). Plan : `dev/plans/2026-10-23_jobs-exports.md`.
+- Outil de comparaison : l'état de la base après les calculs, les exports demandés par le formulaire et la file de tâches (`compare.py state`, courriels lus dans Mailpit, `make mail-start`) ; l'essai de la file de tâches (`compare.py queue`).
+
+### Corrigé
+
+Bogues de l'ancien BDOH, corrigés dans le nouveau (détail dans `dev/differences.md`) :
+
+- Des corrections de sécurité, décrites à la mise en service du nouveau BDOH.
+- Erreurs internes sur des pages publiques : le choix de la langue, une station ou une chronique inconnues.
+- Un fichier joint impossible à supprimer arrêtait l'enregistrement d'un observatoire sur une erreur fatale.
+- Une tâche ne s'annule ou ne se relance que si son état le permet ; une annulation et un démarrage simultanés ne donnent plus une tâche annulée qui tourne.
