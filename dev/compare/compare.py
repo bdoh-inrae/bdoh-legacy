@@ -144,6 +144,9 @@ def page_cases(base):
     paths += [f'/{slug}/dataset/{uuid}' for slug, uuid in datasets]
     for slug in observatoires[:3]:
         paths.append(f'/{slug}/viewer/load?start=2024-03-01T00:00:00Z&end=2024-04-01T00:00:00Z')
+        # Les pages des imports et des transformations (module 4)
+        paths += [f'/{slug}/admin/{p}' for p in ['mesure/import', 'controle/import', 'shape/import',
+                                                  'transformation']]
     # Les tâches, sous l'observatoire de leur première entité liée ; les bases anonymisées n'en ont
     # pas, celles de « state » si.
     jobs = query(base, """
@@ -519,6 +522,9 @@ STATE_QUERIES = {
     'jms_job_related_entities': "SELECT * FROM jms_job_related_entities ORDER BY 1, 2, 3",
     'bareme': "SELECT (to_jsonb(b) - 'datecreation')::text FROM bareme b ORDER BY b.id",
     'station': "SELECT id, code, ST_AsEWKT(point), altitude FROM station ORDER BY id",
+    'transformation': "SELECT * FROM transformation ORDER BY id",
+    'jeubareme': "SELECT (to_jsonb(j) - 'datecreation')::text FROM jeubareme j ORDER BY j.id",
+    'baremejeubareme': "SELECT * FROM baremejeubareme ORDER BY id",
     'bassin': "SELECT id, observatoire_id, nom, aire, md5(ST_AsEWKT(perimetre)), stationexutoire_id FROM bassin ORDER BY id",
     'courseau': "SELECT id, observatoire_id, nom, codehydro, classification, md5(ST_AsEWKT(trace)) FROM courseau ORDER BY id",
     'pointcontrole': """
@@ -780,8 +786,29 @@ def multipart(fields, files):
     return b''.join(parts), f'multipart/form-data; boundary={boundary}'
 
 
+def zip_lines(body):
+    """Une archive zip, fichier par fichier : le texte des fichiers texte, l'empreinte des autres."""
+    lines = []
+    with zipfile.ZipFile(io.BytesIO(body)) as z:
+        for name in sorted(z.namelist()):
+            content = z.read(name)
+            # Le dossier de l'archive porte la date de l'export
+            shown = re.sub(r'_\d{4}-\d\d-\d\d_\d\d-\d\d-\d\d/', '_<date>/', name)
+            if name.endswith(('.txt', '.csv')):
+                lines += [f'== {shown}', *content.decode('utf-8', 'replace').splitlines()]
+            else:
+                lines.append(f'== {shown} {hashlib.sha256(content).hexdigest()[:16]}')
+    return lines
+
+
 def step_lines(site, status, headers, body):
-    """Une réponse d'étape d'import : du JSON dont les fragments HTML se lisent comme les pages."""
+    """Une réponse d'étape d'import : du JSON dont les fragments HTML se lisent comme les pages ; une
+    archive zip dépliée."""
+    if body[:2] == b'PK':
+        disposition = re.sub(r'\d{4}-?\d\d-?\d\d[_T -]?\d\d[-:h]?\d\d[-:]?\d\d', '<date>',
+                             headers.get('Content-Disposition', ''))
+        return [f'statut {status}', f"type {headers.get('Content-Type', '')}", f'fichier {disposition}',
+                *zip_lines(body)]
     if not headers.get('Content-Type', '').startswith('application/json'):
         return page_lines(site, status, headers, body)
     lines = [f'statut {status}']
@@ -1115,6 +1142,57 @@ def run_imports(args):
                 log += ['== étape 3', *step_lines(side.url, *response)]
             # Le chemin du fichier téléversé, propre à chaque installation
             return [re.sub(r'/[\w/.-]*/imports/shape/[\w.-]*', '<fichier>', line) for line in log]
+
+        def play_transformation(name, cid, slug):
+            """La transformation d'une chronique calculée, lue comme la page la lit, puis enregistrée de
+            nouveau avec un autre coefficient, une généalogie complétée et la propagation."""
+            side, console, runner = sides[name]
+            client = client_for(name, slug)
+            ajax = {'X-Requested-With': 'XMLHttpRequest'}
+            response = client.get(f'/{slug}/admin/get-chronique-calculee?id={cid}', None, ajax)
+            log = ['== chronique calculée', *step_lines(side.url, *response)]
+            current = json.loads(response[2])
+            iso = lambda d: d.replace(' ', 'T') + '.000Z' if d else ''
+            # Les exports de barèmes de la page : la liste, le jeu de barèmes de la première chronique
+            # mère, puis ses barèmes choisis un à un
+            response = client.get(f'/{slug}/admin/transformation/export/bareme/list', None, ajax)
+            log += ['== liste des barèmes', *step_lines(side.url, *response)]
+            jeu, = query(bases[name], f"""SELECT jeubaremeactuel_id FROM transformation WHERE sortie_id = {cid}
+                                          ORDER BY id LIMIT 1""", NEW_SERVER)[0]
+            child = f"{current.get('chroniqueMerePrincipale')}-fille"
+            response = client.get(f'/{slug}/admin/transformation/export/jeu-bareme?' + urllib.parse.urlencode(
+                {'child-chronicle-name': child, 'parent-chronicle-id': current.get('chroniqueMerePrincipale'),
+                 'jeu-bareme-id': jeu}), b'', {'Referer': f'{side.url}/{slug}/admin/transformation'})
+            log += ['== export du jeu de barèmes', *step_lines(side.url, *response)]
+            info = '|'.join(f"{b['id']}_{current.get('chroniqueMerePrincipale')}_{b['begin']}_{b['end'] or ''}"
+                            for b in current.get('baremesPrincipale', []))
+            response = client.get(f'/{slug}/admin/transformation/export/bareme', urllib.parse.urlencode(
+                {'child-chronicle-name': child, 'baremes-export-info': info}).encode(),
+                {'Referer': f'{side.url}/{slug}/admin/transformation'})
+            log += ['== export des barèmes', *step_lines(side.url, *response)]
+            scales = lambda block: '|'.join(f"{b['id']}_{iso(b['begin'])}_{iso(b['end'])}"
+                                            for b in current.get(f'baremes{block}', []))
+            fields = {'chroniqueCalculee': cid, 'coefficient': '1.5',
+                      'genealogie': (current['genealogie'] or '') + ' (essai)',
+                      'genealogieEn': (current['genealogieEn'] or '') + ' (test)', 'propagate': 'propagate'}
+            for block in ('Principale', 'Secondaire'):
+                fields[f'selectChroniqueMere{block}'] = current.get(f'chroniqueMere{block}', '-1')
+                fields[f'jeuBareme{block}'] = scales(block)
+                fields[f'delaiPropagation{block}'] = current.get(f'delaiPropagation{block}') or 0
+                fields[f'valueLimits{block}'] = current.get(f'valueLimitPolicy{block}') or ''
+                fields[f'limitPlaceholder{block}'] = current.get(f'valueLimitPlaceholder{block}') or ''
+            response = client.get(f'/{slug}/admin/transformation/save', urllib.parse.urlencode(fields).encode(), ajax)
+            log += ['== enregistrement', *step_lines(side.url, *response)]
+            drain(console, runner, bases[name])
+            return [re.sub(r'\d\d/\d\d/\d{4} \d\d:\d\d(:\d\d)?', '<date>', line) for line in log]
+
+        if args.only in 'transformation':
+            cid, slug = query(template, f"""
+                SELECT c.id, c.slug FROM ({CHRONIQUES}) c JOIN transformation t ON t.sortie_id = c.id
+                  JOIN transformation fille ON fille.entree_id = c.id
+                 WHERE c.dtype = 'calculee' ORDER BY c.id LIMIT 1""", NEW_SERVER)[0]
+            report.add('transformation enregistrée', play_transformation('ancien', cid, slug),
+                       play_transformation('nouveau', cid, slug))
 
         if args.only in 'shapefile':
             for title, target, filename, content in shape_cases(template, slug):
