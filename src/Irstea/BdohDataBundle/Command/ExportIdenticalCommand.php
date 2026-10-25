@@ -6,13 +6,9 @@
 
 namespace Irstea\BdohDataBundle\Command;
 
-use JMS\DiExtraBundle\Annotation as DI;
 
 /**
  * Class ExportIdenticalCommand.
- *
- * @DI\Service()
- * @DI\Tag("console.command")
  */
 class ExportIdenticalCommand extends AbstractExportCommand
 {

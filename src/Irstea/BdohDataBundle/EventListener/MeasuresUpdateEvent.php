@@ -8,7 +8,7 @@ namespace Irstea\BdohDataBundle\EventListener;
 
 use Irstea\BdohDataBundle\Entity\Chronique;
 use Irstea\BdohSecurityBundle\Entity\Utilisateur;
-use Symfony\Component\EventDispatcher\Event;
+use Symfony\Contracts\EventDispatcher\Event;
 
 /**
  * {@inheritdoc}

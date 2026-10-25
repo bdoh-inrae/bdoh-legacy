@@ -8,7 +8,7 @@ namespace Irstea\BdohDataBundle\EventListener;
 
 use Irstea\BdohBundle\Manager\JobManagerInterface;
 use Irstea\BdohDataBundle\Events as BdohEvents;
-use JMS\DiExtraBundle\Annotation as DI;
+use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 
 /**
  * Class FillingRateListener.
@@ -17,16 +17,20 @@ class FillingRateListener
 {
     /**
      * @var JobManagerInterface
-     *
-     * @DI\Inject("irstea_bdoh.job_manager")
      */
     public $jobManager;
+
+    public function __construct(JobManagerInterface $jobManager)
+    {
+        $this->jobManager = $jobManager;
+    }
 
     /**
      * @param MeasuresUpdateEvent $event
      *
-     * @DI\Observe(BdohEvents::MEASURES_UPDATE)
+     * La priorité garde l'ordre de l'ancien BDOH : taux de remplissage, métadonnées, chroniques filles.
      */
+    #[AsEventListener(event: BdohEvents::MEASURES_UPDATE, priority: 2)]
     public function onMeasuresUpdate(MeasuresUpdateEvent $event)
     {
         $chronique = $event->getChronique();

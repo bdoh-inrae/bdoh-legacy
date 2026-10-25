@@ -201,7 +201,7 @@ class ChroniqueController extends Controller
         /** @var MesureRepository|PlageRepository $measureRepo */
         $measureRepo = $chroniqueRepo->getMeasureRepoByChronique($chronique);
 
-        $this->getDoctrine()->getManager()->transactional(
+        $this->getDoctrine()->getManager()->wrapInTransaction(
             function () use ($measureRepo, $chronique, $beginDate, $endDate, $propagate, &$result) {
                 $result = $measureRepo->emptyChroniquePeriode($chronique, $beginDate, $endDate);
 

@@ -6,16 +6,12 @@
 
 namespace Irstea\BdohDataBundle\Command;
 
-use JMS\DiExtraBundle\Annotation as DI;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\OptionsResolver\Options;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
 /**
  * Class ExportInstantaneousCommand.
- *
- * @DI\Service()
- * @DI\Tag("console.command")
  */
 class ExportInstantaneousCommand extends AbstractExportCommand
 {

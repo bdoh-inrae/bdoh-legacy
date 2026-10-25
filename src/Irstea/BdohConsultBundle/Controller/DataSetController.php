@@ -4,7 +4,7 @@ namespace Irstea\BdohConsultBundle\Controller;
 
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Bridge\Twig\Attribute\Template;
-use Doctrine\ORM\ORMException;
+use Doctrine\ORM\Exception\ORMException;
 use Irstea\BdohBundle\Controller\Controller;
 use Irstea\BdohBundle\Exception\NotFoundEntityException;
 use Irstea\BdohDataBundle\Entity\DataSet;

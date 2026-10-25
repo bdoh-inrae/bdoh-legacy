@@ -7,16 +7,12 @@
 namespace Irstea\BdohDataBundle\Command;
 
 use Irstea\BdohDataBundle\Entity\PasEchantillonnage;
-use JMS\DiExtraBundle\Annotation as DI;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\OptionsResolver\Options;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
 /**
  * Class ExportMeanCommand.
- *
- * @DI\Service()
- * @DI\Tag("console.command")
  */
 class ExportMeanCommand extends AbstractExportCommand
 {

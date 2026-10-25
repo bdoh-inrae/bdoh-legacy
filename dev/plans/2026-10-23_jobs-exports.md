@@ -1,6 +1,6 @@
 # File de tâches et exports
 
-État : en préparation, le 2026-10-23. Point 3 du portage dans `ROADMAP.md`.
+État : en cours, commencé le 2026-10-23. Point 3 du portage dans `ROADMAP.md`.
 
 But : les recalculs de chroniques, les taux de remplissage, les exports et l'envoi vers Theia passent par une file de tâches qui garde la garantie de l'ancienne (une tâche à la fois par chronique, audit des risques, constat 3) ; les pages de suivi des tâches (`/{obs}/jobs/`) et les exports se comparent à l'identique.
 
@@ -35,3 +35,12 @@ Pourquoi pas Symfony Messenger, prévu au départ : Messenger transporte des mes
 ## Suivi
 
 - 2026-10-23 : plan écrit.
+- 2026-10-25 : étapes 1 à 3 faites, et la vérification par la comparaison sur la base réduite.
+  - File : entité `Job` sur `jms_jobs`, entités liées (`JobRelatedEntities`), `JobManager` porté, exécuteur `bdoh:jobs:run` ; `PendingJobManager` retiré. Commandes de calcul et d'export en injection par le constructeur ; écouteurs de `MEASURES_UPDATE` en attributs, priorités réglées pour garder l'ordre de l'ancien conteneur (taux de remplissage, métadonnées, chroniques filles).
+  - Exports : `compare.py exports`, contre l'ancien code sur PostgreSQL 17 comme contre la référence sur PostgreSQL 11 : 135 cas identiques, 6 qui ne diffèrent que par la virgule de l'altitude en Qtvar (bogue des virgules de l'ancien, `dev/differences.md`). En route : un résultat de DBAL 4 ne se parcourt plus par `foreach` (fichiers de mesures vides) ; `QueryBuilder::select()` ne prend plus de tableau ; l'arrondi de PHP 8.4 (ci-dessous) ; la fabrique des formats, fichier vide depuis le commit précédent, réécrite.
+  - Arrondi : PHP 8.4 n'arrondit plus d'abord à 15 chiffres significatifs, et 2.8674999999999997 s'écrivait 2.867 au lieu de 2.868, sur près de 1 % des valeurs d'un export instantané. Les extracteurs ramènent la valeur à 15 chiffres avant de l'écrire (`AbstractExtractor::formatNumber`) : exports identiques à l'ancien, sur PostgreSQL 11 comme 17.
+  - Cas retirés de la comparaison, qui échouent des deux côtés et que l'interface ne propose pas : le format Vigilance, les exports rééchantillonnés d'une chronique discontinue. Le fuseau passe entre apostrophes, comme `JobManager` le donne à la commande.
+  - État de la base : `compare.py state` mène, sur une copie de la base par côté, une chaîne de chroniques calculées recalculée avec propagation, une conversion avec et une sans fille, un calcul de taux de remplissage, puis la file jusqu'au bout (39 tâches), et compare chroniques, mesures et taux au chiffre près, historique, tâches et entités liées : identiques. En route : `transactional()` d'ORM 3 devenu `wrapInTransaction()` ; `new \DateTime(null)`, déprécié ; les journaux de prod écrits dans des fichiers comme l'ancien, et non plus sur la sortie d'erreur que la file garde avec chaque tâche ; le fuseau `Europe/Paris` de la ligne de commande, qui manquait à l'image.
+  - Pages de suivi des tâches : liste et détail, pour les quatre profils, sur les copies de `state` aux dates alignées : identiques, hors des dates « maintenant » des taux de remplissage d'une chronique vide.
+  - Trouvé en route, hors du module : une station ou un jeu de données inconnus rendaient une erreur 500 au lieu de 404 (`ORMException` d'ORM 3 n'est plus une classe) ; corrigé, et ces adresses entrent dans la comparaison des pages.
+  - Reste : l'export demandé par le formulaire (`ExportController`), jusqu'au courriel et sa pièce jointe, comparé à l'ancien ; annuler et relancer une tâche depuis ses pages ; « vider une période » d'une chronique (`ChroniqueController::emptyChroniqueAction`), qui écrit et lance des tâches ; l'essai de l'audit, deux recalculs rapprochés ; les exports sur la base complète ; le service de la file dans `compose.yaml`.

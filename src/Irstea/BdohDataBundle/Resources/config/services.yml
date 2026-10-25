@@ -27,10 +27,22 @@ services:
         autowire: true
         autoconfigure: true
 
-    # Les contrôleurs ; ceux de l'export et des tâches attendent la file de tâches (module 3).
     Irstea\BdohDataBundle\Controller\:
         resource: '../../Controller/'
-        exclude: '../../Controller/{ExportController,JobController}.php'
+
+    # Les commandes de la console, dont celles que lance la file de tâches
+    Irstea\BdohDataBundle\Command\:
+        resource: '../../Command/'
+
+    # Les écouteurs de MEASURES_UPDATE
+    Irstea\BdohDataBundle\EventListener\:
+        resource: '../../EventListener/'
+        exclude: '../../EventListener/MeasuresUpdateEvent.php'
+
+    # L'export des mesures : le constructeur et ses fabriques, qui créent le reste
+    Irstea\BdohDataBundle\Exporter\Measure\ExporterBuilder: ~
+    Irstea\BdohDataBundle\Exporter\Measure\Extractor\Factory: ~
+    Irstea\BdohDataBundle\Exporter\Measure\Formatter\Factory: ~
 
     # Écouteurs d'entités, déclarés dans la correspondance d'Observatoire et de Partenaire
     Irstea\BdohDataBundle\Doctrine\Listener\DocumentedEntityListener:

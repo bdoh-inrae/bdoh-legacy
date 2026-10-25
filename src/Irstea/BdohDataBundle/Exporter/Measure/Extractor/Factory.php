@@ -47,7 +47,7 @@ class Factory
      */
     public function create($extraction, FormatterInterface $formatter, array $parameters)
     {
-        $class = self::$classes[$extraction];
+        $class = self::$classes[$extraction] ?? null;
         if (!$class) {
             throw new UnknownExtractorException($extraction);
         }

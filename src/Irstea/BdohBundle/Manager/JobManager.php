@@ -7,6 +7,9 @@
 namespace Irstea\BdohBundle\Manager;
 
 use Doctrine\ORM\NonUniqueResultException;
+use Doctrine\Persistence\ManagerRegistry;
+use Irstea\BdohBundle\Job\Job;
+use Irstea\BdohBundle\Job\JobRelatedEntities;
 use Irstea\BdohDataBundle\Command\AbstractExportCommand;
 use Irstea\BdohDataBundle\Command\ComputeChroniqueCommand;
 use Irstea\BdohDataBundle\Command\ComputeFillingRateCommand;
@@ -17,10 +20,7 @@ use Irstea\BdohDataBundle\Entity\ChroniqueConvertie;
 use Irstea\BdohDataBundle\Entity\Observatoire;
 use Irstea\BdohSecurityBundle\Entity\Utilisateur;
 use Irstea\BdohTheiaOzcarBundle\Command\SendJSONToTheiaCommand;
-use JMS\DiExtraBundle\Annotation as DI;
-use JMS\JobQueueBundle\Entity\Job;
 use Psr\Log\InvalidArgumentException;
-use Symfony\Bridge\Doctrine\RegistryInterface;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
 
 /**
@@ -29,16 +29,20 @@ use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInt
 class JobManager implements JobManagerInterface
 {
     /**
-     * @var RegistryInterface
-     * @DI\Inject
+     * @var ManagerRegistry
      */
     public $doctrine;
 
     /**
      * @var TokenStorageInterface
-     * @DI\Inject("security.token_storage")
      */
     public $tokenStorage;
+
+    public function __construct(ManagerRegistry $doctrine, TokenStorageInterface $tokenStorage)
+    {
+        $this->doctrine = $doctrine;
+        $this->tokenStorage = $tokenStorage;
+    }
 
     /**
      * {@inheritdoc}
@@ -86,8 +90,12 @@ class JobManager implements JobManagerInterface
     private function persist(Job $job)
     {
         $manager = $this->doctrine->getManagerForClass(Job::class);
+        $isNew = $job->getId() === null;
         $manager->persist($job);
         $manager->flush();
+        if ($isNew) {
+            JobRelatedEntities::save($manager, $job);
+        }
     }
 
     /**
@@ -159,7 +167,7 @@ class JobManager implements JobManagerInterface
      */
     public function retry(Job $job)
     {
-        assert('$this->canRetry($job)');
+        assert($this->canRetry($job));
 
         $newJob = clone $job;
         foreach ($job->getRelatedEntities() as $entity) {
@@ -186,7 +194,7 @@ class JobManager implements JobManagerInterface
      */
     public function cancel(Job $job)
     {
-        assert('$this->canCancel($job)');
+        assert($this->canCancel($job));
 
         $job->setState(Job::STATE_CANCELED);
         $this->persist($job);
@@ -282,8 +290,8 @@ class JobManager implements JobManagerInterface
      */
     public function hasActiveJobs($chonique)
     {
-        /** @var \JMS\JobQueueBundle\Entity\Repository\JobRepository $jobRepo */
-        $jobRepo = $this->doctrine->getRepository('JMSJobQueueBundle:Job');
+        /** @var \Irstea\BdohBundle\Job\JobRepository $jobRepo */
+        $jobRepo = $this->doctrine->getRepository(Job::class);
         try {
             $jobComputeChronique = $jobRepo->findOpenJobForRelatedEntity(ComputeChroniqueCommand::COMMAND_NAME, $chonique);
             $jobConvertChronique = $jobRepo->findOpenJobForRelatedEntity(ConvertChroniqueCommand::COMMAND_NAME, $chonique);

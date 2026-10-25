@@ -8,10 +8,12 @@ namespace Irstea\BdohDataBundle\Command;
 
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\EntityNotFoundException;
+use Doctrine\Persistence\ManagerRegistry;
 use Irstea\BdohDataBundle\Entity\ChroniqueConvertie;
 use Irstea\BdohDataBundle\Entity\Repository\ChroniqueConvertieRepository;
 use Irstea\BdohDataBundle\EventListener\MeasuresUpdateEvent;
 use Irstea\BdohDataBundle\Events;
+use Irstea\BdohLoggerBundle\Logger\BdohLogger;
 use Irstea\BdohSecurityBundle\Entity\Repository\UtilisateurRepository;
 use Irstea\BdohSecurityBundle\Entity\Utilisateur;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
@@ -19,6 +21,8 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
+use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 /**
  * {@inheritdoc}
@@ -26,6 +30,15 @@ use Symfony\Component\Console\Output\OutputInterface;
 class ConvertChroniqueCommand extends AbstractJobCommand
 {
     const COMMAND_NAME = 'bdoh:convert:chronique';
+
+    public function __construct(
+        ManagerRegistry $doctrine,
+        TokenStorageInterface $tokenStorage,
+        private BdohLogger $logger,
+        private EventDispatcherInterface $dispatcher
+    ) {
+        parent::__construct($doctrine, $tokenStorage);
+    }
 
     /**
      * {@inheritdoc}
@@ -59,10 +72,9 @@ class ConvertChroniqueCommand extends AbstractJobCommand
         $userId = $input->getArgument('user_id');
         $propagate = $input->getOption('propagate');
 
-        return $this->getContainer()
-            ->get('doctrine')
+        return $this->doctrine
             ->getManagerForClass(ChroniqueConvertie::class)
-            ->transactional(
+            ->wrapInTransaction(
                 function (EntityManagerInterface $manager) use ($chroniqueId, $userId, $propagate) {
                     /** @var ChroniqueConvertieRepository $chroRepo */
                     $chroRepo = $manager->getRepository(ChroniqueConvertie::class);
@@ -98,7 +110,7 @@ class ConvertChroniqueCommand extends AbstractJobCommand
                         $manager->flush();
 
                         // historique de conversion
-                        $this->getContainer()->get('irstea_bdoh_logger.logger')->createHistoriqueConversionChronique(
+                        $this->logger->createHistoriqueConversionChronique(
                             $user,
                             $date,
                             $chronique->getObservatoire(),
@@ -109,11 +121,11 @@ class ConvertChroniqueCommand extends AbstractJobCommand
                         $event = new MeasuresUpdateEvent(
                             $chronique,
                             $user,
-                            new \DateTime($chronique->getDateDebutMesures()),
-                            new \DateTime($chronique->getDateFinMesures()),
+                            new \DateTime($chronique->getDateDebutMesures() ?? 'now'),
+                            new \DateTime($chronique->getDateFinMesures() ?? 'now'),
                             $propagate
                         );
-                        $this->getContainer()->get('event_dispatcher')->dispatch(Events::MEASURES_UPDATE, $event);
+                        $this->dispatcher->dispatch($event, Events::MEASURES_UPDATE);
                     }
 
                     return $result;

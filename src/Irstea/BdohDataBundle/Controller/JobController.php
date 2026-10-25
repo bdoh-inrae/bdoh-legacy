@@ -8,7 +8,6 @@ namespace Irstea\BdohDataBundle\Controller;
 
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\Routing\Attribute\Route;
-use Symfony\Component\ExpressionLanguage\Expression;
 use Symfony\Bridge\Twig\Attribute\Template;
 use Irstea\BdohBundle\Manager\JobManagerInterface;
 use Irstea\BdohBundle\Manager\ObservatoireManagerInterface;
@@ -16,10 +15,9 @@ use Irstea\BdohDataBundle\Entity\Chronique;
 use Irstea\BdohDataBundle\Entity\Observatoire;
 use Irstea\BdohSecurityBundle\Entity\Utilisateur;
 use Irstea\BdohSecurityBundle\Security\Voter\JobVoter;
-use JMS\DiExtraBundle\Annotation as DI;
-use JMS\JobQueueBundle\Entity\Job;
-use JMS\JobQueueBundle\Entity\Repository\JobRepository;
-use Symfony\Bridge\Doctrine\RegistryInterface;
+use Irstea\BdohBundle\Job\Job;
+use Irstea\BdohBundle\Job\JobRepository;
+use Doctrine\Persistence\ManagerRegistry;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController as Controller;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
@@ -33,32 +31,36 @@ use Symfony\Component\Security\Core\Authorization\AuthorizationCheckerInterface;
 class JobController extends Controller
 {
     /**
-     * @var RegistryInterface
-     *
-     * @DI\Inject("doctrine")
+     * @var ManagerRegistry
      */
     public $doctrine;
 
     /**
      * @var ObservatoireManagerInterface
-     *
-     * @DI\Inject("irstea_bdoh.manager.observatoire")
      */
     public $observatoireManager;
 
     /**
      * @var AuthorizationCheckerInterface
-     *
-     * @DI\Inject("security.authorization_checker")
      */
     public $authChecker;
 
     /**
      * @var JobManagerInterface
-     *
-     * @DI\Inject("irstea_bdoh.job_manager")
      */
     public $jobManager;
+
+    public function __construct(
+        ManagerRegistry $doctrine,
+        ObservatoireManagerInterface $observatoireManager,
+        AuthorizationCheckerInterface $authChecker,
+        JobManagerInterface $jobManager
+    ) {
+        $this->doctrine = $doctrine;
+        $this->observatoireManager = $observatoireManager;
+        $this->authChecker = $authChecker;
+        $this->jobManager = $jobManager;
+    }
 
     #[Route('/', name: 'bdoh_job_list', methods: ['GET'])]
     #[Template('@IrsteaBdohData/Job/all.html.twig')]
@@ -78,7 +80,7 @@ class JobController extends Controller
     }
 
     #[Route('/{id}', name: 'bdoh_job_show', methods: ['GET'])]
-    #[IsGranted(new Expression("is_granted('JOB_SHOW', job)"))]
+    #[IsGranted(JobVoter::SHOW_PERM, subject: 'job')]
     #[Template('@IrsteaBdohData/Job/show.html.twig')]
     public function showAction(Job $job)
     {

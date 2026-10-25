@@ -6,13 +6,9 @@
 
 namespace Irstea\BdohDataBundle\Command;
 
-use JMS\DiExtraBundle\Annotation as DI;
 
 /**
  * Class ExportMeanCommand.
- *
- * @DI\Service()
- * @DI\Tag("console.command")
  */
 class ExportCumulativeCommand extends ExportMeanCommand
 {

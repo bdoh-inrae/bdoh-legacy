@@ -136,12 +136,16 @@ abstract class AbstractExtractor implements ExtractorInterface
     }
 
     /**
+     * La valeur est d'abord ramenée à 15 chiffres significatifs, comme le faisaient PHP 7 en
+     * arrondissant et PostgreSQL 11 en écrivant ses float8 : sans cela, une valeur juste sous la
+     * moitié (2.8674999999999997) s'écrirait 2.867 et non 2.868 (dev/differences.md).
+     *
      * @param mixed $value
      *
      * @return string
      */
     private function formatNumber($value)
     {
-        return is_numeric($value) ? number_format($value, $this->precision, '.', '') : null;
+        return is_numeric($value) ? number_format((float) sprintf('%.15h', $value), $this->precision, '.', '') : null;
     }
 }

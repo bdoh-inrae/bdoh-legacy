@@ -778,7 +778,7 @@ SQL
         $queryWithTz = str_replace('%TZCORRECTION%', $withTzCorrection, $query);
 
         return [
-            $this->getEntityManager()->getConnection()->executeQuery($queryWithTz, $parameters),
+            $this->getEntityManager()->getConnection()->executeQuery($queryWithTz, $parameters)->iterateAssociative(),
             $this->getExportReport($chronique, $debut, $fin),
         ];
     }
@@ -868,7 +868,7 @@ SQL
      *
      * @throws \Exception
      *
-     * @return \Doctrine\DBAL\Driver\Statement
+     * @return \Traversable les mesures, ligne à ligne
      */
     private function getResampledMeasures(
         ChroniqueContinue $chronique,
@@ -902,10 +902,10 @@ SQL
 
         $builder = $dbal
             ->createQueryBuilder()
-            ->select($columnsWithTz)
+            ->select(...$columnsWithTz)
             ->from($from);
 
-        return $dbal->executeQuery($builder->getSQL(), $parameters);
+        return $dbal->executeQuery($builder->getSQL(), $parameters)->iterateAssociative();
     }
 
     /**
@@ -975,9 +975,9 @@ SQL
             'FROM pointcontrole as p ' .
             'WHERE p.chronique_id = ' . $chronique->getId() . ' ';
 
-        // Returns "Doctrine statement" + information
+        // Les mesures, ligne à ligne, et leur résumé
         return [
-            $this->getEntityManager()->getConnection()->executeQuery($measuresSql),
+            $this->getEntityManager()->getConnection()->executeQuery($measuresSql)->iterateAssociative(),
             $this->getEntityManager()->getConnection()->fetchAssociative($infoSql),
         ];
     }

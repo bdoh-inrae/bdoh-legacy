@@ -862,7 +862,7 @@ SQL;
         $this->addTimeLimits($builder, $beginDate, $endDate);
 
         return [
-            $dbal->executeQuery($builder->getSQL(), $builder->getParameters()),
+            $dbal->executeQuery($builder->getSQL(), $builder->getParameters())->iterateAssociative(),
             $this->getExportReport($chronique, $beginDate, $endDate),
         ];
     }

@@ -8,8 +8,8 @@ namespace Irstea\BdohDataBundle\EventListener;
 
 use Irstea\BdohDataBundle\Entity\Repository\ChroniqueRepository;
 use Irstea\BdohDataBundle\Events as BdohEvents;
-use JMS\DiExtraBundle\Annotation as DI;
-use Symfony\Bridge\Doctrine\RegistryInterface;
+use Doctrine\Persistence\ManagerRegistry;
+use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 
 /**
  * Class MeasuresMetadataListener.
@@ -17,24 +17,28 @@ use Symfony\Bridge\Doctrine\RegistryInterface;
 class MeasuresMetadataListener
 {
     /**
-     * @var RegistryInterface
-     *
-     * @DI\Inject("doctrine")
+     * @var ManagerRegistry
      */
     public $doctrine;
+
+    public function __construct(ManagerRegistry $doctrine)
+    {
+        $this->doctrine = $doctrine;
+    }
 
     /**
      * @param MeasuresUpdateEvent $event
      *
-     * @DI\Observe(BdohEvents::MEASURES_UPDATE)
+     * La priorité garde l'ordre de l'ancien BDOH : taux de remplissage, métadonnées, chroniques filles.
      */
+    #[AsEventListener(event: BdohEvents::MEASURES_UPDATE, priority: 1)]
     public function onMeasuresUpdate(MeasuresUpdateEvent $event)
     {
         $chronique = $event->getChronique();
 
         /** @var ChroniqueRepository $repo */
         $repo = $this->doctrine
-            ->getEntityManagerForClass(get_class($chronique))
+            ->getManagerForClass(get_class($chronique))
             ->getRepository(get_class($chronique));
 
         $repo->updateMeasuresMetadata($chronique);

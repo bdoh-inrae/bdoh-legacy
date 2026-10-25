@@ -3,4 +3,24 @@ parameters:
     level: 1
     paths:
         - src
+    # Pas encore portés : chaque module retire ses lignes (ROADMAP.md, portage).
+    excludePaths:
+        - src/Irstea/BdohAdminBundle
+        - src/Irstea/BdohBundle/Command
+        - src/Irstea/BdohConsultBundle/Service/JsonSchema
+        - src/Irstea/BdohSecurityBundle/Controller/BesoinController.php
+        - src/Irstea/BdohSecurityBundle/Controller/ResettingController.php
+        - src/Irstea/BdohSecurityBundle/Controller/UtilisateurController.php
+        - src/Irstea/BdohSecurityBundle/Form
+        - src/Irstea/BdohSecurityBundle/Security/BdohSecurityHandler.php
+        - src/Irstea/BdohSecurityBundle/Validator
+    ignoreErrors:
+        # Le module Theia/OZCAR n'est pas encore porté.
+        - '#Irstea\\BdohTheiaOzcarBundle\\#'
+        # Chaque commande d'export définit sa sorte d'extraction.
+        - '#undefined constant static\(Irstea\\BdohDataBundle\\Command\\AbstractExportCommand\)::EXTRACTOR_TYPE#'
+        # Clés en double, comme dans l'ancien : la dernière l'emporte.
+        -
+            message: '#duplicate keys#'
+            path: src/Irstea/BdohBundle/Resources/translations/*
     tmpDir: var/phpstan

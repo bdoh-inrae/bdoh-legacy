@@ -93,7 +93,7 @@
 {%- macro chronique_report(chronique, number, first, last, file, timezone) -%}
     {%- set first = first|date('transformation.bareme.dateBareme'|trans, timezone.name) ~ ' ' ~ 'UTC'|trans ~ timezone.name -%}
     {%- set last = last|date('transformation.bareme.dateBareme'|trans, timezone.name) ~ ' ' ~ 'UTC'|trans ~ timezone.name -%}
-    {%- transchoice number %}measure.export.report.measures(%number%,%first%,%last%){%- endtranschoice -%}
+    {%- trans count number %}measure.export.report.measures(%number%,%first%,%last%){%- endtrans -%}
     {%- if number > 0 %}
 
 
@@ -119,12 +119,12 @@
 
         {% trans %}measure.export.report.resampled.timestep{%- endtrans -%}
     {%- if extractor == 'instantaneous' %}
- {% transchoice timestep -%}measure.export.report.resampled.timestep-var(%timestep%){%- endtranschoice -%}
+ {% trans count timestep -%}measure.export.report.resampled.timestep-var(%timestep%){%- endtrans -%}
     {%- else %}
  {{ timestep -}}
 {%- endif %}
 
-        {% transchoice count -%}measure.export.report.resampled.count(%count%){%- endtranschoice -%}
+        {% trans count count -%}measure.export.report.resampled.count(%count%){%- endtrans -%}
 {%- endmacro -%}
 
 {####################}

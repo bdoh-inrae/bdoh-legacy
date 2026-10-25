@@ -56,7 +56,7 @@ class ComputeFillingRateCommand extends AbstractJobCommand
         $dateDebutStr = $input->getArgument('date_debut');
         $dateFinStr = $input->getArgument('date_fin');
 
-        $manager = $this->getContainer()->get('doctrine')->getManagerForClass(ChroniqueContinue::class);
+        $manager = $this->doctrine->getManagerForClass(ChroniqueContinue::class);
 
         /** @var ChroniqueRepository $repo */
         $repo = $manager->getRepository(Chronique::class);

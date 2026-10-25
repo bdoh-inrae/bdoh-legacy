@@ -9,7 +9,7 @@ namespace Irstea\BdohSecurityBundle\Security\Voter;
 use Irstea\BdohDataBundle\Entity\Observatoire;
 use Irstea\BdohSecurityBundle\Entity\Role;
 use Irstea\BdohSecurityBundle\Entity\Utilisateur;
-use JMS\JobQueueBundle\Entity\Job;
+use Irstea\BdohBundle\Job\Job;
 use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
 use Symfony\Component\Security\Core\Authorization\Voter\Voter;
 

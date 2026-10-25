@@ -32,7 +32,7 @@ services:
         resource: '../../'
         exclude:
             - '../../{Command,DataTransformer,Exception,Model,Resources}'
-            - '../../Manager/JobManager.php'
+            - '../../Job/{Job,JobRepository}.php'
             - '../../IrsteaBdohBundle.php'
 
     # 'Observatoire' manager
@@ -67,6 +67,8 @@ services:
     # duration formater
     irstea_bdoh.util.duration_formater: '@Irstea\BdohBundle\Util\DurationFormater'
 
-    # La file de tâches, en attente de son portage (module 3) ; voir PendingJobManager.
-    irstea_bdoh.job_manager: '@Irstea\BdohBundle\Manager\PendingJobManager'
-    Irstea\BdohBundle\Manager\JobManagerInterface: '@Irstea\BdohBundle\Manager\PendingJobManager'
+    # La file de tâches : les entités liées d'une tâche, et son gestionnaire
+    Irstea\BdohBundle\Job\JobRelatedEntities:
+        tags: [doctrine.orm.entity_listener]
+    Irstea\BdohBundle\Manager\JobManagerInterface: '@Irstea\BdohBundle\Manager\JobManager'
+    irstea_bdoh.job_manager: '@Irstea\BdohBundle\Manager\JobManager'

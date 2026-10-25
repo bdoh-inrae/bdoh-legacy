@@ -8,8 +8,8 @@ namespace Irstea\BdohDataBundle\EventListener;
 
 use Irstea\BdohBundle\Manager\JobManagerInterface;
 use Irstea\BdohDataBundle\Events as BdohEvents;
-use JMS\DiExtraBundle\Annotation as DI;
-use Symfony\Bridge\Doctrine\RegistryInterface;
+use Doctrine\Persistence\ManagerRegistry;
+use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 
 /**
  * Class ChronicleListener.
@@ -22,7 +22,7 @@ class ChronicleListener
     private $jobManager;
 
     /**
-     * @var RegistryInterface
+     * @var ManagerRegistry
      */
     private $doctrine;
 
@@ -30,9 +30,9 @@ class ChronicleListener
      * ChronicleListener constructor.
      *
      * @param JobManagerInterface $jobManager
-     * @param RegistryInterface   $doctrine
+     * @param ManagerRegistry     $doctrine
      */
-    public function __construct(JobManagerInterface $jobManager, RegistryInterface $doctrine)
+    public function __construct(JobManagerInterface $jobManager, ManagerRegistry $doctrine)
     {
         $this->jobManager = $jobManager;
         $this->doctrine = $doctrine;
@@ -40,8 +40,8 @@ class ChronicleListener
 
     /**
      * @param MeasuresUpdateEvent $event
-     * @DI\Observe(BdohEvents::MEASURES_UPDATE)
      */
+    #[AsEventListener(event: BdohEvents::MEASURES_UPDATE)]
     public function onMeasuresUpdate(MeasuresUpdateEvent $event)
     {
         if (!$event->doesPropagate()) {

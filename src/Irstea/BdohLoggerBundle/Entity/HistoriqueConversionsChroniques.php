@@ -116,7 +116,7 @@ class HistoriqueConversionsChroniques extends HistoriqueTransformations
             $translator->trans('historique.chroniqueMere') . $translator->trans('deux_points') . ' ' .
             $this->getChroniqueMere() . "\n" .
             $translator->trans('historique.paramConversion') . $translator->trans('deux_points') . ' ' .
-            $paramConversionMinutes . ' ' . $translator->transchoice('minute', $paramConversionMinutes) .
+            $paramConversionMinutes . ' ' . $translator->trans('minute', ['%count%' => $paramConversionMinutes]) .
             (($paramConversionMinutes >= 60) ? ' (' . $durationFormater->format($this->getParamConversion()) . ')' : '')
         );
     }

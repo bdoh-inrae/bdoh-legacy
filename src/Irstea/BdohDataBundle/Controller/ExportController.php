@@ -12,8 +12,7 @@ use Irstea\BdohBundle\Controller\Controller;
 use Irstea\BdohBundle\Manager\JobManagerInterface;
 use Irstea\BdohDataBundle\Entity\Chronique;
 use Irstea\BdohDataBundle\Entity\PasEchantillonnage;
-use JMS\DiExtraBundle\Annotation as DI;
-use JMS\JobQueueBundle\Entity\Job;
+use Irstea\BdohBundle\Job\Job;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
@@ -43,21 +42,28 @@ class ExportController extends Controller
 {
     /**
      * @var JobManagerInterface
-     * @DI\Inject("irstea_bdoh.job_manager")
      */
     public $jobManager;
 
     /**
      * @var FormFactoryInterface
-     * @DI\Inject("form.factory")
      */
     public $formFactory;
 
     /**
      * @var AuthorizationCheckerInterface
-     * @DI\Inject("security.authorization_checker")
      */
     public $authChecker;
+
+    public function __construct(
+        JobManagerInterface $jobManager,
+        FormFactoryInterface $formFactory,
+        AuthorizationCheckerInterface $authChecker
+    ) {
+        $this->jobManager = $jobManager;
+        $this->formFactory = $formFactory;
+        $this->authChecker = $authChecker;
+    }
 
     /**
      * @param Request $request

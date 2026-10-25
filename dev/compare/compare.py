@@ -3,10 +3,15 @@
 
     dev/compare/compare.py pages   [--old SIDE] [--new SIDE] [--base BASE] [--only TEXTE]
     dev/compare/compare.py exports [--old SIDE] [--new SIDE] [--base BASE] [--only TEXTE]
+    dev/compare/compare.py state   [--base BASE]
 
 SIDE nomme une instance (voir SIDES). Les cas sont tirés de la base BASE du serveur de référence,
 par des règles écrites ici : le dépôt ne contient ni données ni codes de chroniques. Le rapport et
 les écarts vont dans ../bdoh_reference/compare/, hors du dépôt.
+
+« state » mène les mêmes calculs (recalcul, conversion, taux de remplissage, puis la file de tâches)
+avec l'ancien code sur PostgreSQL 17 et avec le nouveau, chacun sur sa copie de BASE, et compare
+l'état des deux copies.
 
 Les pages se comparent par ce qu'elles montrent (texte, liens, formulaires, attributs data-*), pas
 par leur balisage ; les nombres, à un arrondi près (règle « Arrondis à la limite » de
@@ -55,10 +60,13 @@ SIDES = {
 
 # --- Base : tirage des cas -----------------------------------------------------------------------
 
-def query(base, sql):
-    """Lignes d'une requête sur une base du serveur de référence, en listes de champs."""
+CASES_SERVER = 'bdoh-reference-db'  # serveur où tirer les cas (option --server)
+
+
+def query(base, sql, server=None):
+    """Lignes d'une requête sur une base du serveur des cas (ou d'un autre), en listes de champs."""
     out = subprocess.run(
-        ['docker', 'exec', '-i', 'bdoh-reference-db', 'psql', '-U', 'bdoh', '-d', base,
+        ['docker', 'exec', '-i', server or CASES_SERVER, 'psql', '-U', 'bdoh', '-d', base,
          '-v', 'ON_ERROR_STOP=1', '-At', '-F', '\t', '-c', sql],
         check=True, capture_output=True, text=True).stdout
     return [line.split('\t') for line in out.splitlines()]
@@ -99,8 +107,12 @@ def page_cases(base):
     paths = ['/', '/user_manual', '/select_lang/en', '/select_lang/fr', '/translations/messages.js']
     for slug in observatoires:
         paths += [f'/{slug}/{p}' for p in ['', 'home', 'nos-donnees', 'viewer', 'contact',
-                                            'terms_of_use', 'conditions', 'login']]
+                                            'terms_of_use', 'conditions', 'login', 'jobs/']]
         paths.append(f'/{slug}/_STATION_CODE_/_CHRONIQUE_CODE_')
+    # Des adresses qui ne mènent à rien : l'ancien répond 404
+    first = observatoires[0]
+    paths += ['/INCONNU/', f'/{first}/station/INCONNUE', f'/{first}/INCONNUE/INCONNUE',
+              f'/{first}/dataset/00000000-0000-0000-0000-000000000000', f'/{first}/dataset/pas-un-uuid']
     stations = query(base, """
         SELECT o.slug, s.code FROM (
             SELECT s.id, s.code, se.observatoire_id,
@@ -126,6 +138,14 @@ def page_cases(base):
     paths += [f'/{slug}/dataset/{uuid}' for slug, uuid in datasets]
     for slug in observatoires[:3]:
         paths.append(f'/{slug}/viewer/load?start=2024-03-01T00:00:00Z&end=2024-04-01T00:00:00Z')
+    # Les tâches, sous l'observatoire de leur première entité liée ; les bases anonymisées n'en ont
+    # pas, celles de « state » si.
+    jobs = query(base, """
+        SELECT DISTINCT ON (j.id) j.id, o.slug FROM jms_jobs j
+          JOIN jms_job_related_entities r ON r.job_id = j.id
+          JOIN observatoire o ON r.related_class LIKE '%Observatoire' AND r.related_id::json->>'id' = o.id::text
+         ORDER BY j.id""")
+    paths += [f'/{slug}/jobs/{job}' for job, slug in jobs]
     return paths
 
 
@@ -148,12 +168,17 @@ def export_cases(base):
             period = ['1816-01-01T00:00:00+00:00', '1821-01-01T00:00:00+00:00']
         else:
             period = ['2024-01-01T00:00:00+00:00', '2025-01-01T00:00:00+00:00']
-        formats = ['bdoh'] if kind == 'discontinue' else ['bdoh', 'qtvar', 'vigilance']
+        # Le format Vigilance n'est proposé nulle part dans l'ancien (Modal/export.html.twig) et
+        # n'a pas de classe : il échoue des deux côtés.
+        formats = ['bdoh'] if kind == 'discontinue' else ['bdoh', 'qtvar']
         for fmt in formats:
-            for tz in ['+01:00', '+00:00', '-05:00']:
+            # Le fuseau entre apostrophes, comme JobManager le passe à la commande.
+            for tz in ["'+01:00'", "'+00:00'", "'-05:00'"]:
                 options = ['--format', fmt, '--timezone', tz]
                 cases.append(['bdoh:export:identical', *period, cid, *options])
-                if fmt != 'bdoh' or tz != '+01:00':
+                # Une chronique discontinue ne s'exporte qu'à l'identique (Modal/export.html.twig) ;
+                # les autres sortes échouent des deux côtés.
+                if fmt != 'bdoh' or tz != "'+01:00'" or kind == 'discontinue':
                     continue
                 cases.append(['bdoh:export:instantaneous', '60', *period, cid, *options])
                 for step in ['5', '7', '8', '9']:  # 1 heure, 1 jour, 1 mois, 1 an
@@ -325,18 +350,19 @@ def same_but_rounding(a, b):
 
 
 def compare(old, new):
-    """Écarts entre deux suites de lignes : (lignes de diff, lignes à un arrondi près, ordre seul).
+    """Écarts entre deux suites de lignes : (lignes de diff, paires de lignes à un arrondi près,
+    ordre seul).
 
     Deux suites de même longueur se comparent ligne à ligne ; le diff complet, coûteux sur une
     longue page, ne sert que s'il reste un écart. « Ordre seul » : les mêmes lignes, ou les mêmes
     éléments d'une liste, dans un autre ordre (listes que l'ancien ne triait pas)."""
-    rounding = 0
+    rounding = []
     original, new = list(new), list(new)
     if len(old) == len(new):
         for k, (a, b) in enumerate(zip(old, new)):
             if a != b and same_but_rounding(a, b):
                 new[k] = a
-                rounding += 1
+                rounding.append((a, b))
         if old == new:
             return [], rounding, False
     else:
@@ -345,8 +371,8 @@ def compare(old, new):
             if op == 'replace' and i2 - i1 == j2 - j1:
                 for k in range(i2 - i1):
                     if same_but_rounding(old[i1 + k], new[j1 + k]):
+                        rounding.append((old[i1 + k], new[j1 + k]))
                         new[j1 + k] = old[i1 + k]
-                        rounding += 1
     # Le type de ligne (T, A…) reste en tête ; les éléments qui suivent se trient.
     key = lambda line: line[:2] + '##'.join(sorted(line[2:].split('##'))) if '##' in line else line
     sorted_old, sorted_new = sorted(map(key, old)), sorted(map(key, original))
@@ -372,8 +398,9 @@ class Report:
         self.counts[key] += 1
         if diff or rounding:
             slug = re.sub(r'[^\w.-]+', '_', name).strip('_')[:150]
-            (self.dir / f'{slug}.diff').write_text('\n'.join([name, *diff, '']))
-            self.summary.append(f"{key:<26} {name}" + (f'  ({rounding} arrondis)' if rounding else ''))
+            shown = [f'~ {a}\n~ {b}' for a, b in rounding[:20]]
+            (self.dir / f'{slug}.diff').write_text('\n'.join([name, *diff, *shown, '']))
+            self.summary.append(f"{key:<26} {name}" + (f'  ({len(rounding)} arrondis)' if rounding else ''))
         print('X' if key == 'différents' else '.', end='', flush=True)
 
     def close(self):
@@ -423,17 +450,154 @@ def run_exports(args):
     report.close()
 
 
+# --- État de la base après les calculs ------------------------------------------------------------
+
+NEW_SERVER = 'bdoh-db'  # PostgreSQL 17, où tournent l'ancien code (reference-17) et le nouveau
+OLD_17_PARAMETERS = OUT.parent / 'app-17' / 'app' / 'config' / 'parameters.yml'
+
+
+def state_commands(base):
+    """Les calculs, choisis par des règles : une chaîne de trois chroniques calculées, recalculée
+    depuis la première avec propagation ; une chronique convertie qui a une fille, avec propagation,
+    et une sans fille ; les taux de remplissage d'une chronique continue."""
+    first = lambda sql: query(base, sql, NEW_SERVER)[0][0]
+    user = first("SELECT id FROM utilisateur WHERE roleadmin = 'FCT' ORDER BY id LIMIT 1")
+    chain = first("""
+        SELECT a.sortie_id FROM transformation a
+          JOIN transformation b ON b.entree_id = a.sortie_id
+          JOIN transformation c ON c.entree_id = b.sortie_id
+          JOIN chronique e ON e.id = a.entree_id
+         WHERE e.nbmesures > 0 ORDER BY a.sortie_id LIMIT 1""")
+    converted = """
+        SELECT cv.sortie_id FROM conversion cv JOIN chronique e ON e.id = cv.entree_id
+         WHERE e.nbmesures > 0
+           AND {} EXISTS (SELECT 1 FROM transformation t WHERE t.entree_id = cv.sortie_id)
+         ORDER BY cv.sortie_id LIMIT 1"""
+    continuous = first("SELECT id FROM chronique WHERE dtype = 'continue' AND nbmesures > 0 ORDER BY id LIMIT 1")
+    return [
+        ['bdoh:compute:chronique', chain, user, '--propagate'],
+        ['bdoh:convert:chronique', first(converted.format('')), user, '--propagate'],
+        ['bdoh:convert:chronique', first(converted.format('NOT')), user],
+        ['bdoh:compute:filling_rates', continuous],
+    ]
+
+
+# Ce que les calculs écrivent, sans les dates du moment (mise à jour, création et exécution des
+# tâches) ni la trace d'erreur des tâches, que BDOH ne lit pas (dev/differences.md) ; les mesures et
+# les taux, en une empreinte par chronique, valeurs écrites au chiffre près.
+STATE_QUERIES = {
+    'chronique': """
+        SELECT ((to_jsonb(c) - 'miseajour')
+                || jsonb_build_object('miseajour récente', c.miseajour > now() - interval '1 hour'))::text
+          FROM chronique c ORDER BY c.id""",
+    'mesure': """
+        SELECT chronique_id, count(*), md5(string_agg(
+                   concat_ws(';', date, valeur, qualite_id, minimum, maximum, estcalculee), '|'
+                   ORDER BY date, valeur))
+          FROM mesure GROUP BY 1 ORDER BY 1""",
+    'tauxremplissage': """
+        SELECT chronique_id, count(*), md5(string_agg(concat_ws(';', debut, fin, taux, poids), '|'
+                                                      ORDER BY debut, fin))
+          FROM tauxremplissage GROUP BY 1 ORDER BY 1""",
+    'historique': """
+        SELECT (to_jsonb(h) - 'id' - 'date')::text FROM historique h WHERE h.id > {historique} ORDER BY h.id""",
+    'jms_jobs': """
+        SELECT (to_jsonb(j) - 'createdat' - 'startedat' - 'checkedat' - 'executeafter' - 'closedat'
+                - 'workername' - 'runtime' - 'memoryusage' - 'memoryusagereal' - 'stacktrace')::text
+          FROM jms_jobs j ORDER BY j.id""",
+    'jms_job_related_entities': "SELECT * FROM jms_job_related_entities ORDER BY 1, 2, 3",
+}
+
+
+def run_state(args):
+    template = args.base
+    historique = query(template, 'SELECT coalesce(max(id), 0) FROM historique', NEW_SERVER)[0][0]
+    commands = state_commands(template)
+    old_console = SIDES['reference-17'].console
+    new_url = 'postgresql://bdoh@db:5432/{}?serverVersion=17&charset=utf8'
+
+    def copy(base):
+        for sql in [f'DROP DATABASE IF EXISTS {base} WITH (FORCE)', f'CREATE DATABASE {base} TEMPLATE {template}']:
+            subprocess.run(['docker', 'exec', NEW_SERVER, 'psql', '-U', 'postgres', '-v', 'ON_ERROR_STOP=1',
+                            '-qc', sql], check=True)
+
+    def point_old_17(base):
+        """Branche l'ancien code sur une base ; rend celle qu'il lisait."""
+        text = OLD_17_PARAMETERS.read_text()
+        previous = re.search(r'^    database_name: *(\S+)', text, re.M).group(1)
+        OLD_17_PARAMETERS.write_text(re.sub(r'^(    database_name: *)\S+', rf'\g<1>{base}', text, flags=re.M))
+        for command in [['cache:clear', '--no-warmup'], ['cache:warmup']]:
+            subprocess.run([*old_console, *command, '--env=prod'], check=True, capture_output=True)
+        return previous
+
+    def play(console, runner, base):
+        """Les calculs, puis la file de tâches jusqu'à ce qu'elle soit vide ; rend leurs sorties."""
+        log = []
+        for command in commands:
+            r = subprocess.run([*console, *command, '--env=prod'], capture_output=True, text=True)
+            log += [' '.join(command), f'code de sortie {r.returncode}', *r.stdout.splitlines()]
+        for _ in range(30):
+            if query(base, "SELECT count(*) FROM jms_jobs WHERE state IN ('new', 'pending', 'running')",
+                     NEW_SERVER)[0][0] == '0':
+                break
+            # Une tâche à la fois : l'ordre où elles finissent décide de celui des tâches qu'elles créent.
+            subprocess.run([*console, runner, '--max-runtime=10', '--max-concurrent-jobs=1', '--env=prod'],
+                           capture_output=True)
+        return log
+
+    sides = {}
+    for name, base in [('ancien', 'bdoh_state_old'), ('nouveau', 'bdoh_state_new')]:
+        copy(base)
+        if name == 'ancien':
+            previous = point_old_17(base)
+            try:
+                log = play(old_console, 'jms-job-queue:run', base)
+            finally:
+                point_old_17(previous)
+        else:
+            console = ['docker', 'exec', '-e', f'DATABASE_URL={new_url.format(base)}', 'bdoh-app', 'php', 'bin/console']
+            log = play(console, 'bdoh:jobs:run', base)
+        sides[name] = {'commandes': log}
+        today = datetime.date.today().isoformat()
+        for table, sql in STATE_QUERIES.items():
+            rows = query(base, sql.format(historique=historique), NEW_SERVER)
+            # Les dates du moment, dans les arguments des taux de remplissage d'une chronique vide
+            sides[name][table] = [re.sub(today + r'T[\d:]+', '<maintenant>', '\t'.join(row)) for row in rows]
+
+    report = Report('state')
+    for part in sides['ancien']:
+        report.add(part, sides['ancien'][part], sides['nouveau'][part])
+    report.close()
+
+    # Les mêmes dates dans les deux copies, pour en comparer les pages de suivi des tâches
+    for base in ['bdoh_state_old', 'bdoh_state_new']:
+        query(base, """
+            UPDATE jms_jobs SET createdat = timestamp '2026-01-01' + id * interval '1 minute',
+                   executeafter = timestamp '2026-01-01' + id * interval '1 minute',
+                   startedat = CASE WHEN startedat IS NOT NULL THEN timestamp '2026-01-01' + id * interval '1 minute' END,
+                   checkedat = CASE WHEN checkedat IS NOT NULL THEN timestamp '2026-01-01' + id * interval '1 minute' END,
+                   closedat = CASE WHEN closedat IS NOT NULL THEN timestamp '2026-01-01' + id * interval '1 minute' END,
+                   runtime = CASE WHEN runtime IS NOT NULL THEN 0 END""", NEW_SERVER)
+    print('Les deux copies restent pour examen : bdoh_state_old et bdoh_state_new ; pour comparer les'
+          ' pages des tâches, y brancher reference-17 et new, puis :\n'
+          '  dev/compare/compare.py pages --old reference-17 --new new --base bdoh_state_old'
+          ' --server bdoh-db --only /jobs')
+
+
 def main():
+    global CASES_SERVER
     parser = argparse.ArgumentParser(description=__doc__.split('\n')[0])
-    parser.add_argument('what', choices=['pages', 'exports'])
+    parser.add_argument('what', choices=['pages', 'exports', 'state'])
     parser.add_argument('--old', default='reference', choices=SIDES)
     parser.add_argument('--new', default='reference', choices=SIDES)
     parser.add_argument('--base', default='bdoh_small', help='base où tirer les cas')
+    parser.add_argument('--server', default=CASES_SERVER, help='conteneur du serveur de cette base')
     parser.add_argument('--only', default='', help='ne garder que les cas qui contiennent ce texte')
     parser.add_argument('--jobs', type=int, default=6, help='requêtes menées en parallèle')
     parser.add_argument('--profile', help='un seul profil (anonyme, utilisateur, gestionnaire, administrateur)')
     args = parser.parse_args()
-    {'pages': run_pages, 'exports': run_exports}[args.what](args)
+    CASES_SERVER = args.server
+    {'pages': run_pages, 'exports': run_exports, 'state': run_state}[args.what](args)
 
 
 if __name__ == '__main__':

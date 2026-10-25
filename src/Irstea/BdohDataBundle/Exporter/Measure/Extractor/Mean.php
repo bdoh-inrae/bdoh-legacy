@@ -12,7 +12,7 @@ use Irstea\BdohDataBundle\Entity\PasEchantillonnage;
 use Irstea\BdohDataBundle\Entity\Repository\ChroniqueContinueRepository;
 use Irstea\BdohDataBundle\Entity\Repository\ChroniqueRepository;
 use Irstea\BdohDataBundle\Exporter\Measure\FormatterInterface;
-use Symfony\Bridge\Doctrine\RegistryInterface;
+use Doctrine\Persistence\ManagerRegistry;
 
 class Mean extends AbstractExtractor
 {
@@ -24,7 +24,7 @@ class Mean extends AbstractExtractor
     /**
      * {@inheritdoc}
      */
-    public function __construct(RegistryInterface $doctrine, FormatterInterface $formatter, array $parameters)
+    public function __construct(ManagerRegistry $doctrine, FormatterInterface $formatter, array $parameters)
     {
         parent::__construct($doctrine, $formatter, $parameters);
         $this->timestep = $parameters['timestep'];

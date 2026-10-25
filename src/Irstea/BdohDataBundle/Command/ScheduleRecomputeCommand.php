@@ -6,20 +6,16 @@
 
 namespace Irstea\BdohDataBundle\Command;
 
-use Doctrine\Bundle\DoctrineBundle\Registry;
+use Doctrine\Persistence\ManagerRegistry;
 use Irstea\BdohBundle\Manager\JobManagerInterface;
 use Irstea\BdohDataBundle\Entity\Chronique;
 use Irstea\BdohDataBundle\Entity\Repository\ChroniqueRepository;
-use JMS\DiExtraBundle\Annotation as DI;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
 /**
  * Class ScheduleRecomputeCommand.
- *
- * @DI\Service()
- * @DI\Tag("console.command")
  */
 class ScheduleRecomputeCommand extends Command
 {
@@ -31,7 +27,7 @@ class ScheduleRecomputeCommand extends Command
     private $jobManager;
 
     /**
-     * @var Registry
+     * @var ManagerRegistry
      */
     private $doctrine;
 
@@ -39,14 +35,9 @@ class ScheduleRecomputeCommand extends Command
      * ScheduleRecomputeCommand constructor.
      *
      * @param JobManagerInterface $jobManager
-     * @param Registry            $doctrine
-     *
-     * @DI\InjectParams({
-     *     "jobManager" = @DI\Inject("irstea_bdoh.job_manager"),
-     *     "doctrine" = @DI\Inject("doctrine")
-     * })
+     * @param ManagerRegistry     $doctrine
      */
-    public function __construct(JobManagerInterface $jobManager, Registry $doctrine)
+    public function __construct(JobManagerInterface $jobManager, ManagerRegistry $doctrine)
     {
         parent::__construct(self::COMMAND_NAME);
         $this->jobManager = $jobManager;
@@ -76,5 +67,7 @@ class ScheduleRecomputeCommand extends Command
             $job = $this->jobManager->enqueueComputeFillingRates($chronique);
             $output->writeln("{$chronique->getObservatoire()->getNom()} {$chronique}: job #{$job->getId()}");
         }
+
+        return 0;
     }
 }

@@ -11,7 +11,7 @@ use Irstea\BdohDataBundle\Entity\ChroniqueCalculee;
 use Irstea\BdohDataBundle\Entity\ChroniqueConvertie;
 use Irstea\BdohDataBundle\Entity\Observatoire;
 use Irstea\BdohSecurityBundle\Entity\Utilisateur;
-use JMS\JobQueueBundle\Entity\Job;
+use Irstea\BdohBundle\Job\Job;
 
 /**
  * Interface JobManagerInterface.

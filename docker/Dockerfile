@@ -15,6 +15,10 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/* \
     && sed -i 's/^# fr_FR.UTF-8/fr_FR.UTF-8/' /etc/locale.gen && locale-gen
 
+# Comme sur les serveurs actuels : la ligne de commande, donc la file de tâches, en Europe/Paris ;
+# les pages en UTC, défaut de PHP (dev/differences.md, « Deux fuseaux horaires »).
+RUN echo 'date.timezone = Europe/Paris' > /etc/php/8.4/cli/conf.d/90-bdoh.ini
+
 # Apache tourne aux droits de l'utilisateur du poste (compose.yaml), qui possède ce qu'il écrit ;
 # ses journaux vont sur la sortie du conteneur.
 RUN chmod 1777 /var/run/apache2 /var/lock/apache2 /var/log/apache2 \
