@@ -395,7 +395,7 @@ class PointControleController extends Controller
                 return $this->redirectToReferer();
             }
 
-            $defaultQualityCodes = $this->container->getParameter('absent_quality_codes');
+            $defaultQualityCodes = $this->getParameter('absent_quality_codes');
             $jeuName = Observatoire::getCurrent()->getJeu()->getNom();
             $defaultQualityCode = \array_key_exists($jeuName, $defaultQualityCodes) ? $defaultQualityCodes[$jeuName] : '';
 

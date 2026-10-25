@@ -902,6 +902,31 @@ def import_cases(base):
     return cases
 
 
+def controle_cases(base):
+    """Les imports de points de contrôle : quelques mesures d'une chronique continue en janvier 2024,
+    reprises en points de contrôle (valeur, qualité, minimum et maximum), puis sans bornes, avec un
+    commentaire ; puis deux lignes refusées, l'une sans qualité, l'autre avec un champ de trop."""
+    cid, slug, station, code, unite = query(base, f"""
+        SELECT c.id, c.slug, c.station, c.code, u.libelle FROM ({CHRONIQUES}) c
+          JOIN chronique ch ON ch.id = c.id JOIN unite u ON u.id = ch.unite_id
+         WHERE c.dtype = 'continue' AND EXISTS (SELECT 1 FROM mesure m WHERE m.chronique_id = c.id
+               AND m.date >= '2024-01-01' AND m.date < '2024-01-15')
+         ORDER BY c.id LIMIT 1""", NEW_SERVER)[0]
+    rows = query(base, f"""
+        SELECT to_char(m.date + interval '1 hour', 'DD/MM/YYYY HH24:MI:SS'), coalesce(m.valeur, 0)::text, q.code
+          FROM mesure m JOIN qualite q ON q.id = m.qualite_id
+         WHERE m.chronique_id = {cid} AND m.date >= '2024-01-01' AND m.date < '2024-01-15'
+         ORDER BY m.date LIMIT 10""", NEW_SERVER)
+    head = ['Station;Fuseau;Chronique;Unite', f'{station};UTC+01;{code};{unite}', 'DateHeure;Valeur;Qualite;Min;Max']
+    full = [f'{d};{v};{q};{float(v) - 0.5:g};{float(v) + 0.5:g}' for d, v, q in rows]
+    short = [f'{d};{float(v) + 1:g};{q}' for d, v, q in rows[:5]]
+    content = lambda lines: ('\n'.join(head + lines) + '\n').encode()
+    return cid, slug, [('points de contrôle', content(full)),
+                       ('points de contrôle, sans bornes', content(['# commentaire', *short])),
+                       ('points de contrôle, sans qualité', content([f'{rows[0][0]};1'])),
+                       ('points de contrôle, trop de champs', content([full[0] + ';de trop']))]
+
+
 def run_imports(args):
     """Chaque import, étape par étape, par l'ancien code sur PostgreSQL 17 et par le nouveau, chacun
     sur sa copie de BASE, au nom d'un gestionnaire de l'observatoire visé ; puis la file de tâches,
@@ -962,6 +987,36 @@ def run_imports(args):
 
         for case in cases:
             report.add(f"import {case['name']}", play('ancien', case), play('nouveau', case))
+
+        def play_controle(name, cid, slug, content):
+            """Un import de points de contrôle (deux étapes), puis l'export des points de la chronique."""
+            side = sides[name][0]
+            if (name, slug) not in clients:
+                clients[name, slug] = Client(side, managers[slug], slug)
+            client = clients[name, slug]
+            ajax = {'X-Requested-With': 'XMLHttpRequest'}
+            body, kind = multipart({}, {'file': ('controle.txt', content)})
+            response = client.get(f'/{slug}/admin/controle/import/step2', body, {**ajax, 'Content-Type': kind})
+            log = ['== étape 2', *step_lines(side.url, *response)]
+            if response[0] == 200 and json.loads(response[2]).get('action') == 'step3':
+                response = client.get(f'/{slug}/admin/controle/import/step3',
+                                      urllib.parse.urlencode({'importType': 'import'}).encode(), ajax)
+                log += ['== étape 3', *step_lines(side.url, *response)]
+            response = client.get(f'/{slug}/admin/controle/export',
+                                  urllib.parse.urlencode({'chronique': cid, 'timezone': '+1'}).encode(),
+                                  {'Referer': f'{side.url}/{slug}/admin/controle/import'})
+            return log + ['== export', *page_lines(side.url, *response)]
+
+        cid, slug, controles = controle_cases(template)
+        if args.only in 'points de contrôle':
+            managers.setdefault(slug, query(template, f"""
+                SELECT u.email FROM utilisateur u JOIN role r ON r.utilisateur_id = u.id
+                  JOIN observatoire o ON o.id = r.observatoire_id
+                 WHERE r.valeur = 'gestionnaire' AND o.slug = '{slug}' AND (u.finacces IS NULL OR u.finacces > now())
+                 ORDER BY u.id LIMIT 1""", NEW_SERVER)[0][0])
+            for title, content in controles:
+                report.add(f'import {title}', play_controle('ancien', cid, slug, content),
+                           play_controle('nouveau', cid, slug, content))
         for name in sides:
             sides[name] = state_lines(bases[name], historique)
     for table in sides['ancien']:

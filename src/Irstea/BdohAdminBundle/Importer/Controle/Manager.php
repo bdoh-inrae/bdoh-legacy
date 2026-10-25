@@ -994,6 +994,6 @@ class Manager
      */
     protected function writeLine($data)
     {
-        fwrite($this->file, implode($data, $this->delimiter) . "\n");
+        fwrite($this->file, implode($this->delimiter, $data) . "\n");
     }
 }
