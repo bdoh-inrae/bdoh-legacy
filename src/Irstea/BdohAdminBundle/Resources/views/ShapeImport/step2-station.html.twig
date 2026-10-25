@@ -1,0 +1,181 @@
+{% set fontExistingWithoutData="panel-success" %}
+{% set fontExistingWithData="panel-warning" %}
+{% set fontNonExisting="panel-danger" %}
+{% set showExistingWithoutData="" %}
+{% set showExistingWithData="" %}
+{% set showNonExisting="" %}
+{% set collapseExistingWithoutData="collapsed" %}
+{% set collapseExistingWithData="collapsed" %}
+{% set collapseNonExisting="collapsed" %}
+
+{% if shapeData.countExistingWithoutData > 0 %}
+    {% set showExistingWithoutData="in" %}
+    {% set collapseExistingWithoutData="" %}
+{% endif %}
+{% if shapeData.countExistingWithData > 0 and showExistingWithoutData == "" %}
+    {% set showExistingWithData="in" %}
+    {% set collapseExistingWithData="" %}
+{% endif %}
+{% if shapeData.countNonExisting > 0 and showExistingWithoutData == "" and showExistingWithData == "" %}
+    {% set showNonExisting="in" %}
+    {% set collapseNonExisting="" %}
+{% endif %}
+
+{% import 'macros.html.twig' as macros %}
+
+<div class="pull-right">
+    {{ macros.cancelForm('bdoh_admin_shape_import_stop', ('cancel'|trans)~' '~('import(the)'|trans)) }}
+</div>
+
+<h2 class="inactive">{{ 'shape.import.step.1'|trans }}</h2>
+<h2>{{ 'shape.import.step.2'|trans }}</h2>
+<h2 class="inactive" style="margin-bottom:1em;">{{ 'shape.import.step.3'|trans }}</h2>
+
+<form class="form-inline" name="import" action="{{ path('bdoh_admin_shape_import_step3') }}" method="post">
+
+    <div class="panel panel-default">
+
+        <div class="panel-heading">
+            <h3>{{ 'shape.import.info.title'|trans }} {{ 'open_quote'|trans }}<i>{{ shapeData.cible|trans }}</i>{{ 'close_quote'|trans }}</h3>
+        </div>
+
+        <div class="panel-body">
+
+            {# stations existantes SANS données géographies #}
+            {% if shapeData.countExistingWithoutData > 0 %}
+                <div class="panel {{ fontExistingWithoutData }}">
+                    <div class="panel-heading">
+                        <a class="dropdown-toggle collapse-title {{ collapseExistingWithoutData }}" data-toggle="collapse" href="#collapseOne">
+                            <strong><b class="caret"></b> {{ 'shape.import.help.station.existingWithoutData'|trans({'%count%': shapeData.countExistingWithoutData}) }}{{ 'deux_points'|trans }} {{ shapeData.countExistingWithoutData }}</strong>
+                        </a>
+                    </div>
+                    <div id="collapseOne" class="panel-collapse collapse {{ showExistingWithoutData }}">
+                        <div class="panel-body">
+                            {% for station in shapeData.existingWithoutData %}
+                                <div class="row">
+                                    <div class="col-md-8">
+                                        <strong>{{ 'shape.import.info.codeStation'|trans }}{{ 'deux_points'|trans }}</strong>
+                                        <span style="color:green;">{{ station.code }}</span>
+                                    </div>
+                                    <div class="col-md-8">
+                                        <strong>{{ 'latitude'|trans }}{{ 'deux_points'|trans }}</strong>
+                                        <span style="color:green;">{{ station.latitude }}</span>
+                                    </div>
+                                    <div class="col-md-8">
+                                        <strong>{{ 'longitude'|trans }}{{ 'deux_points'|trans }}</strong>
+                                        <span style="color:green;">{{ station.longitude }}</span>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+
+            {# stations existantes AVEC données géographies #}
+            {% if shapeData.countExistingWithData > 0 %}
+                <div class="panel {{ fontExistingWithData }}">
+                    <div class="panel-heading">
+                        <a class="dropdown-toggle collapse-title {{ collapseExistingWithData }}" data-toggle="collapse" href="#collapseTwo">
+                            <strong><b class="caret"></b> {{ 'shape.import.help.station.existingWithData'|trans({'%count%': shapeData.countExistingWithData}) }}{{ 'deux_points'|trans }} {{ shapeData.countExistingWithData }}</strong>
+                        </a>
+                    </div>
+                    <div id="collapseTwo" class="panel-collapse collapse {{ showExistingWithData }}">
+                        <div class="panel-body">
+                            {% for station in shapeData.existingWithData %}
+                                <div class="row">
+                                    <div class="col-md-8">
+                                        <strong>{{ 'shape.import.info.codeStation'|trans }}{{ 'deux_points'|trans }}</strong>
+                                        <span style="color:green;">{{ station.code }}</span>
+                                    </div>
+                                    <div class="col-md-8">
+                                        <strong>{{ 'latitude'|trans }}{{ 'deux_points'|trans }}</strong>
+                                        <span style="color:green;">{{ station.latitude }}</span>
+                                    </div>
+                                    <div class="col-md-8">
+                                        <strong>{{ 'longitude'|trans }}{{ 'deux_points'|trans }}</strong>
+                                        <span style="color:green;">{{ station.longitude }}</span>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+
+            {# stations inconnues #}
+            {% if shapeData.countNonExisting > 0 %}
+                <div class="panel {{ fontNonExisting }}">
+                    <div class="panel-heading">
+                        <a class="dropdown-toggle collapse-title {{ collapseNonExisting }}" data-toggle="collapse" href="#collapseThree">
+                            <strong><b class="caret"></b> {{ 'shape.import.help.station.nonExisting'|trans({'%count%': shapeData.countNonExisting}) }} {{ 'shape.import.info.wontupload'|trans|raw }}{{ 'deux_points'|trans }} {{ shapeData.countNonExisting }}</strong>
+                        </a>
+                    </div>
+                    <div id="collapseThree" class="panel-collapse collapse {{ showNonExisting }}">
+                        <div class="panel-body">
+                            {% for station in shapeData.nonExisting %}
+                                <div class="col-md-24">
+                                    <div class="col-md-8">
+                                        <strong>{{ 'shape.import.info.codeStation'|trans }}{{ 'deux_points'|trans }}</strong>
+                                        <span style="color:green;">{{ station.code }}</span>
+                                    </div>
+                                    <div class="col-md-8">
+                                        <strong>{{ 'latitude'|trans }}{{ 'deux_points'|trans }}</strong>
+                                        <span style="color:green;">{{ station.latitude }}</span>
+                                    </div>
+                                    <div class="col-md-8">
+                                        <strong>{{ 'longitude'|trans }}{{ 'deux_points'|trans }}</strong>
+                                        <span style="color:green;">{{ station.longitude }}</span>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+
+            {# choix d'import #}
+            {% if shapeData.countExistingWithoutData > 0 or shapeData.countExistingWithData > 0 %}
+                <div class="col-md-24 alert alert-warning">
+                    <h4 class="alert-heading">{{ 'shape.import.question.importType'|trans }}</h4>
+
+                    {# ne pas importer #}
+                    <input type="radio" name="shapeImportType" value="doNotImport" id="doNotImport">
+                    <label for="doNotImport">{{ 'shape.import.action.doNotImport'|trans }}</label>
+                    <br>
+
+                    {# que des stations existantes SANS données géographiques -> keepExisting #}
+                    {% if shapeData.countExistingWithoutData > 0 and shapeData.countExistingWithData == 0 %}
+                        <input type="radio" name="shapeImportType" value="keepExisting" id="keepExisting">
+                        <label for="keepExisting">{{ 'shape.import.action.doImport'|trans }}</label>
+                        <br>
+                    {# que des stations existantes AVEC données géographiques -> overwriteExisting #}
+                    {% elseif shapeData.countExistingWithoutData == 0 and shapeData.countExistingWithData > 0 %}
+                        <input type="radio" name="shapeImportType" value="overwriteExisting" id="overwriteExisting">
+                        <label for="overwriteExisting">{{ 'shape.import.action.replace'|trans }}</label>
+                        <br>
+                    {# les deux #}
+                    {% elseif  shapeData.countExistingWithoutData > 0 and shapeData.countExistingWithData > 0 %}
+                        <input type="radio" name="shapeImportType" value="keepExisting" id="keepExisting">
+                        <label for="keepExisting">{{ 'shape.import.action.keepExisting'|trans }}</label>
+                        <br>
+                        <input type="radio" name="shapeImportType" value="overwriteExisting" id="overwriteExisting">
+                        <label for="overwriteExisting">{{ 'shape.import.action.overwriteExisting'|trans }}</label>
+                        <br>
+                    {% endif %}
+                </div>
+            {% else %}
+                {# pas de données à importer -> alerte #}
+                <div class="col-md-24 alert alert-danger">
+                    <strong>{{ 'shape.import.info.noPossibleImport'|trans }}</strong>
+                </div>
+            {% endif %}
+
+        </div> {# panel-body #}
+    </div> {# panel #}
+
+    {% if shapeData.countExistingWithoutData > 0 or shapeData.countExistingWithData > 0 %}
+        {{ macros.submit(('validate'|trans)~' '~('import(the)'|trans)) }}
+    {% endif %}
+
+</form>

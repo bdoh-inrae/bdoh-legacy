@@ -1,0 +1,69 @@
+{% import 'macros.html.twig' as macros %}
+
+<div class="pull-right">
+    {{ macros.cancelForm('bdoh_admin_measure_import_stop', ('cancel'|trans)~' '~('import(the)'|trans)) }}
+</div>
+
+<!-- The steps of measures import -->
+<p><h2><span class="inactive">{{ 'measure.import.step.1'|trans }}</span></h2></p>
+<p><h2 class="inactive">{{ 'measure.import.step.2'|trans }}</h2></p>
+<p><h2>{{ 'measure.import.step.3'|trans }}</h2></p>
+<p><h2 class="inactive" style="margin-bottom:1em;">{{ 'measure.import.step.4'|trans }}</h2></p>
+
+
+<form class="form-inline" name="main" action="{{ path('bdoh_admin_measure_import_step4') }}" method="post">
+
+    {# For each 'chronique' : displays information, validation form and viewer #}
+    {% for chroniqueData in chroniques %}
+
+        {% set chronique           = chroniqueData.chronique %}
+        {% set prefix              = chronique.id ~ '-' %}
+        {% set informationId       = prefix ~ 'information' %}
+        {% set viewerId            = prefix ~ 'viewer' %}
+
+        {# Variables for validation form #}
+        {% set importTypeName      = 'importTypes[' ~ chronique.id ~ ']' %}
+        {% set doNotImportId       = prefix ~ 'doNotImport' %}
+        {% set keepExistingId      = prefix ~ 'keepExistingId' %}
+        {% set overwriteExistingId = prefix ~ 'overwriteExistingId' %}
+
+        <div class="panel panel-default">
+            <!-- Header -->
+            <div class="panel-heading">
+                <h3>{{ chronique }}</h3>
+                <strong>{{ macros.i18nEntityLabel(chronique, 'libelle') }}</strong> <em>[{{ chronique.unite }}]</em>
+                <a data-toggle="collapse" class="dropdown-toggle import-title pull-right" href="#{{- informationId -}}"><b class="caret"></b> {{ 'information'|trans }}</a>
+            </div>
+
+            <!-- Tabs content -->
+            <div class="panel-body panel-collapse collapse in" id="{{- informationId -}}">
+                {% include '@IrsteaBdohAdmin/MeasureImport/step3-info-and-validation.html.twig' %}
+            </div>
+        </div>
+    {% endfor %}
+
+    {% if hasChildrenGlobal %}
+        <div class="col-md-24 alert alert-warning">
+            <input type="checkbox" checked="checked" name="propagate" value="propagate" id="propagateId" style="vertical-align:-3px;">
+            <label for="propagateId">{{ 'measure.import.question.computeChildren'|trans({'%count%': childrenCountGlobal}) }}</label>
+        </div>
+    {% endif %}
+
+    {{ macros.submit(('validate'|trans)~' '~('import(the)'|trans)) }}
+
+    <div id="modalStep3" class="modal fade" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>{{ 'measure.import.analysisInProgress'|trans }}</h2>
+                </div>
+                <div class="modal-body" style="text-align:center;">
+                    <h2>{{ 'measure.import.canTakeAWhile'|trans }}</h2>
+                    <p>{{ 'measure.import.pleaseWait'|trans }}</p>
+                    <p><img src="{{ asset('/images/loader.gif') }}"/></p>
+                </div>
+            </div><!-- /.modal-content -->
+        </div><!-- /.modal-dialog -->
+    </div>
+
+</form>

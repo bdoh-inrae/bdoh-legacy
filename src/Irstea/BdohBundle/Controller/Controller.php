@@ -17,6 +17,7 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\RedirectResponse;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\Session\SessionInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
@@ -55,6 +56,14 @@ class Controller extends AbstractController
     protected function getDoctrine(): ManagerRegistry
     {
         return $this->container->get('doctrine');
+    }
+
+    /**
+     * La requête en cours, comme le Controller de Symfony 2 la donnait.
+     */
+    protected function getRequest(): Request
+    {
+        return $this->container->get('request_stack')->getCurrentRequest();
     }
 
     /**

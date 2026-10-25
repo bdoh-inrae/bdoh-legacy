@@ -1,0 +1,101 @@
+# Les routes des imports et des transformations (module 4 du portage), dans l'ordre de l'ancien
+# Resources/config/routing.yml. Celles de Sonata et des autres contrôleurs de l'administration
+# attendent le module 6 dans config/routes_pending/admin.yaml.
+
+bdoh_admin_measure_import_stop:
+    path: /mesure/import/stop
+    controller: Irstea\BdohAdminBundle\Controller\MeasureImportController::stopAction
+
+bdoh_admin_controle_import_stop:
+    path: /controle/import/stop
+    controller: Irstea\BdohAdminBundle\Controller\PointControleController::stopAction
+
+bdoh_admin_measure_import:
+    path: /mesure/import
+    controller: Irstea\BdohAdminBundle\Controller\MeasureImportController::step1Action
+
+bdoh_admin_measure_import_step2:
+    path: /mesure/import/step2
+    controller: Irstea\BdohAdminBundle\Controller\MeasureImportController::step2Action
+
+bdoh_admin_measure_import_step2_next:
+    path: /mesure/import/step2/next
+    controller: Irstea\BdohAdminBundle\Controller\MeasureImportController::step2NextAction
+
+bdoh_admin_measure_import_step3:
+    path: /mesure/import/step3
+    controller: Irstea\BdohAdminBundle\Controller\MeasureImportController::step3Action
+
+bdoh_admin_measure_import_step4:
+    path: /mesure/import/step4
+    controller: Irstea\BdohAdminBundle\Controller\MeasureImportController::step4Action
+
+bdoh_admin_controle_import:
+    path: /controle/import
+    controller: Irstea\BdohAdminBundle\Controller\PointControleController::step1Action
+
+bdoh_admin_controle_export:
+    path: /controle/export
+    controller: Irstea\BdohAdminBundle\Controller\PointControleController::exportAction
+
+bdoh_admin_controle_import_step2:
+    path: /controle/import/step2
+    controller: Irstea\BdohAdminBundle\Controller\PointControleController::step2Action
+
+bdoh_admin_controle_import_step3:
+    path: /controle/import/step3
+    controller: Irstea\BdohAdminBundle\Controller\PointControleController::step3Action
+
+bdoh_admin_transformation:
+    path: /transformation
+    controller: Irstea\BdohAdminBundle\Controller\TransformationController::displayAction
+
+bdoh_admin_save_transformation:
+    path: /transformation/save
+    controller: Irstea\BdohAdminBundle\Controller\TransformationController::saveTransformationAction
+    methods: [POST]
+
+bdoh_admin_bareme_import_step2:
+    path: /transformation/import/bareme/step2
+    controller: Irstea\BdohAdminBundle\Controller\TransformationController::importBaremeStep2Action
+
+bdoh_admin_bareme_import_step3:
+    path: /transformation/import/bareme/step3
+    controller: Irstea\BdohAdminBundle\Controller\TransformationController::importBaremeStep3Action
+
+bdoh_admin_bareme_import_stop:
+    path: /transformation/import/bareme/stop
+    controller: Irstea\BdohAdminBundle\Controller\TransformationController::importBaremeStopAction
+
+bdoh_admin_bareme_export:
+    path: /transformation/export/bareme
+    controller: Irstea\BdohAdminBundle\Controller\TransformationController::exportBaremeAction
+
+bdoh_admin_jeu_bareme_export:
+    path: /transformation/export/jeu-bareme
+    controller: Irstea\BdohAdminBundle\Controller\TransformationController::exportJeuBaremeAction
+    methods: [POST]
+
+bdoh_admin_get_baremes_export:
+    path: /transformation/export/bareme/list
+    controller: Irstea\BdohAdminBundle\Controller\TransformationController::getBaremesForExportAction
+
+bdoh_admin_shape_import:
+    path: /shape/import
+    controller: Irstea\BdohAdminBundle\Controller\ShapeImportController::step1Action
+
+bdoh_admin_shape_import_step2:
+    path: /shape/import/step2
+    controller: Irstea\BdohAdminBundle\Controller\ShapeImportController::step2Action
+
+bdoh_admin_shape_import_step3:
+    path: /shape/import/step3
+    controller: Irstea\BdohAdminBundle\Controller\ShapeImportController::step3Action
+
+bdoh_admin_shape_import_stop:
+    path: /shape/import/stop
+    controller: Irstea\BdohAdminBundle\Controller\ShapeImportController::stopAction
+
+bdoh_admin_get_chronique_calculee:
+    path: /get-chronique-calculee
+    controller: Irstea\BdohAdminBundle\Controller\TransformationController::getChroniqueCalculeeAction

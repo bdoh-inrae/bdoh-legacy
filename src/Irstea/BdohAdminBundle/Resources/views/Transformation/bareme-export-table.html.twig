@@ -1,0 +1,20 @@
+<table class="table table-striped" id="table-export-bareme">
+    <thead>
+    <tr>
+        <th>#</th>
+        <th>{{ 'nom'|trans }}</th>
+        <th class="col-md-8">{{ 'dateCreation'|trans }} [{{ 'UTC'|trans }}]</th>
+    </tr>
+    </thead>
+    <tbody>
+    {% for bareme in baremes %}
+        <tr>
+            <td><input type="checkbox" id="check-bareme-{{ bareme.id }}" name="{{ bareme.id }}" style="margin-top:0;"/></td>
+            <td>{{ bareme.nom }}</td>
+            <td class="col-md-8" data-type="num" data-order="{{ bareme.dateCreation|date('U', false) }}">
+                {{ bareme.dateCreation|date('transformation.bareme.dateBareme'|trans, false) }}
+            </td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>

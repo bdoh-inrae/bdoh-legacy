@@ -1,0 +1,35 @@
+{% import '@IrsteaBdohConsult/macros.html.twig' as macros %}
+
+<h1>{{ 'controle.import.title'|trans }}</h1>
+
+<!-- The steps of controles import -->
+<p><h2 class="inactive">{{ 'controle.import.step.1'|trans }}</h2></p>
+<p><h2 class="inactive">{{ 'controle.import.step.2'|trans }}</h2></p>
+<p><h2 style="margin-bottom: 1em;">{{ 'controle.import.step.3'|trans }}</h2></p>
+
+{% if stats is not empty %}
+    <table class="table well">
+        <thead>
+        <tr>
+            <th>{{ 'controle.import.info.timeSeries'|trans }}</th>
+            <th>{{ 'controle.import.info.controlesInsert'|trans }}</th>
+            <th>{{ 'controle.import.info.controlesDelete'|trans }}</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for chroniqueTxt, stat in stats %}
+            <tr>
+                <td>{{ macros.chronique_view(stat.entity, chroniqueTxt, 'text') }}</td>
+                <td>{{ stat.insert }}</td>
+                <td>{{ stat.delete }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+{% else %}
+    {{ 'controle.import.info.noControleImported'|trans }}
+{% endif %}
+
+
+<a href="{{ path('bdoh_admin_controle_import') }}" class="btn btn-default">{{ 'controle.import.action.newImport'|trans }}</a>
+<a href="{{ path('bdoh_home') }}" class="btn btn-default">{{ 'backToHome'|trans }}</a>

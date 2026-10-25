@@ -1,0 +1,15 @@
+<ul>
+    {% for e in errors.general %}
+        <li>{{ e }}</li>
+    {% endfor %}
+    {% for mere in ['principale', 'secondaire'] %}
+        {% if errors[mere]|length > 0 %}
+            <b>{{ ('transformation.erreur.chroniqueMere.'~mere)|trans }}</b>
+            <ul>
+                {% for e in errors[mere] %}
+                    <li>{{ e|raw }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    {% endfor %}
+</ul>

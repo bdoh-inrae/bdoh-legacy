@@ -3,6 +3,7 @@
 imports:
     - { resource: '../src/Irstea/BdohBundle/Resources/config/services.yml' }
     - { resource: '../src/Irstea/BdohDataBundle/Resources/config/services.yml' }
+    - { resource: '../src/Irstea/BdohAdminBundle/Resources/config/services.yml' }
     - { resource: '../src/Irstea/BdohConsultBundle/Resources/config/services.yml' }
     - { resource: '../src/Irstea/BdohInternationalisationBundle/Resources/config/services.yml' }
     - { resource: '../src/Irstea/BdohSecurityBundle/Resources/config/services.yml' }

@@ -5,6 +5,7 @@
     dev/compare/compare.py exports [--old SIDE] [--new SIDE] [--base BASE] [--only TEXTE]
     dev/compare/compare.py state   [--base BASE]
     dev/compare/compare.py queue   [--base BASE]
+    dev/compare/compare.py imports [--base BASE] [--only TEXTE]
 
 SIDE nomme une instance (voir SIDES). Les cas sont tirés de la base BASE du serveur de référence,
 par des règles écrites ici : le dépôt ne contient ni données ni codes de chroniques. Le rapport et
@@ -21,6 +22,7 @@ dev/differences.md), compté à part pour être relu. Bibliothèque standard seu
 
 import argparse
 import concurrent.futures
+import contextlib
 import datetime
 import difflib
 import hashlib
@@ -545,6 +547,70 @@ def mail_lines():
     return lines
 
 
+NEW_URL = 'postgresql://bdoh@db:5432/{}?serverVersion=17&charset=utf8'
+ENV_LOCAL = HERE.parent.parent / '.env.local'  # la base du nouveau BDOH, comme l'écrit use-base.sh
+
+
+def copy_base(template, base):
+    """Une copie fraîche d'une base, sur le serveur PostgreSQL 17."""
+    for sql in [f'DROP DATABASE IF EXISTS {base} WITH (FORCE)', f'CREATE DATABASE {base} TEMPLATE {template}']:
+        subprocess.run(['docker', 'exec', NEW_SERVER, 'psql', '-U', 'postgres', '-v', 'ON_ERROR_STOP=1',
+                        '-qc', sql], check=True)
+
+
+def configure_old_17(text):
+    """Écrit les paramètres de l'ancien code sur PostgreSQL 17, et vide son cache."""
+    OLD_17_PARAMETERS.write_text(text)
+    for command in [['cache:clear', '--no-warmup'], ['cache:warmup']]:
+        subprocess.run([*SIDES['reference-17'].console, *command, '--env=prod'], check=True, capture_output=True)
+
+
+@contextlib.contextmanager
+def old_17_on(base, **params):
+    """L'ancien code sur PostgreSQL 17 branché sur une base (et d'autres paramètres), le temps du bloc."""
+    original = OLD_17_PARAMETERS.read_text()
+    edited = original
+    for key, value in {'database_name': base, **params}.items():
+        edited = re.sub(rf'^(    {key}: *).*$', rf'\g<1>{value}', edited, flags=re.M)
+    configure_old_17(edited)
+    try:
+        yield SIDES['reference-17'].console
+    finally:
+        configure_old_17(original)
+
+
+@contextlib.contextmanager
+def new_on(base, template, *env):
+    """Le nouveau BDOH branché sur une base le temps du bloc, ses pages par .env.local, sa console par
+    l'environnement ; il lit ensuite de nouveau la base template."""
+    ENV_LOCAL.write_text(f'DATABASE_URL="{NEW_URL.format(base)}"\n')
+    try:
+        yield ['docker', 'exec', '-e', f'DATABASE_URL={NEW_URL.format(base)}',
+               *[x for e in env for x in ('-e', e)], 'bdoh-app', 'php', 'bin/console']
+    finally:
+        ENV_LOCAL.write_text(f'DATABASE_URL="{NEW_URL.format(template)}"\n')
+
+
+def drain(console, runner, base, jobs=1, rounds=30):
+    """La file de tâches, jusqu'à ce qu'elle soit vide ; par défaut une tâche à la fois, parce que
+    l'ordre où elles finissent décide de celui des tâches qu'elles créent."""
+    for _ in range(rounds):
+        if query(base, "SELECT count(*) FROM jms_jobs WHERE state IN ('new', 'pending', 'running')",
+                 NEW_SERVER)[0][0] == '0':
+            return
+        subprocess.run([*console, runner, '--max-runtime=10', f'--max-concurrent-jobs={jobs}', '--env=prod'],
+                       capture_output=True)
+
+
+def state_lines(base, historique, tables=STATE_QUERIES):
+    """L'état d'une copie, table par table ; les dates du moment, dans les arguments des taux de
+    remplissage d'une chronique vide, sont normalisées."""
+    days = '|'.join(str(datetime.date.today() - datetime.timedelta(days=n)) for n in (0, 1))
+    return {table: [re.sub(f'(?:{days})T[\\d:]+', '<maintenant>', '\t'.join(row))
+                    for row in query(base, STATE_QUERIES[table].format(historique=historique), NEW_SERVER)]
+            for table in tables}
+
+
 def run_state(args):
     template = args.base
     historique = query(template, 'SELECT coalesce(max(id), 0) FROM historique', NEW_SERVER)[0][0]
@@ -559,34 +625,6 @@ def run_state(args):
           JOIN observatoire o ON o.id = r.observatoire_id
          WHERE r.valeur = 'gestionnaire' AND o.slug = '{slug}' AND (u.finacces IS NULL OR u.finacces > now())
          ORDER BY u.id LIMIT 1""", NEW_SERVER)[0][0]
-    old_console = SIDES['reference-17'].console
-    new_url = 'postgresql://bdoh@db:5432/{}?serverVersion=17&charset=utf8'
-    env_local = HERE.parent.parent / '.env.local'
-
-    def copy(base):
-        for sql in [f'DROP DATABASE IF EXISTS {base} WITH (FORCE)', f'CREATE DATABASE {base} TEMPLATE {template}']:
-            subprocess.run(['docker', 'exec', NEW_SERVER, 'psql', '-U', 'postgres', '-v', 'ON_ERROR_STOP=1',
-                            '-qc', sql], check=True)
-
-    def configure_old_17(text):
-        """Écrit les paramètres de l'ancien code sur PostgreSQL 17, et vide son cache."""
-        OLD_17_PARAMETERS.write_text(text)
-        for command in [['cache:clear', '--no-warmup'], ['cache:warmup']]:
-            subprocess.run([*old_console, *command, '--env=prod'], check=True, capture_output=True)
-
-    def pending(base):
-        return query(base, "SELECT count(*) FROM jms_jobs WHERE state IN ('new', 'pending', 'running')",
-                     NEW_SERVER)[0][0] != '0'
-
-    def drain(console, runner, base):
-        """La file de tâches, jusqu'à ce qu'elle soit vide."""
-        for _ in range(30):
-            if not pending(base):
-                return
-            # Une tâche à la fois : l'ordre où elles finissent décide de celui des tâches qu'elles créent.
-            subprocess.run([*console, runner, '--max-runtime=10', '--max-concurrent-jobs=1', '--env=prod'],
-                           capture_output=True)
-
     def play(side, console, runner, base):
         """Les calculs, les exports demandés par le formulaire, une tâche annulée, une semaine de
         mesures vidée avec propagation, une tâche relancée, la file jusqu'au bout ; rend ce que
@@ -627,33 +665,15 @@ def run_state(args):
 
     sides = {}
     for name, base in [('ancien', 'bdoh_state_old'), ('nouveau', 'bdoh_state_new')]:
-        copy(base)
+        copy_base(template, base)
         urllib.request.urlopen(urllib.request.Request(MAILPIT + '/api/v1/messages', method='DELETE'), timeout=60)
         if name == 'ancien':
-            original = OLD_17_PARAMETERS.read_text()
-            edited = original
-            for key, value in [('database_name', base), ('mailer_transport', 'smtp'),
-                               ('mailer_host', 'mailpit'), ('mailer_port', '1025')]:
-                edited = re.sub(rf'^(    {key}: *).*$', rf'\g<1>{value}', edited, flags=re.M)
-            configure_old_17(edited)
-            try:
-                log = play(SIDES['reference-17'], old_console, 'jms-job-queue:run', base)
-            finally:
-                configure_old_17(original)
+            with old_17_on(base, mailer_transport='smtp', mailer_host='mailpit', mailer_port='1025') as console:
+                log = play(SIDES['reference-17'], console, 'jms-job-queue:run', base)
         else:
-            env_local.write_text(f'DATABASE_URL="{new_url.format(base)}"\n')
-            try:
-                console = ['docker', 'exec', '-e', f'DATABASE_URL={new_url.format(base)}',
-                           '-e', 'MAILER_DSN=smtp://mailpit:1025', 'bdoh-app', 'php', 'bin/console']
+            with new_on(base, template, 'MAILER_DSN=smtp://mailpit:1025') as console:
                 log = play(SIDES['new'], console, 'bdoh:jobs:run', base)
-            finally:
-                env_local.write_text(f'DATABASE_URL="{new_url.format(template)}"\n')
-        sides[name] = {'étapes': log, 'courriels': mail_lines()}
-        today = datetime.date.today().isoformat()
-        for table, sql in STATE_QUERIES.items():
-            rows = query(base, sql.format(historique=historique), NEW_SERVER)
-            # Les dates du moment, dans les arguments des taux de remplissage d'une chronique vide
-            sides[name][table] = [re.sub(today + r'T[\d:]+', '<maintenant>', '\t'.join(row)) for row in rows]
+        sides[name] = {'étapes': log, 'courriels': mail_lines(), **state_lines(base, historique)}
 
     report = Report('state')
     for part in sides['ancien']:
@@ -690,7 +710,6 @@ def run_queue(args):
           JOIN chronique e ON e.id = a.entree_id
          WHERE e.nbmesures > 0 ORDER BY a.sortie_id, b.sortie_id LIMIT 1""")
     user, = first("SELECT id FROM utilisateur WHERE roleadmin = 'FCT' ORDER BY id LIMIT 1")
-    new_url = 'postgresql://bdoh@db:5432/{}?serverVersion=17&charset=utf8'
 
     def enqueue(base, chronique):
         """Une tâche de recalcul, écrite comme JobManager::enqueueChronicleComputation l'écrit."""
@@ -713,22 +732,13 @@ def run_queue(args):
 
     sides = {}
     for name, base, jobs in [('deux à la fois', 'bdoh_queue_parallel', 2), ('une à une', 'bdoh_queue_serial', 1)]:
-        for sql in [f'DROP DATABASE IF EXISTS {base} WITH (FORCE)', f'CREATE DATABASE {base} TEMPLATE {template}']:
-            subprocess.run(['docker', 'exec', NEW_SERVER, 'psql', '-U', 'postgres', '-v', 'ON_ERROR_STOP=1',
-                            '-qc', sql], check=True)
+        copy_base(template, base)
         for chronique in [parent, child, parent]:
             enqueue(base, chronique)
-        console = ['docker', 'exec', '-e', f'DATABASE_URL={new_url.format(base)}', 'bdoh-app', 'php', 'bin/console']
-        for _ in range(60):
-            if query(base, "SELECT count(*) FROM jms_jobs WHERE state IN ('new', 'pending', 'running')",
-                     NEW_SERVER)[0][0] == '0':
-                break
-            subprocess.run([*console, 'bdoh:jobs:run', '--max-runtime=10', f'--max-concurrent-jobs={jobs}',
-                            '--env=prod'], capture_output=True)
+        console = ['docker', 'exec', '-e', f'DATABASE_URL={NEW_URL.format(base)}', 'bdoh-app', 'php', 'bin/console']
+        drain(console, 'bdoh:jobs:run', base, jobs=jobs, rounds=60)
         today = datetime.date.today().isoformat()
-        sides[name] = {table: [re.sub(today + r'T[\d:]+', '<maintenant>', '\t'.join(row))
-                               for row in query(base, STATE_QUERIES[table].format(historique=0), NEW_SERVER)]
-                       for table in ['chronique', 'mesure', 'tauxremplissage']}
+        sides[name] = state_lines(base, 0, ['chronique', 'mesure', 'tauxremplissage'])
         # Les tâches, sans leur ordre, qui dépend de celui où elles finissent
         sides[name]['tâches'] = sorted(' '.join(row) for row in query(base, """
             SELECT command, args::text, state, exitcode FROM jms_jobs""", NEW_SERVER))
@@ -749,10 +759,154 @@ def run_queue(args):
     report.close()
 
 
+def multipart(fields, files):
+    """Le corps d'un formulaire multipart/form-data, et son type."""
+    boundary = '----bdoh-compare-' + hashlib.sha256(repr((fields, files)).encode()).hexdigest()[:16]
+    parts = []
+    for name, value in fields.items():
+        parts.append(f'--{boundary}\r\nContent-Disposition: form-data; name="{name}"\r\n\r\n{value}\r\n'.encode())
+    for name, (filename, content) in files.items():
+        parts.append(f'--{boundary}\r\nContent-Disposition: form-data; name="{name}"; filename="{filename}"\r\n'
+                     'Content-Type: text/plain\r\n\r\n'.encode() + content + b'\r\n')
+    parts.append(f'--{boundary}--\r\n'.encode())
+    return b''.join(parts), f'multipart/form-data; boundary={boundary}'
+
+
+def step_lines(site, status, headers, body):
+    """Une réponse d'étape d'import : du JSON dont les fragments HTML se lisent comme les pages."""
+    if not headers.get('Content-Type', '').startswith('application/json'):
+        return page_lines(site, status, headers, body)
+    lines = [f'statut {status}']
+    for key, value in sorted(json.loads(body).items()):
+        if isinstance(value, str) and '<' in value:
+            fragment = page_lines(site, 200, {'Content-Type': 'text/html'}, value.encode())[2:]
+            lines += [f'{key} :', *fragment]
+        else:
+            lines.append(f'{key} : {json.dumps(value, ensure_ascii=False, sort_keys=True)}')
+    return [line.replace(site, '<site>') for line in lines]
+
+
+def import_cases(base):
+    """Les imports à jouer, tirés de la base : les mesures de deux semaines de janvier 2024 d'une
+    chronique continue, au format BDOH, et leurs variantes, chacune décalée sur un mois de 2025
+    pour ne pas en recouvrir une autre ; deux sur la période existante, pour écraser ou garder."""
+    cid, slug, station, code, unite = query(base, f"""
+        SELECT c.id, c.slug, c.station, c.code, u.libelle FROM ({CHRONIQUES}) c
+          JOIN chronique ch ON ch.id = c.id JOIN unite u ON u.id = ch.unite_id
+         WHERE c.dtype = 'continue' AND EXISTS (SELECT 1 FROM mesure m WHERE m.chronique_id = c.id
+               AND m.date >= '2024-01-01' AND m.date < '2024-01-15')
+         ORDER BY c.id LIMIT 1""", NEW_SERVER)[0]
+
+    def measures(months):
+        return query(base, f"""
+            SELECT to_char(m.date + interval '1 hour' + interval '{months} month', 'DD/MM/YYYY HH24:MI:SS'),
+                   coalesce(m.valeur::text, '-9999'), q.code, coalesce(m.minimum::text, ''), coalesce(m.maximum::text, '')
+              FROM mesure m JOIN qualite q ON q.id = m.qualite_id
+             WHERE m.chronique_id = {cid} AND m.date >= '2024-01-01' AND m.date < '2024-01-15'
+             ORDER BY m.date""", NEW_SERVER)
+
+    def bdoh(rows, tz='UTC+01', unit=unite, st=station, minmax=False, eol='\n'):
+        head = ['Station;Fuseau;Chronique;Unite', f'{st};{tz};{code};{unit}',
+                'DateHeure;Valeur;Qualite' + (';Min;Max' if minmax else '')]
+        body = [';'.join(r if minmax else r[:3]) for r in rows]
+        return (eol.join(head + body) + eol).encode()
+
+    rows = lambda months: [list(r) for r in measures(months)]
+    cases = []
+    add = lambda name, content, import_type='keepExisting': cases.append((name, content, import_type))
+    add('nouvelle période', bdoh(rows(12)))
+    add('fins de ligne Windows', bdoh(rows(13), eol='\r\n'))
+    spaced = rows(14)
+    add('espaces autour des champs', bdoh([[f' {x} ' for x in r] for r in spaced]))
+    add('virgule décimale', bdoh([[r[0], r[1] if r[1] == '-9999' else f'{float(r[1]) + 0.5:g}'.replace('.', ','),
+                                   *r[2:]] for r in rows(15)]))
+    invalid = rows(16)
+    invalid[1][1] = 'abc'
+    add('valeur invalide', bdoh(invalid))
+    duplicated = rows(17)
+    add('date en double', bdoh([duplicated[0], *duplicated]))
+    add('fuseau UTC-05', bdoh(rows(18), tz='UTC-05'))
+    swapped = rows(19)
+    for r in swapped:
+        if r[1] != '-9999':
+            r[3], r[4] = str(float(r[1]) + 1), str(float(r[1]) - 1)
+    add('minimum au-dessus du maximum', bdoh(swapped, minmax=True))
+    future = rows(20)
+    future[-1][0] = '01/01/2030 00:00:00'
+    add('date future', bdoh(future))
+    unknown = rows(21)
+    unknown[0][2] = 'zz'
+    add('qualité inconnue', bdoh(unknown))
+    add('mauvaise unité', bdoh(rows(22), unit='inconnue'))
+    add('station inconnue', bdoh(rows(23), st='INCONNUE'))
+    changed = [[r[0], str(float(r[1]) + 1) if r[1] != '-9999' else r[1], *r[2:]] for r in rows(0)]
+    add('période existante, écraser', bdoh(changed), 'overwriteExisting')
+    add('période existante, garder', bdoh(rows(0)), 'keepExisting')
+    return cid, slug, cases
+
+
+def run_imports(args):
+    """Chaque import, étape par étape, par l'ancien code sur PostgreSQL 17 et par le nouveau, chacun
+    sur sa copie de BASE, au nom d'un gestionnaire de l'observatoire ; puis la file de tâches, et
+    l'état des deux copies."""
+    template = args.base
+    historique = query(template, 'SELECT coalesce(max(id), 0) FROM historique', NEW_SERVER)[0][0]
+    cid, slug, cases = import_cases(template)
+    cases = [c for c in cases if args.only in c[0]]
+    manager = query(template, f"""
+        SELECT u.email FROM utilisateur u JOIN role r ON r.utilisateur_id = u.id
+          JOIN observatoire o ON o.id = r.observatoire_id
+         WHERE r.valeur = 'gestionnaire' AND o.slug = '{slug}' AND (u.finacces IS NULL OR u.finacces > now())
+         ORDER BY u.id LIMIT 1""", NEW_SERVER)[0][0]
+    bases = {'ancien': 'bdoh_imports_old', 'nouveau': 'bdoh_imports_new'}
+    for base in bases.values():
+        copy_base(template, base)
+
+    report = Report('imports')
+    with old_17_on(bases['ancien']) as old_console, new_on(bases['nouveau'], template) as new_console:
+        sides = {'ancien': (SIDES['reference-17'], old_console, 'jms-job-queue:run'),
+                 'nouveau': (SIDES['new'], new_console, 'bdoh:jobs:run')}
+        clients = {name: Client(side, manager, slug) for name, (side, _, _) in sides.items()}
+
+        def play(name, case):
+            side, console, runner = sides[name]
+            client = clients[name]
+            title, content, import_type = case
+            ajax = {'X-Requested-With': 'XMLHttpRequest'}
+            post = lambda step, fields: client.get(f'/{slug}/admin/mesure/import/{step}',
+                                                   urllib.parse.urlencode(fields).encode(), ajax)
+            log = []
+            body, kind = multipart({'file-format': 'Bdoh'}, {'file': ('import.txt', content)})
+            response = client.get(f'/{slug}/admin/mesure/import/step2', body, {**ajax, 'Content-Type': kind})
+            log += ['== étape 2', *step_lines(side.url, *response)]
+            data = json.loads(response[2]) if response[0] == 200 else {}
+            if data.get('action') == 'step2':
+                # Les chroniques lues dans l'en-tête, gardées toutes, comme le fait le JavaScript
+                chroniques = re.findall(r'<li name="([^"]+)"', data['view'])
+                response = post('step3', {'timezone': '', **{f'chroniques[{i}]': c for i, c in enumerate(chroniques)}})
+                log += ['== étape 3', *step_lines(side.url, *response)]
+                data = json.loads(response[2]) if response[0] == 200 else {}
+            if data.get('action') == 'step3':
+                response = post('step4', {f'importTypes[{cid}]': import_type, 'propagate': 'propagate'})
+                log += ['== étape 4', *step_lines(side.url, *response)]
+            drain(console, runner, bases[name])
+            return log
+
+        for case in cases:
+            report.add(f'import {case[0]}', play('ancien', case), play('nouveau', case))
+        for name in sides:
+            sides[name] = state_lines(bases[name], historique)
+    for table in sides['ancien']:
+        report.add(f'état {table}', sides['ancien'][table], sides['nouveau'][table])
+    report.close()
+    print(f'Les instances lisent de nouveau {template}. Les deux copies restent pour examen :'
+          f' {bases["ancien"]} et {bases["nouveau"]}.')
+
+
 def main():
     global CASES_SERVER
     parser = argparse.ArgumentParser(description=__doc__.split('\n')[0])
-    parser.add_argument('what', choices=['pages', 'exports', 'state', 'queue'])
+    parser.add_argument('what', choices=['pages', 'exports', 'state', 'queue', 'imports'])
     parser.add_argument('--old', default='reference', choices=SIDES)
     parser.add_argument('--new', default='reference', choices=SIDES)
     parser.add_argument('--base', default='bdoh_small', help='base où tirer les cas')
@@ -762,7 +916,8 @@ def main():
     parser.add_argument('--profile', help='un seul profil (anonyme, utilisateur, gestionnaire, administrateur)')
     args = parser.parse_args()
     CASES_SERVER = args.server
-    {'pages': run_pages, 'exports': run_exports, 'state': run_state, 'queue': run_queue}[args.what](args)
+    {'pages': run_pages, 'exports': run_exports, 'state': run_state, 'queue': run_queue,
+     'imports': run_imports}[args.what](args)
 
 
 if __name__ == '__main__':

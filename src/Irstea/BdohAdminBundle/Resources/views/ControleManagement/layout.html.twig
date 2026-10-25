@@ -1,0 +1,29 @@
+{% extends 'layout.html.twig' %}
+{% from 'macros.html.twig' import pageTitle %}
+
+{% block title %}
+    {{ pageTitle('admin.controleImport'|trans) }}
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script src="{{ asset('assets/admin/controle-import.js') }}"></script>
+{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <link rel="stylesheet" href="{{ asset('assets/admin/measure-import.css') }}"/>
+{% endblock %}
+
+{% block breadcrumb %}
+    <ul class="breadcrumb">
+        <li><a href="{{ path('bdoh_home') }}">{{ 'home'|trans }}</a></li>
+        <li class="active">{{ 'admin.controleImport'|trans }}</li>
+    </ul>
+{% endblock %}
+
+{% block main %}
+    <div id="measure-import">
+        {% block step %}{% endblock %}
+    </div>
+{% endblock %}

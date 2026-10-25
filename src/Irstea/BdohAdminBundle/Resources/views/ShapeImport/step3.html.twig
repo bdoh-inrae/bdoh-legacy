@@ -1,0 +1,27 @@
+{% import '@IrsteaBdohConsult/macros.html.twig' as macros %}
+
+<h2 class="inactive">{{ 'shape.import.step.1'|trans }}</h2>
+<h2 class="inactive">{{ 'shape.import.step.2'|trans }}</h2>
+<h2 style="margin-bottom:1em;">{{ 'shape.import.step.3'|trans }}</h2>
+
+{% if stats is not empty %}
+    <table class="table well">
+        <thead>
+            <tr>
+                <th>{{ 'shape.import.info.shapeInsert'|trans({'%count%': stats[0]}) }}</th>
+                <th>{{ 'shape.import.info.shapeUpdate'|trans({'%count%': stats[1]}) }}</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>{{ stats[0] }}</td>
+                <td>{{ stats[1] }}</td>
+            </tr>
+        </tbody>
+    </table>
+{% else %}
+    {{ 'shape.import.info.noShapeImported'|trans }}
+{% endif %}
+
+<a href="{{ path('bdoh_admin_shape_import') }}" class="btn btn-default">{{ 'shape.import.action.newImport'|trans }}</a>
+<a href="{{ path('bdoh_home') }}" class="btn btn-default">{{ 'backToHome'|trans }}</a>

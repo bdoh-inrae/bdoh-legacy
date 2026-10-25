@@ -1,0 +1,19 @@
+<div id="format-description-template">
+
+    <h4 class="alert-heading">
+        {{ 'format'|trans }} {{ 'open_quote'|trans }}<i>{{ ('Bareme')|trans }}</i>{{ 'close_quote'|trans }}{{ 'deux_points'|trans }}
+    </h4>
+
+    {% if jeuQualite|lower == 'valid' %}
+        <ul name="valid">
+            <li><b>{{ 'transformation.bareme.import.entete'|trans }}</b>
+                <ul>
+                    {{ 'transformation.bareme.import.detail'|trans|raw }}
+                </ul>
+            </li>
+            {{ 'transformation.bareme.import.donnees'|trans|raw }}
+            {{ 'transformation.bareme.import.valid'|trans|raw }}
+            {{ 'transformation.bareme.import.commentaires'|trans|raw }}
+        </ul>
+    {% endif %}
+</div>

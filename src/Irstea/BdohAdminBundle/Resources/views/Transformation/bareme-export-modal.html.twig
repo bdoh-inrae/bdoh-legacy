@@ -1,0 +1,50 @@
+{% import 'macros.html.twig' as macros %}
+
+<!-- The modal for export -->
+<div class="modal-dialog" role="document">
+    <div class="modal-content">
+
+        <!-- Modal header -->
+        <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            <h1 class="modal-title" style="margin-bottom:0;" id="myModalLabel">{{ 'transformation.bareme.export.title' | trans }}</h1>
+        </div>
+
+        <form class="form-inline" id="form-bareme-export" action="{{ path('bdoh_admin_bareme_export') }}" method="post">
+
+            <!-- Modal body -->
+            <div class="modal-body">
+
+                <!-- Some information -->
+                <div class="alert alert-block alert-info" style="margin-bottom:0;">
+                    {{ 'transformation.bareme.export.help'|trans|raw }}
+                </div>
+
+                <div id="table-export-bareme-container" style="visibility:hidden">
+                    {% include '@IrsteaBdohAdmin/Transformation/bareme-export-table.html.twig' %}
+                </div>
+
+                <input type="hidden" name="baremes-export-info"/>
+                <input type="hidden" name="child-chronicle-name"/>
+
+                <div class="alert alert-block alert-danger" style="display:none" id="no-bareme-to-export">
+                    <!-- Format description -->
+                    {{ 'transformation.bareme.export.noSelection'|trans|raw }}
+                </div>
+            </div>
+            <!-- END_Modal body -->
+
+            <!-- Modal footer -->
+            <div class="modal-footer">
+
+                <div class="col-md-6 progress hide" style="margin-top:0.5em;">
+                    <div class="progress-bar"></div>
+                </div>
+
+                <!-- Submit and close buttons -->
+                {{ macros.submit('export'|trans) }}
+                <button type="button" class="btn" data-dismiss="modal" aria-hidden="true">{{ 'close'|trans }}</button>
+            </div>
+        </form>
+    </div>
+</div>

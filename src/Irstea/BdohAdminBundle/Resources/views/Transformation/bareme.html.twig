@@ -1,0 +1,42 @@
+<div class="bareme form-inline row">
+    <div class="input-group listeBareme">
+        <select class="form-control bareme col-xs-8" name="bareme">
+            <option value="-1"></option>
+            {% for bareme in baremeChoice %}
+                {% if bareme.observatoire is defined and bareme.observatoire %}
+                    <option value='{{ bareme.id }}' input-unit-id='{{ bareme.uniteentree.id }}'
+                            output-unit-id='{{ bareme.unitesortie.id }}'>
+                            {{ bareme.nom }} [{{ bareme.dateCreation|date('transformation.bareme.dateBareme'|trans, false) }}]
+                    </option>
+                {% endif %}
+            {% endfor %}
+            <option value="-1" disabled="disabled" class="bareme-select-separator">&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;</option>
+            {% for bareme in baremeChoice %}
+                {% if not(bareme.observatoire is defined) or not(bareme.observatoire) %}
+                    <option value='{{ bareme.id }}'>
+                        {{ ('transformation.bareme.baremeTechnique.'~bareme.nom)|trans }}
+                    </option>
+                {% endif %}
+            {% endfor %}
+        </select>
+    </div><!-- no space
+    --><div class="input-group">
+        <input type="text" class="form-control beginDate" required>
+    </div><!-- no space
+    --><div class="input-group divEndDate">
+        <input type="text" class="form-control endDate" required>
+    </div><!-- no space
+    --><div class="input-group pull-right">
+        <span class="input-group-btn">
+            <a class="addBareme btn btn-xs btn-default" href="javascript:void(0);">
+                <i class="glyphicon glyphicon-plus"></i>
+            </a>
+        </span>
+        <span class="input-group-btn">
+            <a class="removeBareme btn btn-xs btn-default" href="javascript:void(0);">
+                <i class="glyphicon glyphicon-minus"></i>
+            </a>
+        </span>
+    </div>
+    <label style="color: #0e90d2; font-size: 10px" ><br>{{ 'astuceDate'|trans }}</label>
+</div>

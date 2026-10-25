@@ -1,0 +1,20 @@
+<div class="alert alert-block alert-danger">
+    <h4 class="alert-heading">{{ 'errors'|trans }}{{ 'deux_points'|trans }}</h4>
+    <ul>
+        {% for error in errors %}
+            <li>{{ error|raw }}</li>
+        {% endfor %}
+    </ul>
+    <br/>
+    <div>{{ 'errorsMayComeFromEncoding'|trans }}</div>
+</div>
+
+<div class="alert alert-block alert-info">
+    <h4 class="alert-heading">
+        {{ 'format'|trans }} {{ 'open_quote'|trans }}<i>{{ ('import.'~idImporter)|trans }}</i>{{ 'close_quote'|trans }}{{ 'deux_points'|trans }}
+    </h4>
+    {% include '@IrsteaBdohAdmin/MeasureImport/format-descriptions.html.twig' %}
+</div>
+
+<a href="{{ path('bdoh_admin_measure_import') }}" class="btn btn-danger">{{ 'restart'|trans }} {{ 'import(the)'|trans }}</a>
+<a href="{{ path('bdoh_home') }}" class="btn">{{ 'backToHome'|trans }}</a>

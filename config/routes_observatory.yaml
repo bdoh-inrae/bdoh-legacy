@@ -5,6 +5,10 @@ irstea_bdoh_admin:
     resource: routes_pending/admin.yaml
     prefix:   /admin
 
+irstea_bdoh_admin_imports:
+    resource: "@IrsteaBdohAdminBundle/Resources/config/routing.yml"
+    prefix:   /admin
+
 bdoh_security_login_check:
     path: /login_check
 

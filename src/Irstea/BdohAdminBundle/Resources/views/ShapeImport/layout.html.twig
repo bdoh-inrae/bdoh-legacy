@@ -1,0 +1,31 @@
+{% extends 'layout.html.twig' %}
+{% from 'macros.html.twig' import pageTitle %}
+
+{% block title %}
+    {{ pageTitle('admin.shapeImport'|trans) }}
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script src="{{ asset('assets/admin/shape-import.js') }}"></script>
+{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <link rel="stylesheet" href="{{ asset('assets/admin/shape-import.css') }}" />
+{% endblock %}
+
+{% block breadcrumb %}
+    <ul class="breadcrumb">
+        <li><a href="{{ path('bdoh_home') }}">{{ 'home'|trans }}</a></li>
+        <li class="active">{{ 'admin.shapeImport'|trans }}</li>
+    </ul>
+{% endblock %}
+
+{% block main %}
+    <h1>{{ 'shape.import.title'|trans }}</h1>
+
+    <div id="shape-import">
+        {% block step %}{% endblock %}
+    </div>
+{% endblock %}

@@ -1,0 +1,94 @@
+{% import 'macros.html.twig' as macros %}
+
+<div class="pull-right">
+    {{ macros.cancelForm('bdoh_admin_measure_import_stop', ('cancel'|trans)~' '~('import(the)'|trans)) }}
+</div>
+
+<!-- The steps of measures import -->
+<p><h2><span class="inactive">{{ 'measure.import.step.1'|trans }}</span></h2></p>
+<p><h2>{{ 'measure.import.step.2'|trans }}</h2></p>
+<p><h2 class="inactive">{{ 'measure.import.step.3'|trans }}</h2></p>
+<p><h2 class="inactive" style="margin-bottom:1em;">{{ 'measure.import.step.4'|trans }}</h2></p>
+
+<hr/>
+
+<form class="form-horizontal" name="main" action="{{ path('bdoh_admin_measure_import_step3') }}" method="post">
+
+    <!-- Station -->
+    <div class="form-group">
+        <label class="control-label">{{ 'station'|trans }}</label>
+        <div class="controls controls-text">{{ station }}</div>
+    </div>
+
+    <!-- Timezone -->
+    <div class="form-group">
+        <label class="control-label">{{ 'timezone'|trans }}</label>
+        {% if timezone %}
+            <div class="controls controls-text">{{ timezone }}</div>
+        {% else %}
+            <div class="controls">
+                <div class="input-group col-md-3">
+                    <span class="input-group-addon">UTC</span>
+
+                    <select class="form-control" name="timezone">
+                        <option selected></option>
+                        {% for hour in 0..12 %}
+                            <option value="+{{ hour }}">+{{ "%02d"|format(hour) }}</option>
+                        {% endfor %}
+                        {% for hour in 1..12 %}
+                            <option value="-{{ hour }}">&minus;{{ "%02d"|format(hour) }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Chronique(s) -->
+    <div name="chroniques" class="form-group">
+        {# All 'chroniques' read #}
+        {% if chroniques %}
+            <label class="control-label">{{ 'measure.import.timeSeries'|trans }}</label>
+            <div class="controls controls-text">
+                <ol>
+                    {% for chronique in chroniques %}
+                        <li name="{{ chronique.code }}">{{ chronique }}</li>
+                    {% endfor %}
+                </ol>
+            </div>
+
+            {# No 'chronique' read #}
+        {% else %}
+            {# Info #}
+            <div class="alert alert-info alert-block">
+                {{ 'measure.import.help.chroniquesBox'|trans|raw }}
+            </div>
+            {# Columns list #}
+            <div name="out" class="well col-md-11" style="margin-left:0;">
+                <div><strong>{{ 'measure.import.fileColumns'|trans }}</strong></div>
+            </div>
+            {# 'Chroniques' list #}
+            <div name="in" class="well col-md-offset-1 col-md-11 pull-right">
+                <div><strong>{{ chroniquesBoxTxt }}</strong></div>
+            </div>
+        {% endif %}
+    </div>
+
+    {{ macros.submit }}
+
+    <div id="modalStep2" class="modal fade" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>{{ 'measure.import.analysisInProgress'|trans }}</h2>
+                </div>
+                <div class="modal-body" style="text-align:center;">
+                    <h2>{{ 'measure.import.canTakeAWhile'|trans }}</h2>
+                    <p>{{ 'measure.import.pleaseWait'|trans }}</p>
+                    <p><img src="{{ asset('/images/loader.gif') }}"/></p>
+                </div>
+            </div><!-- /.modal-content -->
+        </div><!-- /.modal-dialog -->
+    </div>
+
+</form>

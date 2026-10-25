@@ -1,0 +1,125 @@
+<div id="format-description">
+
+    <h4 class="alert-heading">
+        <hr>
+        {{ 'format'|trans }} {{ 'open_quote'|trans }}<i></i>{{ 'close_quote'|trans }}{{ 'deux_points'|trans }}
+    </h4>
+
+    <!-- =================================================================== -->
+    <ul name="Qjo">
+        {{ 'measure.import.formats.Qjo'|trans|raw }}
+    </ul>
+
+    <!-- =================================================================== -->
+    <ul name="Qtvar">
+        {{ 'measure.import.formats.Qtvar'|trans|raw }}
+    </ul>
+
+    <!-- =================================================================== -->
+    <ul name="AixPluie">
+        <li><b>Entête (1 ligne) :</b> "date ; pluie"</li>
+        <li><b>Données :</b> "JJ/MM/AAAA HH:MM:SS ; valeur"</li>
+    </ul>
+
+    <!-- =================================================================== -->
+    <ul name="AixDebitHauteur">
+        <li><b>Entête (1 ligne) :</b> "Date ; Hauteur(cm) ; débit(m3/s) ; Tarage"</li>
+        <li><b>Données :</b> "JJ/MM/AAAA HH:MM ; valeur ; valeur ; numéro de la courbe"</li>
+        <li><b>Valeurs manquantes ou spéciales :</b> -99.9 pour la hauteur ; -99 pour le débit ; NA pour le tarage. La colonne Tarage est
+            inexploitée par BDOH.
+        </li>
+    </ul>
+
+    <!-- =================================================================== -->
+    <ul name="AntonyChimie">
+        <li><b>Entête (2 lignes) :</b>
+            <ul>
+                <li>"! nom fichier"</li>
+                <li>"! code station ; date_debut ; heure_debut ; date_fin ; heure_fin ; nom_chronique (n fois) ; commentaire"</li>
+            </ul>
+        </li>
+        <li><b>Données :</b> "valeur ; JJ/MM/AAAA ; HH:MM ; JJ/MM/AAAA ; HH:MM ; valeur (n fois) ; commentaire"</li>
+        <li><b>Valeurs manquantes ou spéciales :</b> -9999</li>
+    </ul>
+
+    <!-- =================================================================== -->
+    <ul name="AntonyHuml2x">
+        <li><b>Entête (1 ligne) :</b> "!Date ; heure ; Theta1 ; Theta2 ; power ; code_validite"</li>
+        <li><b>Données :</b> "JJ/MM/AAAA ; HH:MM ; v1 ; v2 ; v3 ; code de 0 à 3"</li>
+        <li><b>Valeurs manquantes ou spéciales :</b> -9999. La colonne "power" n'est pas traitée par BDOH.</li>
+    </ul>
+
+    <!-- =================================================================== -->
+    <ul name="AntonyHutdr">
+        <li><b>Entête (1 ligne) :</b> Inexploité.</li>
+        <li><b>Données :</b> Champs de taille fixe. Généralement 10, mais parfois 24. Dans les champs d'intérêt :
+            <ul>
+                <li>le 3<sup>ème</sup> champ est le nom de la station ; le 9<sup>ème</sup> champ est le numéro de la voie. L'association des
+                    deux définit une chronique ;
+                </li>
+                <li>le 14<sup>ème</sup> champ est dateHeure, au format JJ/MM/AAAA (H)H:MM:SS ;</li>
+                <li>le 4<sup>ème</sup> champ est la valeur</li>
+                <li>le 15<sup>ème</sup> champ est la qualité ; ne sont constatées que 0 ou -9999.</li>
+            </ul>
+            Les autres champs sont inexploités par BDOH.
+        <li><b>Valeurs manquantes ou spéciales :</b> -9.999, -9999.</li>
+    </ul>
+
+    <!-- =================================================================== -->
+    <ul name="AntonyMeteoJournalier">
+        <li><b>Entête (1 ligne) :</b> "!Date ; NomParametre (unite) (n fois)"</li>
+        <li><b>Données :</b> "JJ/MM/AAAA ; valeur (n fois)</li>
+        <li><b>Valeurs manquantes ou spéciales :</b> -9999</li>
+    </ul>
+
+    <!-- =================================================================== -->
+    <ul name="AntonyMeteoHoraire">
+        <li><b>Entête (1 ligne) :</b> "!Date ; Heure UTC ; NomParametre (unite) (n fois)"</li>
+        <li><b>Données :</b> "JJ/MM/AAAA ; HH UTC ; valeur (n fois)</li>
+        <li><b>Valeurs manquantes ou spéciales :</b> -9999</li>
+    </ul>
+
+    <!-- =================================================================== -->
+    <ul name="AntonyPiezo">
+        <li><b>Entête (1 ligne) :</b> "!Date ; Heure ; Profondeur (mm) ; Code_qualité"</li>
+        <li><b>Données :</b> "JJ/MM/AAAA ; HH:MM ; valeur (négative) ; code de 0 à 3"</li>
+        <li><b>Valeurs manquantes ou spéciales :</b> -9999</li>
+    </ul>
+
+    <!-- =================================================================== -->
+    <ul name="AntonyPluie">
+        <li><b>Entête (1 ligne) :</b> "!DateHeure ; P_brute (mm) ; Lacune ; P_Reconst (mm) ; Nb_Ref"</li>
+        <li><b>Données (horaire) :</b> "AAAA/MM/JJ HH:MM ; valeur ; 0 ou 1 ; valeur ; nombre"</li>
+        <li><b>Données (journalière) :</b> "AAAA/MM/JJ ; valeur ; 0 ou 1 ; valeur ; nombre"</li>
+        <li><b>Valeurs manquantes ou spéciales :</b> -9.999 ; 1 pour Lacune ; BDOH ne conserve que P_Reconst.</li>
+    </ul>
+
+    <!-- =================================================================== -->
+    <ul name="GrenobleDom">
+        {{ 'measure.import.formats.GrenobleDom'|trans|raw }}
+    </ul>
+
+    <!-- =================================================================== -->
+    <ul name="LyonBiche">
+        <li>
+            <b>Entête (10 ou 11 lignes) :</b>
+            Séparateur ';' BDOH n'utilise que le Code Station, attendu en 2ème ligne
+            et le Fuseau horaire, attendu selon les cas en 9ème ou 10ème ligne.
+        </li>
+        <li>
+            <b>Données :</b> "JJ/MM/AAAA HH:MM:SS ; valeur ; qualité".<br>
+            La ligne contient éventuellement des ";" surnuméraires.
+        </li>
+        <li><b>Valeurs manquantes ou spéciales :</b> -999.</li>
+    </ul>
+
+    <!-- =================================================================== -->
+    <ul name="Bdoh">
+        {{ 'measure.import.formats.Bdoh'|trans|raw }}
+    </ul>
+
+    <!-- =================================================================== -->
+    <ul name="BdohPlage">
+        {{ 'measure.import.formats.BdohPlage'|trans|raw }}
+    </ul>
+</div>

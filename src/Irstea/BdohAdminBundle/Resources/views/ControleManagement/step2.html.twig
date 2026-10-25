@@ -1,0 +1,43 @@
+{% import 'macros.html.twig' as macros %}
+
+<h1>{{ 'controle.import.title'|trans }}</h1>
+
+<div class="pull-right">
+    {{ macros.cancelForm('bdoh_admin_controle_import_stop', ('cancel'|trans)~' '~('import(the)'|trans)) }}
+</div>
+
+<!-- The steps of controles import -->
+<p><h2><span class="inactive">{{ 'controle.import.step.1'|trans }}</span></h2></p>
+<p><h2>{{ 'controle.import.step.2'|trans }}</h2></p>
+<p><h2 class="inactive" style="margin-bottom:1em;">{{ 'controle.import.step.3'|trans }}</h2></p>
+
+<form class="form-inline" name="import" action="{{ path('bdoh_admin_controle_import_step3') }}" method="post">
+    {# For each 'chronique' : displays information, validation form and viewer #}
+
+    {% if chroniqueData %}
+
+        {% set prefix              = chronique.id %}
+        {% set informationId       = 'information' %}
+        {% set viewerId            = 'viewer' %}
+
+        {# Variables for validation form #}
+        {% set importTypeName      = 'importType' %}
+        {% set doNotImportId       = 'doNotImport' %}
+        {% set keepExistingId      = 'keepExistingId' %}
+        {% set overwriteExistingId = 'overwriteExistingId' %}
+
+        <div class="panel panel-default">
+            <!-- Header -->
+            <div class="panel-heading">
+                <h3>{{ chronique }}</h3>
+                <strong>{{ macros.i18nEntityLabel(chronique, 'libelle') }}</strong> <em>[{{ chronique.unite }}]</em>
+            </div>
+
+            <!-- Tabs content -->
+            <div class="panel-body">
+                {% include '@IrsteaBdohAdmin/ControleManagement/step2-info-and-validation.html.twig' %}
+            </div>
+        </div>
+    {% endif %}
+    {{ macros.submit(('validate'|trans)~' '~('import(the)'|trans)) }}
+</form>

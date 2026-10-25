@@ -1,0 +1,46 @@
+{% import '@IrsteaBdohConsult/macros.html.twig' as macros %}
+
+<!-- The steps of measures import -->
+<p><h2 class="inactive">{{ 'measure.import.step.1'|trans }}</h2></p>
+<p><h2 class="inactive">{{ 'measure.import.step.2'|trans }}</h2></p>
+<p><h2 class="inactive">{{ 'measure.import.step.3'|trans }}</h2></p>
+<p><h2 style="margin-bottom:1em;">{{ 'measure.import.step.4'|trans }}</h2></p>
+
+{% if stats is not empty %}
+    <table class="table well">
+        <thead>
+        <tr>
+            <th>{{ 'measure.import.timeSeries'|trans }}</th>
+            <th>{{ 'measure.import.info.measuresInsert'|trans }}</th>
+            <th>{{ 'measure.import.info.measuresDelete'|trans }}</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% set hasInserts = 0 %}
+        {% for chroniqueTxt, stat in stats %}
+            <tr>
+                <td>{{ macros.chronique_view(stat.entity, chroniqueTxt, 'text') }}</td>
+                <td>{{ stat.insert }}</td>
+                <td>{{ stat.delete }}</td>
+                {% set hasInserts = hasInserts + stat.insert %}
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    {# If there were any inserts on 'ChroniqueContinue' => displays a warning #}
+    {% if hasInserts > 0 and chroniqueType == 'Continue' %}
+        <div class="alert alert-info">
+            {{ 'measure.import.info.computingOfFillingRates'|trans|raw }}
+            {% if is_granted('JOB_LIST', currentObservatoire()) %}
+                <br/>{{ 'measure.import.info.jobPage(%jobPageLink%)'|trans({'%jobPageLink%':jobPageLink})|raw }}
+            {% endif %}
+        </div>
+    {% endif %}
+{% else %}
+    {{ 'measure.import.info.noMeasuresImported'|trans }}
+{% endif %}
+
+
+<a href="{{ path('bdoh_admin_measure_import') }}" class="btn btn-default">{{ 'measure.import.action.newImport'|trans }}</a>
+<a href="{{ path('bdoh_home') }}" class="btn btn-default">{{ 'backToHome'|trans }}</a>

@@ -1,0 +1,91 @@
+<!-- Tab of information and validation form -->
+<div>
+    <!-- Overlap -->
+    <div class="alert alert-warning col-md-3" style="padding:10px 0 5px;text-align:center;">
+        <h4 class="alert-heading">
+            {{ 'overlap'|trans }}
+            <i class="overlapHelp fam-help" data-original-title="{{ 'overlap'|trans }}"
+               data-content="{{ ('controle.import.help.overlap.' ~ chroniqueData.overlap) | trans }}" style="vertical-align:-3px;">
+            </i>
+        </h4>
+        <img src="{{ asset('images/admin/overlap_' ~ chroniqueData.overlap ~ '.png') }}"/>
+    </div>
+
+    <div class="col-md-21">
+        <!-- 'Chronique' information -->
+        <div class="col-md-12">
+            <p class="import-title"><strong>{{ 'existing'|trans }}</strong></p>
+
+            <!-- Dates of first and last existing controles -->
+
+            <div class="col-md-24">
+                <strong>{{ 'begin'|trans }}{{ 'deux_points'|trans }}</strong>
+                <span style="color:red;">
+                    {{ chroniqueData.existingFirstDate ? (chroniqueData.existingFirstDate | date('transformation.bareme.dateBareme'|trans, false)) : ('empty'|trans) }}
+                </span>
+            </div>
+
+            <div class="col-md-24">
+                <strong>{{ 'end'|trans }}{{ 'deux_points'|trans }}</strong>
+                <span style="color:red;">
+                    {{ chroniqueData.existingLastDate ? (chroniqueData.existingLastDate | date('transformation.bareme.dateBareme'|trans, false)) : ('empty'|trans) }}
+                </span>
+            </div>
+
+            <div class="col-md-24"><em>{{ 'UTC(in)'|trans }}</em></div>
+
+            <div class="col-md-24">
+                <strong>{{ 'controle.import.info.nbControles'|trans }}{{ 'deux_points'|trans }}</strong>
+                <span style="color:red;">{{ nbPointControle }}</span>
+            </div>
+
+        </div>
+        <!-- END_'Chronique' information -->
+
+        <!-- Import information -->
+        <div class="col-md-12">
+            <p class="import-title"><strong>{{ 'import'|trans }}</strong></p>
+
+            <!-- Dates of first and last controles to import -->
+            <div class="col-md-24">
+                <strong>{{ 'begin'|trans }}{{ 'deux_points'|trans }}</strong>
+                <span style="color:green;">
+                    {{ chroniqueData.importerFirstDate | date('transformation.bareme.dateBareme'|trans, false) }}
+                </span>
+            </div>
+
+            <div class="col-md-24">
+                <strong>{{ 'end'|trans }}{{ 'deux_points'|trans }}</strong>
+                <span style="color:green;">
+                    {{ chroniqueData.importerLastDate | date('transformation.bareme.dateBareme'|trans, false) }}
+                </span>
+            </div>
+
+            <div class="col-md-24">
+                <em>{{ 'measure.import.help.timezoneToUTC'|trans }}</em>
+            </div>
+
+            <div class="col-md-24">
+                <strong>{{ 'controle.import.info.nbControles'|trans }}{{ 'deux_points'|trans }}</strong>
+                <span style="color:green;">{{ nbNewPointControle }}</span>
+            </div>
+        </div>
+    </div>
+    <!-- END_Import information -->
+
+    <!-- Validation form -->
+    <div class="col-md-24 alert alert-warning" style="margin-top:0.5em;">
+        <h4 class="alert-heading">{{ 'controle.import.question.importType'|trans }}</h4>
+
+        <input type="radio" name="{{ importTypeName }}" value="doNotImport" id="{{ doNotImportId }}">
+        <label for="{{ doNotImportId }}">{{ 'controle.import.action.doNotImport'|trans }}</label>
+        <br>
+
+        <input type="radio" name="{{ importTypeName }}" value="import" id="{{ overwriteExistingId }}">
+        <label style="color:red;"
+               for="{{ overwriteExistingId }}">{{ 'controle.import.action.overwriteExisting'|trans }}</label>
+        <br>
+    </div>
+    <!-- END_Validation form -->
+</div>
+<!-- END_Tab of information and validation form -->

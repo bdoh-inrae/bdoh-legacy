@@ -1,0 +1,55 @@
+{% import 'macros.html.twig' as macros %}
+
+{% set modalId = 'bareme-import' %}
+
+<div class="modal-dialog" role="document">
+    <div class="modal-content">
+        <!-- Modal header -->
+        <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+            <h1 class="modal-title" style="margin-bottom:0;" id="myModalLabel">{{ 'transformation.bareme.import.title' | trans }}</h1>
+        </div>
+
+        <form class="form-inline" id="form-{{ modalId }}" name="form-{{ modalId }}" action="{{ path('bdoh_admin_bareme_import_step3') }}"
+              accesskey="" accept-charset="" method="post" enctype="multipart/form-data">
+
+            <!-- Modal body -->
+            <div class="modal-body">
+                <div class="pull-right">
+                    {{ macros.cancelForm('bdoh_admin_bareme_import_stop', ('cancel'|trans)~' '~('import(the)'|trans)) }}
+                </div>
+
+                <!-- The steps of controles import -->
+                <h3 style="margin-top:0;" class="inactive">{{ 'transformation.bareme.import.step.1'|trans }}</h3>
+                <h3>{{ 'transformation.bareme.import.step.2'|trans }}</h3>
+                <h3 class="inactive" style="margin-bottom:1em;">{{ 'transformation.bareme.import.step.3'|trans }}</h3>
+
+                <!-- Some information -->
+                <div class="alert alert-block alert-info">
+                    <h4 class="alert-heading">{{ 'information'|trans }}{{ 'deux_points'|trans }}</h4>
+                    <ul>
+                        <li>{{ 'transformation.bareme.import.help.quitWarning'|trans|raw }}</li>
+                    </ul>
+                    <hr/>
+                    <b>{{ 'transformation.bareme.import.stats(%nbDataLines%)'|trans({'%nbDataLines%':nbLines}) }}</b>
+                </div>
+
+            </div>
+            <!-- END_Modal body -->
+
+            <!-- Modal footer -->
+            <div class="modal-footer">
+
+                <!-- Progress bar : displayed only when uploading a file -->
+                <div class="col-md-6 progress hide" style="margin-top:0.5em;">
+                    <div class="progress-bar"></div>
+                </div>
+
+                <!-- Submit and close buttons -->
+                {{ macros.submit }}
+                <button type="button" class="btn" data-dismiss="modal" aria-hidden="true">{{ 'close'|trans }}</button>
+            </div>
+
+        </form>
+    </div>
+</div>

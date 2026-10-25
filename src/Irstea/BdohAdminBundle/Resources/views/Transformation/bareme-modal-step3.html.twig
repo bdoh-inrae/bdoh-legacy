@@ -1,0 +1,40 @@
+{% import 'macros.html.twig' as macros %}
+
+<div class="modal-dialog" role="document">
+    <div class="modal-content">
+        <!-- Modal header -->
+        <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+            <h1 class="modal-title" style="margin-bottom:0;" id="myModalLabel">{{ 'transformation.bareme.import.title' | trans }}</h1>
+        </div>
+
+        <!-- Modal body -->
+        <div class="modal-body">
+
+            <!-- The steps of controles import -->
+            <h3 style="margin-top:0;" class="inactive">{{ 'transformation.bareme.import.step.1'|trans }}</h3>
+            <h3 class="inactive">{{ 'transformation.bareme.import.step.2'|trans }}</h3>
+            <h3 style="margin-bottom:1em;">{{ 'transformation.bareme.import.step.3'|trans }}</h3>
+
+            <div class="alert alert-block alert-info">
+                <h4 class="alert-heading">{{ 'information'|trans }}{{ 'deux_points'|trans }}</h4>
+                <ul>
+                    <li>{{ 'transformation.bareme.import.nom'|trans }}<b>{{ summary.nom }}</b></li>
+                    <li>{{ 'transformation.bareme.import.uniteEntree'|trans }}<b>{{ summary.uniteEntree }}</b></li>
+                    <li>{{ 'transformation.bareme.import.uniteSortie'|trans }}<b>{{ summary.uniteSortie }}</b></li>
+                    <li>{{ 'transformation.bareme.import.commentaire'|trans }}<b>{{ summary.commentaire }}</b></li>
+                </ul>
+                <hr/>
+                <b>{{ 'transformation.bareme.import.success'|trans }}</b>
+            </div>
+
+        </div>
+        <!-- END_Modal body -->
+
+        <!-- Modal footer -->
+        <div class="modal-footer">
+            <!-- Close button -->
+            <button type="button" class="btn" data-dismiss="modal" aria-hidden="true">{{ 'close'|trans }}</button>
+        </div>
+    </div>
+</div>

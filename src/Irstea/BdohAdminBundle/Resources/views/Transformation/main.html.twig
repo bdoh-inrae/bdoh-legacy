@@ -1,0 +1,163 @@
+{% extends 'layout.html.twig' %}
+{% import 'macros.html.twig' as macros %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script src="{{ asset('assets/admin/transformation.js') }}"
+            data-chroniques-list="{{ path('bdoh_admin_get_chronique_calculee') | e('html_attr') }}"
+            data-chroniques-get="{{ path('bdoh_consult_chronique', {'station': '_codeStation_', 'chronique': '_codeChronique_'} )
+            | e('html_attr') }}"
+            data-baremes-export="{{ path('bdoh_admin_get_baremes_export') | e('html_attr') }}"
+    ></script>
+{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <link rel="stylesheet" href="{{ asset('assets/admin/transformation.css') }}"/>
+{% endblock %}
+
+{% block title %}
+    {{ macros.pageTitle('CalculChroniques'|trans) }}
+{% endblock %}
+
+{% block breadcrumb %}
+    <ul class="breadcrumb">
+        <li><a href="{{ path('bdoh_home') }}">{{ 'home'|trans }}</a></li>
+        <li class="active">{{ 'CalculChroniques'|trans }}</li>
+    </ul>
+{% endblock %}
+
+{% block main %}
+
+<h1>{{ 'CalculChroniques'|trans }}</h1>
+
+<form class="form-horizontal" name="main" action="{{ path('bdoh_admin_save_transformation') }}"
+      method="post" enctype="multipart/form-data" id="formTransformation">
+
+    <div id="chroniqueFille">
+        <div class="form-group">
+            <label for="chroniqueCalculee" class="col-sm-4 control-label">{{ 'ChroniqueCalculee'|trans }}</label>
+            <div class="col-md-8">
+                <select id="chroniqueCalculee" name="chroniqueCalculee" class="form-control">
+                    <option value="-1">-</option>
+                    {% for station in stations|filter(station => chroniquesFilles[station.id] is defined) %}
+                        <optgroup label="{{ station.code }}">
+                            {% for chroniqueFille in chroniquesFilles[station.id] %}
+                                <option value="{{ chroniqueFille.id }}" unit-id="{{ chroniqueFille.unite.id }}">
+                                    {{ chroniqueFille }}
+                                </option>
+                            {% endfor %}
+                        </optgroup>
+                    {% endfor %}
+                </select>
+            </div>
+            <div id="coefficientDiv" class="col-md-12" style="text-align:right;">
+                <label for="coefficient" class="control-label" style="padding-right:5px;">
+                    {{ 'coefficientMultiplicateur'|trans }}
+                    <sup title="{{ 'transformation.help.meaning-coefficient'|trans }}" id="coefficient-help">(?)</sup>
+                </label>
+                <div style="display:inline-block;width:66%;">
+                    <input type="text" class="form-control" id="coefficient" name="coefficient"
+                           pattern="-?[0-9]+(\.[0-9]+)?(e-?[0-9]+)?"/>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <div id="uniteDiv">
+                <label for="uniteChroniqueFille" class="col-sm-4 control-label">{{ 'unite'|trans }}</label>
+                <div class="col-md-8">
+                    <p id="uniteChroniqueFille" class="form-control-static"></p>
+                </div>
+            </div>
+
+            <div id="majDiv">
+                <label for="majChroniqueFille" class="col-sm-4 control-label">{{ 'miseAJour'|trans }}</label>
+                <div class="col-md-8">
+                    <p id="majChroniqueFille" class="form-control-static"></p>
+                </div>
+            </div>
+        </div>
+
+        <div id="genealogieDiv" class="form-group">
+            <label for="genealogie" class="col-sm-4 control-label">{{ 'genealogie'|trans }}</label>
+            <div class="col-md-20">
+                <textarea id="genealogie" name="genealogie" class="form-control" rows="3"></textarea>
+            </div>
+        </div>
+
+        <div id="genealogieEnDiv" class="form-group">
+            <label for="genealogieEn" class="col-sm-4 control-label">{{ 'genealogieEn'|trans }}</label>
+            <div class="col-md-20">
+                <textarea id="genealogieEn" name="genealogieEn" class="form-control" rows="3"></textarea>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="form-group" id="propagateGroup">
+        <div class="col-md-20 col-sm-offset-4">
+            <input id="propagateId" name="propagate" value="propagate" type="checkbox" checked="checked" style="vertical-align:-3px;"/>
+            <label for="propagateId">
+                <strong><span id="propagateSpanId"></span>
+                    <i id="propagateHelpId" class="childrenHelp fam-help" data-original-title="" data-content="" style="vertical-align:-3px;"></i>
+                </strong>
+            </label>
+        </div>
+    </div>
+
+    <div class="row">
+        <div id="chroniqueMerePrincipale" class="col-md-12">
+            {{ include('@IrsteaBdohAdmin/Transformation/chroniqueMere.html.twig',
+                {block: 'Principale', stations: stations, chroniqueChoice: chroniques, valueLimitPolicies: valueLimitPolicies},
+                with_context = false) }}
+        </div>
+        <div id="chroniqueMereSecondaire" class="col-md-12">
+            {{ include('@IrsteaBdohAdmin/Transformation/chroniqueMere.html.twig',
+                {block: 'Secondaire', stations: stations, chroniqueChoice: chroniques, valueLimitPolicies: valueLimitPolicies},
+                with_context = false) }}
+        </div>
+    </div>
+
+    <input type="hidden" id="jeuBaremePrincipale" name="jeuBaremePrincipale"/>
+    <input type="hidden" id="jeuBaremeSecondaire" name="jeuBaremeSecondaire"/>
+    <div id="btnDiv">
+        {{ macros.submit('transformation.saveAndCompute'|trans, 'btn btn-success') }}
+        {{ macros.reset('transformation.cancelModifications'|trans, 'btn btn-danger') }}
+    </div>
+
+</form>
+
+<template id="templateLineBareme">
+    {{ include('@IrsteaBdohAdmin/Transformation/bareme.html.twig', {baremeChoice: baremes}) }}
+</template>
+
+<div class="modal fade" id="bareme-import" tabindex="-1" role="dialog" aria-labelledby="bareme-import">
+</div>
+
+<div id="bareme-modal-step1-template" style="display:none;">
+    {% include '@IrsteaBdohAdmin/Transformation/bareme-modal.html.twig' %}
+</div>
+
+<div class="modal fade" id="bareme-export" tabindex="-1" role="dialog" aria-labelledby="bareme-import">
+    {% include '@IrsteaBdohAdmin/Transformation/bareme-export-modal.html.twig' %}
+</div>
+
+<div class="alert alert-block alert-danger" id="errors-transformation" style="display:none;margin-top:1em;margin-bottom:0;">
+    <h4 class="alert-heading">{{ 'errors'|trans }}{{ 'deux_points'|trans }}</h4>
+    <div id="errors-transformation-details"></div>
+</div>
+
+<div class="alert alert-block alert-success" id="submitted-transformation" style="display:none;margin-top:1em;margin-bottom:0;">
+    <a class="close" id="submitted-close">&times;</a>
+    <strong id="submitted-info">
+        {{ 'transformation.submitted.submitted'|trans|raw }}
+        {% if is_granted('JOB_LIST', currentObservatoire()) %}
+            <br/>{{ 'transformation.submitted.seeJobPage'|trans|raw }}
+        {% endif %}
+    </strong>
+</div>
+
+<div style="display:none;" id="div-confirm-computation">{{ 'transformation.confirmComputation'|trans }}</div>
+
+{% endblock %}

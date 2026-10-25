@@ -1,0 +1,21 @@
+<div class="modal-body">
+    <div class="alert alert-block alert-danger">
+        <h4 class="alert-heading">{{ 'errors'|trans }}{{ 'deux_points'|trans }}</h4>
+        <ul>
+            {% for error in errors %}
+                <li>{{ error|raw }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <div class="alert alert-block alert-info">
+        {% include '@IrsteaBdohAdmin/Transformation/format-descriptions.html.twig' %}
+    </div>
+</div>
+
+<div class="modal-footer">
+    <div class="pull-left">
+        <a href="javascript:void(0);" class="btn btn-default">{{ 'transformation.bareme.import.newImport'|trans }}</a>
+    </div>
+    <button type="button" class="btn" data-dismiss="modal" aria-hidden="true">{{ 'close'|trans }}</button>
+</div>

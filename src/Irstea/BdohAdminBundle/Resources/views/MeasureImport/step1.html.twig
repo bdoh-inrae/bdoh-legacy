@@ -1,0 +1,61 @@
+{% import 'macros.html.twig' as macros %}
+{% extends '@IrsteaBdohAdmin/MeasureImport/layout.html.twig' %}
+
+{% block step %}
+
+    <!-- The steps of measures import -->
+    <p><h2>{{ 'measure.import.step.1'|trans }}</h2></p>
+    <p><h2 class="inactive">{{ 'measure.import.step.2'|trans }}</h2></p>
+    <p><h2 class="inactive">{{ 'measure.import.step.3'|trans }}</h2></p>
+    <p><h2 class="inactive" style="margin-bottom:1em;">{{ 'measure.import.step.4'|trans }}</h2></p>
+
+
+    <form class="form-inline" name="main" action="{{ path('bdoh_admin_measure_import_step2') }}"
+          method="post" enctype="multipart/form-data">
+
+        <!-- Some information -->
+        <div class="alert alert-block alert-info">
+            <h4 class="alert-heading">{{ 'information'|trans }}{{ 'deux_points'|trans }}</h4>
+            <ul>
+                <li>{{ 'measure.import.help.quitWarning'|trans|raw }}</li>
+                <li>{{ 'measure.import.help.file.onlyOneStation'|trans|raw }}</li>
+                <li>{{ 'measure.import.help.file.bigInZip'|trans|raw }}</li>
+                <li>{{ 'measure.import.help.file.sizeLimit'|trans|raw }}</li>
+            </ul>
+
+            <!-- Format description -->
+            {% include '@IrsteaBdohAdmin/MeasureImport/format-descriptions.html.twig' %}
+        </div>
+
+        <!-- Form -->
+
+        <!-- File format -->
+        <div class="form-group" style="margin-right:1em;">
+            <label for="file-format">{{ 'format'|trans }}</label>&nbsp;
+            <select id="file-format" name="file-format" class="form-control">
+                <option selected></option>
+                {% for format in fileFormats %}
+                    <option value="{{ format }}">{{ ('import.'~format)|trans }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- File -->
+        <label>{{ 'file'|trans }}</label>&nbsp;
+
+        <div class="form-group">
+            <input id="file-import" name="file" type="file"/>
+        </div>
+
+        <div class="form-group">
+            {{ macros.submit }}
+        </div>
+
+        <!-- Progress bar : displayed only when uploading a file -->
+        <div class="col-md-6 progress hide" style="margin-top:0.5em;">
+            <div class="progress-bar"></div>
+        </div>
+
+    </form>
+
+{% endblock %}

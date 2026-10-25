@@ -1,0 +1,81 @@
+<div class="box">
+    <h4>{{ 'transformation.help.selectionner-chronique-mere' | trans }}</h4>
+    <div class="row">
+        <span class="col-md-4">{{ 'Station'|trans }}{{ 'deux_points'|trans }}</span>
+        <select id='selectStation{{ block }}' class="form-control" style="margin-bottom:2px">
+            <option value="-1"></option>
+            {% for station in stations %}
+                <option value='{{ station.id }}'>{{ station.nom }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="row">
+        <span class="col-md-4">{{ 'Chronique'|trans }}{{ 'deux_points'|trans }}</span>
+        <select id='selectChroniqueMere{{ block }}' name='selectChroniqueMere{{ block }}' class="form-control">
+            <option value="-1"></option>
+            {% for stationId, stationChroniques in chroniqueChoice %}
+                {% for chronique in stationChroniques %}
+                    <option value='{{ chronique.id }}' unit-id='{{ chronique.unite.id }}' station-id='{{ stationId }}'
+                            {% if chronique.allowValueLimits %}allow-limits='true'{% endif %}>
+                        {{ chronique.code }}
+                    </option>
+                {% endfor %}
+            {% endfor %}
+        </select>
+        <input type="hidden" name="selectChroniqueMere{{ block }}" id="hiddenChroniqueMere{{ block }}"/>
+    </div>
+
+    <div id="div-value-limits-{{ block }}">
+        <hr/>
+        <h4>{{ 'valueLimitTransformationType'|trans }}</h4>
+        <div class="form-group row" style="margin-left:-5px;margin-right:-5px;">
+            <div class="col-sm-12" style="padding-left:0;">
+                <select class="form-control" id='valueLimits{{ block }}' name='valueLimits{{ block }}'>
+                    {% for policy in valueLimitPolicies %}
+                        <option value='{{ policy }}'>{{ policy|trans }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-sm-12" id="div-limit-placeholder-{{ block }}">
+                <label for="limitPlaceholder{{ block }}" style="font-weight:normal;">{{ 'valueLimitPlaceholder'|trans }}{{ 'deux_points'|trans }}</label>
+                <div style="display:inline-block;">
+                    <input class="form-control" type="text" id="limitPlaceholder{{ block }}" name="limitPlaceholder{{ block }}"
+                       pattern="-?[0-9]+(\.[0-9]+)?(e-?[0-9]+)?" style="width:75px"/>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="bareme{{ block }}">
+        <hr/>
+        <div class="row">
+            <div class="col-md-8">
+                <h4>{{ 'transformation.jeu-baremes' | trans }}</h4>
+            </div>
+            <div class="col-md-16" style="text-align:right;padding-right:0;">
+                <a class="btn btn-xs btn-success" data-toggle="modal" data-target="#bareme-import" data-backdrop="static" data-keyboard="false">
+                    {{ 'transformation.bareme.new' | trans }}
+                </a>
+                <a class="btn btn-xs btn-info btn-open-modal" id="exportBareme{{ block }}" data-toggle="modal">
+                    {{ ('transformation.bareme.export.doExport') | trans }}
+                </a>
+            </div>
+        </div>
+        <div class="listeBaremes{{ block }}" block="{{ block }}"></div>
+    </div>
+    <div class="form-group row div-delai-propagation">
+        <hr/>
+        <div class="col-sm-16">
+            <label for="delaiPropagation{{ block }}" style="padding-right:5px;">
+                {{ 'transformation.delaiPropagation'|trans }}
+                <sup class="help-delay" title="{{ 'transformation.helpDelaiPropagation'|trans }}">(?)</sup>
+            </label>
+            <div style="display:inline-block;">
+                <input class="form-control" type="text" id="delaiPropagation{{ block }}" name="delaiPropagation{{ block }}"
+                       pattern="-?[0-9]+(\.[0-9]+)?(e-?[0-9]+)?" style="width:75px"/>
+                <input type="hidden" name="delaiPropagation{{ block }}" id="hiddenDelaiPropagation{{ block }}"/>
+            </div>
+        </div>
+    </div>
+    <div style="margin-top:15px;"></div>
+</div>

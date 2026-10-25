@@ -1,0 +1,142 @@
+<!-- Tab of information and validation form -->
+<div>
+    <!-- Overlap -->
+    <div class="alert alert-warning col-md-3" style="padding:10px 0 5px;text-align:center;">
+        <h4 class="alert-heading">
+            {{ 'overlap'|trans }}
+            <i class="overlapHelp fam-help" data-original-title="{{ 'overlap'|trans }}"
+               data-content="{{ ('measure.import.help.overlap.' ~ chroniqueData.overlap) | trans }}" style="vertical-align:-3px;">
+            </i>
+        </h4>
+        <img src="{{ asset('images/admin/overlap_' ~ chroniqueData.overlap ~ '.png') }}"/>
+    </div>
+
+    <div class="col-md-21">
+        <!-- 'Chronique' information -->
+        <div class="col-md-24">
+            <p class="import-title"><strong>{{ 'existing'|trans }}</strong></p>
+
+            <!-- Dates of first and last existing measures -->
+
+            <div class="col-md-12">
+                <strong>{{ 'begin'|trans }}{{ 'deux_points'|trans }} </strong>
+                <span style="color:red;">
+                    {{ chroniqueData.existingFirstDate ? (chroniqueData.existingFirstDate | date('transformation.bareme.dateBareme'|trans, false)) : ('empty'|trans) }}
+                </span>
+            </div>
+            <!-- 'minimum valide' and 'maximum valide' -->
+            <div class="col-md-12">
+                <strong>{{ 'minimumValide'|trans }}{{ 'deux_points'|trans }} </strong>
+                {{ chronique.minimumValide | default(('empty'|trans)) }}
+            </div>
+
+            <div class="col-md-12">
+                <strong>{{ 'end'|trans }}{{ 'deux_points'|trans }} </strong>
+                <span style="color:red;">
+                    {{ chroniqueData.existingLastDate ? (chroniqueData.existingLastDate | date('transformation.bareme.dateBareme'|trans, false)) : ('empty'|trans) }}
+                </span>
+            </div>
+            <!-- 'minimum valide' and 'maximum valide' -->
+            <div class="col-md-12">
+                <strong>{{ 'maximumValide'|trans }}{{ 'deux_points'|trans }} </strong>
+                {{ chronique.maximumValide | default('empty'|trans) }}
+            </div>
+
+            <div class="col-md-12"><em>{{ 'UTC(in)'|trans }}</em></div>
+
+
+            <!-- 'minimum valide' and 'maximum valide' -->
+        </div>
+        <!-- END_'Chronique' information -->
+
+        <div class="col-md-24">
+            <hr/>
+        </div>
+
+        <!-- Import information -->
+        <div class="col-md-24">
+            <p class="import-title"><strong>{{ 'import'|trans }}</strong></p>
+
+            <!-- Dates of first and last measures to import -->
+            <div class="col-md-24">
+                <strong>{{ 'begin'|trans }}{{ 'deux_points'|trans }} </strong>
+                <span style="color:green;">
+                    {{ chroniqueData.importerFirstDate | date('transformation.bareme.dateBareme'|trans, false) }}
+                </span>
+            </div>
+
+            <div class="col-md-24">
+                <strong>{{ 'end'|trans }}{{ 'deux_points'|trans }} </strong>
+                <span style="color:green;">
+                    {{ chroniqueData.importerLastDate | date('transformation.bareme.dateBareme'|trans, false) }}
+                </span>
+            </div>
+
+            <div class="col-md-24">
+                <em>{{ 'measure.import.help.timezoneToUTC'|trans }}</em>
+            </div>
+        </div>
+
+        <!-- "Too small" and "too large" measures -->
+        {% set tooSmall %}
+            {{ 'measure.import.valeurTooSmall(%first%,%last%,%count%)'|trans({'%count%': chroniqueData.valeurTooSmall.count}|merge({
+                '%first%' : chroniqueData.valeurTooSmall.first|date('transformation.bareme.dateBareme'|trans, false),
+                '%last%'  : chroniqueData.valeurTooSmall.last |date('transformation.bareme.dateBareme'|trans, false),
+                '%count%' : chroniqueData.valeurTooSmall.count
+            }))|raw }}
+        {% endset %}
+
+        {% set tooLarge %}
+            {{ 'measure.import.valeurTooLarge(%first%,%last%,%count%)'|trans({'%count%': chroniqueData.valeurTooLarge.count}|merge({
+                '%first%' : chroniqueData.valeurTooLarge.first|date('transformation.bareme.dateBareme'|trans, false),
+                '%last%'  : chroniqueData.valeurTooLarge.last |date('transformation.bareme.dateBareme'|trans, false),
+                '%count%' : chroniqueData.valeurTooLarge.count
+            }))|raw }}
+        {% endset %}
+
+        <div class="col-md-24">
+            <ul>
+                {% if chroniqueData.valeurTooSmall.count > 0 %}
+                    <li>{{ tooSmall }}</li>{% endif %}
+                {% if chroniqueData.valeurTooLarge.count > 0 %}
+                    <li>{{ tooLarge }}</li>{% endif %}
+            </ul>
+        </div>
+
+    </div>
+    <!-- END_Import information -->
+
+    <!-- Validation form -->
+    <div class="col-md-24 alert alert-warning" style="margin-top:0.5em;">
+        <h4 class="alert-heading">{{ 'measure.import.question.importType'|trans }}</h4>
+
+        <input type="radio" name="{{ importTypeName }}" value="doNotImport" id="{{ doNotImportId }}">
+        <label for="{{ doNotImportId }}">{{ 'measure.import.action.doNotImport'|trans }}</label>
+        <br>
+
+        {# No overlap => easiest choices #}
+        {% if chroniqueData.overlap in ['before', 'after', 'new'] %}
+            <input type="radio" name="{{ importTypeName }}" value="keepExisting" id="{{ keepExistingId }}">
+            <label for="{{ keepExistingId }}">{{ 'measure.import.action.doImport'|trans }}</label>
+            <br>
+        {# Overlap => all choices #}
+        {% else %}
+            <input type="radio" name="{{ importTypeName }}" value="keepExisting" id="{{ keepExistingId }}">
+            <label for="{{ keepExistingId }}">{{ 'measure.import.action.keepExisting'|trans }}</label>
+            <br>
+            <input type="radio" name="{{ importTypeName }}" value="overwriteExisting" id="{{ overwriteExistingId }}">
+            <label for="{{ overwriteExistingId }}">{{ 'measure.import.action.overwriteExisting'|trans }}</label>
+            <br>
+        {% endif %}
+    </div>
+    <!-- Children list -->
+    {% if chroniqueData.hasChildren %}
+    <div class="col-md-24 alert alert-info">
+        <strong>{{ 'measure.import.info.children(%count%)'|trans({'%count%': chroniqueData.childrenCount}|merge({'%count%' : chroniqueData.childrenCount})) }}
+            <i class="childrenHelp fam-help" data-original-title="{{ 'measure.import.help.children'|trans({'%count%': chroniqueData.childrenCount}) }}" data-content="{{ chroniqueData.childrenList }}"></i>
+        </strong>
+    </div>
+    {% endif %}
+    <!-- END_Validation form -->
+</div>
+<!-- END_Tab of information and validation form -->

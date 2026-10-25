@@ -1,0 +1,143 @@
+{% set fontNew="panel-success" %}
+{% set fontExisting="panel-warning" %}
+{% set showNew="" %}
+{% set showExisting="" %}
+{% set collapseNew="collapsed" %}
+{% set collapseExisting="collapsed" %}
+
+{% if shapeData.countNew > 0 %}
+    {% set showNew="in" %}
+    {% set collapseNew="" %}
+{% endif %}
+{% if shapeData.countExisting > 0 and showNew == "" %}
+    {% set showExisting="in" %}
+    {% set collapseExisting="" %}
+{% endif %}
+
+{% import 'macros.html.twig' as macros %}
+
+<div class="pull-right">
+    {{ macros.cancelForm('bdoh_admin_shape_import_stop', ('cancel'|trans)~' '~('import(the)'|trans)) }}
+</div>
+
+<h2 class="inactive">{{ 'shape.import.step.1'|trans }}</h2>
+<h2>{{ 'shape.import.step.2'|trans }}</h2>
+<h2 class="inactive" style="margin-bottom:1em;">{{ 'shape.import.step.3'|trans }}</h2>
+
+<form class="form-inline" name="import" action="{{ path('bdoh_admin_shape_import_step3') }}" method="post">
+
+    <div class="panel panel-default">
+
+        <div class="panel-heading">
+            <h3>{{ 'shape.import.info.title'|trans }} {{ 'open_quote'|trans }}<i>{{ shapeData.cible|trans }}</i>{{ 'close_quote'|trans }}</h3>
+        </div>
+
+        <div class="panel-body">
+
+            {# nouveaux cours d'eau (selon le nom) #}
+            {% if shapeData.countNew > 0 %}
+                <div class="panel {{ fontNew }}">
+                    <div class="panel-heading">
+                        <a class="dropdown-toggle collapse-title {{ collapseNew }}" data-toggle="collapse" href="#collapseOne">
+                            <strong><b class="caret"></b> {{ 'shape.import.help.courseau.new'|trans({'%count%': shapeData.countNew}) }} {{ 'shape.import.help.courseau.nom'|trans }}{{ 'deux_points'|trans }} {{ shapeData.countNew }}</strong>
+                        </a>
+                    </div>
+                    <div id="collapseOne" class="panel-collapse collapse {{ showNew }}">
+                        <div class="panel-body">
+                            {% for river in shapeData.new %}
+                                <div class="row">
+                                    <div class="col-md-8">
+                                        <strong>{{ 'shape.import.info.nom'|trans }}{{ 'deux_points'|trans }}</strong>
+                                        <span style="color:green;">{{ river.toponyme }}</span>
+                                    </div>
+                                    <div class="col-md-8">
+                                        <strong>{{ 'codeHydro'|trans }}{{ 'deux_points'|trans }}</strong>
+                                        <span style="color:green;">{{ river.code_hydro }}</span>
+                                    </div>
+                                    <div class="col-md-8">
+                                        <strong>{{ 'classifica'|trans }}{{ 'deux_points'|trans }}</strong>
+                                        <span style="color:green;">{{ river.classifica }}</span>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+
+            {# cours d'eau existants (selon le nom) #}
+            {% if shapeData.countExisting > 0 %}
+                <div class="panel {{ fontExisting }}">
+                    <div class="panel-heading">
+                        <a class="dropdown-toggle collapse-title {{ collapseExisting }}" data-toggle="collapse" href="#collapseTwo">
+                            <strong><b class="caret"></b> {{ 'shape.import.help.courseau.existing'|trans({'%count%': shapeData.countExisting}) }} {{ 'shape.import.help.courseau.nom'|trans }}{{ 'deux_points'|trans }} {{ shapeData.countExisting }}</strong>
+                        </a>
+                    </div>
+                    <div id="collapseTwo" class="panel-collapse collapse {{ showExisting }}">
+                        <div class="panel-body">
+                            {% for river in shapeData.existing %}
+                                <div class="row">
+                                    <div class="col-md-8">
+                                        <strong>{{ 'shape.import.info.nom'|trans }}{{ 'deux_points'|trans }}</strong>
+                                        <span style="color:green;">{{ river.toponyme }}</span>
+                                    </div>
+                                    <div class="col-md-8">
+                                        <strong>{{ 'codeHydro'|trans }}{{ 'deux_points'|trans }}</strong>
+                                        <span style="color:green;">{{ river.code_hydro }}</span>
+                                    </div>
+                                    <div class="col-md-8">
+                                        <strong>{{ 'classifica'|trans }}{{ 'deux_points'|trans }}</strong>
+                                        <span style="color:green;">{{ river.classifica }}</span>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+
+            {# choix d'import #}
+            {% if shapeData.countNew > 0 or shapeData.countExisting > 0 %}
+                <div class="col-md-24 alert alert-warning">
+                    <h4 class="alert-heading">{{ 'shape.import.question.importType'|trans }}</h4>
+
+                    {# ne pas importer #}
+                    <input type="radio" name="shapeImportType" value="doNotImport" id="doNotImport">
+                    <label for="doNotImport">{{ 'shape.import.action.doNotImport'|trans }}</label>
+                    <br>
+
+                    {# que des nouveaux cours d'eau -> keepExisting #}
+                    {% if shapeData.countNew > 0 and shapeData.countExisting == 0 %}
+                        <input type="radio" name="shapeImportType" value="keepExisting" id="keepExisting">
+                        <label for="keepExisting">{{ 'shape.import.action.doImport'|trans }}</label>
+                        <br>
+                    {# que des cours d'eau existants -> overwriteExisting #}
+                    {% elseif shapeData.countNew == 0 and shapeData.countExisting > 0 %}
+                        <input type="radio" name="shapeImportType" value="overwriteExisting" id="overwriteExisting">
+                        <label for="overwriteExisting">{{ 'shape.import.action.replace'|trans }}</label>
+                        <br>
+                    {# les deux #}
+                    {% elseif  shapeData.countNew > 0 and shapeData.countExisting > 0 %}
+                        <input type="radio" name="shapeImportType" value="keepExisting" id="keepExisting">
+                        <label for="keepExisting">{{ 'shape.import.action.keepExisting'|trans }}</label>
+                        <br>
+                        <input type="radio" name="shapeImportType" value="overwriteExisting" id="overwriteExisting">
+                        <label for="overwriteExisting">{{ 'shape.import.action.overwriteExisting'|trans }}</label>
+                        <br>
+                    {% endif %}
+                </div>
+            {% else %}
+                {# pas de données à importer -> alerte #}
+                <div class="col-md-24 alert alert-danger">
+                    <strong>{{ 'shape.import.info.noPossibleImport'|trans }}</strong>
+                </div>
+            {% endif %}
+
+        </div> {# panel-body #}
+    </div> {# panel #}
+
+    {% if shapeData.countNew > 0 or shapeData.countExisting > 0 %}
+        {{ macros.submit(('validate'|trans)~' '~('import(the)'|trans)) }}
+    {% endif %}
+
+</form>

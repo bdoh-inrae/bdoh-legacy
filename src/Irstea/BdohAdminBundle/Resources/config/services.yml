@@ -1,0 +1,103 @@
+parameters:
+    irstea_bdoh_admin.measure_import:
+
+        # Path of directory containing measure files to import (relative to the var dir).
+        directory: imports/measure/
+
+        # Authorized mime types (by category) for measures files
+        mimeTypes:
+            txt:
+                - 'text/plain'
+                - 'text/csv'
+            zip:
+                - 'application/zip'
+                - 'application/x-zip-compressed'
+
+        # A map of formats and their specific importers
+        importers:
+            # General
+            Bdoh                  : Irstea\BdohAdminBundle\Importer\Measure\BdohImporter
+            BdohPlage             : Irstea\BdohAdminBundle\Importer\Measure\BdohPlageImporter
+            Qjo                   : Irstea\BdohAdminBundle\Importer\Measure\QjoImporter
+            Qtvar                 : Irstea\BdohAdminBundle\Importer\Measure\QtvarImporter
+
+
+    irstea_bdoh_admin.controle_import:
+
+        # Path of directory containing measure files to import (relative to the var dir).
+        directory: imports/controle/
+
+        # Authorized mime types (by category) for measures files
+        mimeTypes:
+            txt:
+                - 'text/plain'
+                - 'text/csv'
+
+        # A map of formats and their specific importers
+        importers:
+            # General
+            controle                  : Irstea\BdohAdminBundle\Importer\Controle\Manager
+
+    irstea_bdoh_admin.shape_import:
+
+        # Path of directory containing measure files to import (relative to the var dir).
+        directory: imports/shape
+
+        # Authorized mime types (by category) for measures files
+        mimeTypes:
+            zip:
+                - 'application/zip'
+                - 'application/x-zip-compressed'
+
+        # A map of formats and their specific importers
+        importers:
+            shape: Irstea\BdohAdminBundle\Importer\Shapefile\Manager
+
+    irstea_bdoh_admin.bareme_import:
+
+        # Path of directory containing measure files to import (relative to the var dir).
+        directory: imports/bareme/
+
+        # Authorized mime types (by category) for measures files
+        mimeTypes:
+            txt:
+                - 'text/plain'
+                - 'text/csv'
+
+        # A map of formats and their specific importers
+        importers:
+            # General
+            bareme                  : Irstea\BdohAdminBundle\Importer\Bareme\Manager
+
+    ############################################################################
+    # The description file of bareme export formats (relative to the web dir)
+    irstea_bdoh_admin.bareme_export.formats_export_file: documents/FormatsExport.pdf
+
+# Les imports (module 4 du portage) ; l'administration par Sonata viendra avec le module 6. Les
+# fichiers à importer vont sous var/, et non plus sous app/ (dossier des fichiers écrits par BDOH).
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+
+    Irstea\BdohAdminBundle\Controller\:
+        resource: '../../Controller/'
+
+    # La commande bdoh:import:measure attend son portage (étape 4 de dev/plans/2026-10-25_imports.md).
+
+    # Managers of "measure import", "controle import", "shape import", "bareme import"
+    Irstea\BdohAdminBundle\Manager\MeasureImportManager:
+        arguments: [ "%kernel.project_dir%/var", "%irstea_bdoh_admin.measure_import%" ]
+    irstea_bdoh_admin.manager.measure_import: '@Irstea\BdohAdminBundle\Manager\MeasureImportManager'
+
+    Irstea\BdohAdminBundle\Manager\ControleImportManager:
+        arguments: [ "%kernel.project_dir%/var", "%irstea_bdoh_admin.controle_import%" ]
+    irstea_bdoh_admin.manager.controle_import: '@Irstea\BdohAdminBundle\Manager\ControleImportManager'
+
+    Irstea\BdohAdminBundle\Manager\ShapeImportManager:
+        arguments: [ "%kernel.project_dir%/var", "%irstea_bdoh_admin.shape_import%" ]
+    irstea_bdoh_admin.manager.shape_import: '@Irstea\BdohAdminBundle\Manager\ShapeImportManager'
+
+    Irstea\BdohAdminBundle\Manager\BaremeImportManager:
+        arguments: [ "%kernel.project_dir%/var", "%irstea_bdoh_admin.bareme_import%" ]
+    irstea_bdoh_admin.manager.bareme_import: '@Irstea\BdohAdminBundle\Manager\BaremeImportManager'

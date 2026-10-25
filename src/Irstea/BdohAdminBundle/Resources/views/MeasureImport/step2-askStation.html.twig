@@ -1,0 +1,25 @@
+{% import 'macros.html.twig' as macros %}
+
+<div class="pull-right">
+    {{ macros.cancelForm('bdoh_admin_measure_import_stop', ('cancel'|trans)~' '~('import(the)'|trans)) }}
+</div>
+
+<!-- The steps of measures import -->
+<p><h2><span class="inactive">{{ 'measure.import.step.1'|trans }}</span></h2></p>
+<p><h2>{{ 'measure.import.step.2'|trans }}</h2></p>
+<p><h2 class="inactive">{{ 'measure.import.step.3'|trans }}</h2></p>
+<p><h2 class="inactive" style="margin-bottom:1em;">{{ 'measure.import.step.4'|trans }}</h2></p>
+
+<form class="form-inline" name="main" action="{{ path('bdoh_admin_measure_import_step2_next') }}" method="post">
+
+    <!-- Station -->
+    <label for="selectStationIdstep2">{{ 'station'|trans }}</label>&nbsp;
+    <select id="selectStationIdstep2" class="form-control" name="station" style="margin-right:1em;">
+        <option selected></option>
+        {% for station in stations %}
+            <option value="{{ station.code }}">{{ station }}</option>
+        {% endfor %}
+    </select>
+
+    {{ macros.submit }}
+</form>

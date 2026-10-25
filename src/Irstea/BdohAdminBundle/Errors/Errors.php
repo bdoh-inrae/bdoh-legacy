@@ -6,7 +6,7 @@
 
 namespace Irstea\BdohAdminBundle\Errors;
 
-use Symfony\Component\Translation\TranslatorInterface;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
  * Class providing errors management.
@@ -45,7 +45,7 @@ abstract class Errors
     /**
      * Resolves the error translations and returns a flat array containing them.
      *
-     * @param Symfony\Component\Translation\TranslatorInterface $translator
+     * @param TranslatorInterface $translator
      *
      * @return array A flat array containing strings
      */
