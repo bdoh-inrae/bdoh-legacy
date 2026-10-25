@@ -4,6 +4,7 @@
     dev/compare/compare.py pages   [--old SIDE] [--new SIDE] [--base BASE] [--only TEXTE]
     dev/compare/compare.py exports [--old SIDE] [--new SIDE] [--base BASE] [--only TEXTE]
     dev/compare/compare.py state   [--base BASE]
+    dev/compare/compare.py queue   [--base BASE]
 
 SIDE nomme une instance (voir SIDES). Les cas sont tirés de la base BASE du serveur de référence,
 par des règles écrites ici : le dépôt ne contient ni données ni codes de chroniques. Le rapport et
@@ -11,7 +12,7 @@ les écarts vont dans ../bdoh_reference/compare/, hors du dépôt.
 
 « state » mène les mêmes calculs (recalcul, conversion, taux de remplissage, puis la file de tâches)
 avec l'ancien code sur PostgreSQL 17 et avec le nouveau, chacun sur sa copie de BASE, et compare
-l'état des deux copies.
+l'état des deux copies. « queue » est l'essai de la file de tâches (audit des risques, constat 3).
 
 Les pages se comparent par ce qu'elles montrent (texte, liens, formulaires, attributs data-*), pas
 par leur balisage ; les nombres, à un arrondi près (règle « Arrondis à la limite » de
@@ -674,10 +675,84 @@ def run_state(args):
           '  dev/compare/compare.py pages --old reference-17 --new new --base bdoh_state_old'
           ' --server bdoh-db --only /jobs')
 
+def run_queue(args):
+    """L'essai de l'audit (constat 3) : trois recalculs rapprochés avec propagation, sur une
+    chronique calculée, sur une chronique qui en dépend, puis de nouveau sur la première, menés par
+    le nouvel exécuteur deux à la fois comme en production, puis l'un après l'autre, chacun sur sa
+    copie de BASE. Attendu : le même état final, et jamais deux tâches d'une même file en même
+    temps."""
+    template = args.base
+    first = lambda sql: query(template, sql, NEW_SERVER)[0]
+    parent, child = first("""
+        SELECT a.sortie_id, b.sortie_id FROM transformation a
+          JOIN transformation b ON b.entree_id = a.sortie_id
+          JOIN transformation c ON c.entree_id = b.sortie_id
+          JOIN chronique e ON e.id = a.entree_id
+         WHERE e.nbmesures > 0 ORDER BY a.sortie_id, b.sortie_id LIMIT 1""")
+    user, = first("SELECT id FROM utilisateur WHERE roleadmin = 'FCT' ORDER BY id LIMIT 1")
+    new_url = 'postgresql://bdoh@db:5432/{}?serverVersion=17&charset=utf8'
+
+    def enqueue(base, chronique):
+        """Une tâche de recalcul, écrite comme JobManager::enqueueChronicleComputation l'écrit."""
+        query(base, f"""
+            WITH job AS (
+                INSERT INTO jms_jobs (id, state, queue, priority, createdat, executeafter, command, args,
+                                      maxruntime, maxretries)
+                VALUES (nextval('jms_jobs_id_seq'), 'pending', 'job_queue_chronique_{chronique}', -5, now(),
+                        now() - interval '1 second', 'bdoh:compute:chronique',
+                        '["--propagate", "{chronique}", "{user}"]', 0, 0)
+                RETURNING id)
+            INSERT INTO jms_job_related_entities (job_id, related_class, related_id)
+            SELECT job.id, x.class, x.id FROM job, (VALUES
+                ('Irstea\\BdohDataBundle\\Entity\\ChroniqueCalculee', '{{"id":{chronique}}}'),
+                ('Irstea\\BdohDataBundle\\Entity\\Observatoire', (
+                    SELECT json_build_object('id', se.observatoire_id)::jsonb::text FROM chronique c
+                      JOIN stations_sites ss ON ss.station_id = c.station_id
+                      JOIN siteexperimental se ON se.id = ss.site_id WHERE c.id = {chronique} LIMIT 1))
+            ) AS x(class, id)""", NEW_SERVER)
+
+    sides = {}
+    for name, base, jobs in [('deux à la fois', 'bdoh_queue_parallel', 2), ('une à une', 'bdoh_queue_serial', 1)]:
+        for sql in [f'DROP DATABASE IF EXISTS {base} WITH (FORCE)', f'CREATE DATABASE {base} TEMPLATE {template}']:
+            subprocess.run(['docker', 'exec', NEW_SERVER, 'psql', '-U', 'postgres', '-v', 'ON_ERROR_STOP=1',
+                            '-qc', sql], check=True)
+        for chronique in [parent, child, parent]:
+            enqueue(base, chronique)
+        console = ['docker', 'exec', '-e', f'DATABASE_URL={new_url.format(base)}', 'bdoh-app', 'php', 'bin/console']
+        for _ in range(60):
+            if query(base, "SELECT count(*) FROM jms_jobs WHERE state IN ('new', 'pending', 'running')",
+                     NEW_SERVER)[0][0] == '0':
+                break
+            subprocess.run([*console, 'bdoh:jobs:run', '--max-runtime=10', f'--max-concurrent-jobs={jobs}',
+                            '--env=prod'], capture_output=True)
+        today = datetime.date.today().isoformat()
+        sides[name] = {table: [re.sub(today + r'T[\d:]+', '<maintenant>', '\t'.join(row))
+                               for row in query(base, STATE_QUERIES[table].format(historique=0), NEW_SERVER)]
+                       for table in ['chronique', 'mesure', 'tauxremplissage']}
+        # Les tâches, sans leur ordre, qui dépend de celui où elles finissent
+        sides[name]['tâches'] = sorted(' '.join(row) for row in query(base, """
+            SELECT command, args::text, state, exitcode FROM jms_jobs""", NEW_SERVER))
+        sides[name]['tâches'] = [re.sub(today + r'T[\d:]+', '<maintenant>', line) for line in sides[name]['tâches']]
+        overlaps = query(base, """
+            SELECT a.queue, a.id, b.id FROM jms_jobs a JOIN jms_jobs b
+              ON b.queue = a.queue AND b.id > a.id
+             AND b.startedat < a.closedat AND a.startedat < b.closedat""", NEW_SERVER)
+        parallel = query(base, """
+            SELECT count(*) FROM jms_jobs a JOIN jms_jobs b ON b.id > a.id
+             AND b.startedat < a.closedat AND a.startedat < b.closedat""", NEW_SERVER)[0][0]
+        print(f'{name} : {len(sides[name]["tâches"])} tâches, {parallel} paires menées en même temps,'
+              f' {len(overlaps)} dans une même file {overlaps or ""}')
+
+    report = Report('queue')
+    for part in sides['une à une']:
+        report.add(part, sides['une à une'][part], sides['deux à la fois'][part])
+    report.close()
+
+
 def main():
     global CASES_SERVER
     parser = argparse.ArgumentParser(description=__doc__.split('\n')[0])
-    parser.add_argument('what', choices=['pages', 'exports', 'state'])
+    parser.add_argument('what', choices=['pages', 'exports', 'state', 'queue'])
     parser.add_argument('--old', default='reference', choices=SIDES)
     parser.add_argument('--new', default='reference', choices=SIDES)
     parser.add_argument('--base', default='bdoh_small', help='base où tirer les cas')
@@ -687,7 +762,7 @@ def main():
     parser.add_argument('--profile', help='un seul profil (anonyme, utilisateur, gestionnaire, administrateur)')
     args = parser.parse_args()
     CASES_SERVER = args.server
-    {'pages': run_pages, 'exports': run_exports, 'state': run_state}[args.what](args)
+    {'pages': run_pages, 'exports': run_exports, 'state': run_state, 'queue': run_queue}[args.what](args)
 
 
 if __name__ == '__main__':
