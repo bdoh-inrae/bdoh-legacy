@@ -787,9 +787,16 @@ def step_lines(site, status, headers, body):
 
 
 def import_cases(base):
-    """Les imports à jouer, tirés de la base : les mesures de deux semaines de janvier 2024 d'une
-    chronique continue, au format BDOH, et leurs variantes, chacune décalée sur un mois de 2025
-    pour ne pas en recouvrir une autre ; deux sur la période existante, pour écraser ou garder."""
+    """Les imports à jouer, tirés de la base, un dictionnaire par cas : nom, format, contenu du
+    fichier, chronique visée (son identifiant, et son code et sa station quand le fichier ne les
+    donne pas), fuseau quand le fichier ne le donne pas, sorte d'import.
+
+    Au format BDOH : les mesures de deux semaines de janvier 2024 d'une chronique continue, et leurs
+    variantes, chacune décalée sur un mois de 2025 pour ne pas en recouvrir une autre ; deux sur la
+    période existante, pour écraser ou garder. Au format BDOH par plages : les plages de janvier 2024
+    d'une chronique discontinue, décalées d'un an. Aux formats QJO et Qtvar, sur la chronique
+    continue : des jours et des instants de septembre et d'octobre 2025, avec des jours manquants,
+    une valeur nulle et une valeur absente."""
     cid, slug, station, code, unite = query(base, f"""
         SELECT c.id, c.slug, c.station, c.code, u.libelle FROM ({CHRONIQUES}) c
           JOIN chronique ch ON ch.id = c.id JOIN unite u ON u.id = ch.unite_id
@@ -805,19 +812,23 @@ def import_cases(base):
              WHERE m.chronique_id = {cid} AND m.date >= '2024-01-01' AND m.date < '2024-01-15'
              ORDER BY m.date""", NEW_SERVER)
 
-    def bdoh(rows, tz='UTC+01', unit=unite, st=station, minmax=False, eol='\n'):
-        head = ['Station;Fuseau;Chronique;Unite', f'{st};{tz};{code};{unit}',
-                'DateHeure;Valeur;Qualite' + (';Min;Max' if minmax else '')]
-        body = [';'.join(r if minmax else r[:3]) for r in rows]
+    def bdoh(rows, tz='UTC+01', unit=unite, st=station, ch=code, minmax=False, eol='\n', dates='DateHeure'):
+        head = ['Station;Fuseau;Chronique;Unite', f'{st};{tz};{ch};{unit}',
+                f'{dates};Valeur;Qualite' + (';Min;Max' if minmax else '')]
+        width = len(dates.split(';')) + (4 if minmax else 2)
+        body = [';'.join(r[:width]) for r in rows]
         return (eol.join(head + body) + eol).encode()
 
     rows = lambda months: [list(r) for r in measures(months)]
     cases = []
-    add = lambda name, content, import_type='keepExisting': cases.append((name, content, import_type))
+
+    def add(name, content, import_type='keepExisting', **extra):
+        cases.append({'name': name, 'format': 'Bdoh', 'content': content, 'type': import_type, 'cid': cid,
+                      'slug': slug, **extra})
+
     add('nouvelle période', bdoh(rows(12)))
     add('fins de ligne Windows', bdoh(rows(13), eol='\r\n'))
-    spaced = rows(14)
-    add('espaces autour des champs', bdoh([[f' {x} ' for x in r] for r in spaced]))
+    add('espaces autour des champs', bdoh([[f' {x} ' for x in r] for r in rows(14)]))
     add('virgule décimale', bdoh([[r[0], r[1] if r[1] == '-9999' else f'{float(r[1]) + 0.5:g}'.replace('.', ','),
                                    *r[2:]] for r in rows(15)]))
     invalid = rows(16)
@@ -842,22 +853,69 @@ def import_cases(base):
     changed = [[r[0], str(float(r[1]) + 1) if r[1] != '-9999' else r[1], *r[2:]] for r in rows(0)]
     add('période existante, écraser', bdoh(changed), 'overwriteExisting')
     add('période existante, garder', bdoh(rows(0)), 'keepExisting')
-    return cid, slug, cases
+
+    # BDOH par plages, sur une chronique discontinue
+    found = query(base, f"""
+        SELECT c.id, c.slug, c.station, c.code, u.libelle FROM ({CHRONIQUES}) c
+          JOIN chronique ch ON ch.id = c.id JOIN unite u ON u.id = ch.unite_id
+         WHERE c.dtype = 'discontinue' AND EXISTS (SELECT 1 FROM plage p WHERE p.chronique_id = c.id
+               AND p.debut >= '2024-01-01' AND p.debut < '2024-02-01')
+           AND NOT EXISTS (SELECT 1 FROM plage p WHERE p.chronique_id = c.id AND p.fin >= '2025-01-01')
+         ORDER BY c.id LIMIT 1""", NEW_SERVER)
+    if found:
+        pid, pslug, pstation, pcode, punite = found[0]
+        ranges = [list(r) for r in query(base, f"""
+            SELECT to_char(p.debut + interval '1 hour 1 year', 'DD/MM/YYYY HH24:MI:SS'),
+                   to_char(p.fin + interval '1 hour 1 year', 'DD/MM/YYYY HH24:MI:SS'),
+                   coalesce(p.valeur::text, '-9999'), q.code
+              FROM plage p JOIN qualite q ON q.id = p.qualite_id
+             WHERE p.chronique_id = {pid} AND p.debut >= '2024-01-01' AND p.debut < '2024-02-01'
+             ORDER BY p.debut""", NEW_SERVER)]
+        content = bdoh(ranges, unit=punite, st=pstation, ch=pcode, dates='Debut;Fin')
+        cases.append({'name': 'plages', 'format': 'BdohPlage', 'content': content, 'type': 'keepExisting',
+                      'cid': pid, 'slug': pslug})
+        inverted = [[r[1], r[0], *r[2:]] for r in ranges]
+        content = bdoh(inverted, unit=punite, st=pstation, ch=pcode, dates='Debut;Fin')
+        cases.append({'name': 'plages, fin avant le début', 'format': 'BdohPlage', 'content': content,
+                      'type': 'keepExisting', 'cid': pid, 'slug': pslug})
+
+    # QJO et Qtvar : qualités du jeu Hydro2 ; la station et la chronique se choisissent à l'import
+    hydro2 = ['0', '5', '8', '9']
+    days = [d for d in range(1, 21) if d not in (6, 7, 13)]  # des jours manquants
+    qjo = ['DEC;.  6 13', f'950;{station};essai;0;0;0;0;essai;0;']
+    for k, d in enumerate(days):
+        value = '' if d == 9 else '0' if d == 10 else f'{1.5 * k:g}'
+        qjo.append(f'QJO;{station};202509{d:02d};{value}; ;{hydro2[k % 4] if value else " "};')
+    qjo.append('FIN;EXP-HYDRO;1;')
+    cases.append({'name': 'QJO', 'format': 'Qjo', 'content': ('\n'.join(qjo) + '\n').encode(),
+                  'type': 'keepExisting', 'cid': cid, 'slug': slug, 'station': station, 'chronique': code,
+                  'timezone': '+1'})
+    qtvar = ['DEC;. 6 13', f'950;{station};essai;0;;;;']
+    for k, d in enumerate(days):
+        for hour in ('00:00', '12:30'):
+            value = '' if (d, hour) == (9, '12:30') else '0' if d == 10 else f'{0.25 * k:g}'
+            qtvar.append(f'920;1;{station};202510{d:02d};{hour};{value};{hydro2[k % 4]};{1 if d == 14 else 2};')
+    qtvar.append('FIN;EXP-HYDRO;1;')
+    cases.append({'name': 'Qtvar', 'format': 'Qtvar', 'content': ('\n'.join(qtvar) + '\n').encode(),
+                  'type': 'keepExisting', 'cid': cid, 'slug': slug, 'station': station, 'chronique': code,
+                  'timezone': '+0'})
+    return cases
 
 
 def run_imports(args):
     """Chaque import, étape par étape, par l'ancien code sur PostgreSQL 17 et par le nouveau, chacun
-    sur sa copie de BASE, au nom d'un gestionnaire de l'observatoire ; puis la file de tâches, et
-    l'état des deux copies."""
+    sur sa copie de BASE, au nom d'un gestionnaire de l'observatoire visé ; puis la file de tâches,
+    et l'état des deux copies."""
     template = args.base
     historique = query(template, 'SELECT coalesce(max(id), 0) FROM historique', NEW_SERVER)[0][0]
-    cid, slug, cases = import_cases(template)
-    cases = [c for c in cases if args.only in c[0]]
-    manager = query(template, f"""
-        SELECT u.email FROM utilisateur u JOIN role r ON r.utilisateur_id = u.id
-          JOIN observatoire o ON o.id = r.observatoire_id
-         WHERE r.valeur = 'gestionnaire' AND o.slug = '{slug}' AND (u.finacces IS NULL OR u.finacces > now())
-         ORDER BY u.id LIMIT 1""", NEW_SERVER)[0][0]
+    cases = [c for c in import_cases(template) if args.only in c['name']]
+    managers = {}
+    for slug in {c['slug'] for c in cases}:
+        managers[slug] = query(template, f"""
+            SELECT u.email FROM utilisateur u JOIN role r ON r.utilisateur_id = u.id
+              JOIN observatoire o ON o.id = r.observatoire_id
+             WHERE r.valeur = 'gestionnaire' AND o.slug = '{slug}' AND (u.finacces IS NULL OR u.finacces > now())
+             ORDER BY u.id LIMIT 1""", NEW_SERVER)[0][0]
     bases = {'ancien': 'bdoh_imports_old', 'nouveau': 'bdoh_imports_new'}
     for base in bases.values():
         copy_base(template, base)
@@ -866,34 +924,44 @@ def run_imports(args):
     with old_17_on(bases['ancien']) as old_console, new_on(bases['nouveau'], template) as new_console:
         sides = {'ancien': (SIDES['reference-17'], old_console, 'jms-job-queue:run'),
                  'nouveau': (SIDES['new'], new_console, 'bdoh:jobs:run')}
-        clients = {name: Client(side, manager, slug) for name, (side, _, _) in sides.items()}
+        clients = {}
 
         def play(name, case):
             side, console, runner = sides[name]
-            client = clients[name]
-            title, content, import_type = case
+            slug = case['slug']
+            if (name, slug) not in clients:
+                clients[name, slug] = Client(side, managers[slug], slug)
+            client = clients[name, slug]
             ajax = {'X-Requested-With': 'XMLHttpRequest'}
             post = lambda step, fields: client.get(f'/{slug}/admin/mesure/import/{step}',
                                                    urllib.parse.urlencode(fields).encode(), ajax)
+            read = lambda response: json.loads(response[2]) if response[0] == 200 else {}
             log = []
-            body, kind = multipart({'file-format': 'Bdoh'}, {'file': ('import.txt', content)})
+            body, kind = multipart({'file-format': case['format']}, {'file': ('import.txt', case['content'])})
             response = client.get(f'/{slug}/admin/mesure/import/step2', body, {**ajax, 'Content-Type': kind})
             log += ['== étape 2', *step_lines(side.url, *response)]
-            data = json.loads(response[2]) if response[0] == 200 else {}
+            data = read(response)
+            if data.get('action') == 'step2.askStation':
+                response = post('step2/next', {'station': case['station']})
+                log += ['== station', *step_lines(side.url, *response)]
+                data = read(response)
             if data.get('action') == 'step2':
-                # Les chroniques lues dans l'en-tête, gardées toutes, comme le fait le JavaScript
-                chroniques = re.findall(r'<li name="([^"]+)"', data['view'])
-                response = post('step3', {'timezone': '', **{f'chroniques[{i}]': c for i, c in enumerate(chroniques)}})
+                # Les chroniques lues dans l'en-tête, gardées toutes, comme le fait le JavaScript ;
+                # sinon celle du cas, choisie dans la liste proposée.
+                chroniques = re.findall(r'<li name="([^"]+)"', data['view']) or [case['chronique']]
+                fields = {'timezone': case.get('timezone', ''),
+                          **{f'chroniques[{i}]': c for i, c in enumerate(chroniques)}}
+                response = post('step3', fields)
                 log += ['== étape 3', *step_lines(side.url, *response)]
-                data = json.loads(response[2]) if response[0] == 200 else {}
+                data = read(response)
             if data.get('action') == 'step3':
-                response = post('step4', {f'importTypes[{cid}]': import_type, 'propagate': 'propagate'})
+                response = post('step4', {f"importTypes[{case['cid']}]": case['type'], 'propagate': 'propagate'})
                 log += ['== étape 4', *step_lines(side.url, *response)]
             drain(console, runner, bases[name])
             return log
 
         for case in cases:
-            report.add(f'import {case[0]}', play('ancien', case), play('nouveau', case))
+            report.add(f"import {case['name']}", play('ancien', case), play('nouveau', case))
         for name in sides:
             sides[name] = state_lines(bases[name], historique)
     for table in sides['ancien']:
