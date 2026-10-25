@@ -549,9 +549,15 @@ def run_state(args):
     historique = query(template, 'SELECT coalesce(max(id), 0) FROM historique', NEW_SERVER)[0][0]
     commands = state_commands(template)
     email = query(template, "SELECT email FROM utilisateur WHERE roleadmin = 'FCT' ORDER BY id LIMIT 1", NEW_SERVER)[0][0]
-    cid, slug = query(template, f"""
-        SELECT c.id, c.slug FROM ({CHRONIQUES}) c JOIN chronique ch ON ch.id = c.id
+    cid, slug, station, code = query(template, f"""
+        SELECT c.id, c.slug, c.station, c.code FROM ({CHRONIQUES}) c JOIN chronique ch ON ch.id = c.id
          WHERE c.dtype = 'continue' AND ch.nbmesures > 0 ORDER BY c.id LIMIT 1""", NEW_SERVER)[0]
+    # Vider des mesures revient aux gestionnaires de l'observatoire (BdohRightVoter::canRemoveData)
+    manager = query(template, f"""
+        SELECT u.email FROM utilisateur u JOIN role r ON r.utilisateur_id = u.id
+          JOIN observatoire o ON o.id = r.observatoire_id
+         WHERE r.valeur = 'gestionnaire' AND o.slug = '{slug}' AND (u.finacces IS NULL OR u.finacces > now())
+         ORDER BY u.id LIMIT 1""", NEW_SERVER)[0][0]
     old_console = SIDES['reference-17'].console
     new_url = 'postgresql://bdoh@db:5432/{}?serverVersion=17&charset=utf8'
     env_local = HERE.parent.parent / '.env.local'
@@ -581,8 +587,9 @@ def run_state(args):
                            capture_output=True)
 
     def play(side, console, runner, base):
-        """Les calculs, les exports demandés par le formulaire, une tâche annulée et une relancée, la
-        file jusqu'au bout ; rend ce que chaque étape a répondu."""
+        """Les calculs, les exports demandés par le formulaire, une tâche annulée, une semaine de
+        mesures vidée avec propagation, une tâche relancée, la file jusqu'au bout ; rend ce que
+        chaque étape a répondu."""
         log = []
         for command in commands:
             r = subprocess.run([*console, *command, '--env=prod'], capture_output=True, text=True)
@@ -604,6 +611,13 @@ def run_state(args):
         log.append(f"annulation : {status} {headers.get('Location', '').replace(side.url, '')}")
 
         drain(console, runner, base)
+        page = f'/{slug}/{station}/{code}'
+        manager_client = Client(side, manager, slug)
+        status, headers, _ = manager_client.get(f'{page}/empty', urllib.parse.urlencode(
+            {'beginDate': '2024-01-05T00:00:00Z', 'endDate': '2024-01-12T00:00:00Z', 'propagate': 'propagate'}
+        ).encode(), {'Referer': side.url + page})
+        log.append(f"vider une période : {status} {headers.get('Location', '').replace(side.url, '')}")
+        log += page_lines(side.url, *manager_client.get(page))  # avec le message qui le confirme
         failed = query(base, "SELECT min(id) FROM jms_jobs WHERE state = 'failed'", NEW_SERVER)[0][0]
         status, headers, _ = post(f'/{slug}/jobs/{failed}', {'action': 'retry'})
         log.append(f"relance : {status} {headers.get('Location', '').replace(side.url, '')}")
