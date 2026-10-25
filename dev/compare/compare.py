@@ -518,6 +518,9 @@ STATE_QUERIES = {
           FROM jms_jobs j ORDER BY j.id""",
     'jms_job_related_entities': "SELECT * FROM jms_job_related_entities ORDER BY 1, 2, 3",
     'bareme': "SELECT (to_jsonb(b) - 'datecreation')::text FROM bareme b ORDER BY b.id",
+    'station': "SELECT id, code, ST_AsEWKT(point), altitude FROM station ORDER BY id",
+    'bassin': "SELECT id, observatoire_id, nom, aire, md5(ST_AsEWKT(perimetre)), stationexutoire_id FROM bassin ORDER BY id",
+    'courseau': "SELECT id, observatoire_id, nom, codehydro, classification, md5(ST_AsEWKT(trace)) FROM courseau ORDER BY id",
     'pointcontrole': """
         SELECT chronique_id, count(*), md5(string_agg(concat_ws(';', date, valeur, qualite_id, minimum, maximum), '|'
                                                       ORDER BY date))
@@ -951,6 +954,45 @@ def bareme_cases(base, slug):
             ('barème, qualité inconnue', bareme('Courbe essai 4', points=[(0, 0, 'zz'), (1, 1)]))]
 
 
+SHAPES = HERE.parent.parent / 'var' / 'compare-shapes'  # monté dans bdoh-app sous /var/www/bdoh/var
+
+
+def shape_cases(base, slug):
+    """Les imports de shapefiles, sous l'observatoire slug, fabriqués par pgsql2shp depuis la base :
+    ses stations déplacées de dix mètres ; un bassin et un cours d'eau nouveaux autour d'une de ses
+    stations ; une archive sans shapefile."""
+    stations = f"""SELECT s.code, ST_Translate(s.point, 10, 10) AS geom FROM station s
+                    JOIN stations_sites ss ON ss.station_id = s.id JOIN siteexperimental se ON se.id = ss.site_id
+                    JOIN observatoire o ON o.id = se.observatoire_id
+                   WHERE o.slug = '{slug}' AND s.point IS NOT NULL"""
+    first = f"SELECT code, point FROM ({stations.replace('ST_Translate(s.point, 10, 10) AS geom', 's.code AS c, s.point')}) x LIMIT 1"
+    queries = {
+        'station': stations,
+        'bassin': f"""SELECT 'Bassin essai'::varchar AS nom, code AS code_exu, ST_Buffer(point, 500, 4) AS geom
+                        FROM ({first}) x""",
+        'coursEau': f"""SELECT 'Cours essai'::varchar AS toponyme, 'Z0000000'::varchar AS code_hydro, 2 AS classifica,
+                               ST_MakeLine(ST_Translate(point, -300, 0), ST_Translate(point, 300, 0)) AS geom
+                          FROM ({first}) x""",
+    }
+    SHAPES.mkdir(parents=True, exist_ok=True)
+    cases = []
+    for target, sql in queries.items():
+        name = f'{target.lower()}s'
+        subprocess.run(['docker', 'exec', 'bdoh-app', 'pgsql2shp', '-f', f'/var/www/bdoh/var/compare-shapes/{name}',
+                        '-h', 'db', '-u', 'bdoh', base, ' '.join(sql.split())], check=True, capture_output=True)
+        archive = io.BytesIO()
+        with zipfile.ZipFile(archive, 'w') as z:
+            for ext in ('shp', 'shx', 'dbf', 'prj'):
+                if (SHAPES / f'{name}.{ext}').exists():
+                    z.write(SHAPES / f'{name}.{ext}', f'{name}.{ext}')
+        cases.append((f'shapefile, {target}', target, f'{name}.zip', archive.getvalue()))
+    empty = io.BytesIO()
+    with zipfile.ZipFile(empty, 'w') as z:
+        z.writestr('lisezmoi.txt', 'pas de shapefile')
+    cases.append(('shapefile, archive sans shapefile', 'station', 'vide.zip', empty.getvalue()))
+    return cases
+
+
 def run_imports(args):
     """Chaque import, étape par étape, par l'ancien code sur PostgreSQL 17 et par le nouveau, chacun
     sur sa copie de BASE, au nom d'un gestionnaire de l'observatoire visé ; puis la file de tâches,
@@ -1057,6 +1099,27 @@ def run_imports(args):
             for title, content in bareme_cases(template, slug):
                 report.add(f'import {title}', play_bareme('ancien', slug, content),
                            play_bareme('nouveau', slug, content))
+
+        def play_shape(name, slug, target, filename, content):
+            """Un import de shapefile (deux étapes), en écrasant l'existant."""
+            side = sides[name][0]
+            client = client_for(name, slug)
+            ajax = {'X-Requested-With': 'XMLHttpRequest'}
+            body, kind = multipart({'file-shape': target}, {'file': (filename, content)})
+            body = body.replace(b'Content-Type: text/plain', b'Content-Type: application/zip')
+            response = client.get(f'/{slug}/admin/shape/import/step2', body, {**ajax, 'Content-Type': kind})
+            log = ['== étape 2', *step_lines(side.url, *response)]
+            if response[0] == 200 and json.loads(response[2]).get('action') == 'step2':
+                response = client.get(f'/{slug}/admin/shape/import/step3', urllib.parse.urlencode(
+                    {'shapeImportType': 'overwriteExisting'}).encode(), ajax)
+                log += ['== étape 3', *step_lines(side.url, *response)]
+            # Le chemin du fichier téléversé, propre à chaque installation
+            return [re.sub(r'/[\w/.-]*/imports/shape/[\w.-]*', '<fichier>', line) for line in log]
+
+        if args.only in 'shapefile':
+            for title, target, filename, content in shape_cases(template, slug):
+                report.add(f'import {title}', play_shape('ancien', slug, target, filename, content),
+                           play_shape('nouveau', slug, target, filename, content))
         for name in sides:
             sides[name] = state_lines(bases[name], historique)
     for table in sides['ancien']:

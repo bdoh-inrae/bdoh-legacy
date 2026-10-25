@@ -75,6 +75,30 @@ class Manager
     }
 
     /**
+     * Treatments to do when serializing.
+     */
+    public function __sleep()
+    {
+        /* Attributes to serialize */
+        return [
+            'errors',
+            'filePath',
+            'tmpTable',
+            'targettedTable',
+        ];
+    }
+
+    public function __construct(EntityManagerInterface $em, TranslatorInterface $translator, $file, $table, ?ImportErrors $errors = null)
+    {
+        $this->em = $em;
+        $this->translator = $translator;
+        $this->filePath = $file;
+        $this->errors = (null === $errors) ? new ImportErrors() : $errors;
+        $this->targettedTable = $table;
+        $this->tmpTable = static::TMP_TABLE . rand();
+    }
+
+    /**
      * Charge le shapefile dans la table temporaire : shp2pgsql écrit le SQL, que psql exécute. Comme
      * l'ancien, la sortie de shp2pgsql va dans <fichier>_Success.log, ses erreurs dans
      * <fichier>_Errors.log, que le contrôleur lit, et celle de psql dans <fichier>_Psql.log. Les
