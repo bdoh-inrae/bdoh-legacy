@@ -58,6 +58,16 @@ services:
       bdoh:
         ipv4_address: 172.30.26.17
 
+  # Les courriels du développement, ceux de l'ancien code comme du nouveau, retenus et lisibles sur
+  # http://172.30.26.25:8025/ ; on y écrit en SMTP, sur le port 1025.
+  mailpit:
+    image: axllent/mailpit:v1.28.0
+    container_name: bdoh-mailpit
+    profiles: [mail]
+    networks:
+      bdoh:
+        ipv4_address: 172.30.26.25
+
 networks:
   bdoh:
     name: bdoh

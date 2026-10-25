@@ -106,12 +106,19 @@ class JobController extends Controller
                 if (!$this->authChecker->isGranted(JobVoter::CANCEL_PERM, $job)) {
                     throw new AccessDeniedHttpException();
                 }
+                // L'ancien ne le vérifiait que par une assertion, inactive en production
+                if (!$this->jobManager->canCancel($job)) {
+                    throw new BadRequestHttpException(sprintf('Job %d cannot be canceled', $job->getId()));
+                }
                 $this->jobManager->cancel($job);
                 break;
 
             case 'retry':
                 if (!$this->authChecker->isGranted(JobVoter::RETRY_PERM, $job)) {
                     throw new AccessDeniedHttpException();
+                }
+                if (!$this->jobManager->canRetry($job)) {
+                    throw new BadRequestHttpException(sprintf('Job %d cannot be retried', $job->getId()));
                 }
                 $job = $this->jobManager->retry($job);
                 break;

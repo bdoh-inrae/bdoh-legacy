@@ -22,8 +22,10 @@ import argparse
 import concurrent.futures
 import datetime
 import difflib
+import hashlib
 import html.parser
 import http.cookiejar
+import io
 import json
 import re
 import subprocess
@@ -31,6 +33,7 @@ import sys
 import urllib.error
 import urllib.parse
 import urllib.request
+import zipfile
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -208,9 +211,10 @@ class Client:
             if status != 302 or 'login' in headers.get('Location', ''):
                 raise RuntimeError(f'connexion refusée pour {email} sur {side.url}')
 
-    def get(self, path, data=None):
+    def get(self, path, data=None, headers=None):
+        request = urllib.request.Request(self.side.url + path, data, headers or {})
         try:
-            with self.opener.open(self.side.url + path, data, timeout=300) as r:
+            with self.opener.open(request, timeout=300) as r:
                 return r.status, r.headers, r.read()
         except urllib.error.HTTPError as e:
             return e.code, e.headers, e.read()
@@ -501,63 +505,135 @@ STATE_QUERIES = {
           FROM tauxremplissage GROUP BY 1 ORDER BY 1""",
     'historique': """
         SELECT (to_jsonb(h) - 'id' - 'date')::text FROM historique h WHERE h.id > {historique} ORDER BY h.id""",
+    # La sortie d'erreur d'une tâche en échec : la console de Symfony 7 présente l'exception
+    # autrement que celle de Symfony 2 (dev/differences.md) ; seul compte qu'elle en ait une.
     'jms_jobs': """
-        SELECT (to_jsonb(j) - 'createdat' - 'startedat' - 'checkedat' - 'executeafter' - 'closedat'
-                - 'workername' - 'runtime' - 'memoryusage' - 'memoryusagereal' - 'stacktrace')::text
+        SELECT ((to_jsonb(j) - 'createdat' - 'startedat' - 'checkedat' - 'executeafter' - 'closedat'
+                 - 'workername' - 'runtime' - 'memoryusage' - 'memoryusagereal' - 'stacktrace')
+                || CASE WHEN j.exitcode <> 0 AND j.erroroutput <> ''
+                        THEN jsonb_build_object('erroroutput', '<erreur>') ELSE '{{}}' END)::text
           FROM jms_jobs j ORDER BY j.id""",
     'jms_job_related_entities': "SELECT * FROM jms_job_related_entities ORDER BY 1, 2, 3",
 }
+
+
+MAILPIT = 'http://172.30.26.25:8025'  # service mailpit de compose.yaml (make mail-start)
+
+
+def mail_lines():
+    """Les courriels retenus par Mailpit, du plus ancien au plus récent, pièces jointes dépliées."""
+    get = lambda path: urllib.request.urlopen(MAILPIT + path, timeout=60).read()
+    lines = []
+    for summary in sorted(json.loads(get('/api/v1/messages'))['messages'], key=lambda m: m['Created']):
+        m = json.loads(get(f"/api/v1/message/{summary['ID']}"))
+        address = lambda a: f"{a['Name']} <{a['Address']}>"
+        # Le texte sans ses fins de ligne finales, que Swiftmailer ajoute en l'encodant
+        lines += [f"Sujet : {m['Subject']}", f"De : {address(m['From'])}",
+                  'À : ' + ', '.join(map(address, m['To'])), *m['Text'].rstrip().splitlines()]
+        for part in m['Attachments']:
+            lines.append(f"Pièce jointe : {part['FileName']} ({part['ContentType']})")
+            with zipfile.ZipFile(io.BytesIO(get(f"/api/v1/message/{summary['ID']}/part/{part['PartID']}"))) as z:
+                for name in z.namelist():
+                    content = z.read(name)
+                    if name.endswith('.txt'):
+                        lines += [f'== {name}', *(re.sub(r'^(Export du|Export of) .*? (au format|in format)',
+                                                         r'\1 <date> \2', line)
+                                                  for line in content.decode('utf-8', 'replace').splitlines())]
+                    else:
+                        lines.append(f'== {name} {hashlib.sha256(content).hexdigest()[:16]}')
+    return lines
 
 
 def run_state(args):
     template = args.base
     historique = query(template, 'SELECT coalesce(max(id), 0) FROM historique', NEW_SERVER)[0][0]
     commands = state_commands(template)
+    email = query(template, "SELECT email FROM utilisateur WHERE roleadmin = 'FCT' ORDER BY id LIMIT 1", NEW_SERVER)[0][0]
+    cid, slug = query(template, f"""
+        SELECT c.id, c.slug FROM ({CHRONIQUES}) c JOIN chronique ch ON ch.id = c.id
+         WHERE c.dtype = 'continue' AND ch.nbmesures > 0 ORDER BY c.id LIMIT 1""", NEW_SERVER)[0]
     old_console = SIDES['reference-17'].console
     new_url = 'postgresql://bdoh@db:5432/{}?serverVersion=17&charset=utf8'
+    env_local = HERE.parent.parent / '.env.local'
 
     def copy(base):
         for sql in [f'DROP DATABASE IF EXISTS {base} WITH (FORCE)', f'CREATE DATABASE {base} TEMPLATE {template}']:
             subprocess.run(['docker', 'exec', NEW_SERVER, 'psql', '-U', 'postgres', '-v', 'ON_ERROR_STOP=1',
                             '-qc', sql], check=True)
 
-    def point_old_17(base):
-        """Branche l'ancien code sur une base ; rend celle qu'il lisait."""
-        text = OLD_17_PARAMETERS.read_text()
-        previous = re.search(r'^    database_name: *(\S+)', text, re.M).group(1)
-        OLD_17_PARAMETERS.write_text(re.sub(r'^(    database_name: *)\S+', rf'\g<1>{base}', text, flags=re.M))
+    def configure_old_17(text):
+        """Écrit les paramètres de l'ancien code sur PostgreSQL 17, et vide son cache."""
+        OLD_17_PARAMETERS.write_text(text)
         for command in [['cache:clear', '--no-warmup'], ['cache:warmup']]:
             subprocess.run([*old_console, *command, '--env=prod'], check=True, capture_output=True)
-        return previous
 
-    def play(console, runner, base):
-        """Les calculs, puis la file de tâches jusqu'à ce qu'elle soit vide ; rend leurs sorties."""
+    def pending(base):
+        return query(base, "SELECT count(*) FROM jms_jobs WHERE state IN ('new', 'pending', 'running')",
+                     NEW_SERVER)[0][0] != '0'
+
+    def drain(console, runner, base):
+        """La file de tâches, jusqu'à ce qu'elle soit vide."""
+        for _ in range(30):
+            if not pending(base):
+                return
+            # Une tâche à la fois : l'ordre où elles finissent décide de celui des tâches qu'elles créent.
+            subprocess.run([*console, runner, '--max-runtime=10', '--max-concurrent-jobs=1', '--env=prod'],
+                           capture_output=True)
+
+    def play(side, console, runner, base):
+        """Les calculs, les exports demandés par le formulaire, une tâche annulée et une relancée, la
+        file jusqu'au bout ; rend ce que chaque étape a répondu."""
         log = []
         for command in commands:
             r = subprocess.run([*console, *command, '--env=prod'], capture_output=True, text=True)
             log += [' '.join(command), f'code de sortie {r.returncode}', *r.stdout.splitlines()]
-        for _ in range(30):
-            if query(base, "SELECT count(*) FROM jms_jobs WHERE state IN ('new', 'pending', 'running')",
-                     NEW_SERVER)[0][0] == '0':
-                break
-            # Une tâche à la fois : l'ordre où elles finissent décide de celui des tâches qu'elles créent.
-            subprocess.run([*console, runner, '--max-runtime=10', '--max-concurrent-jobs=1', '--env=prod'],
-                           capture_output=True)
+
+        client = Client(side, email, slug)
+        post = lambda path, fields: client.get(path, urllib.parse.urlencode(fields).encode(),
+                                               {'Referer': f'{side.url}/{slug}/'})
+        form = {'beginDate': '2024-01-01T00:00:00Z', 'endDate': '2024-02-01T00:00:00Z',
+                'exportFormat': 'Bdoh', 'exportType': 'identical', 'instantStep': '60',
+                'meanCumulStep': '7', 'timezone': '1', 'chroniques[]': cid, 'termsOfUses': '1'}
+        for fields in [form, dict(form, exportType='mean'), dict(form, exportFormat='Vigilance'),
+                       dict(form, exportFormat='Qtvar')]:
+            status, headers, _ = post(f'/{slug}/mesure/export', fields)
+            log.append(f"export {fields['exportFormat']} {fields['exportType']} : {status} "
+                       f"{headers.get('Location', '').replace(side.url, '')}")
+        last = query(base, "SELECT max(id) FROM jms_jobs", NEW_SERVER)[0][0]
+        status, headers, _ = post(f'/{slug}/jobs/{last}', {'action': 'cancel'})
+        log.append(f"annulation : {status} {headers.get('Location', '').replace(side.url, '')}")
+
+        drain(console, runner, base)
+        failed = query(base, "SELECT min(id) FROM jms_jobs WHERE state = 'failed'", NEW_SERVER)[0][0]
+        status, headers, _ = post(f'/{slug}/jobs/{failed}', {'action': 'retry'})
+        log.append(f"relance : {status} {headers.get('Location', '').replace(side.url, '')}")
+        drain(console, runner, base)
         return log
 
     sides = {}
     for name, base in [('ancien', 'bdoh_state_old'), ('nouveau', 'bdoh_state_new')]:
         copy(base)
+        urllib.request.urlopen(urllib.request.Request(MAILPIT + '/api/v1/messages', method='DELETE'), timeout=60)
         if name == 'ancien':
-            previous = point_old_17(base)
+            original = OLD_17_PARAMETERS.read_text()
+            edited = original
+            for key, value in [('database_name', base), ('mailer_transport', 'smtp'),
+                               ('mailer_host', 'mailpit'), ('mailer_port', '1025')]:
+                edited = re.sub(rf'^(    {key}: *).*$', rf'\g<1>{value}', edited, flags=re.M)
+            configure_old_17(edited)
             try:
-                log = play(old_console, 'jms-job-queue:run', base)
+                log = play(SIDES['reference-17'], old_console, 'jms-job-queue:run', base)
             finally:
-                point_old_17(previous)
+                configure_old_17(original)
         else:
-            console = ['docker', 'exec', '-e', f'DATABASE_URL={new_url.format(base)}', 'bdoh-app', 'php', 'bin/console']
-            log = play(console, 'bdoh:jobs:run', base)
-        sides[name] = {'commandes': log}
+            env_local.write_text(f'DATABASE_URL="{new_url.format(base)}"\n')
+            try:
+                console = ['docker', 'exec', '-e', f'DATABASE_URL={new_url.format(base)}',
+                           '-e', 'MAILER_DSN=smtp://mailpit:1025', 'bdoh-app', 'php', 'bin/console']
+                log = play(SIDES['new'], console, 'bdoh:jobs:run', base)
+            finally:
+                env_local.write_text(f'DATABASE_URL="{new_url.format(template)}"\n')
+        sides[name] = {'étapes': log, 'courriels': mail_lines()}
         today = datetime.date.today().isoformat()
         for table, sql in STATE_QUERIES.items():
             rows = query(base, sql.format(historique=historique), NEW_SERVER)
@@ -578,11 +654,11 @@ def run_state(args):
                    checkedat = CASE WHEN checkedat IS NOT NULL THEN timestamp '2026-01-01' + id * interval '1 minute' END,
                    closedat = CASE WHEN closedat IS NOT NULL THEN timestamp '2026-01-01' + id * interval '1 minute' END,
                    runtime = CASE WHEN runtime IS NOT NULL THEN 0 END""", NEW_SERVER)
-    print('Les deux copies restent pour examen : bdoh_state_old et bdoh_state_new ; pour comparer les'
-          ' pages des tâches, y brancher reference-17 et new, puis :\n'
+    print(f'Les instances lisent de nouveau {template}. Les deux copies restent pour examen :'
+          ' bdoh_state_old et bdoh_state_new ; pour comparer les pages des tâches, y brancher'
+          ' reference-17 et new, puis :\n'
           '  dev/compare/compare.py pages --old reference-17 --new new --base bdoh_state_old'
           ' --server bdoh-db --only /jobs')
-
 
 def main():
     global CASES_SERVER

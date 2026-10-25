@@ -18,7 +18,7 @@ COMPOSER = docker run --rm --user $(HOST_UID):$(HOST_GID) -e HOME=/tmp -v $(CURD
 NPM = docker run --rm --user $(HOST_UID):$(HOST_GID) -e HOME=/tmp -v $(CURDIR):/var/www/bdoh bdoh-app npm
 DB_CONTAINER = $(if $(filter new,$(SERVER)),bdoh-db,bdoh-reference-db)
 
-.PHONY: help app-install start stop composer phpstan anonymize db db-small inspect reference-app reference-start reference-stop reference-base reference-17-start
+.PHONY: help app-install start stop composer phpstan anonymize db db-small inspect reference-app reference-start reference-stop reference-base reference-17-start mail-start
 
 help: ## Liste les commandes
 	@grep -E '^[a-z0-9-]+:.*## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*## "} {printf "  %-19s %s\n", $$1, $$2}'
@@ -75,3 +75,6 @@ reference-base: ## Branche la référence sur une autre base : make reference-ba
 reference-17-start: ## L'ancien code sur PostgreSQL 17, pour l'étape de la base : http://172.30.26.17/
 	test -d $(REFERENCE_DIR)/app-17 || cp -a $(REFERENCE_DIR)/app $(REFERENCE_DIR)/app-17
 	$(NEW) --profile pg17 up -d reference-app-17
+
+mail-start: ## Retient les courriels du développement, ancien et nouveau : http://172.30.26.25:8025/
+	$(NEW) --profile mail up -d mailpit

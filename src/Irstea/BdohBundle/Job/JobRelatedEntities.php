@@ -19,9 +19,16 @@ class JobRelatedEntities
             'SELECT related_class, related_id FROM jms_job_related_entities WHERE job_id = :id',
             ['id' => $job->getId()]
         );
+        // Regroupées par classe, dans l'ordre où chaque classe apparaît, comme JMS les chargeait
+        $byClass = [];
         foreach ($rows as [$class, $id]) {
-            if (class_exists($class) && ($entity = $em->find($class, json_decode($id, true)))) {
-                $job->addRelatedEntity($entity);
+            $byClass[$class][] = json_decode($id, true);
+        }
+        foreach ($byClass as $class => $ids) {
+            foreach ($ids as $id) {
+                if (class_exists($class) && ($entity = $em->find($class, $id))) {
+                    $job->addRelatedEntity($entity);
+                }
             }
         }
     }

@@ -6,6 +6,8 @@
 
 namespace Irstea\BdohDataBundle\Entity\Repository;
 
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\ORM\Query\Parameter;
 use Doctrine\ORM\QueryBuilder;
 use Irstea\BdohBundle\Util\DateTimeUtil;
 use Irstea\BdohDataBundle\Entity\Chronique;
@@ -490,15 +492,18 @@ SQL;
      */
     public function findAnyByStationAndCode(array $criteria): array
     {
-        $builder = $this->getEntityManager()->getRepository(Chronique::class)
+        // setParameters remplace les paramètres, dont l'observatoire courant que createQueryBuilder
+        // pose et dont where() écarte la condition, comme le faisait celui d'ORM 2.
+        return $this->getEntityManager()->getRepository(Chronique::class)
             ->createQueryBuilder('ch')
             ->where('ch.station = :station')
-            ->andWhere('ch.code = :code');
-        foreach ($criteria as $name => $value) {
-            $builder->setParameter($name, $value);
-        }
-
-        return $builder->getQuery()->getResult();
+            ->andWhere('ch.code = :code')
+            ->setParameters(new ArrayCollection(array_map(
+                fn ($name) => new Parameter($name, $criteria[$name]),
+                array_keys($criteria)
+            )))
+            ->getQuery()
+            ->getResult();
     }
 
     /**

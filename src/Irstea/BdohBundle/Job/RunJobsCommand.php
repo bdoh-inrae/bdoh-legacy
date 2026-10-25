@@ -120,23 +120,35 @@ class RunJobsCommand extends Command
                 break;
             }
 
-            $job->setWorkerName($workerName);
-            $job->setState(Job::STATE_RUNNING);
-            $this->em->flush();
+            // Prise seulement si elle attend toujours : une annulation depuis les pages de suivi peut
+            // l'avoir devancée (JobManager::cancel, qui ne vise de même qu'une tâche pas commencée).
+            $now = new \DateTime();
+            $claimed = $this->em->getConnection()->executeStatement(
+                "UPDATE jms_jobs SET state = :running, workerName = :worker, startedAt = :now, checkedAt = :now
+                  WHERE id = :id AND state = :pending",
+                ['running' => Job::STATE_RUNNING, 'worker' => $workerName, 'now' => $now, 'id' => $job->getId(),
+                 'pending' => Job::STATE_PENDING],
+                ['now' => 'datetime']
+            );
+            $this->em->clear();
+            if (!$claimed) {
+                continue;
+            }
 
-            // Comme JMS : php console --env=… [--verbose] commande --jms-job-id=… arguments
+            // Comme JMS : php console --env=… [--verbose] commande --jms-job-id=… arguments ; sans
+            // la verbosité de l'exécuteur, que Symfony passe aux enfants (SHELL_VERBOSITY) et qui,
+            // avec --quiet, viderait leur sortie.
             $command = [PHP_BINARY, $this->console, '--env=' . $this->environment];
             if ($output->isVerbose()) {
                 $command[] = '--verbose';
             }
             $command = [...$command, $job->getCommand(), '--jms-job-id=' . $job->getId(), ...array_map('strval', $job->getArgs())];
-            $process = new Process($command);
+            $process = new Process($command, null, ['SHELL_VERBOSITY' => false]);
             $process->setTimeout(null);
             $process->start();
             $output->writeln(sprintf('%s lancée.', $job));
 
             $this->running[$job->getId()] = ['id' => $job->getId(), 'queue' => $job->getQueue(), 'process' => $process, 'start' => time()];
-            $this->em->clear();
             ++$started;
         }
 
@@ -149,7 +161,14 @@ class RunJobsCommand extends Command
             $job = $this->em->find(Job::class, $id);
             $process = $data['process'];
 
-            if ($job->getMaxRuntime() > 0 && time() - $data['start'] > $job->getMaxRuntime()) {
+            if ($job === null || !$job->isRunning()) {
+                // Effacée, ou changée par un autre que l'exécuteur : il n'y a plus rien à y écrire.
+                if (!$process->isRunning()) {
+                    $output->writeln(sprintf('Tâche %d finie, mais plus en cours dans la base : laissée telle quelle.', $id));
+                    unset($this->running[$id]);
+                }
+                continue;
+            } elseif ($job->getMaxRuntime() > 0 && time() - $data['start'] > $job->getMaxRuntime()) {
                 $process->stop(5);
                 $job->setOutput($process->getOutput());
                 $job->setErrorOutput($process->getErrorOutput());

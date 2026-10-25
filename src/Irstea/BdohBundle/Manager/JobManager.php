@@ -89,13 +89,17 @@ class JobManager implements JobManagerInterface
      */
     private function persist(Job $job)
     {
+        // La tâche et ses entités liées ensemble, comme JMS dans la transaction du flush : une tâche
+        // sans utilisateur ni observatoire partirait sans droits ni propriétaire.
         $manager = $this->doctrine->getManagerForClass(Job::class);
-        $isNew = $job->getId() === null;
-        $manager->persist($job);
-        $manager->flush();
-        if ($isNew) {
-            JobRelatedEntities::save($manager, $job);
-        }
+        $manager->wrapInTransaction(function () use ($manager, $job) {
+            $isNew = $job->getId() === null;
+            $manager->persist($job);
+            $manager->flush();
+            if ($isNew) {
+                JobRelatedEntities::save($manager, $job);
+            }
+        });
     }
 
     /**
@@ -196,8 +200,18 @@ class JobManager implements JobManagerInterface
     {
         assert($this->canCancel($job));
 
-        $job->setState(Job::STATE_CANCELED);
-        $this->persist($job);
+        // Seulement si elle n'a pas commencé : l'exécuteur peut l'avoir prise depuis le chargement de
+        // la page, et il ne prend de même qu'une tâche en attente (RunJobsCommand).
+        $manager = $this->doctrine->getManagerForClass(Job::class);
+        $manager->createQuery(
+            'UPDATE ' . Job::class . ' j SET j.state = :canceled, j.closedAt = :now WHERE j.id = :id AND j.state IN (:open)'
+        )
+            ->setParameter('canceled', Job::STATE_CANCELED)
+            ->setParameter('now', new \DateTime(), 'datetime')
+            ->setParameter('id', $job->getId())
+            ->setParameter('open', [Job::STATE_NEW, Job::STATE_PENDING])
+            ->execute();
+        $manager->refresh($job);
     }
 
     /**

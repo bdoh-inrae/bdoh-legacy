@@ -31,7 +31,7 @@ when@test:
 
 # Comme l'ancien BDOH (app/config/config_prod.yml) : les erreurs, avec les messages qui les
 # précèdent, dans var/log/prod-AAAA-MM-JJ.log ; les connexions dans var/log/security-….log ; dix
-# fichiers de chaque. Rien sur la sortie d'erreur, que la file de tâches garde avec chaque tâche
+# fichiers de chaque, et la pile d'appels des erreurs. Rien sur la sortie d'erreur, que la file de tâches garde avec chaque tâche
 # et que ses pages affichent ; ni les dépréciations, ni les erreurs 404 et 405 des robots.
 when@prod:
     monolog:
@@ -48,6 +48,7 @@ when@prod:
                 path: "%kernel.logs_dir%/%kernel.environment%.log"
                 level: debug
                 max_files: 10
+                include_stacktraces: true
             security:
                 type: rotating_file
                 path: "%kernel.logs_dir%/security.log"
