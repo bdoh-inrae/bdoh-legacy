@@ -29,9 +29,12 @@ services:
     user: "${HOST_UID:?}:${HOST_GID:?}"
     # Comme la référence et la production : environnement prod ; la console s'emploie en dev avec
     # « docker exec -e APP_ENV=dev bdoh-app php bin/console … ».
+    # CAPTCHA_BYPASS_CODE : le code qui passe outre le captcha, pour la comparaison des formulaires
+    # (dev/compare/compare.py) ; jamais ailleurs que dans ce conteneur, jamais vide.
     environment:
       APP_ENV: prod
       APP_DEBUG: 0
+      CAPTCHA_BYPASS_CODE: comparaison
     volumes:
       - .:/var/www/bdoh
     depends_on:

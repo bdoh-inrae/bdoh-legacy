@@ -31,6 +31,14 @@ echo "Extraction du code au commit $commit…"
 mkdir -p "$app"
 git -C "$legacy" archive "$commit" | tar -x -C "$app"
 cp "$here/app/parameters.yml" "$app/app/config/parameters.yml"
+# Le code qui passe outre le captcha, pour que la comparaison remplisse les formulaires qui en ont un
+# (dev/compare/compare.py, CAPTCHA_BYPASS) ; le nouveau BDOH le lit dans son conteneur (compose.yaml).
+cat >> "$app/app/config/config_prod.yml" <<'EOF'
+
+# Ajouté par dev/reference/install-app.sh, pour la comparaison seulement.
+gregwar_captcha:
+    bypass_code: comparaison
+EOF
 mkdir -p "$app"/{app/imports,app/exports,web/css/themes,web/uploads}  # writable_dirs de deploy.php
 
 docker compose -f "$here/compose.yaml" build app

@@ -7,3 +7,9 @@
 {% block form_group_class -%}
     col-sm-20
 {%- endblock form_group_class %}
+
+{# Une date en trois listes, sans les libellés masqués (sr-only) que le thème de Symfony 7 leur ajoute
+   et que celui de Symfony 2 n'avait pas : la page des droits reste celle de l'ancien BDOH. #}
+{% block date_widget -%}
+    {%- with {label: false} -%}{{ parent() }}{%- endwith -%}
+{%- endblock date_widget %}

@@ -8,14 +8,17 @@ RUN sed -i -e 's|deb.debian.org|archive.debian.org|' -e 's|security.debian.org|a
         /etc/apt/sources.list
 
 # Extensions demandées par composer.json, plus APCu, dont le cache de Doctrine a besoin en
-# environnement prod (apc_* par apcu_bc). shp2pgsql et psql servent à l'import des shapefiles ;
-# la langue fr_FR.UTF-8, au setlocale() de slugify.
+# environnement prod (apc_* par apcu_bc). gd avec FreeType et JPEG, qui dessinent l'image du
+# captcha. shp2pgsql et psql servent à l'import des shapefiles ; la langue fr_FR.UTF-8, au
+# setlocale() de slugify.
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
-        libicu-dev libpng-dev libpq-dev libsodium-dev libxslt1-dev libzip-dev \
-        locales postgis postgresql-client unzip \
+        libfreetype6-dev libicu-dev libjpeg62-turbo-dev libpng-dev libpq-dev libsodium-dev \
+        libxslt1-dev libzip-dev locales postgis postgresql-client unzip \
     && rm -rf /var/lib/apt/lists/* \
     && sed -i 's/^# fr_FR.UTF-8/fr_FR.UTF-8/' /etc/locale.gen && locale-gen \
+    && docker-php-ext-configure gd --with-freetype-dir=/usr/include/ --with-jpeg-dir=/usr/include/ \
+        --with-png-dir=/usr/include/ \
     && docker-php-ext-install -j"$(nproc)" gd intl pcntl pdo_pgsql pgsql xsl zip \
     && pecl install libsodium-2.0.23 apcu-5.1.21 apcu_bc-1.0.5 \
     && docker-php-ext-enable opcache sodium apcu \
