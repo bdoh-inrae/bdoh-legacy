@@ -8,13 +8,13 @@ namespace Irstea\BdohAdminBundle\Admin\Data;
 
 use Irstea\BdohAdminBundle\Admin\Admin;
 use Irstea\BdohAdminBundle\Form\Type\FileType;
+use Irstea\BdohAdminBundle\Form\Type\LinkType;
 use Irstea\BdohDataBundle\Entity\Partenaire as PartenaireEntity;
 use Sonata\AdminBundle\Datagrid\ListMapper;
 use Sonata\AdminBundle\Form\FormMapper;
 use Sonata\Form\Validator\ErrorElement;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
-use Symfony\Component\Form\Extension\Core\Type\UrlType;
 
 /**
  * Class Partenaire.
@@ -187,7 +187,7 @@ class Partenaire extends Admin
         $formMapper
             ->add('nom')
             // Sans protocole par défaut, le champ reste de type url, comme sous Symfony 2
-            ->add('lien', UrlType::class, ['required' => false, 'default_protocol' => null])
+            ->add('lien', LinkType::class, ['required' => false])
             // image widget
             ->add(
                 'pathLogo',

@@ -351,7 +351,7 @@ NORMALIZE = [
     # Sonata 4 nomme le bouton de suppression, que Sonata 3 ne nommait pas : son nom n'est pas lu
     (re.compile(r'^I button submit btn_delete$'), 'I button submit'),
     # Les opérateurs des filtres sur une entité liée, mal nommés par Sonata 3 (dev/differences.md,
-    # « Filtre des listes mal nommé »)
+    # « Opérateurs des filtres sur une entité liée »)
     (re.compile(r'^T Est égal à$'), 'T est égal à'),
     (re.compile(r'^T Ne contient pas$'), "T n'est pas égal à"),
     (re.compile(r'(?<![0-9A-Za-z])s[0-9a-f]{13}(?![0-9a-f])'), 's<uniqid>'),  # identifiants de formulaires de Sonata
@@ -934,10 +934,11 @@ def run_queue(args):
 
 
 def multipart(fields, files):
-    """Le corps d'un formulaire multipart/form-data, et son type."""
+    """Le corps d'un formulaire multipart/form-data, et son type ; fields, un dictionnaire ou une liste
+    de paires (un champ à plusieurs valeurs)."""
     boundary = '----bdoh-compare-' + hashlib.sha256(repr((fields, files)).encode()).hexdigest()[:16]
     parts = []
-    for name, value in fields.items():
+    for name, value in (fields.items() if isinstance(fields, dict) else fields):
         parts.append(f'--{boundary}\r\nContent-Disposition: form-data; name="{name}"\r\n\r\n{value}\r\n'.encode())
     for name, (filename, content) in files.items():
         parts.append(f'--{boundary}\r\nContent-Disposition: form-data; name="{name}"; filename="{filename}"\r\n'
@@ -1829,7 +1830,7 @@ OBSERVATORY_PICK = '''SELECT min(t.id) FROM {table} t JOIN observatoire o ON o.i
 # l'édition n'est que renvoyée telle quelle ; sans « create », ni création ni suppression (routes
 # retirées par l'administration) ; « nodelete » : création sans suppression ; « state » : la requête
 # qui lit la table, quand elle a des colonnes que les deux côtés écrivent autrement (dates du moment,
-# mots de passe) ; « also » : ses tables de liaison.
+# mots de passe) ; « also » : ses tables de liaison ; « more » : d'autres éditions, après « change ».
 STATION_PICK = '''SELECT min(s.id) FROM station s JOIN stations_sites ss ON ss.station_id = s.id
                    JOIN siteexperimental se ON se.id = ss.site_id JOIN observatoire o ON o.id = se.observatoire_id
                   WHERE o.slug = '{slug}' '''
@@ -1840,7 +1841,8 @@ CHRONIQUE_PICK = "SELECT min(c.id) FROM (" + CHRONIQUES.replace('{', '{{').repla
 ADMINS = {
     'observatoire': {'table': 'observatoire', 'also': ['observatoires_data_manager'],
                      'pick': "SELECT id FROM observatoire WHERE slug = '{slug}'",
-                     'change': {'[titreEn]': 'Observatory (test)'}},
+                     'change': {'[titreEn]': 'Observatory (test)'},
+                     'more': [('lien sans protocole', {'[lien]': 'www.inrae.fr'})]},
     'siteexperimental': {'table': 'siteexperimental', 'pick': OBSERVATORY_PICK.format(table='siteexperimental'),
                          'change': {'[descriptionEn]': '<p>Site (test)</p>'}, 'create': {'[nom]': 'Site d’essai'}},
     'station': {'table': 'station', 'also': ['stations_sites'], 'pick': STATION_PICK,
@@ -1904,6 +1906,8 @@ ADMINS = {
                                  '[partenaire]': FIRST}},
     'partenaire': {'table': 'partenaire', 'pick': OBSERVATORY_PICK.format(table='partenaire'),
                    'change': {'[scanR]': 'essai'},
+                   'more': [('lien sans protocole', {'[lien]': 'www.inrae.fr'}),
+                            ('lien en javascript', {'[lien]': 'javascript:alert(1)'})],
                    'create': {'[nom]': 'Partenaire d’essai', '[iso]': 'FR', '[estFinanceur]': '0',
                               '[typeFundings]': FIRST}},
     'utilisateur': {'table': 'utilisateur', 'state': ACCOUNT_QUERIES['utilisateur'], 'nodelete': True,
@@ -1921,7 +1925,9 @@ def admin_profiles(base):
     """Les comptes des pages de l'administration, chacun avec les observatoires où il est gestionnaire
     (ses rôles ne donnent de droits sur les données que là), du plus fourni au moins fourni : un
     administrateur fonctionnel, et un gestionnaire qui n'est que gestionnaire (celui de « pages » est
-    aussi administrateur), sur un seul observatoire."""
+    aussi administrateur), sur un seul observatoire ; enfin un administrateur technique, à qui tout est
+    permis, sur les observatoires du premier. Les bases de production n'en ont pas : run_admin donne ce
+    rôle, dans ses deux copies, au deuxième administrateur fonctionnel."""
     active = "(u.finacces IS NULL OR u.finacces > now())"
     tables = ['bassin', 'courseau', 'doi', 'partenaire', 'siteexperimental', 'dataset', 'bareme']
     richness = ' + '.join([*(f'(SELECT count(*) FROM {t} WHERE observatoire_id = o.id)' for t in tables),
@@ -1936,7 +1942,10 @@ def admin_profiles(base):
           JOIN observatoire o ON o.id = r.observatoire_id
          WHERE u.roleadmin IS NULL AND {active} AND r.valeur = 'gestionnaire' ORDER BY u.id, o.id LIMIT 1""",
                           NEW_SERVER)[0]
-    return {'administrateur': (admin, slugs), 'gestionnaire': (manager, [slug])}
+    tech, = query(base, f"""SELECT u.email FROM utilisateur u WHERE u.roleadmin = 'FCT' AND {active}
+                             ORDER BY u.id OFFSET 1 LIMIT 1""", NEW_SERVER)[0]
+    return {'administrateur': (admin, slugs), 'gestionnaire': (manager, [slug]),
+            'administrateur technique': (tech, slugs)}
 
 
 # Les contrôleurs à part de l'administration, sous le nom que --only reconnaît dans leurs adresses,
@@ -2044,6 +2053,8 @@ def run_admin(args):
     bases = {'ancien': 'bdoh_admin_old', 'nouveau': 'bdoh_admin_new'}
     for base in bases.values():
         copy_base(template, base)
+        query(base, f"UPDATE utilisateur SET roleadmin = 'TECH' WHERE email = '{accounts['administrateur technique'][0]}'",
+              NEW_SERVER)
 
     def first(base, spec, slugs):
         """L'observatoire de la page et l'entité à ouvrir : le premier des observatoires du compte qui en
@@ -2070,6 +2081,10 @@ def run_admin(args):
         for profile, (email, slugs) in accounts.items():
             client = client_for(email, slugs[0])
             parts[f'{profile} /{slugs[0]}/admin/dashboard'] = page_lines(side.url, *client.get(f'/{slugs[0]}/admin/dashboard'))
+            # Pas d'export dans l'administration (Extension/NoExportExtension)
+            if 'utilisateur' in admins:
+                path = f'/{slugs[0]}/admin/utilisateur/export?format=csv'
+                parts[f'{profile} {path}'] = redirect_lines(side.url, *client.get(path)[:2])
             for name, spec in admins.items():
                 slug, cid = first(base, spec, slugs)
                 client = client_for(email, slug)
@@ -2117,6 +2132,9 @@ def run_admin(args):
             if 'change' in spec:
                 parts[f'{name} : édition'] = send(f'{root}/{cid}/edit', f'/{name}/{cid}/edit', spec['change'],
                                                  'btn_update_and_edit')
+            for label, values in spec.get('more', []):
+                parts[f'{name} : {label}'] = send(f'{root}/{cid}/edit', f'/{name}/{cid}/edit', values,
+                                                 'btn_update_and_edit')
             if 'create' in spec:
                 parts[f'{name} : création'] = send(f'{root}/create', f'/{name}/create', spec['create'],
                                                   'btn_create_and_edit')
@@ -2141,7 +2159,7 @@ def run_admin(args):
                                       if table in OTHER_STATE else state_lines(base, historique, [table])[table])
         parts['état historique'] = state_lines(base, historique, ['historique'])['historique']
         if side.login_link:
-            checks.update(new_only(send, base))
+            checks.update(new_only(send, base, client_for))
         return parts
 
     def other_writes(send, base, client, slugs):
@@ -2192,10 +2210,30 @@ def run_admin(args):
                 parts[f'taux de remplissage : {label}'] = redirect_lines(client.side.url, status, headers)
         return parts
 
-    def new_only(send, base):
-        """Ce que seul le nouveau fait (dev/differences.md) : chaque vérification rend « conforme » ou
-        ce qui ne l'est pas."""
+    def new_only(send, base, client_for):
+        """Ce que seul le nouveau fait (dev/differences.md, dev/local/security.md) : chaque vérification
+        rend « conforme » ou ce qui ne l'est pas. Après l'état des tables : ces écritures n'y comptent pas."""
         results = {}
+        if 'partenaire' in admins:
+            email, slugs = accounts['administrateur']
+            slug, pid = first(base, admins['partenaire'], slugs)
+            path, action = f'/{slug}/admin/partenaire/{pid}/edit', f'/partenaire/{pid}/edit'
+            logo = lambda: query(base, f"SELECT coalesce(pathlogo, '') FROM partenaire WHERE id = {pid}", NEW_SERVER)[0][0]
+            before = logo()
+            send(path, action, {'[pathLogo][current]': '../../config/bundles.php'}, 'btn_update_and_edit')
+            results['nouveau seul : chemin fabriqué du fichier enregistré, ignoré'] = (
+                ['conforme'] if logo() == before else [f'chemin enregistré : {logo()}'])
+            # Une image GIF valide, suivie de PHP, sous un nom en .php
+            gif = (b'GIF89a\x01\x00\x01\x00\x80\x00\x00\x00\x00\x00\xff\xff\xff!\xf9\x04\x01\x00\x00\x00\x00'
+                   b',\x00\x00\x00\x00\x01\x00\x01\x00\x00\x02\x02D\x01\x00;<?php echo 1; ?>')
+            client = client_for(email, slug)
+            form = form_of(client, path, action)
+            field = next(n for n in form.names if n.endswith('[pathLogo][new]'))
+            body, kind = multipart([*[f for f in form.fields if f[0] != field], ('btn_update_and_edit', '')],
+                                   {field: ('logo.php', gif)})
+            status, _, _ = client.get(form.url, body, {'Content-Type': kind, 'Referer': client.side.url + path})
+            results['nouveau seul : extension d’un fichier téléversé tirée de son contenu'] = (
+                ['conforme'] if status == 302 and logo().endswith('.gif') else [f'statut {status}, chemin : {logo()}'])
         if 'chroniquecontinue' in admins:
             slug, cid = first(base, admins['chroniquecontinue'], accounts['administrateur'][1])
             send(f'/{slug}/admin/chroniquecontinue/{cid}/edit', f'/chroniquecontinue/{cid}/edit',

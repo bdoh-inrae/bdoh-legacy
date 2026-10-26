@@ -96,22 +96,20 @@ class DocumentedEntityListener implements LoggerAwareInterface
      */
     private function uploadFile(DocumentedEntityInterface $entity, $field, UploadedFile $newFile)
     {
-        $normalized = $this->normalizePath($entity, $field, $newFile->getClientOriginalName());
+        // L'extension vient du contenu, validé (image ou PDF), et non du nom que donne le navigateur
+        $normalized = $this->normalizePath($entity, $field, $newFile->guessExtension() ?? 'bin');
         $this->renameFile($newFile->getRealPath(), $normalized);
         $this->propertyAccessor->setValue($entity, $field, $normalized);
     }
 
     /**
-     * @param $filename
-     * @param string $slug
-     * @param string $filepath
      * @param mixed  $field
+     * @param string $extension
      *
      * @return string
      */
-    private function normalizePath(DocumentedEntityInterface $entity, $field, $filepath)
+    private function normalizePath(DocumentedEntityInterface $entity, $field, $extension)
     {
-        $extension = pathinfo($filepath, PATHINFO_EXTENSION);
         $filename = $field;
         if (substr($filename, 0, 4) === 'path') {
             $filename = lcfirst(substr($filename, 4));

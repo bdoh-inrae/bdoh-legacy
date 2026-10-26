@@ -8,6 +8,7 @@ namespace Irstea\BdohAdminBundle\Admin\Data;
 
 use Irstea\BdohAdminBundle\Admin\Admin;
 use Irstea\BdohAdminBundle\Form\Type\FileType;
+use Irstea\BdohAdminBundle\Form\Type\LinkType;
 use Irstea\BdohAdminBundle\Form\Type\WysiwygType;
 use Irstea\BdohDataBundle\Entity\JeuQualite;
 use Irstea\BdohDataBundle\Entity\Repository\JeuQualiteRepository;
@@ -19,7 +20,6 @@ use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\Extension\Core\Type\EmailType;
 use Symfony\Component\Form\Extension\Core\Type\PasswordType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
-use Symfony\Component\Form\Extension\Core\Type\UrlType;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Sonata\AdminBundle\Form\Type\ModelListType;
 use Sonata\AdminBundle\Form\Type\ModelType;
@@ -369,7 +369,7 @@ class Observatoire extends Admin
                 'help_html' => true,
             ])
             // Sans protocole par défaut, le champ reste de type url, comme sous Symfony 2
-            ->add('lien', UrlType::class, ['required' => false, 'default_protocol' => null])
+            ->add('lien', LinkType::class, ['required' => false])
             ->add(
                 'jeu',
                 EntityType::class,
@@ -390,7 +390,7 @@ class Observatoire extends Admin
                 ModelListType::class,
                 [
                     'btn_add'    => false,
-                    'btn_delete' => false, // Sonata 3 n'avait pas ce bouton
+                    'btn_delete' => $this->listDeleteButton('irstea_bdoh_admin.admin.doi'),
                     'required'   => false,
                     'help'       => $translator->trans('admin.help.observatoire.doi-principal-message'),
                     'help_html'  => true,

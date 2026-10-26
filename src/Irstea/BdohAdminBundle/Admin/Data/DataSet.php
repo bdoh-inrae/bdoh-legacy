@@ -158,7 +158,7 @@ class DataSet extends Admin
                 ModelListType::class,
                 [
                     'btn_add'    => false,
-                    'btn_delete' => false, // Sonata 3 n'avait pas ce bouton
+                    'btn_delete' => $this->listDeleteButton('irstea_bdoh_admin.admin.doi'),
                     'required'   => false,
                 ],
                 [

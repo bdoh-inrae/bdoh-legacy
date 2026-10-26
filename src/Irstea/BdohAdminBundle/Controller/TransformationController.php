@@ -146,7 +146,8 @@ class TransformationController extends Controller
             $chronique = $chronRepo->find($chroniqueId);
 
             $children = $chronRepo->findAllChildren($chronique);
-            $childrenList = join('<br>', $children);
+            // la liste s'affiche en HTML (popover) : les noms s'échappent
+            $childrenList = join('<br>', array_map(fn ($child) => htmlspecialchars((string) $child), $children));
             $childrenCount = count($children);
 
             $maj = $chronique->getMiseAJour();

@@ -594,7 +594,8 @@ class MeasureImportController extends Controller
         }
 
         $children = $repChronique->findAllChildren($chronique);
-        $childrenList = join('<br>', $children);
+        // la liste s'affiche en HTML (popover) : les noms s'échappent
+        $childrenList = join('<br>', array_map(fn ($child) => htmlspecialchars((string) $child), $children));
         $childrenCount = count($children);
 
         return [

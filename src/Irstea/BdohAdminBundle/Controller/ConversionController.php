@@ -112,7 +112,8 @@ class ConversionController extends Controller
             /** @var ChroniqueRepository $chroniqueRepo */
             $chroniqueRepo = $this->getBdohRepo('Chronique');
             $children = $chroniqueRepo->findAllChildren($chroniqueConvertie);
-            $childrenList = join('<br>', $children);
+            // la liste s'affiche en HTML (popover) : les noms s'échappent
+            $childrenList = join('<br>', array_map(fn ($child) => htmlspecialchars((string) $child), $children));
             $childrenCount = count($children);
             $maj = $chroniqueConvertie->getMiseAJour();
             $maj = $maj ? $maj->format($this->getTranslator()->trans('transformation.bareme.dateBareme'))
@@ -309,7 +310,7 @@ class ConversionController extends Controller
                                 'chronique' => $chroniqueConvertie->getCode(),
                             ]
                         ),
-                        'chronique' => $chroniqueConvertie->__toString(),
+                        'chronique' => htmlspecialchars($chroniqueConvertie->__toString()), // affiché en HTML
                         'jobPage'   => $this->generateUrl('bdoh_job_list'),
                         'jobId'     => $job->getId(),
                     ]);

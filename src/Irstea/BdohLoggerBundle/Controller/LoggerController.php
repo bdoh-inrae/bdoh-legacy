@@ -20,6 +20,11 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 class LoggerController extends Controller
 {
     /**
+     * @var array<int, true>
+     */
+    private $htmlDescriptions = [];
+
+    /**
      * @param Request $request
      *
      * @return \Symfony\Component\HttpFoundation\Response
@@ -170,6 +175,8 @@ class LoggerController extends Controller
             '@IrsteaBdohLogger/index.html.twig',
             [
                 'historiques' => $historiques,
+                // les descriptions écrites en HTML par convertCalculDescription, par identifiant
+                'htmlDescriptions' => $this->htmlDescriptions,
                 'filters'     => json_encode($request->query->all()),
                 'recent'      => $recent,
                 'years'       => $years,
@@ -195,6 +202,7 @@ class LoggerController extends Controller
     {
         // If the description does not start with the header prefix string, then it has already been processed.
         if (\strpos($historique->getDescription(), HistoriqueCalculsChroniques::TRANSFO_HEADER) === 0) {
+            $this->htmlDescriptions[$historique->getId()] = true;
             $description = $historique->unserializeDescription();
             $historique->setDescription(
                 str_replace(

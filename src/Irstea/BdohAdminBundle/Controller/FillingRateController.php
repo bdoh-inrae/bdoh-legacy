@@ -6,6 +6,7 @@
 
 namespace Irstea\BdohAdminBundle\Controller;
 
+use Doctrine\ORM\NoResultException;
 use Irstea\BdohBundle\Controller\Controller;
 use Irstea\BdohBundle\Manager\JobManagerInterface;
 use Irstea\BdohDataBundle\Entity\ChroniqueContinue;
@@ -56,10 +57,15 @@ class FillingRateController extends Controller
         /** @var ChroniqueContinueRepository $repo */
         $repo = $this->getDoctrine()->getRepository(ChroniqueContinue::class);
 
-        // find() et non findOneById(), qui lève une exception sur une chronique inconnue : 404, et non
-        // l'erreur interne de l'ancien (dev/differences.md)
-        /** @var ChroniqueContinue $chronique */
-        $chronique = $repo->find($chroniqueId);
+        // findOneById() ne cherche que dans l'observatoire de la page, et lève une exception sur une
+        // chronique inconnue, avant le test qui suit : 404, et non l'erreur interne de l'ancien
+        // (dev/differences.md)
+        try {
+            /** @var ChroniqueContinue $chronique */
+            $chronique = $repo->findOneById($chroniqueId);
+        } catch (NoResultException) {
+            $chronique = null;
+        }
         if (!$chronique) {
             throw new NotFoundHttpException();
         }

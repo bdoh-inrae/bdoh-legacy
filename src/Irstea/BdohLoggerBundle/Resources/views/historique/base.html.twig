@@ -34,7 +34,13 @@
                     {%- endif %}
                     {{ macros.dateField(historique.date) }}
                     <td>
-                        {{ historique.description|replace({'\n': '<br/>'})|replace({'_CollapseId': '_CollapseId_'~key})|raw }}
+                        {#- Seule la description d'un calcul, que le contrôleur écrit en HTML, s'affiche telle
+                            quelle ; les autres recopient des noms saisis, qui s'échappent -#}
+                        {% if historique.id and htmlDescriptions[historique.id] is defined -%}
+                            {{ historique.description|replace({'_CollapseId': '_CollapseId_'~key})|raw }}
+                        {%- else -%}
+                            {{ historique.description|e|replace({'\n': '<br/>'})|raw }}
+                        {%- endif %}
                     </td>
                     {% block HistoriqueTD %}{% endblock %}
                 </tr>

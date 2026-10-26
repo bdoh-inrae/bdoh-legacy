@@ -11,10 +11,17 @@ use Symfony\Component\Form\DataTransformerInterface;
 class FileTransformer implements DataTransformerInterface
 {
     /**
+     * Le chemin du fichier enregistré : le champ caché « current » ne fait que le garder, ou le retirer
+     * s'il revient vide ; un autre chemin, fabriqué, ne s'enregistre pas.
+     */
+    private $original;
+
+    /**
      * {@inheritdoc}
      */
     public function transform(mixed $value): mixed
     {
+        $this->original = empty($value) ? null : $value;
         if (empty($value)) {
             return ['new' => null, 'current' => null];
         }
@@ -31,7 +38,7 @@ class FileTransformer implements DataTransformerInterface
             return $value['new'];
         }
         if (isset($value['current'])) {
-            return $value['current'];
+            return $value['current'] === '' ? '' : $this->original;
         }
 
         return null;

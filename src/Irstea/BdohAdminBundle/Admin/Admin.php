@@ -174,11 +174,24 @@ abstract class Admin extends AbstractAdmin implements ServiceSubscriberInterface
     }
 
     /**
-     * No export formats.
+     * No export formats (et pas de route d'export : Extension/NoExportExtension).
      */
     public function getExportFormats(): array
     {
         return [];
+    }
+
+    /**
+     * Le bouton « Supprimer » d'un champ ModelListType : Sonata 3 ne le montrait qu'à qui peut supprimer
+     * une entité de l'administration liée, Sonata 4 le montre à tous.
+     *
+     * @return string|false
+     */
+    protected function listDeleteButton(string $adminCode)
+    {
+        $admin = $this->getConfigurationPool()->getAdminByAdminCode($adminCode);
+
+        return $admin->hasRoute('delete') && $admin->hasAccess('delete') ? 'link_delete' : false;
     }
 
     /**
