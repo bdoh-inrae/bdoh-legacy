@@ -9,7 +9,6 @@ namespace Irstea\BdohSecurityBundle\Form;
 use Irstea\BdohSecurityBundle\Entity\Utilisateur;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\EmailType;
-use Symfony\Component\Form\Extension\Core\Type\PasswordType;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
@@ -49,8 +48,6 @@ abstract class UtilisateurType extends AbstractType
             ->add('nom', TextType::class, ['required' => true, 'label' => 'nom'])
             ->add('organisme', TextType::class, ['required' => true, 'attr' => ['class' => 'col-md-8'], 'label' => 'organisme'])
             ->add('email', EmailType::class, ['required' => true, 'attr' => ['class' => 'col-md-8'], 'label' => 'email'])
-            //->add('password', PasswordType::class, ['required' => true, 'label' => 'password'])
-            ->add('password', CheckedPasswordType::class, ['required' => true, 'label' => 'password'])
             ->add('telephone', TextType::class, ['required' => true, 'label' => 'telephone'])
             ->add('adresse', TextareaType::class, ['required' => true, 'attr' => ['class' => 'col-md-10', 'style' => 'height: 80px;'], 'label' => 'adresse'])
             ->add(

@@ -23,16 +23,6 @@ use Symfony\Component\Security\Core\User\UserProviderInterface;
 class UtilisateurRepository extends EntityRepository implements UserProviderInterface, UserLoaderInterface
 {
     /**
-     * Forces to retrieve the 'password' and 'salt' fields of a given 'Utilisateur'.
-     */
-    public function getPasswordSalt(Utilisateur $user)
-    {
-        $sql = 'SELECT password, salt FROM utilisateur WHERE id = ' . $user->getId();
-
-        return $this->getEntityManager()->getConnection()->fetchNumeric($sql);
-    }
-
-    /**
      * Part of UserProviderInterface, since Symfony 5.3.
      */
     public function loadUserByIdentifier(string $identifier): UserInterface

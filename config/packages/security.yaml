@@ -1,11 +1,7 @@
-# Repris de app/config/security.yml de l'ancien BDOH. Les mots de passe restent en bcrypt de coût 10,
-# sans nouveau hachage à la connexion : la colonne password n'est pas réécrite.
+# Repris de app/config/security.yml de l'ancien BDOH, sauf la connexion : par un lien envoyé par
+# courriel, sans mot de passe (dev/decisions.md). Les colonnes password et salt restent dans la base,
+# sans plus servir.
 security:
-    password_hashers:
-        Irstea\BdohSecurityBundle\Entity\Utilisateur:
-            algorithm: bcrypt
-            cost: 10
-
     providers:
         main:
             entity:
@@ -22,17 +18,32 @@ security:
             pattern:  ^/(_(profiler|wdt)|css|images|js)/
             security: false
 
-        # Ouvert à tous (l'« anonymous » de Symfony 2), avec connexion par formulaire
+        # Ouvert à tous (l'« anonymous » de Symfony 2)
         secured_area:
             pattern:  ^/
             lazy:     true
             provider: main
-            form_login:
-                use_referer: true
+            # Une page protégée renvoie à la page de connexion, comme le faisait form_login
+            entry_point: Irstea\BdohSecurityBundle\Security\LoginEntryPoint
+            # Le lien est signé, valable 15 minutes et d'un seul usage ; il ouvre une page dont le bouton
+            # connecte (check_post_only), pour qu'une messagerie qui ouvre les liens afin de les analyser
+            # ne le consomme pas. Un lien refusé ramène à la page de connexion, avec son message.
+            login_link:
+                check_route: bdoh_security_login_check
+                check_post_only: true
+                signature_properties: [id, email]
+                lifetime: 900
+                max_uses: 1
+                used_link_cache: cache.app
                 login_path: bdoh_security_login
-                check_path: bdoh_security_login_check
-                default_target_path: bdoh_home
+                failure_path: bdoh_security_login
                 success_handler: irstea_bdoh_security.security.success_handler
+            # La session dure 30 jours ; changer d'adresse e-mail la termine.
+            remember_me:
+                secret: '%kernel.secret%'
+                lifetime: 2592000
+                always_remember_me: true
+                signature_properties: [email]
             logout:
                 path:   bdoh_security_logout
                 target: bdoh_home
@@ -44,10 +55,3 @@ security:
         - { path: /admin/jobs, roles: ROLE_SUPER_ADMIN }
         - { path: /admin, roles: [ROLE_ADMIN, ROLE_SUPER_ADMIN] }
         - { path: /historique, roles: ROLE_ADMIN }
-
-when@test:
-    security:
-        password_hashers:
-            Irstea\BdohSecurityBundle\Entity\Utilisateur:
-                algorithm: bcrypt
-                cost: 4

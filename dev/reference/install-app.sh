@@ -32,7 +32,7 @@ mkdir -p "$app"
 git -C "$legacy" archive "$commit" | tar -x -C "$app"
 cp "$here/app/parameters.yml" "$app/app/config/parameters.yml"
 # Le code qui passe outre le captcha, pour que la comparaison remplisse les formulaires qui en ont un
-# (dev/compare/compare.py, CAPTCHA_BYPASS) ; le nouveau BDOH le lit dans son conteneur (compose.yaml).
+# (dev/compare/compare.py, CAPTCHA_BYPASS). Le nouveau BDOH n'a plus de captcha.
 cat >> "$app/app/config/config_prod.yml" <<'EOF'
 
 # Ajouté par dev/reference/install-app.sh, pour la comparaison seulement.

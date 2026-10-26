@@ -1,0 +1,20 @@
+# Les formulaires qui envoient un courriel à une adresse que n'importe qui peut saisir (demande d'un
+# lien de connexion, inscription) sont limités en fréquence, à la place du captcha de l'ancien BDOH :
+# sans limite, BDOH enverrait des courriels en masse. Les limiteurs servent par leur nom
+# (RateLimiterFactoryInterface $loginLinkIpLimiter…).
+framework:
+    rate_limiter:
+        # Par adresse IP : de quoi se tromper d'adresse plusieurs fois, pas d'écrire en masse
+        login_link_ip:
+            policy: sliding_window
+            limit: 10
+            interval: '15 minutes'
+        # Par adresse e-mail : quelques liens par quart d'heure
+        login_link_email:
+            policy: sliding_window
+            limit: 3
+            interval: '15 minutes'
+        signup_ip:
+            policy: sliding_window
+            limit: 5
+            interval: '1 hour'

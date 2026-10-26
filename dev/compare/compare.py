@@ -27,6 +27,7 @@ import contextlib
 import datetime
 import difflib
 import hashlib
+import html
 import html.parser
 import http.cookiejar
 import io
@@ -34,6 +35,7 @@ import json
 import re
 import subprocess
 import sys
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -50,6 +52,7 @@ PASSWORD = 'bdoh-test'  # mot de passe de tous les comptes des bases anonymisée
 class Side:
     url: str
     console: list  # commande qui lance la console Symfony de l'instance
+    login_link: bool = False  # connexion par un lien (nouveau BDOH), et non par mot de passe
 
 
 SIDES = {
@@ -58,7 +61,7 @@ SIDES = {
     'reference': Side('http://172.30.25.10',
                       ['docker', 'exec', 'bdoh-reference-app', 'php', 'app/console']),
     # Le nouveau BDOH (service app de compose.yaml), sur PostgreSQL 17.
-    'new': Side('http://172.30.26.10', ['docker', 'exec', 'bdoh-app', 'php', 'bin/console']),
+    'new': Side('http://172.30.26.10', ['docker', 'exec', 'bdoh-app', 'php', 'bin/console'], login_link=True),
     # L'ancien code sur PostgreSQL 17 (service reference-app-17 de compose.yaml).
     'reference-17': Side('http://172.30.26.17',
                          ['docker', 'exec', 'bdoh-reference-app-17', 'php', 'app/console']),
@@ -214,16 +217,36 @@ class NoRedirect(urllib.request.HTTPRedirectHandler):
 class Client:
     """Un navigateur sans JavaScript, connecté ou non, qui ne suit pas les redirections."""
 
+    linked = {}  # seconde du dernier lien de connexion créé, par compte
+
     def __init__(self, side, email, slug, password=PASSWORD):
         self.side = side
         jar = http.cookiejar.CookieJar()
         self.opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(jar), NoRedirect)
-        if email:
+        if email and side.login_link:
+            # Un lien créé par la console, comme celui du courriel. Deux liens d'un même compte créés
+            # dans la même seconde sont le même lien, qui ne sert qu'une fois : on attend la suivante.
+            while int(time.time()) == Client.linked.get(email):
+                time.sleep(0.1)
+            Client.linked[email] = int(time.time())
+            r = subprocess.run([*side.console, 'security:users:login-link', email, slug, '--env=prod'],
+                               capture_output=True, text=True)
+            status, headers = self.follow_login_link(r.stdout.strip()) if r.returncode == 0 else (None, {})
+        elif email:
             self.get(f'/{slug}/login')
             status, headers, _ = self.get(f'/{slug}/login_check', urllib.parse.urlencode(
                 {'_username': email, '_password': password}).encode())
-            if status != 302 or 'login' in headers.get('Location', ''):
-                raise RuntimeError(f'connexion refusée pour {email} sur {side.url}')
+        if email and (status != 302 or 'login' in headers.get('Location', '')):
+            raise RuntimeError(f'connexion refusée pour {email} sur {side.url}')
+
+    def follow_login_link(self, url):
+        """Ouvre un lien de connexion, puis envoie le bouton de la page qu'il ouvre ; rend la réponse."""
+        parts = urllib.parse.urlsplit(html.unescape(url))
+        path = f'{parts.path}?{parts.query}'
+        form = FormFields(parts.path)
+        form.feed(self.get(path)[2].decode('utf-8', 'replace'))
+        status, headers, _ = self.get(parts.path, form.filled({}))
+        return status, headers
 
     def get(self, path, data=None, headers=None):
         request = urllib.request.Request(self.side.url + path, data, headers or {})
@@ -1314,7 +1337,20 @@ def run_imports(args):
 
 # --- Comptes ---------------------------------------------------------------------------------------
 
-CAPTCHA_BYPASS = 'comparaison'  # passe outre le captcha des deux côtés (compose.yaml, install-app.sh)
+CAPTCHA_BYPASS = 'comparaison'  # passe outre le captcha de l'ancien (install-app.sh)
+LOGIN_LINK = re.compile(r'(<site>)?/[\w-]+/login_check\?[^\s"<]+')
+
+
+def mailed_link(email):
+    """Le lien de connexion du dernier courriel reçu par une adresse, retenu par Mailpit."""
+    get = lambda path: json.loads(urllib.request.urlopen(MAILPIT + path, timeout=60).read())
+    for summary in sorted(get('/api/v1/messages')['messages'], key=lambda m: m['Created'], reverse=True):
+        if any(to['Address'] == email for to in summary['To']):
+            m = get(f"/api/v1/message/{summary['ID']}")
+            found = re.search(r'https?://[^\s"<]+/login_check\?[^\s"<]+', m['HTML'] or m['Text'])
+            if found:
+                return html.unescape(found.group(0))
+    raise RuntimeError(f'aucun lien de connexion pour {email}')
 NEW_EMAIL = 'compte-essai@example.invalid'  # .invalid : le DNS de développement lui donne un MX
 
 
@@ -1325,7 +1361,7 @@ class FormFields(html.parser.HTMLParser):
     def __init__(self, action):
         super().__init__(convert_charrefs=True)
         self.action, self.inside, self.select, self.textarea = action, False, None, None
-        self.fields, self.options = [], {}
+        self.fields, self.options, self.names = [], {}, set()
 
     def handle_starttag(self, tag, attrs):
         a = {k: v or '' for k, v in attrs}
@@ -1333,7 +1369,9 @@ class FormFields(html.parser.HTMLParser):
             self.inside = self.action in a.get('action', '')
         elif not self.inside or 'name' not in a and tag != 'option':
             return
-        elif tag == 'input' and a.get('type') not in ('submit', 'button', 'image', 'reset'):
+        if 'name' in a and tag in ('input', 'select', 'textarea'):
+            self.names.add(a['name'])
+        if tag == 'input' and a.get('type') not in ('submit', 'button', 'image', 'reset'):
             if a.get('type') not in ('checkbox', 'radio') or 'checked' in a:
                 self.fields.append([a['name'], a.get('value', '' if a.get('type') != 'checkbox' else 'on')])
         elif tag == 'select':
@@ -1366,12 +1404,12 @@ class FormFields(html.parser.HTMLParser):
 
     def filled(self, values):
         """Les champs, avec d'autres valeurs pour ceux dont le nom se termine par une clé : une
-        liste donne toutes les valeurs du champ ; une clé sans champ devient un nom de champ."""
+        liste donne toutes les valeurs du champ ; une clé sans champ dans le formulaire est ignorée
+        (les mêmes valeurs servent à l'ancien et au nouveau, qui n'a ni mot de passe ni captcha)."""
         fields = [f for f in self.fields if not any(self.match(f[0], k) for k in values)]
-        names = {*(f[0] for f in self.fields), *self.options}
         for key, value in values.items():
-            name = next((n for n in sorted(names) if self.match(n, key)), key)
-            fields += [[name, v] for v in (value if isinstance(value, list) else [value])]
+            for name in [n for n in sorted(self.names) if self.match(n, key)][:1]:
+                fields += [[name, v] for v in (value if isinstance(value, list) else [value])]
         return urllib.parse.urlencode([tuple(f) for f in fields]).encode()
 
     def choices(self, key):
@@ -1411,9 +1449,11 @@ def run_accounts(args):
     """Les parcours de comptes, par l'ancien code sur PostgreSQL 17 et par le nouveau, chacun sur sa
     copie de BASE : inscription (et ses refus), modification de son compte, demande d'accès,
     attribution de droits par un gestionnaire, création de comptes d'administration en ligne de
-    commande ; les réponses, les courriels et l'état des tables de comptes. Le mot de passe oublié
-    et le changement de mot de passe ne sont pas joués : ils partent avec la connexion par lien
-    (dev/plans/2026-10-26_comptes.md)."""
+    commande ; les réponses, les courriels et l'état des tables de comptes.
+
+    Le nouveau se connecte par un lien envoyé par courriel, sans mot de passe ni captcha : le nouveau
+    compte, par le lien de son courriel de bienvenue ; les écarts qui en découlent sont admis
+    (dev/differences.md, « Connexion par lien »)."""
     template = args.base
     first = lambda sql: query(template, sql, NEW_SERVER)[0]
     marks = {'historique': first('SELECT coalesce(max(id), 0) FROM historique')[0],
@@ -1444,9 +1484,6 @@ def run_accounts(args):
                 '[adresse]': '1 rue de l’Essai\n69000 Lyon', '[captcha]': CAPTCHA_BYPASS}
         anonymous = Client(side, None, slug)
         for name, changes in [
-            ('captcha faux', {'[captcha]': 'faux'}),
-            ('mots de passe différents', {'[password][repeat]': 'autre-chose'}),
-            ('mot de passe trop court', {'[password][main]': 'abc', '[password][repeat]': 'abc'}),
             ('téléphone trop court', {'[telephone]': '0102'}),
             ('adresse sans MX', {'[email]': 'compte-essai@pas-de-courrier.example'}),
             ('adresse mal formée', {'[email]': 'pas-une-adresse'}),
@@ -1466,12 +1503,19 @@ def run_accounts(args):
             except RuntimeError:
                 steps[name] = ['connexion refusée']
 
-        user = login('connexion du nouveau compte', NEW_EMAIL, 'essai-2026')
+        if side.login_link:
+            # Par le lien du courriel de bienvenue, qui confirme l'adresse
+            user = Client(side, None, slug)
+            status, headers = user.follow_login_link(mailed_link(NEW_EMAIL))
+            accepted = status == 302 and 'login' not in headers.get('Location', '')
+            steps['connexion du nouveau compte'] = ['connexion acceptée' if accepted else 'connexion refusée']
+        else:
+            user = login('connexion du nouveau compte', NEW_EMAIL, 'essai-2026')
         edit = f'/{slug}/user/edit'
         for name, changes in [('téléphone trop court', {'[telephone]': '01'}),
                               ('valide', {'[organisme]': 'INRAE, unité RiverLy', '[telephone]': '0607080910'})]:
             post(f'modification du compte, {name}', user, edit, form_of(user, edit).filled(changes))
-        login('connexion après la modification', NEW_EMAIL, 'essai-2026')  # mot de passe inchangé
+        login('connexion après la modification', NEW_EMAIL, 'essai-2026')  # l'ancien : mot de passe inchangé
 
         need = f'/{slug}/besoin/new'
         for name, changes in [('détails manquants', {'[details]': ''}), ('valide', {})]:
@@ -1485,16 +1529,16 @@ def run_accounts(args):
         steps['liste des comptes'] = page_lines(side.url, *boss.get(f'/{slug}/user/all'))
         right = f'/{slug}/user/right/{NEW_EMAIL}'
         form = form_of(boss, right)
-        # Les demandes à traiter sont des cases à cocher, non cochées : absentes des champs envoyés
-        needs = sorted(set(re.findall(r'name="(form\[besoinATraiter\d+\])"', boss.get(right)[2].decode())))
         post('droits', boss, right, form.filled({
-            **{n: '1' for n in needs}, '[dateFin][day]': '30', '[dateFin][month]': '6', '[dateFin][year]': '2027',
+            **{n: '1' for n in form.names if 'besoinATraiter' in n},
+            '[dateFin][day]': '30', '[dateFin][month]': '6', '[dateFin][year]': '2027',
             '[utilisateurChronique]': form.choices('[utilisateurChronique]')[:3]}))
         steps['droits, page relue'] = page_lines(side.url, *boss.get(right))
 
         for answer in ['y', 'non']:
+            password = [] if side.login_link else ['admin-2026']  # le nouveau n'en demande plus
             r = subprocess.run([*console, 'security:users:create', 'Dominique', f'Admin-{answer}',
-                                f'admin-{answer}@example.invalid', 'admin-2026', 'FCT', answer, '-n', '--env=prod'],
+                                f'admin-{answer}@example.invalid', *password, 'FCT', answer, '-n', '--env=prod'],
                                capture_output=True, text=True)
             steps[f'commande security:users:create, {answer}'] = [f'code de sortie {r.returncode}',
                                                                   *r.stdout.splitlines()]
@@ -1510,10 +1554,14 @@ def run_accounts(args):
                 steps = play(side, console)
         else:
             side = SIDES['new']
+            # Les limites de fréquence repartent de zéro : d'une comparaison à l'autre, elles compteraient
+            subprocess.run([*side.console, 'cache:pool:clear', 'cache.rate_limiter'], check=True, capture_output=True)
             with new_on(base, template, 'MAILER_DSN=smtp://mailpit:1025') as console:
                 steps = play(side, console)
-        # Deux courriels d'une même requête partent dans un ordre ou l'autre (l'ancien les met en file)
-        mails = [line.replace(side.url, '<site>') for line in mail_lines(ordered=False)]
+        # Deux courriels d'une même requête partent dans un ordre ou l'autre (l'ancien les met en file) ;
+        # le nouveau prévient les gestionnaires à la première connexion, et non à l'inscription
+        mails = [LOGIN_LINK.sub('<lien de connexion>', line.replace(side.url, '<site>'))
+                 for line in mail_lines(ordered=False)]
         sides[name] = {**steps, 'courriels': mails,
                        **{table: ['\t'.join(row) for row in query(base, sql.format(**marks), NEW_SERVER)]
                           for table, sql in ACCOUNT_QUERIES.items()}}

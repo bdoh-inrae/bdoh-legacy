@@ -16,10 +16,10 @@ $user = [
         'create'                       => [
             'title'       => 'Créer un compte sur BDOH',
             'submit'      => 'Créer le compte',
-            'isCompleted' => 'Votre compte BDOH a bien été créé. Vous pouvez désormais vous connecter.',
+            'isCompleted' => "Votre compte BDOH a bien été créé. Un e-mail vient de vous être envoyé : suivez le lien qu'il contient pour confirmer votre adresse et vous connecter.",
             'info'        => [
                 'isTheFirstStep' => "Le compte que vous allez créer sera valable sur toute l'application BDOH. Pour pouvoir télécharger des données il faudra, une fois connecté, faire <b>des demandes d'accès spécifiques</b> sur les observatoires qui vous intéressent via le formulaire de demande d'accès aux données ou contacter un gestionnaire.",
-                'yourIdentifier' => "L'<b>adresse e-mail</b> sera votre <u>identifiant de connexion</u>.",
+                'yourIdentifier' => "L'<b>adresse e-mail</b> sera votre <u>identifiant de connexion</u> : vous vous connecterez par un lien envoyé à cette adresse, sans mot de passe.",
             ],
         ],
         'edit'                         => [
@@ -27,7 +27,7 @@ $user = [
             'submit'      => 'Enregistrer les modifications',
             'isCompleted' => 'Votre compte BDOH a été mis à jour.',
             'info'        => [
-                'changePassword' => 'Si vous desirez <u>changer votre mot de passe</u> remplissez les <u>3 champs suivants</u>',
+                'changeEmail' => "Changer d'adresse e-mail vous déconnecte : vous vous reconnecterez par un lien envoyé à la nouvelle adresse.",
             ],
         ],
         'right'                        => [
@@ -72,11 +72,13 @@ Vous pouvez lui attribuer un rôle sur votre observatoire deppuis la page suivan
         ],
         'newMailUtilisateur'           => [
             'body'  => [
-                'hello' => 'Bonjour',
-                'step1' => "Vous avez créé un compte sur BDOH. Il est valable pour toute l'application.",
-                'step2' => "Pour pouvoir télécharger des données il faudra, une fois connecté, faire des demandes d'accès spécifiques sur les observatoires qui vous intéressent via le formulaire de demande d'accès aux données ou contacter un gestionnaire :",
-                'step3' => "Conformément aux articles 39 et 40 de la loi Informatique et Libertés modifiée par la loi n° 2004-801 du 6 août 2004 relative à la protection des personnes physiques à l'égard des traitements de données à caractère personnel, vous disposez d'un droit d'accès et de rectification des données vous concernant.",
-                'step4' => 'Pour toute demande de rectification veuillez vous adresser à : bdoh.support@lists.irstea.fr.',
+                'hello'        => 'Bonjour',
+                'step1'        => "Vous avez créé un compte sur BDOH. Il est valable pour toute l'application.",
+                'confirm'      => 'Pour confirmer votre adresse et vous connecter, suivez ce lien, valable 15 minutes et une seule fois :',
+                'confirmLater' => 'Passé ce délai, demandez un nouveau lien depuis la page de connexion de BDOH.',
+                'step2'        => "Pour pouvoir télécharger des données il faudra, une fois connecté, faire des demandes d'accès spécifiques sur les observatoires qui vous intéressent via le formulaire de demande d'accès aux données ou contacter un gestionnaire :",
+                'step3'        => "Conformément aux articles 39 et 40 de la loi Informatique et Libertés modifiée par la loi n° 2004-801 du 6 août 2004 relative à la protection des personnes physiques à l'égard des traitements de données à caractère personnel, vous disposez d'un droit d'accès et de rectification des données vous concernant.",
+                'step4'        => 'Pour toute demande de rectification veuillez vous adresser à : bdoh.support@lists.irstea.fr.',
             ],
             'title' => 'Bienvenue sur BDOH',
         ],
@@ -125,56 +127,35 @@ $besoin = [
  ************************************************/
 
 $various = [
-    'User account has expired.' => 'Ce compte BDOH a expiré.',
-    'Bad credentials.'          => "L'<u>adresse e-mail</u> ou le <u>mot de passe</u> sont erronés ou ce compte BDOH a expiré.",
     'contactGestionnaire'       => 'Pour contacter un gestionnaire de cet observatoire adressez-vous à :',
     'userManual(%link%)'        => "Pour plus d'informations sur l'utilisation de BDOH vous pouvez consulter <a href=\"%link%\">la documentation de BDOH</a>.",
     'technicalContact'          => "Pour les demandes techniques concernant l'utilisation de BDOH veuillez contacter <a href=\"mailto:bdoh.support@lists.irstea.fr\">bdoh.support@lists.irstea.fr</a>.",
 
     'security' => [
-        'login_form' => [
-            'connection'   => 'Connexion',
-            'title'        => 'Connexion à BDOH',
-            'username'     => 'Adresse e-mail professionnelle',
-            'password'     => 'Mot de passe',
-            'connectTo'    => 'Se connecter',
-            'lostPassword' => 'Mot de passe oublié',
+        'login_form'      => [
+            'connection'    => 'Connexion',
+            'title'         => 'Connexion à BDOH',
+            'info'          => "Saisissez l'adresse e-mail de votre compte : BDOH vous y envoie un lien de connexion, valable 15 minutes. Il n'y a plus de mot de passe.",
+            'username'      => 'Adresse e-mail professionnelle',
+            'connectTo'     => 'Recevoir un lien de connexion',
+            'noAccount'     => 'Pas encore de compte ?',
+            'createAccount' => 'Créer un compte',
         ],
-    ],
-    'Utilisateur.password.badRepetition' => 'Mauvaise répétition du mot de passe.',
-    'Utilisateur.password.badCurrent'    => 'Vous devez renseigner ce champ avec votre mot de passe actuel.',
-    'Utilisateur.newPassword.mandatory'  => "Vous n'avez pas rempli ce champ.",
-    'Utilisateur.oldPassword.mandatory'  => "Vous n'avez pas rempli ce champ.",
-];
-
-// Password resetting
-$resetting = [
-    'resetting' => [
-        'password_already_requested' => 'Un nouveau mot de passe a déjà été demandé pour cet utilisateur dans les dernières 24 heures.',
-        'isCompleted'                => 'Votre mot de passe à bien été modifié.',
-        'check_email'                => "Un e-mail a été envoyé à l'adresse «\u{a0}%email%\u{a0}», il contient un lien pour réinitialiser votre mot de passe.",
-        'request'                    => [
-            'invalid_email' => "L'adresse e-mail «\u{a0}%email%\u{a0}» n'existe pas.",
-            'email'         => 'Adresse e-mail',
-            'submit'        => 'Réinitialiser votre mot de passe',
+        'login_check'     => [
+            'info(%email%)' => "Vous allez vous connecter à BDOH avec le compte «\u{a0}%email%\u{a0}».",
+            'submit'        => 'Se connecter',
         ],
-        'reset'                      => [
-            'submit' => 'Modifier votre mot de passe',
+        'login_link'      => [
+            'sent(%email%)' => "Si un compte BDOH existe pour l'adresse «\u{a0}%email%\u{a0}», un lien de connexion vient d'y être envoyé. Il est valable 15 minutes.",
+            'mail'          => [
+                'title'  => 'BDOH : votre lien de connexion',
+                'hello'  => 'Bonjour',
+                'body'   => 'Pour vous connecter à BDOH, suivez ce lien, valable 15 minutes et une seule fois :',
+                'notYou' => "Si vous n'avez pas demandé ce lien, ignorez ce message : sans lui, personne ne peut se connecter à votre compte.",
+                'footer' => 'Cet e-mail est généré automatiquement, merci de ne pas y répondre.',
+            ],
         ],
-        'flash'                      => [
-            'success' => 'Le mot de passe a été réinitialisé avec succès',
-        ],
-        'email'                      => [
-            'subject' => 'Réinitialiser votre mot de passe',
-            'message' => "Bonjour %username%,
-
-Pour réinitialiser votre mot de passe merci de vous rendre sur :
-%confirmationUrl%
-
-Cordialement,
-
-L'équipe BDOH.",
-        ],
+        'tooManyRequests' => 'Trop de demandes en peu de temps : réessayez dans quelques minutes.',
     ],
 ];
 
@@ -182,4 +163,4 @@ L'équipe BDOH.",
  * RETURNED MESSAGES
  ************************************************/
 
-return array_merge($entities, $fields, $user, $besoin, $various, $resetting);
+return array_merge($entities, $fields, $user, $besoin, $various);

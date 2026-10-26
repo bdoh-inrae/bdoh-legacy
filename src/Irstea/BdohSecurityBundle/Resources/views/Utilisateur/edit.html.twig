@@ -25,15 +25,13 @@
         <form action="{{ path('bdoh_security_utilisateur_edit') }}" method="post"
               class="form-horizontal" {% if form.vars.multipart %}enctype="multipart/form-data"{% endif %}>
 
-            <!-- Login fields (with possibility to change password) -->
+            <!-- Login fields -->
             <div class="alert alert-warning">
                 <h4 class="alert-heading" style="margin-bottom:25px;">{{ 'security.utilisateur.loginInfo'|trans }}</h4>
-                {{ form_row(form.email) }}
                 <div style="margin-bottom:15px;">
-                    <strong>{{ 'security.utilisateur.edit.info.changePassword'|trans|raw }}</strong>
+                    <strong>{{ 'security.utilisateur.edit.info.changeEmail'|trans }}</strong>
                 </div>
-                {{ form_row(form.oldPassword) }}
-                {{ form_widget(form.password) }}
+                {{ form_row(form.email) }}
             </div>
 
             <!-- Identification fields -->

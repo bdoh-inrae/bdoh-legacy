@@ -21,6 +21,6 @@ make reference-stop    l'arrête
 
 Le nouveau BDOH aura son propre serveur de base, PostgreSQL 17 comme Debian 13 (`compose.yaml`) : `SERVER=new` y mène les commandes `db`, `db-small` et `inspect`.
 
-Tous les comptes de la base anonymisée ont le mot de passe `bdoh-test`.
+Dans la référence, tous les comptes de la base anonymisée ont le mot de passe `bdoh-test`. Le nouveau BDOH n'a pas de mot de passe : il envoie un lien de connexion par courriel. En développement, où les courriels ne partent pas, la console en crée un : `docker exec bdoh-app php bin/console security:users:login-link ADRESSE OBSERVATOIRE`.
 
 Licence : [GNU AGPL v3](LICENSE).

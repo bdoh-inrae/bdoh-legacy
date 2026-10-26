@@ -16,10 +16,10 @@ $user = [
         'create'                       => [
             'title'       => 'Register on BDOH',
             'submit'      => 'Register',
-            'isCompleted' => 'Your BDOH account has been created. You may now sign in.',
+            'isCompleted' => 'Your BDOH account has been created. An e-mail has just been sent to you: follow its link to confirm your address and sign in.',
             'info'        => [
                 'isTheFirstStep' => 'The account you are creating will be valid for the whole BDOH application. To download data, once signed in, you will have to make <b>specific access requests</b> on observatories you are interested in by using the data access request form or by contacting a manager.',
-                'yourIdentifier' => 'The <b>e-mail address</b> will be your <u>login</u>.',
+                'yourIdentifier' => 'The <b>e-mail address</b> will be your <u>login</u>: you will sign in with a link sent to this address, without a password.',
             ],
         ],
         'edit'                         => [
@@ -27,7 +27,7 @@ $user = [
             'submit'      => 'Save the changes',
             'isCompleted' => 'Your BDOH account has been updated.',
             'info'        => [
-                'changePassword' => 'If you want to <u>change your password</u> fill the <u>following 3 fields</u>',
+                'changeEmail' => 'Changing your e-mail address signs you out: you will sign in again with a link sent to the new address.',
             ],
         ],
         'right'                        => [
@@ -72,11 +72,13 @@ You can assign him/her a role in your observatory from the following page:',
         ],
         'newMailUtilisateur'           => [
             'body'  => [
-                'hello' => 'Hello',
-                'step1' => 'You have created an account on BDOH. It is valid for the whole application.',
-                'step2' => 'To download data, once signed in, you will have to make specific access requests on observatories you are interested in by using the data access request form or by contacting a manager:',
-                'step3' => "Accordance with Articles 39 and 40 of the law “\u{a0}Informatique et Libertés\u{a0}” amended by Law No. 2004-801 of 6 August 2004 on the protection of individuals with regard to the processing of personal data, you have a right to access and rectify data concerning you.",
-                'step4' => 'To request a correction please contact: <a href="mailto:bdoh.support@lists.irstea.fr">bdoh.support@lists.irstea.fr</a>.',
+                'hello'        => 'Hello',
+                'step1'        => 'You have created an account on BDOH. It is valid for the whole application.',
+                'confirm'      => 'To confirm your address and sign in, follow this link, valid for 15 minutes and once only:',
+                'confirmLater' => 'After that, ask for a new link from the BDOH sign-in page.',
+                'step2'        => 'To download data, once signed in, you will have to make specific access requests on observatories you are interested in by using the data access request form or by contacting a manager:',
+                'step3'        => "Accordance with Articles 39 and 40 of the law “\u{a0}Informatique et Libertés\u{a0}” amended by Law No. 2004-801 of 6 August 2004 on the protection of individuals with regard to the processing of personal data, you have a right to access and rectify data concerning you.",
+                'step4'        => 'To request a correction please contact: <a href="mailto:bdoh.support@lists.irstea.fr">bdoh.support@lists.irstea.fr</a>.',
             ],
             'title' => 'Welcome to BDOH',
         ],
@@ -125,56 +127,35 @@ $besoin = [
  ************************************************/
 
 $various = [
-    'User account has expired.' => 'This BDOH account is expired.',
-    'Bad credentials.'          => 'The <u>e-mail address</u> or <u>password</u> are wrong or this BDOH account is expired.',
     'contactGestionnaire'       => 'To contact a manager of this observatory please contact:',
     'userManual(%link%)'        => 'For more information about using BDOH you may read <a href="%link%">the BDOH documentaion</a>.',
     'technicalContact'          => 'For technical questions about using BDOH please contact <a href="mailto:bdoh.support@lists.irstea.fr">bdoh.support@lists.irstea.fr</a>.',
 
     'security' => [
-        'login_form' => [
-            'connection'   => 'Sign in',
-            'title'        => 'Sign in to BDOH',
-            'username'     => 'Professional e-mail address',
-            'password'     => 'Password',
-            'connectTo'    => 'Sign in',
-            'lostPassword' => 'Forgot Password?',
+        'login_form'      => [
+            'connection'    => 'Sign in',
+            'title'         => 'Sign in to BDOH',
+            'info'          => 'Enter the e-mail address of your account: BDOH sends a sign-in link to it, valid for 15 minutes. There is no password any more.',
+            'username'      => 'Professional e-mail address',
+            'connectTo'     => 'Get a sign-in link',
+            'noAccount'     => 'No account yet?',
+            'createAccount' => 'Register',
         ],
-    ],
-    'Utilisateur.password.badRepetition' => 'Bad password repetition.',
-    'Utilisateur.password.badCurrent'    => 'This value should be your current password.',
-    'Utilisateur.newPassword.mandatory'  => 'You have not completed this field.',
-    'Utilisateur.oldPassword.mandatory'  => 'You have not completed this field.',
-];
-
-// Password resetting
-$resetting = [
-    'resetting' => [
-        'password_already_requested' => 'A new password has been requested for this user in the past 24 hours.',
-        'isCompleted'                => 'Your password has been changed successfully.',
-        'check_email'                => "An e-mail has been sent to “\u{a0}%email%\u{a0}”, it contains a link to reset your password.",
-        'request'                    => [
-            'invalid_email' => "The e-mail address “\u{a0}%email%\u{a0}” does not exist.",
-            'email'         => 'E-mail address',
-            'submit'        => 'Reset your password',
+        'login_check'     => [
+            'info(%email%)' => "You are about to sign in to BDOH with the account “\u{a0}%email%\u{a0}”.",
+            'submit'        => 'Sign in',
         ],
-        'reset'                      => [
-            'submit' => 'Change your password',
+        'login_link'      => [
+            'sent(%email%)' => "If a BDOH account exists for “\u{a0}%email%\u{a0}”, a sign-in link has just been sent to it. It is valid for 15 minutes.",
+            'mail'          => [
+                'title'  => 'BDOH: your sign-in link',
+                'hello'  => 'Hello',
+                'body'   => 'To sign in to BDOH, follow this link, valid for 15 minutes and once only:',
+                'notYou' => 'If you did not ask for this link, ignore this message: without it, nobody can sign in to your account.',
+                'footer' => 'This e-mail is generated automatically, please do not reply.',
+            ],
         ],
-        'flash'                      => [
-            'success' => 'The password has been successfully reset',
-        ],
-        'email'                      => [
-            'subject' => 'Reset your password',
-            'message' => 'Hello %username%,
-
-To reset your password please visit the following link:
-%confirmationUrl%
-
-Regards,
-
-The BDOH team.',
-        ],
+        'tooManyRequests' => 'Too many requests in a short time: please try again in a few minutes.',
     ],
 ];
 
@@ -182,4 +163,4 @@ The BDOH team.',
  * RETURNED MESSAGES
  ************************************************/
 
-return array_merge($entities, $fields, $user, $besoin, $various, $resetting);
+return array_merge($entities, $fields, $user, $besoin, $various);

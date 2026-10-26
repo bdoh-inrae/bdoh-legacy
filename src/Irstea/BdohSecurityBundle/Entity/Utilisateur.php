@@ -15,12 +15,11 @@ use Irstea\BdohSecurityBundle\Validator\Constraint\EmailWithMx;
 use Serializable;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Security\Core\User\EquatableInterface;
-use Symfony\Component\Security\Core\User\LegacyPasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Validator\Constraints as Assert;
 
 #[UniqueEntity(fields: 'email', message: 'Utilisateur.email.alreadyUsed')]
-class Utilisateur implements UserInterface, LegacyPasswordAuthenticatedUserInterface, EquatableInterface, Serializable
+class Utilisateur implements UserInterface, EquatableInterface, Serializable
 {
     const ROLE_ADMIN_FCT = 'FCT';
     const ROLE_ADMIN_TECH = 'TECH';
@@ -60,8 +59,9 @@ class Utilisateur implements UserInterface, LegacyPasswordAuthenticatedUserInter
 
     /**
      * @var string
+     *             Plus de mot de passe depuis la connexion par lien : '' pour les nouveaux comptes, la colonne
+     *             n'acceptant pas NULL ; les hachages des anciens comptes ne servent plus.
      */
-    #[Assert\Length(min: 4, minMessage: 'Utilisateur.password.minLength({{ limit }})')]
     protected $password;
 
     /**

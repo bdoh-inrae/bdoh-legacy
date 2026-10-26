@@ -23,9 +23,11 @@ use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\DateType;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Mailer\MailerInterface;
 use Symfony\Component\Mime\Email;
-use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
+use Symfony\Component\RateLimiter\RateLimiterFactoryInterface;
+use Symfony\Component\Security\Http\LoginLink\LoginLinkHandlerInterface;
 
 /**
  * This controller allows :
@@ -35,10 +37,8 @@ use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 #[Route('/user')]
 class UtilisateurController extends Controller
 {
-    public function __construct(
-        private MailerInterface $mailer,
-        private UserPasswordHasherInterface $hasher
-    ) {
+    public function __construct(private MailerInterface $mailer)
+    {
     }
 
     /**
@@ -61,7 +61,7 @@ class UtilisateurController extends Controller
      * @return \Symfony\Component\HttpFoundation\Response
      */
     #[Route('/new', name: 'bdoh_security_utilisateur_new', methods: ['GET', 'POST'])]
-    public function newAction(Request $request)
+    public function newAction(Request $request, LoginLinkHandlerInterface $loginLinkHandler, RateLimiterFactoryInterface $signupIpLimiter)
     {
         // si l'utilisateur est déjà identifié on le redirige sur la page d'édition de son compte
         if ($this->isGranted('ROLE_USER')) {
@@ -76,31 +76,25 @@ class UtilisateurController extends Controller
             $form->handleRequest($request);
 
             if ($form->isSubmitted() && $form->isValid()) {
-                // Encodes the password
-                $user->setPassword($this->hasher->hashPassword($user, $user->getPassword()));
+                // Chaque inscription envoie un courriel à l'adresse saisie : en nombre limité par adresse IP
+                if (!$signupIpLimiter->create($request->getClientIp())->consume()->isAccepted()) {
+                    $this->getSession()->getFlashBag()->add('error', $this->get('translator')->trans('security.tooManyRequests'));
+
+                    return $this->render('@IrsteaBdohSecurity/Utilisateur/new.html.twig', ['form' => $form->createView()], new Response('', 429));
+                }
+
+                // Pas de mot de passe : on se connecte par un lien (la colonne n'accepte pas NULL)
+                $user->setPassword('');
+                $user->setSalt('');
 
                 // Persists the new user
                 $em = $this->getEm();
                 $em->persist($user);
                 $em->flush();
 
-                // Send a mail to the managers of the observatory
-                $userRepo = $this->getSecurityRepo('Utilisateur');
-                $managerMails = $userRepo->getValidatorMails($this->container->get('irstea_bdoh.manager.observatoire')->getCurrent());
-                $message = (new Email())
-                    ->subject($this->get('translator')->trans('security.utilisateur.newAccountMail.title'))
-                    ->from('bdoh@inrae.fr')
-                    ->to(...$managerMails)
-                    ->text(
-                        $this->renderView(
-                            '@IrsteaBdohSecurity/Utilisateur/mail.txt.twig',
-                            ['user' => $user, 'type' => 'compte']
-                        )
-                    );
-
-                $this->send($message);
-
-                // Send a mail to the new user
+                // Le courriel de bienvenue porte le premier lien de connexion, qui confirme l'adresse (créé sans
+                // la requête, qui ferait perdre au routeur l'observatoire courant). Les gestionnaires de
+                // l'observatoire sont prévenus à la première connexion (BdohAuthenticationHandler).
                 $messageUtilisateur = (new Email())
                     ->subject($this->get('translator')->trans('security.utilisateur.newMailUtilisateur.title'))
                     ->from('bdoh@inrae.fr')
@@ -108,7 +102,7 @@ class UtilisateurController extends Controller
                     ->html(
                         $this->renderView(
                             '@IrsteaBdohSecurity/Utilisateur/mailNewUtilisateur.txt.twig',
-                            ['user' => $user]
+                            ['user' => $user, 'loginLink' => $loginLinkHandler->createLoginLink($user)->getUrl()]
                         )
                     );
 
@@ -153,16 +147,6 @@ class UtilisateurController extends Controller
             $form->handleRequest($request);
 
             if ($form->isSubmitted() && $form->isValid()) {
-                // If the password has changed, encodes it
-                if ($user->getPassword()) {
-                    $user->setPassword($this->hasher->hashPassword($user, $user->getPassword()));
-                } // Else, retrieves original 'password' and 'salt' to prevent the update to fail !!
-                else {
-                    list($password, $salt) = $this->getSecurityRepo('Utilisateur')->getPasswordSalt($user);
-                    $user->setPassword($password);
-                    $user->setSalt($salt);
-                }
-
                 // Persists the new user
                 $em = $this->getEm();
                 $em->flush();

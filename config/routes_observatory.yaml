@@ -9,9 +9,6 @@ irstea_bdoh_admin_imports:
     resource: "@IrsteaBdohAdminBundle/Resources/config/routing.yml"
     prefix:   /admin
 
-bdoh_security_login_check:
-    path: /login_check
-
 bdoh_security_logout:
     path: /logout
 

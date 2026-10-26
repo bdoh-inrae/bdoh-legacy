@@ -39,7 +39,6 @@
             <div class="alert alert-warning">
                 <h4 class="alert-heading" style="margin-bottom:25px;">{{ 'security.utilisateur.loginInfo'|trans }}</h4>
                 {{ form_row(form.email) }}
-                {{ form_widget(form.password) }}
             </div>
 
             <!-- Identification fields -->
@@ -51,12 +50,6 @@
                 {{ form_row(form.categorie) }}
                 {{ form_row(form.telephone) }}
                 {{ form_row(form.adresse) }}
-            </div>
-
-            <!-- Captcha -->
-            <div class="alert alert-danger">
-                <h4 class="alert-heading" style="margin-bottom:25px;">{{ 'captcha.security'|trans }}</h4>
-                {{ form_row(form.captcha) }}
             </div>
 
             {{ form_rest(form) }}

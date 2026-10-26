@@ -12,31 +12,28 @@
 
         {% if error %}
             <div class="alert alert-danger">
-                {{ error.message|trans|raw }}
+                {{ error.messageKey|trans(error.messageData, 'security') }}
             </div>
         {% endif %}
 
         <div class="well" style="margin-bottom:14px;">
-            <form action="{{ path('bdoh_security_login_check') }}" method="post" autocomplete="off">
+            <p>{{ 'security.login_form.info'|trans }}</p>
+            <form action="{{ path('bdoh_security_login_send') }}" method="post">
 
                 <!-- Username -->
                 <div class="form-group">
-                    <label for="_username">{{ 'security.login_form.username' | trans }}</label>
-                    <input style="width:25%;" class="form-control" type="text" id="_username" name="_username" value="{{ last_username }}" required="required" autocomplete="off"/>
+                    <label for="email">{{ 'security.login_form.username' | trans }}</label>
+                    <input style="width:25%;" class="form-control" type="email" id="email" name="email" value="{{ last_username }}" required="required" autocomplete="email"/>
                 </div>
 
-                <!-- Password -->
-                <div class="form-group">
-                    <label for="_password">{{ 'security.login_form.password' | trans }}</label>
-                    <input style="width:25%;" class="form-control" type="password" id="_password" name="_password" required="required" autocomplete="off"/>
-                </div>
                 <div style="display:flex;">
                     <div>{{ submit('security.login_form.connectTo'|trans, 'btn btn-success') }}</div>
-                    <div style="margin-left:15px;"><a class="btn btn-info" href="{{ path('resetting_request') }}">{{ 'security.login_form.lostPassword'|trans }}</a></div>
                     <div style="margin-left:15px;">{{ cancelForm('bdoh_home') }}</div>
                 </div>
             </form>
         </div>
+
+        <p>{{ 'security.login_form.noAccount'|trans }} <a href="{{ path('bdoh_security_utilisateur_new') }}">{{ 'security.login_form.createAccount'|trans }}</a></p>
 
     </div>
 {% endblock main %}

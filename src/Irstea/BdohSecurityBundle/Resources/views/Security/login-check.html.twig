@@ -1,0 +1,29 @@
+{% extends '@IrsteaBdohSecurity/layout.html.twig' %}
+{% from 'macros.html.twig' import submit, cancelForm, pageTitle %}
+
+{% block title %}
+    {{ pageTitle('security.login_form.connection'|trans) }}
+{% endblock %}
+
+{% block main %}
+    <div id="security-utilisateur-login-check">
+
+        <h1>{{ 'security.login_form.title' | trans }}</h1>
+
+        {# Le bouton envoie le lien au pare-feu, qui connecte : une messagerie qui ouvre le lien pour
+           l'analyser ne fait qu'afficher cette page. #}
+        <div class="well" style="margin-bottom:14px;">
+            <p>{{ 'security.login_check.info(%email%)'|trans({'%email%': link.user}) }}</p>
+            <form action="{{ path('bdoh_security_login_check') }}" method="post">
+                <input type="hidden" name="user" value="{{ link.user }}"/>
+                <input type="hidden" name="expires" value="{{ link.expires }}"/>
+                <input type="hidden" name="hash" value="{{ link.hash }}"/>
+                <div style="display:flex;">
+                    <div>{{ submit('security.login_check.submit'|trans, 'btn btn-success') }}</div>
+                    <div style="margin-left:15px;">{{ cancelForm('bdoh_home') }}</div>
+                </div>
+            </form>
+        </div>
+
+    </div>
+{% endblock main %}

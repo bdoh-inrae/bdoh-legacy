@@ -5,5 +5,4 @@
  */
 
 return [
-    'captcha.invalid' => 'Mauvaise réécriture du code.',
 ];

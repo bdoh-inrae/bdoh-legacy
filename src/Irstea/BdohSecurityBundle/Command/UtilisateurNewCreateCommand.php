@@ -17,7 +17,6 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Question\ConfirmationQuestion;
 use Symfony\Component\Console\Question\Question;
-use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
 class UtilisateurNewCreateCommand extends Command
 {
@@ -28,24 +27,9 @@ class UtilisateurNewCreateCommand extends Command
     /** ®@var ObjectManager $manager * */
     private $manager;
 
-    /**
-     * @var EncoderFactoryInterface
-     */
-    protected $hasher;
-
-    /**
-     * UserPasswordValidator constructor.
-     *
-     * @param EncoderFactoryInterface $encoderFactory
-     *
-     * @DI\InjectParams({
-     *     "encoderFactory" = @DI\Inject("security.encoder_factory"),
-     * })
-     */
-    public function __construct(EntityManagerInterface $manager, UserPasswordHasherInterface $hasher)
+    public function __construct(EntityManagerInterface $manager)
     {
         $this->manager = $manager;
-        $this->hasher = $hasher;
         parent::__construct();
     }
 
@@ -60,7 +44,6 @@ class UtilisateurNewCreateCommand extends Command
             ->addArgument('firstname', InputArgument::REQUIRED, 'User firstname')
             ->addArgument('lastname', InputArgument::REQUIRED, 'User firstname')
             ->addArgument('email', InputArgument::REQUIRED, 'User email')
-            ->addArgument('password', InputArgument::REQUIRED, 'User password')
             ->addArgument('roleAdmin', InputArgument::REQUIRED, 'User roleAdmin')
             ->addArgument('addRoleToAll', InputArgument::OPTIONAL, 'Add gestionnaire role to all for this user');
     }
@@ -73,7 +56,7 @@ class UtilisateurNewCreateCommand extends Command
             '===============================',
         ]);
         $questions = [];
-        $argumentUser = ['firstname', 'lastname', 'email', 'password', 'roleAdmin'];
+        $argumentUser = ['firstname', 'lastname', 'email', 'roleAdmin'];
 
         foreach ($argumentUser as $argumentUtilisateur) {
             if (!$input->getArgument($argumentUtilisateur)) {
@@ -134,9 +117,9 @@ class UtilisateurNewCreateCommand extends Command
         $output->writeln('With lastname : ' . $user->getNom());
         $user->setEmail($input->getArgument('email'));
         $output->writeln('With email : ' . $user->getEmail());
-        $user->setPassword($input->getArgument('password'));
-        //encodage du mot de passe
-        $user->setPassword($this->hasher->hashPassword($user, $user->getPassword()));
+        // Pas de mot de passe : on se connecte par un lien envoyé par courriel (dev/differences.md)
+        $user->setPassword('');
+        $user->setSalt('');
         $user->setRoleAdmin($input->getArgument('roleAdmin'));
         // Tous les droits sur une réponse positive seulement : l'ancien les donnait aussi quand
         // l'argument manquait ou disait non, en mode non interactif (dev/differences.md).

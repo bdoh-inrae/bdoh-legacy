@@ -27,6 +27,18 @@ Ce que le nouveau BDOH fait autrement que l'ancien, exprès : bogues de l'ancien
 
 - **Import d'un barème sans fichier.** Sans fichier, ou avec un fichier d'un type refusé, l'ancien s'arrête sur une erreur 500 en nettoyant un importeur qui n'existe pas (`TransformationController::importBaremeStep2Action`). Le nouveau affiche le message d'erreur. Relevé par la relecture du portage des imports, corrigé le 2026-10-26 ; vérification : les cas « barème, sans fichier » et « barème, fichier PDF » de `compare.py imports`, seuls écarts admis de ce mode.
 
+## Améliorations
+
+- **Connexion par lien, sans mot de passe** (décidé par Lou le 26 octobre). L'ancien se connectait par l'adresse e-mail et un mot de passe, avec un mot de passe oublié par courriel et un captcha à l'inscription et à la réinitialisation. Le nouveau envoie à l'adresse saisie un lien de connexion : signé, valable 15 minutes, d'un seul usage, il ouvre une page dont le bouton connecte ; la session dure 30 jours. Pourquoi : la boîte mail était déjà la clé du compte (par le mot de passe oublié) ; sans mot de passe, plus de mots de passe faibles ou réutilisés, ni de hachages à voler. Détail des choix : `dev/decisions.md`.
+  - Inscription sans mot de passe ni captcha. Le courriel de bienvenue porte le premier lien, qui confirme l'adresse ; les gestionnaires de l'observatoire sont prévenus à la première connexion, et non plus à l'inscription.
+  - Modification du compte sans changement de mot de passe. Changer d'adresse déconnecte : la reconnexion, par un lien envoyé à la nouvelle adresse, la confirme.
+  - Mot de passe oublié retiré : ses adresses (`/resetting/…`), que d'anciens courriels contiennent, renvoient à la page de connexion (301).
+  - Le captcha laisse la place à des limites de fréquence (`config/packages/rate_limiter.yaml`) : 10 liens par quart d'heure par adresse IP, 3 par adresse e-mail, 5 inscriptions par heure par adresse IP. La page de connexion répond de la même façon que l'adresse ait un compte ou non.
+  - Les comptes créés ont un mot de passe et un sel vides (`''`, les colonnes n'acceptant pas `NULL`) ; les hachages des anciens comptes restent en base, inutilisés. Les effacer est une migration à part, à proposer.
+  - `security:users:create` ne demande plus de mot de passe ; `security:users:login-link` crée un lien pour un compte, à lui transmettre quand le courriel ne lui parvient pas.
+  - Disparaît avec le mot de passe une bizarrerie de l'ancien : un mot de passe trop court était refusé sans message.
+  - Fait le 2026-10-26. Vérification : `compare.py accounts`, dont les seuls écarts sont ceux-ci (pages d'inscription et de modification, page de connexion après l'inscription, paragraphe du lien dans le courriel de bienvenue, mot de passe vide des comptes créés) ; `compare.py pages`, dont les écarts sont les pages de connexion, d'inscription, de modification et du mot de passe oublié, et les traductions pour le JavaScript (clés retirées et ajoutées). Les autres modes connectent leurs profils par lien, et ne changent pas.
+
 ## Écarts dus aux nouvelles versions
 
 - **Arrondis à la limite.** PHP 8.4 arrondit autrement certaines valeurs, et lit les `float8` en valeurs exactes là où PostgreSQL 11 les arrondissait à 15 chiffres (audit du 23 octobre, constat 4). Une valeur affichée peut différer d'une unité sur le dernier chiffre, seulement quand la valeur exacte tombe à la limite d'un arrondi. Les exports n'en ont plus : leurs valeurs passent d'abord à 15 chiffres significatifs, ce qui rend le résultat de l'ancien (`dev/decisions.md`, comparaison des exports du 2026-10-25). L'ancien peut écrire `-0.000`, le nouveau écrit `0.000`.
