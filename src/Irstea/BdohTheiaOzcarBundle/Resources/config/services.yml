@@ -1,0 +1,13 @@
+# Le chiffrement du mot de passe Theia des observatoires, que le formulaire de l'administration emploie
+# (module 6) ; le reste du bundle, l'envoi des fiches vers Theia/OZCAR, vient avec le module 7.
+services:
+    irstea_bdoh_theia_ozcar.encryption_service:
+        class: Irstea\BdohTheiaOzcarBundle\Service\PasswordEncryptionService
+        arguments:
+            - "%theia_password_secret_key%"
+
+    irstea_bdoh_theia_ozcar.password_event_subscriber:
+        class: Irstea\BdohTheiaOzcarBundle\Form\PasswordEventSubscriber
+        arguments:
+            - "@irstea_bdoh_theia_ozcar.encryption_service"
+    Irstea\BdohTheiaOzcarBundle\Form\PasswordEventSubscriber: '@irstea_bdoh_theia_ozcar.password_event_subscriber'

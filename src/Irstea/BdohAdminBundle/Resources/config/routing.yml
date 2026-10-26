@@ -107,3 +107,11 @@ bdoh_admin_shape_import_stop:
 bdoh_admin_get_chronique_calculee:
     path: /get-chronique-calculee
     controller: Irstea\BdohAdminBundle\Controller\TransformationController::getChroniqueCalculeeAction
+
+bdoh_admin_generate_chronique_code:
+    path: /generate-chronique-code
+    controller: Irstea\BdohAdminBundle\Controller\InfoController::generateChroniqueCodeAction
+
+bdoh_admin_get_filtered_chroniques:
+    path: /get-filtered-chroniques
+    controller: Irstea\BdohAdminBundle\Controller\InfoController::getFilteredChroniquesAction

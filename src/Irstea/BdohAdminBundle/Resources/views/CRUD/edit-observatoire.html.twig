@@ -1,0 +1,41 @@
+{% extends '@IrsteaBdohAdmin/CRUD/edit.html.twig' %}
+
+{# bouton vers la consultation de l'observatoire #}
+{% import '@IrsteaBdohConsult/macros.html.twig' as macros %}
+{% block navbar_title %}
+    {{ parent() }}
+    {% if admin and admin.subject and admin.subject.slug %}
+        <span class="toolbox-btns">
+            {{ macros.view(path('bdoh_consult_observatoire', {'_observatoire' : admin.subject.slug}), 'viewObservatoire'|trans) }}
+        </span>
+
+    {% if admin.subject.theiaCode == true and admin.subject.theiaPassword == true and is_granted('ROLE_ADMIN') %}
+        <button type="button" class="btn btn-success">
+            <a href="{{ path('bdoh_admin_observatoire_edit_jsonValidator', {'id' :app.request.attributes.get('_route_params')['id']}) }}" style="color: mintcream">
+                <strong>{{ 'validateurJSON'|trans }}</strong></a></button>
+    {% endif %}
+    {% endif %}
+{% endblock %}
+
+{# message pour expliquer l'interdiction de supprimer l'observatoire -> liste des sites #}
+{% block formactions %}
+    {% if admin.sites and admin.sites|length %}
+        <div class="well well-small form-actions">
+            <p style="margin-bottom:5px;">
+                <b>{{ 'admin.help.observatoire.warning-observatory-has-sites'|trans({'%count%': admin.sites|length}) }}</b>
+            </p>
+            <ul style="margin-bottom:0;">
+                {% for s in admin.sites %}
+                    <li>
+                        {% if is_granted('EDIT', s) and s.observatoire == currentObservatoire() %}
+                            <a href="{{ path('bdoh_admin_siteexperimental_edit', {id:s.id}) }}">{{ s }}</a>
+                        {% else %}
+                            {{ s }}
+                        {% endif %}
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+    {% endif %}
+    {{ parent() }}
+{% endblock %}

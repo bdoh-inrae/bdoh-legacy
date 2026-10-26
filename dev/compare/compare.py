@@ -365,12 +365,14 @@ SONATA_AUTOCOMPLETE = re.compile(r'^J (jQuery\(function \(\$\) \{ (// Select2 v3
 
 def canonical_query(query, per_page_option=False):
     """Les paramètres d'une adresse sous une forme canonique : triés (Sonata 4 ne les écrit pas dans
-    l'ordre de Sonata 3), sans le mode de liste par défaut que Sonata 4 ajoute aux liens de tri ;
-    dans le choix du nombre de lignes par page, sans le tri, que Sonata 3 y omettait quand il était
-    celui par défaut."""
+    l'ordre de Sonata 3), sans le mode de liste par défaut que Sonata 4 ajoute aux liens de tri, ni
+    son mode de choix dans les listes d'entités liées ; dans le choix du nombre de lignes par page,
+    sans le tri, que Sonata 3 y omettait quand il était celui par défaut."""
     pairs = urllib.parse.parse_qsl(query, keep_blank_values=True)
+    # Le lien vers la liste d'une entité liée (champ ModelListType) : Sonata 4 y ajoute le mode de choix
+    choosing = any(k == 'pcode' for k, _ in pairs)
     pairs = [(k, v) for k, v in pairs if (k, v) != ('_list_mode', 'list')
-             and not (per_page_option and k == 'filter[_sort_by]')]
+             and not (per_page_option and k == 'filter[_sort_by]') and not (choosing and (k, v) == ('select', '1'))]
     return urllib.parse.urlencode(sorted(pairs))
 
 
@@ -404,6 +406,11 @@ def page_lines(site, status, headers, body):
         # Le champ à complétion automatique : Sonata 3 y ajoutait un champ de texte sans nom, pour select2 3
         lines = [line for k, line in enumerate(lines)
                  if not (line == 'I input text' and lines[k + 1:k + 3] == ['I select', 'D select data-sonata-select2=false'])]
+        # Les fenêtres cachées des champs d'entités liées, que Sonata 3 écrivait même sans bouton pour les
+        # ouvrir : leur bouton de fermeture ne compte pas
+        closing = ['I button button', 'D button data-dismiss=modal', 'T ×']
+        lines = [line for k, line in enumerate(lines)
+                 if not any(lines[k - i:k - i + 3] == closing for i in range(3) if k - i >= 0)]
     # Symfony 7 ne code pas les paramètres d'adresse comme Symfony 2 (%20 ou +, %2C ou virgule…) :
     # même adresse, comparée sous une forme canonique (dev/differences.md).
     lines = [QUERY.sub(lambda m: m.group(1) + canonical_query(
@@ -1794,18 +1801,44 @@ OBSERVATORY_PICK = '''SELECT min(t.id) FROM {table} t JOIN observatoire o ON o.i
 # pages ({slug} : l'observatoire de la page), par défaut la première de la table. Sans « change »,
 # l'édition n'est que renvoyée telle quelle ; sans « create », ni création ni suppression (routes
 # retirées par l'administration) ; « nodelete » : création sans suppression ; « state » : la requête
-# de ACCOUNT_QUERIES qui lit la table, quand elle a des colonnes que les deux côtés écrivent autrement.
+# qui lit la table, quand elle a des colonnes que les deux côtés écrivent autrement (dates du moment,
+# mots de passe) ; « also » : ses tables de liaison.
 STATION_PICK = '''SELECT min(s.id) FROM station s JOIN stations_sites ss ON ss.station_id = s.id
                    JOIN siteexperimental se ON se.id = ss.site_id JOIN observatoire o ON o.id = se.observatoire_id
                   WHERE o.slug = '{slug}' '''
 
+CHRONIQUE_PICK = "SELECT min(c.id) FROM (" + CHRONIQUES.replace('{', '{{').replace('}', '}}') + \
+                 ") c WHERE c.slug = '{{slug}}' AND c.dtype LIKE '{dtype}'"
+
 ADMINS = {
+    'observatoire': {'table': 'observatoire', 'also': ['observatoires_data_manager'],
+                     'pick': "SELECT id FROM observatoire WHERE slug = '{slug}'",
+                     'change': {'[titreEn]': 'Observatory (test)'}},
     'siteexperimental': {'table': 'siteexperimental', 'pick': OBSERVATORY_PICK.format(table='siteexperimental'),
                          'change': {'[descriptionEn]': '<p>Site (test)</p>'}, 'create': {'[nom]': 'Site d’essai'}},
     'station': {'table': 'station', 'also': ['stations_sites'], 'pick': STATION_PICK,
                 'change': {'[commentaireEn]': 'Station (test)'},
                 'create': {'[nom]': 'Station d’essai', '[code]': 'ESSAI', '[sites]': FIRST, '[altitude]': '123.4567',
                            '[latitude]': '45.1', '[longitude]': '4.9'}},
+    'chronique': {'table': 'chronique', 'state': STATE_QUERIES['chronique'], 'pick': CHRONIQUE_PICK.format(dtype='%')},
+    'chroniquecontinue': {'table': 'chronique', 'state': STATE_QUERIES['chronique'],
+                          'also': ['echantillonnagesortielicite_chronique', 'optionechantillonnagesortie_chronique'],
+                          'pick': CHRONIQUE_PICK.format(dtype='continue'), 'change': {'[libelleEn]': 'Time series (test)'},
+                          'create': {'[station]': FIRST, '[parametre]': FIRST, '[code]': 'ESSAI', '[libelle]': 'Essai',
+                                     '[libelleEn]': 'Test', '[genealogie]': 'Essai', '[genealogieEn]': 'Test',
+                                     '[milieu]': FIRST, '[unite]': FIRST, '[echantillonnage]': FIRST}},
+    'chroniquediscontinue': {'table': 'chronique', 'state': STATE_QUERIES['chronique'],
+                             'pick': CHRONIQUE_PICK.format(dtype='discontinue'),
+                             'change': {'[libelleEn]': 'Time series (test)'}},
+    'chroniquecalculee': {'table': 'chronique', 'state': STATE_QUERIES['chronique'],
+                          'pick': CHRONIQUE_PICK.format(dtype='calculee'), 'change': {'[libelleEn]': 'Time series (test)'}},
+    'chroniqueconvertie': {'table': 'chronique', 'state': STATE_QUERIES['chronique'],
+                           'pick': CHRONIQUE_PICK.format(dtype='convertie'), 'change': {'[libelleEn]': 'Time series (test)'}},
+    'dataset': {'table': 'dataset', 'pick': OBSERVATORY_PICK.format(table='dataset'),
+                'also': ['topic_category_dataset', 'criteria_geology_dataset', 'criteria_climat_dataset',
+                         'data_manager_dataset', 'principal_investigator_dataset', 'data_collector_dataset',
+                         'project_member_dataset'],
+                'change': {'[titreEn]': 'Dataset (test)'}},
     'bareme': {'table': 'bareme', 'pick': OBSERVATORY_PICK.format(table='bareme')},
     'jeuqualite': {'table': 'jeuqualite'},
     'echantillonnage': {'table': 'echantillonnage'},
@@ -1846,7 +1879,7 @@ ADMINS = {
                    'change': {'[scanR]': 'essai'},
                    'create': {'[nom]': 'Partenaire d’essai', '[iso]': 'FR', '[estFinanceur]': '0',
                               '[typeFundings]': FIRST}},
-    'utilisateur': {'table': 'utilisateur', 'state': 'utilisateur', 'nodelete': True,
+    'utilisateur': {'table': 'utilisateur', 'state': ACCOUNT_QUERIES['utilisateur'], 'nodelete': True,
                     'change': {'[telephone]': '0102030405'},
                     'create': {'[email]': 'compte-admin@example.invalid', '[prenom]': 'Camille', '[nom]': 'Essai',
                                '[organisme]': 'INRAE', '[categorie]': FIRST, '[telephone]': '0102030405',
@@ -1858,25 +1891,25 @@ ADMINS = {
 
 
 def admin_profiles(base):
-    """Les comptes des pages de l'administration : un administrateur fonctionnel, sur celui des
-    observatoires qu'il gère qui a le plus d'entités à administrer (ce rôle ne donne de droits sur les
-    données que là), et un gestionnaire qui n'est que gestionnaire (celui de « pages » est aussi
-    administrateur), sur un observatoire où il a ce rôle."""
+    """Les comptes des pages de l'administration, chacun avec les observatoires où il est gestionnaire
+    (ses rôles ne donnent de droits sur les données que là), du plus fourni au moins fourni : un
+    administrateur fonctionnel, et un gestionnaire qui n'est que gestionnaire (celui de « pages » est
+    aussi administrateur), sur un seul observatoire."""
     active = "(u.finacces IS NULL OR u.finacces > now())"
     tables = ['bassin', 'courseau', 'doi', 'partenaire', 'siteexperimental', 'dataset', 'bareme']
+    richness = ' + '.join([*(f'(SELECT count(*) FROM {t} WHERE observatoire_id = o.id)' for t in tables),
+                           f"(SELECT count(*) FROM ({CHRONIQUES}) c WHERE c.slug = o.slug)"])
     admin, uid = query(base, f"""SELECT u.email, u.id FROM utilisateur u WHERE u.roleadmin = 'FCT' AND {active}
                                   ORDER BY u.id LIMIT 1""", NEW_SERVER)[0]
-    richest = query(base, f"""
+    slugs = [r[0] for r in query(base, f"""
         SELECT o.slug FROM observatoire o JOIN role r ON r.observatoire_id = o.id
-         WHERE r.utilisateur_id = {uid} AND r.valeur = 'gestionnaire'
-         ORDER BY {' + '.join(f'(SELECT count(*) FROM {t} WHERE observatoire_id = o.id)' for t in tables)} DESC, o.id
-         LIMIT 1""", NEW_SERVER)[0][0]
-    manager = query(base, f"""
+         WHERE r.utilisateur_id = {uid} AND r.valeur = 'gestionnaire' ORDER BY {richness} DESC, o.id""", NEW_SERVER)]
+    manager, slug = query(base, f"""
         SELECT u.email, o.slug FROM utilisateur u JOIN role r ON r.utilisateur_id = u.id
           JOIN observatoire o ON o.id = r.observatoire_id
          WHERE u.roleadmin IS NULL AND {active} AND r.valeur = 'gestionnaire' ORDER BY u.id, o.id LIMIT 1""",
-                    NEW_SERVER)[0]
-    return {'administrateur': (admin, richest), 'gestionnaire': tuple(manager)}
+                          NEW_SERVER)[0]
+    return {'administrateur': (admin, slugs), 'gestionnaire': (manager, [slug])}
 
 
 def redirect_lines(site, status, headers):
@@ -1906,30 +1939,46 @@ def run_admin(args):
     for base in bases.values():
         copy_base(template, base)
 
-    def first(base, name, spec, slug):
-        sql = spec.get('pick', f"SELECT min(id) FROM {spec['table']}").format(slug=slug)
-        return query(base, sql, NEW_SERVER)[0][0]
+    def first(base, spec, slugs):
+        """L'observatoire de la page et l'entité à ouvrir : le premier des observatoires du compte qui en
+        a une, sinon le premier, sans entité."""
+        for slug in slugs:
+            sql = spec.get('pick', f"SELECT min(id) FROM {spec['table']}").format(slug=slug)
+            cid = query(base, sql, NEW_SERVER)[0][0]
+            if cid:
+                return slug, cid
+        return slugs[0], ''
 
     def play(side, base):
         parts = {}
         urllib.request.urlopen(urllib.request.Request(MAILPIT + '/api/v1/messages', method='DELETE'), timeout=60)
-        for profile, (email, slug) in accounts.items():
-            client = Client(side, email, slug)
-            get = lambda path: page_lines(side.url, *client.get(path))
-            parts[f'{profile} /{slug}/admin/dashboard'] = get(f'/{slug}/admin/dashboard')
+        clients = {}
+
+        def client_for(email, slug):
+            """Un navigateur par compte et par observatoire : l'ancien fige les rôles de la session sur
+            l'observatoire de la connexion."""
+            if (email, slug) not in clients:
+                clients[email, slug] = Client(side, email, slug)
+            return clients[email, slug]
+
+        for profile, (email, slugs) in accounts.items():
+            client = client_for(email, slugs[0])
+            parts[f'{profile} /{slugs[0]}/admin/dashboard'] = page_lines(side.url, *client.get(f'/{slugs[0]}/admin/dashboard'))
             for name, spec in admins.items():
-                root, cid = f'/{slug}/admin/{name}', first(base, name, spec, slug)
+                slug, cid = first(base, spec, slugs)
+                client = client_for(email, slug)
+                root = f'/{slug}/admin/{name}'
                 paths = [f'{root}/list', f'{root}/create']
                 if cid:
                     paths += [f'{root}/{cid}/edit', f'{root}/{cid}/delete']
                 for path in paths:
-                    parts[f'{profile} {path}'] = get(path)
+                    parts[f'{profile} {path}'] = page_lines(side.url, *client.get(path))
 
-        email, slug = accounts['administrateur']
-        client = Client(side, email, slug)
+        email, slugs = accounts['administrateur']
 
         def send(path, action, values, button):
             """Un formulaire de la page, envoyé comme par un navigateur, et la page où il renvoie."""
+            client = client_for(email, path.split('/')[1])
             form = form_of(client, path, action)
             if form.url is None:
                 return [f'pas de formulaire {action} : {path}']
@@ -1943,7 +1992,8 @@ def run_admin(args):
             return lines + (['== page suivante', *page_lines(side.url, *client.get(location))] if location else [])
 
         for name, spec in admins.items():
-            root, cid = f'/{slug}/admin/{name}', first(base, name, spec, slug)
+            slug, cid = first(base, spec, slugs)
+            root = f'/{slug}/admin/{name}'
             if not cid:
                 continue
             parts[f'{name} : édition renvoyée telle quelle'] = send(
@@ -1961,8 +2011,7 @@ def run_admin(args):
         time.sleep(2)  # les courriels du nouveau partent après la réponse (DeferredMailer)
         parts['courriels'] = [line.replace(side.url, '<site>') for line in mail_lines()]
         for name, spec in sorted(admins.items(), key=lambda item: item[1]['table']):
-            sql = ACCOUNT_QUERIES[spec['state']] if 'state' in spec else \
-                f"SELECT to_jsonb(t)::text FROM {spec['table']} t ORDER BY t.id"
+            sql = spec.get('state', f"SELECT to_jsonb(t)::text FROM {spec['table']} t ORDER BY t.id")
             # Symfony 7 écrit les fins de ligne des champs de texte long en \n, Symfony 2 telles que le
             # navigateur les envoie, en \r\n (dev/differences.md, « Fins de ligne des textes longs »)
             parts[f"état {spec['table']}"] = ['\t'.join(row).replace('\\r\\n', '\\n')
@@ -1971,9 +2020,24 @@ def run_admin(args):
             parts[f'état {table}'] = ['\t'.join(row) for row in query(
                 base, f"SELECT to_jsonb(t)::text FROM {table} t ORDER BY 1", NEW_SERVER)]
         parts['état historique'] = state_lines(base, historique, ['historique'])['historique']
+        if side.login_link:
+            checks.update(new_only(send, base))
         return parts
 
-    sides = {}
+    def new_only(send, base):
+        """Ce que seul le nouveau fait (dev/differences.md) : chaque vérification rend « conforme » ou
+        ce qui ne l'est pas."""
+        results = {}
+        if 'chroniquecontinue' in admins:
+            slug, cid = first(base, admins['chroniquecontinue'], accounts['administrateur'][1])
+            send(f'/{slug}/admin/chroniquecontinue/{cid}/edit', f'/chroniquecontinue/{cid}/edit',
+                 {'[minimumValide]': '0,12345'}, 'btn_update_and_edit')
+            value, = query(base, f'SELECT minimumvalide FROM chronique WHERE id = {cid}', NEW_SERVER)[0]
+            results['nouveau seul : seuil de validité gardé à 5 décimales'] = (
+                ['conforme'] if value == '0.12345' else [f'valeur enregistrée : {value}'])
+        return results
+
+    sides, checks = {}, {}
     with old_17_on(bases['ancien'], mailer_transport='smtp', mailer_host='mailpit', mailer_port='1025'), \
             new_on(bases['nouveau'], template, 'MAILER_DSN=smtp://mailpit:1025'):
         sides['ancien'] = play(SIDES['reference-17'], bases['ancien'])
@@ -1981,6 +2045,8 @@ def run_admin(args):
     report = Report('admin')
     for part in sides['ancien']:
         report.add(part, sides['ancien'][part], sides['nouveau'].get(part, []))
+    for part, lines in checks.items():
+        report.add(part, ['conforme'], lines)
     report.close()
     print(f'Les instances lisent de nouveau {template}. Les deux copies restent pour examen :'
           f' {bases["ancien"]} et {bases["nouveau"]}.')

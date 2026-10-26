@@ -24,4 +24,5 @@ return [
     Irstea\BdohConsultBundle\IrsteaBdohConsultBundle::class => ['all' => true],
     Irstea\BdohLoggerBundle\IrsteaBdohLoggerBundle::class => ['all' => true],
     Irstea\BdohInternationalisationBundle\IrsteaBdohInternationalisationBundle::class => ['all' => true],
+    Irstea\BdohTheiaOzcarBundle\IrsteaBdohTheiaOzcarBundle::class => ['all' => true],
 ];

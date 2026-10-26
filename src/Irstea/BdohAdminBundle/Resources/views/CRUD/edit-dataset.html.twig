@@ -1,0 +1,21 @@
+{% extends '@IrsteaBdohAdmin/CRUD/edit.html.twig' %}
+
+{# bouton vers la consultation du jeu de données #}
+{% import '@IrsteaBdohConsult/macros.html.twig' as macros %}
+{% block navbar_title %}
+    {{ parent() }}
+    {% if admin and admin.subject and admin.subject.uuid and admin.subject.titre is not null %}
+        <span class="toolbox-btns">
+            {{ macros.dataset_view(admin.subject) }}
+        </span>
+    {% endif %}
+{% endblock %}
+
+
+
+
+
+
+
+
+

@@ -119,10 +119,22 @@ services:
         tags:
             - { name: sonata.admin.extension, global: true }
 
+    # Le filtre de dates aux choix de Sonata 3 (est vide, n'est pas vide)
+    Irstea\BdohAdminBundle\Filter\DateFilter:
+        tags: [sonata.admin.filter.type]
+
+    # Le clonage des chroniques
+    Irstea\BdohAdminBundle\Admin\Data\ChroniqueController: ~
+
     app.menu_listener:
         class: Irstea\BdohAdminBundle\EventListener\MenuBuilderListener
         tags:
             - { name: kernel.event_listener, event: sonata.admin.event.configure.menu.sidebar, method: addMenuItems }
+
+    irstea_bdoh_admin.admin.observatoire:
+        class: Irstea\BdohAdminBundle\Admin\Data\Observatoire
+        tags:
+            - { name: sonata.admin, model_class: Irstea\BdohDataBundle\Entity\Observatoire, manager_type: orm, group: AdminCenter }
 
     irstea_bdoh_admin.admin.site_experimental:
         class: Irstea\BdohAdminBundle\Admin\Data\SiteExperimental
@@ -133,6 +145,36 @@ services:
         class: Irstea\BdohAdminBundle\Admin\Data\Station
         tags:
             - { name: sonata.admin, model_class: Irstea\BdohDataBundle\Entity\Station, manager_type: orm, group: AdminCenter }
+
+    irstea_bdoh_admin.admin.chronique:
+        class: Irstea\BdohAdminBundle\Admin\Data\Chronique
+        tags:
+            - { name: sonata.admin, model_class: Irstea\BdohDataBundle\Entity\Chronique, manager_type: orm, group: AdminCenter, persist_filters: true, controller: Irstea\BdohAdminBundle\Admin\Data\ChroniqueController }
+
+    irstea_bdoh_admin.admin.chronique_continue:
+        class: Irstea\BdohAdminBundle\Admin\Data\ChroniqueContinue
+        tags:
+            - { name: sonata.admin, model_class: Irstea\BdohDataBundle\Entity\ChroniqueContinue, manager_type: orm, group: AdminCenter, persist_filters: true, controller: Irstea\BdohAdminBundle\Admin\Data\ChroniqueController }
+
+    irstea_bdoh_admin.admin.chronique_discontinue:
+        class: Irstea\BdohAdminBundle\Admin\Data\ChroniqueDiscontinue
+        tags:
+            - { name: sonata.admin, model_class: Irstea\BdohDataBundle\Entity\ChroniqueDiscontinue, manager_type: orm, group: AdminCenter, persist_filters: true, controller: Irstea\BdohAdminBundle\Admin\Data\ChroniqueController }
+
+    irstea_bdoh_admin.admin.chronique_calculee:
+        class: Irstea\BdohAdminBundle\Admin\Data\ChroniqueCalculee
+        tags:
+            - { name: sonata.admin, model_class: Irstea\BdohDataBundle\Entity\ChroniqueCalculee, manager_type: orm, group: AdminCenter, persist_filters: true, controller: Irstea\BdohAdminBundle\Admin\Data\ChroniqueController }
+
+    irstea_bdoh_admin.admin.chronique_convertie:
+        class: Irstea\BdohAdminBundle\Admin\Data\ChroniqueConvertie
+        tags:
+            - { name: sonata.admin, model_class: Irstea\BdohDataBundle\Entity\ChroniqueConvertie, manager_type: orm, group: AdminCenter, persist_filters: true, controller: Irstea\BdohAdminBundle\Admin\Data\ChroniqueController }
+
+    irstea_bdoh_admin.admin.dataset:
+        class: Irstea\BdohAdminBundle\Admin\Data\DataSet
+        tags:
+            - { name: sonata.admin, model_class: Irstea\BdohDataBundle\Entity\DataSet, manager_type: orm, group: AdminCenter }
 
     irstea_bdoh_admin.admin.bareme:
         class: Irstea\BdohAdminBundle\Admin\Data\Bareme

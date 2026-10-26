@@ -5,3 +5,7 @@ AdminPeripheral : Peripheral data
 AdminTechnical  : Technical data
 AdminTheia      : Theia data
 AdminUser       : Users
+
+# Choix du filtre de dates de Sonata 3 (Filter/DateFilter.php), retirés de Sonata 4
+label_date_type_null     : "is empty"
+label_date_type_not_null : "is not empty"

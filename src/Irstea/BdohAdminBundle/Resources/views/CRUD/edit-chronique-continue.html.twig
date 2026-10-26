@@ -1,0 +1,20 @@
+{% extends '@IrsteaBdohAdmin/CRUD/edit-chronique.html.twig' %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script src="{{ asset('bundles/irsteabdohadmin/crud/edit-chronique-continue.js') }}"
+        {%- autoescape 'html_attr' %}
+        data-oriented-samplings="{{ admin.orientedSamplings | json_encode }}"
+        data-cumulative-samplings="{{ admin.cumulativeSamplings | json_encode }}"
+        data-sampling-orders="{{ admin.samplingOrders | json_encode }}"
+        data-output-time-steps="{{ admin.outputTimeSteps | json_encode }}"
+        {%- endautoescape %}>
+    </script>
+{% endblock %}
+
+{% block sonata_admin_content %}
+    {% if admin.getHadToSetDefaultExportOptions(true) %}
+        <div class="form-actions alert alert-warning">{{ 'admin.help.chronique.warning-no-export-options-were-defined'|trans|raw }}</div>
+    {% endif %}
+    {{ parent() }}
+{% endblock %}

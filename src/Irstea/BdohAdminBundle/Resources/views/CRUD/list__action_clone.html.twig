@@ -1,0 +1,14 @@
+{% if object is instanceof('Irstea\\BdohDataBundle\\Entity\\ChroniqueCalculee') %}
+    {% set href = path('bdoh_admin_chroniquecalculee_clone', {id : object.id}) %}
+{% elseif object is instanceof('Irstea\\BdohDataBundle\\Entity\\ChroniqueContinue') %}
+    {% set href = path('bdoh_admin_chroniquecontinue_clone', {id : object.id}) %}
+{% elseif object is instanceof('Irstea\\BdohDataBundle\\Entity\\ChroniqueConvertie') %}
+    {% set href = path('bdoh_admin_chroniqueconvertie_clone', {id : object.id}) %}
+{% else %}
+    {% set href = path('bdoh_admin_chroniquediscontinue_clone', {id : object.id}) %}
+{% endif %}
+
+<a class="btn btn-sm btn-default" href="{{ href }}">
+    <i class="fa fa-clone" aria-hidden="true"></i>
+    Cloner
+</a>

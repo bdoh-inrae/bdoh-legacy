@@ -8,6 +8,7 @@ imports:
     - { resource: '../src/Irstea/BdohInternationalisationBundle/Resources/config/services.yml' }
     - { resource: '../src/Irstea/BdohSecurityBundle/Resources/config/services.yml' }
     - { resource: '../src/Irstea/BdohLoggerBundle/Resources/config/services.yml' }
+    - { resource: '../src/Irstea/BdohTheiaOzcarBundle/Resources/config/services.yml' }
 
 # Repris des paramètres de app/config/config.yml de l'ancien BDOH
 parameters:
@@ -20,6 +21,8 @@ parameters:
 
     # Le portail Theia/OZCAR, dont l'administration interroge le thésaurus (parameters.yml.dist de l'ancien)
     uri_theia_ozcar: https://in-situ.theia-land.fr
+    # Clé des mots de passe Theia, chiffrés en base (.env.example)
+    theia_password_secret_key: '%env(THEIA_PASSWORD_SECRET_KEY)%'
 
     absent_quality_codes:
         VALID:     a

@@ -12,6 +12,7 @@ use Irstea\BdohBundle\Manager\ObservatoireManagerInterface;
 use Irstea\BdohDataBundle\Entity\Repository\EntityRepository;
 use Irstea\BdohLoggerBundle\Logger\BdohLogger;
 use Irstea\BdohSecurityBundle\Entity\Utilisateur;
+use Irstea\BdohTheiaOzcarBundle\Form\PasswordEventSubscriber;
 use Psr\Container\ContainerInterface;
 use Sonata\AdminBundle\Admin\AbstractAdmin;
 use Sonata\AdminBundle\Translator\NoopLabelTranslatorStrategy;
@@ -52,6 +53,7 @@ abstract class Admin extends AbstractAdmin implements ServiceSubscriberInterface
             'parameter_bag'                    => ParameterBagInterface::class,
             'security.token_storage'           => TokenStorageInterface::class,
             'irstea_bdoh.manager.observatoire' => ObservatoireManagerInterface::class,
+            'irstea_bdoh_theia_ozcar.password_event_subscriber' => PasswordEventSubscriber::class,
         ];
     }
 

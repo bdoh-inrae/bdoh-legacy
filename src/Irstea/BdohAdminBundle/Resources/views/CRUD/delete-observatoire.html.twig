@@ -1,0 +1,111 @@
+{% extends '@IrsteaBdohAdmin/CRUD/delete.html.twig' %}
+
+{# redefinition du contenu de confirmation de la suppression de l'observatoire pour préciser le nombre de barèmes,
+de bassins et de DOI qui seront supprimées avec l'observatoire #}
+{% block content %}
+    <div class="sonata-ba-delete">
+        <div class="box box-danger">
+            <div class="box-header">
+                <h3 class="box-title">{{ 'title_delete'|trans({}, 'SonataAdminBundle') }}</h3>
+            </div>
+            <div class="box-body">
+                {% if admin.isCurrentObs %}
+                    <p style="margin-top:0;margin-bottom:20px;">
+                        <b>{{ 'admin.help.observatoire.warning-delete-observatory-info-redirect'|trans }}</b>
+                    </p>
+                {% endif %}
+                {% if (admin.scales and admin.scales|length) or (admin.basins and admin.basins|length) or (admin.rivers and admin.rivers|length) or (admin.dois and admin.dois|length) %}
+                    {% if admin.scales and admin.scales|length %}
+                        <p style="margin-bottom:5px;">
+                            <b>{{ 'admin.help.observatoire.warning-observatory-has-scales'|trans({'%count%': admin.scales|length}) }}</b>
+                        </p>
+                        <ul style="margin-bottom:20px;">
+                            {% for s in admin.scales %}
+                                <li>
+                                    {% if is_granted('EDIT', s) and s.observatoire == currentObservatoire() %}
+                                        <a href="{{ path('bdoh_admin_bareme_edit', {id:s.id}) }}">
+                                            {{ s }} [{{ s.dateCreation|date('transformation.bareme.dateBareme'|trans, false) }}]
+                                        </a>
+                                    {% else %}
+                                        {{ s }} [{{ s.dateCreation|date('transformation.bareme.dateBareme'|trans, false) }}]
+                                    {% endif %}
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+                    {% if admin.basins and admin.basins|length %}
+                        <p style="margin-bottom:5px;">
+                            <b>{{ 'admin.help.observatoire.warning-observatory-has-basins'|trans({'%count%': admin.basins|length}) }}</b>
+                        </p>
+                        <ul style="margin-bottom:20px;">
+                            {% for b in admin.basins %}
+                                <li>
+                                    {% if is_granted('EDIT', b) and b.observatoire == currentObservatoire() %}
+                                        <a href="{{ path('bdoh_admin_bassin_edit', {id:b.id}) }}">{{ b }}</a>
+                                    {% else %}
+                                        {{ b }}
+                                    {% endif %}
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+                    {% if admin.rivers and admin.rivers|length %}
+                        <p style="margin-bottom:5px;">
+                            <b>{{ 'admin.help.observatoire.warning-observatory-has-rivers'|trans({'%count%': admin.rivers|length}) }}</b>
+                        </p>
+                        <ul style="margin-bottom:20px;">
+                            {% for r in admin.rivers %}
+                                <li>
+                                    {% if is_granted('EDIT', r) and r.observatoire == currentObservatoire() %}
+                                        <a href="{{ path('bdoh_admin_courseau_edit', {id:r.id}) }}">{{ r }}</a>
+                                    {% else %}
+                                        {{ r }}
+                                    {% endif %}
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+                    {% if admin.dois and admin.dois|length %}
+                        <p style="margin-bottom:5px;">
+                            <b>{{ 'admin.help.observatoire.warning-observatory-has-dois'|trans({'%count%': admin.dois|length}) }}</b>
+                        </p>
+                        <ul style="margin-bottom:20px;">
+                            {% for d in admin.dois %}
+                                <li>
+                                    {% if is_granted('EDIT', d) and d.observatoire == currentObservatoire() %}
+                                        <a href="{{ path('bdoh_admin_doi_edit', {id:d.id}) }}">{{ d }}</a>
+                                    {% else %}
+                                        {{ d }}
+                                    {% endif %}
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+                    <p style="margin-top:0;">
+                        {{ 'admin.help.observatoire.confirm-delete-observatory(%name%)'|trans({'%name%':admin.toString(object)}) }}<br>
+                        <small>({{ 'admin.help.observatoire.confirm-delete-observatory-info'|trans|raw }})</small>
+                    </p>
+                {% else %}
+                    {{ 'message_delete_confirmation'|trans({'%object%':admin.toString(object)}, 'SonataAdminBundle') }}
+                {% endif %}
+            </div>
+            <div class="box-footer clearfix">
+                <form method="POST" action="{{ admin.generateObjectUrl('delete', object) }}">
+                    <input type="hidden" name="_method" value="DELETE">
+                    <input type="hidden" name="_sonata_csrf_token" value="{{ csrf_token }}">
+
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fa fa-trash" aria-hidden="true"></i> {{ 'btn_delete'|trans({}, 'SonataAdminBundle') }}
+                    </button>
+                    {% if admin.hasRoute('edit') and admin.hasAccess('edit', object) %}
+                        {{ 'delete_or'|trans({}, 'SonataAdminBundle') }}
+
+                        <a class="btn btn-success" href="{{ admin.generateObjectUrl('edit', object) }}">
+                            <i class="fa fa-pencil" aria-hidden="true"></i>
+                            {{ 'link_action_edit'|trans({}, 'SonataAdminBundle') }}</a>
+                    {% endif %}
+                </form>
+            </div>
+        </div>
+    </div>
+{% endblock %}

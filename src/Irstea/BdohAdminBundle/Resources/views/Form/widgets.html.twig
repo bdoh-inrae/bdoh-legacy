@@ -4,6 +4,12 @@
 
 {% extends '@SonataDoctrineORMAdmin/Form/form_admin_fields.html.twig' %}
 
+{# L'aide d'un champ dans une span, comme sous Sonata 3 : Sonata 4 l'écrit dans une div #}
+{% block form_help -%}
+    {%- set element = 'span' -%}
+    {{- parent() -}}
+{%- endblock form_help %}
+
 {% block wysiwyg_widget %}
     {%- set attr = attr | merge({'class': (attr.class|default('') ~ ' htmleditor') | trim }) %}
     {{ block('textarea_widget') }}

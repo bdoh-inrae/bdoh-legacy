@@ -10,3 +10,7 @@ AdminUser       : Utilisateurs
 link_actions     : Liste d'actions
 link_action_edit : Editer
 link_edit_acl    : Editer les permissions
+
+# Choix du filtre de dates de Sonata 3 (Filter/DateFilter.php), retirés de Sonata 4
+label_date_type_null     : "est vide"
+label_date_type_not_null : "n'est pas vide"

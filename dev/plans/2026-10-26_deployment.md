@@ -27,7 +27,8 @@ Chaque tâche renvoie à l'endroit où elle s'explique. Un module qui découvre 
 - Restaurer la base de production sous PostgreSQL 17 et PostGIS 3 ; la base complète s'y restaure sans erreur (`CHANGELOG.md`, essai de PostgreSQL 17). Aucune colonne raster (`dev/audits/2026-10-23_reference-db.md`).
 - Migrations du nouveau BDOH, chacune lue, avec son retour arrière (`CLAUDE.md`) :
   - `Version20261023120000` : compteurs d'identifiants recalés (`dev/differences.md`, « Compteurs d'identifiants en retard ») ;
-  - `Version20261023130000` : `EXTRACT(EPOCH …)` ramené au type de PostgreSQL 11, avant toute tâche (`dev/differences.md`, « EXTRACT sous PostgreSQL 14 et plus »).
+  - `Version20261023130000` : `EXTRACT(EPOCH …)` ramené au type de PostgreSQL 11, avant toute tâche (`dev/differences.md`, « EXTRACT sous PostgreSQL 14 et plus ») ;
+  - `Version20261026170000` : deux autres compteurs d'identifiants recalés (même entrée que la première).
 - `inspect.sql` avant et après, sur les deux bases : mêmes comptes (`dev/audits/2026-10-23_reference-db.md`).
 - OTHU : aligner ses trois fonctions SQL sur la production, après comparaison (`ROADMAP.md`, « Fonctions SQL d'OTHU »).
 

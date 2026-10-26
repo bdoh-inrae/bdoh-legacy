@@ -48,7 +48,7 @@ DECLARE
     r record;
     late bigint := 0;
     max_id bigint;
-    last bigint;
+    next_id bigint;
 BEGIN
     FOR r IN SELECT c.relname AS seq, t.relname AS tbl
                FROM pg_class c
@@ -57,8 +57,10 @@ BEGIN
                               AND c.relname = t.relname || '_id_seq'
               WHERE c.relkind = 'S' LOOP
         EXECUTE format('SELECT max(id) FROM bdoh.%I', r.tbl) INTO max_id;
-        EXECUTE format('SELECT last_value FROM bdoh.%I', r.seq) INTO last;
-        IF max_id > last THEN
+        -- La prochaine valeur : last_value si le compteur n'a jamais servi, sinon la suivante
+        EXECUTE format('SELECT CASE WHEN is_called THEN last_value + 1 ELSE last_value END FROM bdoh.%I', r.seq)
+            INTO next_id;
+        IF max_id >= next_id THEN
             late := late + 1;
         END IF;
     END LOOP;
