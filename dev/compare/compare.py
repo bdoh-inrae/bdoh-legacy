@@ -147,6 +147,13 @@ def page_cases(base):
         # Les pages des imports et des transformations (module 4)
         paths += [f'/{slug}/admin/{p}' for p in ['mesure/import', 'controle/import', 'shape/import',
                                                   'transformation']]
+        # Les pages de comptes (module 5) ; les droits du premier compte qui a un rôle sur l'observatoire
+        paths += [f'/{slug}/{p}' for p in ['user/new', 'user/edit', 'user/all', 'resetting/request',
+                                           'resetting/check-email', 'besoin/new']]
+        someone = query(base, f"""
+            SELECT u.email FROM utilisateur u JOIN role r ON r.utilisateur_id = u.id
+              JOIN observatoire o ON o.id = r.observatoire_id WHERE o.slug = '{slug}' ORDER BY u.id LIMIT 1""")
+        paths += [f'/{slug}/user/right/{row[0]}' for row in someone]
     # Les tâches, sous l'observatoire de leur première entité liée ; les bases anonymisées n'en ont
     # pas, celles de « state » si.
     jobs = query(base, """

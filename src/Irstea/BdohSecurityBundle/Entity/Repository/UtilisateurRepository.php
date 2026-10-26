@@ -33,8 +33,7 @@ class UtilisateurRepository extends EntityRepository implements UserProviderInte
     }
 
     /**
-     * Part of UserProviderInterface, since Symfony 5.3. The e-mail is a bound parameter, no longer
-     * inserted into the query (dev/differences.md).
+     * Part of UserProviderInterface, since Symfony 5.3.
      */
     public function loadUserByIdentifier(string $identifier): UserInterface
     {

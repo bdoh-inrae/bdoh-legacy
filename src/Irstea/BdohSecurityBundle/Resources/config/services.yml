@@ -1,5 +1,4 @@
-# La commande de création d'un compte et le contrôle du mot de passe reviennent avec les comptes
-# (module 5) ; le gestionnaire de droits de Sonata, avec l'administration (module 6).
+# Le gestionnaire de droits de Sonata viendra avec l'administration (module 6).
 services:
     _defaults:
         autowire: true
@@ -7,6 +6,15 @@ services:
 
     Irstea\BdohSecurityBundle\Controller\:
         resource: '../../Controller/'
+
+    Irstea\BdohSecurityBundle\Command\:
+        resource: '../../Command/'
+
+    Irstea\BdohSecurityBundle\Form\:
+        resource: '../../Form/'
+
+    Irstea\BdohSecurityBundle\Validator\:
+        resource: '../../Validator/'
 
     # Voteurs de droits et gestionnaire de connexion
     Irstea\BdohSecurityBundle\Security\:

@@ -13,6 +13,7 @@
         "doctrine/doctrine-bundle": "*",
         "doctrine/doctrine-migrations-bundle": "^4.0",
         "doctrine/orm": "^3",
+        "gregwar/captcha-bundle": "^3.0",
         "symfony/asset": "7.4.*",
         "symfony/console": "7.4.*",
         "symfony/dotenv": "7.4.*",

@@ -1,0 +1,7 @@
+# Comme l'ancien (app/config/config.yml). Le code qui passe outre le captcha sert à la comparaison
+# des formulaires, et vient de l'environnement du seul conteneur de développement : sans la
+# variable, il vaut null et rien ne passe outre. Ne jamais la définir vide, ni en production :
+# un code vide laisserait passer une saisie vide.
+gregwar_captcha:
+    invalid_message: captcha.invalid
+    bypass_code: '%env(default::CAPTCHA_BYPASS_CODE)%'

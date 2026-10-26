@@ -35,6 +35,9 @@
             "migrations/.gitignore"
         ]
     },
+    "gregwar/captcha-bundle": {
+        "version": "v3.0.0"
+    },
     "phpstan/phpstan": {
         "version": "2.3.1"
     },

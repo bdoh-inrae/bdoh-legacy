@@ -13,11 +13,21 @@ use Irstea\BdohSecurityBundle\Form\ResettingUtilisateurType;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use Symfony\Component\Mailer\MailerInterface;
+use Symfony\Component\Mime\Email;
+use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
+use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 
 #[Route('/resetting')]
 class ResettingController extends Controller
 {
     const SESSION_EMAIL = 'resetting_email/email';
+
+    public function __construct(
+        private MailerInterface $mailer,
+        private UserPasswordHasherInterface $hasher
+    ) {
+    }
 
     /**
      * @return \Symfony\Component\HttpFoundation\Response
@@ -52,7 +62,7 @@ class ResettingController extends Controller
         if (null === $user->getConfirmationToken()) {
             $user->setConfirmationToken($this->generateToken());
         }
-        $this->container->get('session')->set(static::SESSION_EMAIL, $this->getObfuscatedEmail($user));
+        $this->getSession()->set(static::SESSION_EMAIL, $this->getObfuscatedEmail($user));
         $this->sendResettingEmailMessage($user);
         $this->getSecurityRepo('Utilisateur')->updateUser($user);
 
@@ -74,15 +84,13 @@ class ResettingController extends Controller
             throw new NotFoundHttpException(sprintf('The user with "confirmation token" does not exist for value "%s"', $token));
         }
 
-        $form = $this->createForm(new ResettingUtilisateurType(), $user);
+        $form = $this->createForm(ResettingUtilisateurType::class, $user);
         if ('POST' === $request->getMethod()) {
             $form->handleRequest($request);
 
             if ($form->isSubmitted() && $form->isValid()) {
                 $user->setConfirmationToken(null);
-                $encoder = $this->get('security.encoder_factory')->getEncoder($user);
-                $password = $encoder->encodePassword($user->getPassword(), $user->getSalt());
-                $user->setPassword($password);
+                $user->setPassword($this->hasher->hashPassword($user, $user->getPassword()));
 
                 $this->getSecurityRepo('Utilisateur')->updateUser($user);
                 $url = $this->container->get('router')->generate('bdoh_security_login');
@@ -107,7 +115,7 @@ class ResettingController extends Controller
     #[Route('/check-email', name: 'resetting_check_email', methods: ['GET'])]
     public function checkEmailAction()
     {
-        $session = $this->container->get('session');
+        $session = $this->getSession();
         $email = $session->get(static::SESSION_EMAIL);
         $session->remove(static::SESSION_EMAIL);
 
@@ -144,8 +152,8 @@ class ResettingController extends Controller
 
     public function sendResettingEmailMessage(Utilisateur $user)
     {
-        $url = $this->get('router')->generate('resetting_reset', ['token' => $user->getConfirmationToken()], true);
-        $rendered = $this->render(
+        $url = $this->get('router')->generate('resetting_reset', ['token' => $user->getConfirmationToken()], UrlGeneratorInterface::ABSOLUTE_URL);
+        $rendered = $this->renderView(
             '@IrsteaBdohSecurity/Resetting/email.txt.twig',
             [
                 'user'            => $user,
@@ -161,17 +169,18 @@ class ResettingController extends Controller
      */
     protected function sendEmailMessage($renderedTemplate, $toEmail)
     {
-        // Render the email, use the four line as the subject, and the rest as the body
+        // La première ligne du gabarit pour sujet, le reste pour corps. L'ancien convertissait en
+        // texte la réponse entière, en-têtes HTTP compris, et y prenait la cinquième ligne.
         $renderedLines = explode("\n", trim($renderedTemplate));
-        $subject = $renderedLines[4];
-        $body = implode("\n", array_slice($renderedLines, 5));
+        $subject = $renderedLines[0];
+        $body = implode("\n", array_slice($renderedLines, 1));
 
-        $message = \Swift_Message::newInstance()
-            ->setSubject($subject)
-            ->setFrom('bdoh@inrae.fr')
-            ->setTo($toEmail)
-            ->setBody($body);
+        $message = (new Email())
+            ->subject($subject)
+            ->from('bdoh@inrae.fr')
+            ->to($toEmail)
+            ->text($body);
 
-        $this->get('mailer')->send($message);
+        $this->mailer->send($message);
     }
 }

@@ -13,7 +13,7 @@ use Symfony\Component\Form\Extension\Core\Type\PasswordType;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
-use Symfony\Component\OptionsResolver\OptionsResolverInterface;
+use Symfony\Component\OptionsResolver\OptionsResolver;
 
 /**
  * {@inheritdoc}
@@ -26,29 +26,22 @@ abstract class UtilisateurType extends AbstractType
     protected $em;
 
     /**
-     * @var string
-     */
-    protected $locale;
-
-    /**
      * UtilisateurType constructor.
      *
      * @param \Doctrine\ORM\EntityManagerInterface $em
-     * @param string                               $locale
      */
-    public function __construct(\Doctrine\ORM\EntityManagerInterface $em, $locale = 'fr')
+    public function __construct(\Doctrine\ORM\EntityManagerInterface $em)
     {
         $this->em = $em;
-        $this->locale = $locale;
     }
 
     /**
      * {@inheritdoc}
      */
-    public function buildForm(FormBuilderInterface $builder, array $options)
+    public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $propertyCategorie = 'libelle';
-        if (\strpos($this->locale, 'en') === 0) {
+        if (\strpos($options['locale'], 'en') === 0) {
             $propertyCategorie .= 'En';
         }
         $builder
@@ -67,7 +60,7 @@ abstract class UtilisateurType extends AbstractType
                     'label'         => 'categorie',
                     'required'      => true,
                     'query_builder' => $this->em->getRepository('Irstea\BdohSecurityBundle\Entity\Categorie')->createQueryBuilder('cat')->orderBy('cat.' . $propertyCategorie, 'ASC'),
-                    'property'      => $propertyCategorie,
+                    'choice_label'  => $propertyCategorie,
                 ]
             );
     }
@@ -75,11 +68,13 @@ abstract class UtilisateurType extends AbstractType
     /**
      * {@inheritdoc}
      */
-    public function setDefaultOptions(OptionsResolverInterface $resolver)
+    public function configureOptions(OptionsResolver $resolver): void
     {
         $resolver->setDefaults(
             [
                 'data_class' => Utilisateur::class,
+                // La langue de la page, pour l'ordre et le libellé des listes
+                'locale'     => 'fr',
             ]
         );
     }
@@ -87,7 +82,7 @@ abstract class UtilisateurType extends AbstractType
     /**
      * {@inheritdoc}
      */
-    public function getName()
+    public function getBlockPrefix(): string
     {
         return 'irstea_bdohsecuritybundle_utilisateurtype';
     }

@@ -21,7 +21,7 @@ class EditUtilisateurType extends UtilisateurType
     /**
      * {@inheritdoc}
      */
-    public function buildForm(FormBuilderInterface $builder, array $options)
+    public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         parent::buildForm($builder, $options);
 
@@ -64,7 +64,7 @@ class EditUtilisateurType extends UtilisateurType
     /**
      * {@inheritdoc}
      */
-    public function getName()
+    public function getBlockPrefix(): string
     {
         return 'irstea_bdohsecuritybundle_editutilisateurtype';
     }

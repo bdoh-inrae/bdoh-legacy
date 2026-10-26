@@ -23,6 +23,9 @@ use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\DateType;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\Mailer\MailerInterface;
+use Symfony\Component\Mime\Email;
+use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
 /**
  * This controller allows :
@@ -32,6 +35,22 @@ use Symfony\Component\HttpFoundation\Request;
 #[Route('/user')]
 class UtilisateurController extends Controller
 {
+    public function __construct(
+        private MailerInterface $mailer,
+        private UserPasswordHasherInterface $hasher
+    ) {
+    }
+
+    /**
+     * Envoie un courriel s'il a un destinataire : Swiftmailer n'envoyait rien, sans erreur, à une
+     * liste vide (aucun gestionnaire), quand Symfony Mailer lèverait une exception.
+     */
+    private function send(Email $message): void
+    {
+        if ($message->getTo() || $message->getCc()) {
+            $this->mailer->send($message);
+        }
+    }
     /**
      * Creates a new 'Utilisateur' entity.
      * This action needs no role !
@@ -50,7 +69,7 @@ class UtilisateurController extends Controller
         }
 
         $user = new Utilisateur();
-        $form = $this->createForm(new NewUtilisateurType($this->getEm(), $this->get('session')->get('_locale')), $user);
+        $form = $this->createForm(NewUtilisateurType::class, $user, ['locale' => $this->get('session')->get('_locale') ?? 'fr']);
 
         // Some POST parameters ? Checks the form.
         if (count($request->request) !== 0) {
@@ -58,10 +77,7 @@ class UtilisateurController extends Controller
 
             if ($form->isSubmitted() && $form->isValid()) {
                 // Encodes the password
-                $encoder = $this->get('security.encoder_factory')->getEncoder($user);
-                $password = $encoder->encodePassword($user->getPassword(), $user->getSalt());
-
-                $user->setPassword($password);
+                $user->setPassword($this->hasher->hashPassword($user, $user->getPassword()));
 
                 // Persists the new user
                 $em = $this->getEm();
@@ -71,33 +87,32 @@ class UtilisateurController extends Controller
                 // Send a mail to the managers of the observatory
                 $userRepo = $this->getSecurityRepo('Utilisateur');
                 $managerMails = $userRepo->getValidatorMails($this->container->get('irstea_bdoh.manager.observatoire')->getCurrent());
-                $message = \Swift_Message::newInstance()
-                    ->setSubject($this->get('translator')->trans('security.utilisateur.newAccountMail.title'))
-                    ->setFrom('bdoh@inrae.fr')
-                    ->setTo($managerMails)
-                    ->setBody(
+                $message = (new Email())
+                    ->subject($this->get('translator')->trans('security.utilisateur.newAccountMail.title'))
+                    ->from('bdoh@inrae.fr')
+                    ->to(...$managerMails)
+                    ->text(
                         $this->renderView(
                             '@IrsteaBdohSecurity/Utilisateur/mail.txt.twig',
                             ['user' => $user, 'type' => 'compte']
                         )
                     );
 
-                $this->get('mailer')->send($message);
+                $this->send($message);
 
                 // Send a mail to the new user
-                $messageUtilisateur = \Swift_Message::newInstance()
-                    ->setSubject($this->get('translator')->trans('security.utilisateur.newMailUtilisateur.title'))
-                    ->setFrom('bdoh@inrae.fr')
-                    ->setTo($user->getEmail())
-                    ->setBody(
+                $messageUtilisateur = (new Email())
+                    ->subject($this->get('translator')->trans('security.utilisateur.newMailUtilisateur.title'))
+                    ->from('bdoh@inrae.fr')
+                    ->to($user->getEmail())
+                    ->html(
                         $this->renderView(
                             '@IrsteaBdohSecurity/Utilisateur/mailNewUtilisateur.txt.twig',
                             ['user' => $user]
-                        ),
-                        'text/html'
+                        )
                     );
 
-                $this->get('mailer')->send($messageUtilisateur);
+                $this->send($messageUtilisateur);
 
                 $this->container->get('irstea_bdoh_logger.logger')
                     ->createHistoriqueAdministrationUtilisateur(
@@ -131,7 +146,7 @@ class UtilisateurController extends Controller
     public function editAction(Request $request)
     {
         $user = $this->get('security.token_storage')->getToken()->getUser();
-        $form = $this->createForm(new EditUtilisateurType($this->getEm(), $this->get('session')->get('_locale')), $user);
+        $form = $this->createForm(EditUtilisateurType::class, $user, ['locale' => $this->get('session')->get('_locale') ?? 'fr']);
 
         // Some POST parameters ? Checks the form.
         if (count($request->request) !== 0) {
@@ -140,10 +155,7 @@ class UtilisateurController extends Controller
             if ($form->isSubmitted() && $form->isValid()) {
                 // If the password has changed, encodes it
                 if ($user->getPassword()) {
-                    $encoder = $this->get('security.encoder_factory')->getEncoder($user);
-                    $password = $encoder->encodePassword($user->getPassword(), $user->getSalt());
-
-                    $user->setPassword($password);
+                    $user->setPassword($this->hasher->hashPassword($user, $user->getPassword()));
                 } // Else, retrieves original 'password' and 'salt' to prevent the update to fail !!
                 else {
                     list($password, $salt) = $this->getSecurityRepo('Utilisateur')->getPasswordSalt($user);
@@ -322,6 +334,9 @@ class UtilisateurController extends Controller
                 [
                     'required' => false,
                     'label'    => 'finAcces',
+                    // Trois listes (jour, mois, année), comme l'ancien ; Symfony 7 en ferait un seul champ
+                    'widget'      => 'choice',
+                    'placeholder' => '',
                 ]
             );
         }
@@ -351,8 +366,10 @@ class UtilisateurController extends Controller
                 [
                     'required' => false,
                     'label'    => 'security.utilisateur.gestionnaireSite',
-                    'multiple' => true,
-                    'choices'  => $sitesChoice,
+                    'multiple'     => true,
+                    // Les identifiants pour valeurs, les noms pour libellés, comme l'ancien les écrivait
+                    'choices'      => array_keys($sitesChoice),
+                    'choice_label' => fn ($id) => $sitesChoice[$id],
                 ]
             );
         }
@@ -363,8 +380,10 @@ class UtilisateurController extends Controller
                 [
                     'required' => false,
                     'label'    => 'security.utilisateur.contributeurSite',
-                    'multiple' => true,
-                    'choices'  => $sitesChoice,
+                    'multiple'     => true,
+                    // Les identifiants pour valeurs, les noms pour libellés, comme l'ancien les écrivait
+                    'choices'      => array_keys($sitesChoice),
+                    'choice_label' => fn ($id) => $sitesChoice[$id],
                 ]
             );
         }
@@ -385,9 +404,10 @@ class UtilisateurController extends Controller
                 [
                     'required'   => false,
                     'label'      => 'security.utilisateur.utilisateurChronique',
-                    'multiple'   => true,
-                    'choices'    => $chroniquesChoice,
-                    'block_name' => 'choice_attr',
+                    'multiple'     => true,
+                    'choices'      => array_keys($chroniquesChoice),
+                    'choice_label' => fn ($id) => $chroniquesChoice[$id],
+                    'block_name'   => 'choice_attr',
                     'group_by'   => function ($choiceValue, $key, $value) {
                         return $this->getBdohRepo('Chronique')->findOneById($choiceValue)->getStation()->getCode();
                     },
@@ -405,7 +425,7 @@ class UtilisateurController extends Controller
 
             //so basically we're going to go through all sites and chroniques
 
-            $form->bind($request);
+            $form->handleRequest($request);
             $data = $form->getData();
             $besoinsATraiter = preg_grep('#besoinATraiter#', array_keys($data));
             if ($besoinsATraiter) {
@@ -533,12 +553,12 @@ class UtilisateurController extends Controller
             // Send a mail to the user to inform her of right granting
             // and send a copy to the managers of the observatory
             $managerMails = $userRepo->getValidatorMails($obs);
-            $message = \Swift_Message::newInstance()
-                ->setSubject($this->get('translator')->trans('security.utilisateur.newRightMail.title'))
-                ->setFrom('bdoh@inrae.fr')
-                ->setTo($email)
-                ->setCc($managerMails)
-                ->setBody(
+            $message = (new Email())
+                ->subject($this->get('translator')->trans('security.utilisateur.newRightMail.title'))
+                ->from('bdoh@inrae.fr')
+                ->to($email)
+                ->cc(...$managerMails)
+                ->text(
                     $this->renderView(
                         '@IrsteaBdohSecurity/Utilisateur/rightMail.txt.twig',
                         [
@@ -553,7 +573,7 @@ class UtilisateurController extends Controller
                     )
                 );
 
-            $this->get('mailer')->send($message);
+            $this->send($message);
 
             //log the rights granting
             $this->get('irstea_bdoh_logger.logger')

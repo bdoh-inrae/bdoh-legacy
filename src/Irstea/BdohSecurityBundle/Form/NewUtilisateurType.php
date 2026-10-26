@@ -17,7 +17,7 @@ class NewUtilisateurType extends UtilisateurType
     /**
      * {@inheritdoc}
      */
-    public function buildForm(FormBuilderInterface $builder, array $options)
+    public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         parent::buildForm($builder, $options);
         $builder->add('captcha', CaptchaType::class, ['required' => true, 'label' => 'captcha.info']);
@@ -26,7 +26,7 @@ class NewUtilisateurType extends UtilisateurType
     /**
      * {@inheritdoc}
      */
-    public function getName()
+    public function getBlockPrefix(): string
     {
         return 'irstea_bdohsecuritybundle_newutilisateurtype';
     }

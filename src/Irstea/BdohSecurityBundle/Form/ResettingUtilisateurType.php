@@ -18,7 +18,7 @@ class ResettingUtilisateurType extends AbstractType
     /**
      * {@inheritdoc}
      */
-    public function buildForm(FormBuilderInterface $builder, array $options)
+    public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
             // New password
@@ -29,7 +29,7 @@ class ResettingUtilisateurType extends AbstractType
     /**
      * {@inheritdoc}
      */
-    public function getName()
+    public function getBlockPrefix(): string
     {
         return 'irstea_bdohsecuritybundle_editutilisateurtype';
     }

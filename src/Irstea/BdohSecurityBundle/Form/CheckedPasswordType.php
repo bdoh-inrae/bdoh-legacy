@@ -23,7 +23,7 @@ final class CheckedPasswordType extends AbstractType
     /**
      * {@inheritdoc}
      */
-    public function buildForm(FormBuilderInterface $builder, array $options)
+    public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
             ->add('main', PasswordType::class, [
@@ -45,19 +45,16 @@ final class CheckedPasswordType extends AbstractType
                 }
                 $repeat->addError(new FormError('Utilisateur.password.badRepetition'));
             });
-
-        return $builder;
     }
 
     /**
      * {@inheritdoc}
      */
-    public function configureOptions(OptionsResolver $resolver)
+    public function configureOptions(OptionsResolver $resolver): void
     {
         parent::configureOptions($resolver);
 
         $resolver->setDefaults([
-            'cascade_validation' => true,
             'empty_data'         => ['main' => null, 'repeat' => null],
         ]);
     }
@@ -65,7 +62,7 @@ final class CheckedPasswordType extends AbstractType
     /**
      * {@inheritdoc}
      */
-    public function getParent()
+    public function getParent(): ?string
     {
         return FormType::class;
     }

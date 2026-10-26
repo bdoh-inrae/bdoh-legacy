@@ -1,11 +1,8 @@
-# Enable stateless CSRF protection for forms and logins/logouts
+# Jetons CSRF gardés en session, comme l'ancien BDOH, et non « sans état » (configuration de
+# Symfony 7.2 par défaut) : ceux-ci demandent un JavaScript que BDOH n'a pas, ou des en-têtes
+# Origin et Referer que tous les navigateurs n'envoient pas. Sans l'attribut data-controller qui
+# servirait à ce JavaScript.
 framework:
     form:
         csrf_protection:
-            token_id: submit
-
-    csrf_protection:
-        stateless_token_ids:
-            - submit
-            - authenticate
-            - logout
+            field_attr: []

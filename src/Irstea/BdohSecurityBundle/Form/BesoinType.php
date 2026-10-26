@@ -8,26 +8,25 @@ namespace Irstea\BdohSecurityBundle\Form;
 
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\FormBuilderInterface;
-use Symfony\Component\OptionsResolver\OptionsResolverInterface;
+use Symfony\Component\Form\Extension\Core\Type\TextareaType;
+use Symfony\Component\Form\Extension\Core\Type\TextType;
+use Symfony\Component\OptionsResolver\OptionsResolver;
 
 class BesoinType extends AbstractType
 {
     protected $em;
 
-    protected $locale;
-
-    public function __construct(\Doctrine\ORM\EntityManagerInterface $em, $locale = 'fr')
+    public function __construct(\Doctrine\ORM\EntityManagerInterface $em)
     {
         $this->em = $em;
-        $this->locale = $locale;
     }
 
-    public function buildForm(FormBuilderInterface $builder, array $options)
+    public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $propertyObjectif = 'libelle';
         $propertyType = 'libelle';
         $propertyParametre = 'nom';
-        $isLocaleEn = \strpos($this->locale, 'en') === 0;
+        $isLocaleEn = \strpos($options['locale'], 'en') === 0;
         if ($isLocaleEn) {
             $propertyObjectif .= 'En';
             $propertyType .= 'En';
@@ -44,7 +43,7 @@ class BesoinType extends AbstractType
                     'query_builder' => $this->em->getRepository('Irstea\BdohDataBundle\Entity\Station')->createQueryBuilder('st')->orderBy('st.nom', 'ASC'),
                 ]
             )
-            ->add('duree', 'text', ['label' => 'besoin.duree', 'required' => true])
+            ->add('duree', TextType::class, ['label' => 'besoin.duree', 'required' => true])
             ->add(
                 'objectif',
                 null,
@@ -52,7 +51,7 @@ class BesoinType extends AbstractType
                     'label'         => 'besoin.objectif',
                     'required'      => true,
                     'query_builder' => $this->em->getRepository('Irstea\BdohSecurityBundle\Entity\ObjectifRecherche')->createQueryBuilder('ore')->orderBy('ore.' . $propertyObjectif, 'ASC'),
-                    'property'      => $propertyObjectif,
+                    'choice_label'  => $propertyObjectif,
                 ]
             )
             ->add(
@@ -62,7 +61,7 @@ class BesoinType extends AbstractType
                     'label'         => 'besoin.type',
                     'required'      => true,
                     'query_builder' => $this->em->getRepository('Irstea\BdohSecurityBundle\Entity\TypeTravaux')->createQueryBuilder('tt')->orderBy('tt.' . $propertyType, 'ASC'),
-                    'property'      => $propertyType,
+                    'choice_label'  => $propertyType,
                 ]
             )
             ->add(
@@ -72,12 +71,12 @@ class BesoinType extends AbstractType
                     'label'         => 'besoin.parametres',
                     'required'      => true,
                     'query_builder' => $this->em->getRepository('Irstea\BdohDataBundle\Entity\Observatoire')->createParametresQueryBuilder($isLocaleEn),
-                    'property'      => $propertyParametre,
+                    'choice_label'  => $propertyParametre,
                 ]
             )
             ->add(
                 'details',
-                'textarea',
+                TextareaType::class,
                 [
                     'label'    => 'besoin.details',
                     'required' => true,
@@ -86,16 +85,18 @@ class BesoinType extends AbstractType
             );
     }
 
-    public function setDefaultOptions(OptionsResolverInterface $resolver)
+    public function configureOptions(OptionsResolver $resolver): void
     {
         $resolver->setDefaults(
             [
                 'data_class' => 'Irstea\BdohSecurityBundle\Entity\Besoin',
+                // La langue de la page, pour l'ordre et le libellé des listes
+                'locale'     => 'fr',
             ]
         );
     }
 
-    public function getName()
+    public function getBlockPrefix(): string
     {
         return 'irstea_bdohsecuritybundle_besointype';
     }

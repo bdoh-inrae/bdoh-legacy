@@ -16,7 +16,7 @@ final class CheckedPasswordTransformer implements DataTransformerInterface
     /**
      * {@inheritdoc}
      */
-    public function transform($value)
+    public function transform($value): mixed
     {
         return ['main' => $value, 'repeat' => null];
     }
@@ -24,7 +24,7 @@ final class CheckedPasswordTransformer implements DataTransformerInterface
     /**
      * {@inheritdoc}
      */
-    public function reverseTransform($value)
+    public function reverseTransform($value): mixed
     {
         if (is_array($value) && \array_key_exists('main', $value)) {
             return $value['main'];

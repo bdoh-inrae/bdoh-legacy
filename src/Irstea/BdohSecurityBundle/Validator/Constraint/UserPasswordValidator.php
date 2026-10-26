@@ -7,10 +7,9 @@
 namespace Irstea\BdohSecurityBundle\Validator\Constraint;
 
 use Doctrine\ORM\EntityManagerInterface;
-use Doctrine\ORM\EntityManagerInterface;
 use Irstea\BdohSecurityBundle\Entity\Utilisateur;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
-use Symfony\Component\Security\Core\Encoder\EncoderFactoryInterface;
+use Symfony\Component\PasswordHasher\Hasher\PasswordHasherFactoryInterface;
 use Symfony\Component\Validator\Constraint;
 use Symfony\Component\Validator\ConstraintValidator;
 use Symfony\Component\Validator\Exception\ConstraintDefinitionException;
@@ -33,31 +32,31 @@ class UserPasswordValidator extends ConstraintValidator
     protected $tokenStorage;
 
     /**
-     * @var EncoderFactoryInterface
+     * @var PasswordHasherFactoryInterface
      */
-    protected $encoderFactory;
+    protected $hasherFactory;
 
     /**
      * UserPasswordValidator constructor.
      *
      * @param EntityManager           $entityManager
      * @param TokenStorageInterface   $tokenStorage
-     * @param EncoderFactoryInterface $encoderFactory
+     * @param PasswordHasherFactoryInterface $hasherFactory
      */
     public function __construct(
         EntityManagerInterface $entityManager,
         TokenStorageInterface $tokenStorage,
-        EncoderFactoryInterface $encoderFactory
+        PasswordHasherFactoryInterface $hasherFactory
     ) {
         $this->entityManager = $entityManager;
         $this->tokenStorage = $tokenStorage;
-        $this->encoderFactory = $encoderFactory;
+        $this->hasherFactory = $hasherFactory;
     }
 
     /**
      * {@inheritdoc}
      */
-    public function validate($newPassword, Constraint $constraint)
+    public function validate($newPassword, Constraint $constraint): void
     {
         if (empty($newPassword)) {
             return;
@@ -72,9 +71,10 @@ class UserPasswordValidator extends ConstraintValidator
 
         list($password, $salt) = $this->entityManager->getRepository('Irstea\BdohSecurityBundle\Entity\Utilisateur')->getPasswordSalt($user);
 
-        $encoder = $this->encoderFactory->getEncoder($user);
+        // Le hacheur des comptes (security.yaml) ; le sel ne sert qu'aux anciens hachages qui en ont
+        $hasher = $this->hasherFactory->getPasswordHasher($user);
 
-        if (!$encoder->isPasswordValid($password, $newPassword, $salt)) {
+        if (!$hasher->verify($password, $newPassword, $salt)) {
             $this->context->addViolation($constraint->message);
         }
     }

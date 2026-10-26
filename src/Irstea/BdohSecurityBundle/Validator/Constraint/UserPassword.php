@@ -15,8 +15,8 @@ class UserPassword extends Constraint
 {
     public $message = 'Utilisateur.password.badCurrent';
 
-    public function validatedBy()
+    public function validatedBy(): string
     {
-        return 'irstea_bdoh_security.validator.user_password';
+        return UserPasswordValidator::class;
     }
 }
