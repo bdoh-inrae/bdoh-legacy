@@ -8,6 +8,7 @@ Code de référence : commit `523cf8e32` de l'ancien dépôt (version 5.0.3, fé
 
 - **Consultation publique et visualiseur** (module 2 du portage) : [dev/plans/2026-10-23_consultation.md](dev/plans/2026-10-23_consultation.md).
 - **Imports** (module 4) : [dev/plans/2026-10-25_imports.md](dev/plans/2026-10-25_imports.md).
+- **Comptes, connexion et droits** (module 5), en préparation : [dev/plans/2026-10-26_comptes.md](dev/plans/2026-10-26_comptes.md).
 
 ## À faire
 
