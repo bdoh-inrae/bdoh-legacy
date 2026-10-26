@@ -19,9 +19,10 @@ Code de référence : commit `523cf8e32` de l'ancien dépôt (version 5.0.3, fé
   2. consultation publique et visualiseur, en cours (ci-dessus) ;
   3. file de tâches et exports : fait ;
   4. imports : mesures, barèmes, points de contrôle, shapefiles ; en cours (ci-dessus) ;
-  5. comptes, connexion et droits ;
+  5. comptes, connexion et droits, avec la confirmation de l'adresse à la création d'un compte et une double authentification (souhait de Lou, 26 octobre) ;
   6. administration (Sonata Admin 3 vers 4), le plus gros morceau ;
   7. envoi des fiches vers Theia/OZCAR, courriels.
+- **Comportements de l'ancien à trancher**, un à un, à la fin du portage ou quand l'un d'eux bloque : les entrées « à trancher » de `dev/differences.md` (format Vigilance, zéro importé comme une lacune, jours manquants d'un fichier QJO, deux fuseaux horaires…). Le nouveau les reproduit en attendant.
 - **Fonctions SQL d'OTHU.** La base d'OTHU a trois fonctions qui diffèrent de la production : `bdoh_interp_cumul_to_cumul` et `bdoh_interp_to_mean_or_cumul`, faute de la migration `Version20241216124726` (correction du pas mensuel des exports), et `bdoh_chronique_calcul_dates_mesures`, qui y remet à `NULL` les dates et le nombre de mesures d'une chronique devenue vide, comme le code, quand la version de la production les laisse inchangés (relevé le 23 octobre). Les exports mensuels d'OTHU ont donc encore le bogue corrigé en production. À aligner sur la production à la bascule d'OTHU, après comparaison.
 - **Déploiement** sur une VM neuve sous Debian 13, sans Docker, avec le PHP 8.4 et le PostgreSQL de Debian, qui les corrige par ses mises à jour ordinaires (choix du 23 octobre ; le code reste compatible avec PHP 8.5, celui d'Ubuntu 26.04, que l'équipe infra propose par défaut) : déploiement de test, reprise des données, vérifications par des gestionnaires d'observatoire, bascule. La VM est à demander à l'équipe infra.
 
