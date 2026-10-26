@@ -1382,36 +1382,6 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *     active_locales?: list<scalar|Param|null>,
  *     active_domains?: list<scalar|Param|null>,
  * }
- * @psalm-type GregwarCaptchaConfig = array{
- *     length?: scalar|Param|null, // Default: 5
- *     width?: scalar|Param|null, // Default: 130
- *     height?: scalar|Param|null, // Default: 50
- *     font?: scalar|Param|null, // Default: "/var/www/bdoh/vendor/gregwar/captcha-bundle/DependencyInjection/../Generator/Font/captcha.ttf"
- *     keep_value?: scalar|Param|null, // Default: false
- *     charset?: scalar|Param|null, // Default: "abcdefhjkmnprstuvwxyz23456789"
- *     as_file?: scalar|Param|null, // Default: false
- *     as_url?: scalar|Param|null, // Default: false
- *     reload?: scalar|Param|null, // Default: false
- *     image_folder?: scalar|Param|null, // Default: "captcha"
- *     web_path?: scalar|Param|null, // Default: "%kernel.project_dir%/public"
- *     gc_freq?: scalar|Param|null, // Default: 100
- *     expiration?: scalar|Param|null, // Default: 60
- *     quality?: scalar|Param|null, // Default: 50
- *     invalid_message?: scalar|Param|null, // Default: "Bad code value"
- *     bypass_code?: scalar|Param|null, // Default: null
- *     whitelist_key?: scalar|Param|null, // Default: "captcha_whitelist_key"
- *     humanity?: scalar|Param|null, // Default: 0
- *     distortion?: scalar|Param|null, // Default: true
- *     max_front_lines?: scalar|Param|null, // Default: null
- *     max_behind_lines?: scalar|Param|null, // Default: null
- *     interpolation?: scalar|Param|null, // Default: true
- *     text_color?: list<scalar|Param|null>,
- *     background_color?: list<scalar|Param|null>,
- *     background_images?: list<scalar|Param|null>,
- *     disabled?: scalar|Param|null, // Default: false
- *     ignore_all_effects?: scalar|Param|null, // Default: false
- *     session_key?: scalar|Param|null, // Default: "captcha"
- * }
  * @psalm-type DoctrineMigrationsConfig = array{
  *     enable_service_migrations?: bool|Param, // Whether to enable fetching migrations from the service container. // Default: false
  *     migrations_paths?: array<string, scalar|Param|null>,
@@ -1446,7 +1416,6 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *     monolog?: MonologConfig,
  *     doctrine?: DoctrineConfig,
  *     bazinga_js_translation?: BazingaJsTranslationConfig,
- *     gregwar_captcha?: GregwarCaptchaConfig,
  *     doctrine_migrations?: DoctrineMigrationsConfig,
  *     "when@dev"?: array{
  *         imports?: ImportsConfig,
@@ -1458,7 +1427,6 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *         monolog?: MonologConfig,
  *         doctrine?: DoctrineConfig,
  *         bazinga_js_translation?: BazingaJsTranslationConfig,
- *         gregwar_captcha?: GregwarCaptchaConfig,
  *         doctrine_migrations?: DoctrineMigrationsConfig,
  *     },
  *     "when@prod"?: array{
@@ -1471,7 +1439,6 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *         monolog?: MonologConfig,
  *         doctrine?: DoctrineConfig,
  *         bazinga_js_translation?: BazingaJsTranslationConfig,
- *         gregwar_captcha?: GregwarCaptchaConfig,
  *         doctrine_migrations?: DoctrineMigrationsConfig,
  *     },
  *     "when@test"?: array{
@@ -1484,7 +1451,6 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *         monolog?: MonologConfig,
  *         doctrine?: DoctrineConfig,
  *         bazinga_js_translation?: BazingaJsTranslationConfig,
- *         gregwar_captcha?: GregwarCaptchaConfig,
  *         doctrine_migrations?: DoctrineMigrationsConfig,
  *     },
  *     ...<string, ExtensionType|array{ // extra keys must follow the when@%env% pattern or match an extension alias

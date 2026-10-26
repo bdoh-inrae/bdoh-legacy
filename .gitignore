@@ -12,3 +12,8 @@ __pycache__/
 /public/js/
 /public/css/themes/
 /public/uploads/
+
+# Notes du portage qui ne se publient pas (points de sécurité sensibles) : lues par chaque session,
+# jamais envoyées. dev/local/README.md dit ce qui y va.
+/dev/local/*
+!/dev/local/README.md
