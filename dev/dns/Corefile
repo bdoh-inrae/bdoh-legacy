@@ -1,0 +1,12 @@
+# Le DNS des conteneurs de développement (compose.yaml, dev/reference/compose.yaml) : un MX pour tout
+# domaine en .invalid, celui des adresses des bases anonymisées et des parcours de
+# dev/compare/compare.py ; aucune réponse pour les autres. BDOH refuse une adresse e-mail dont le
+# domaine n'a pas de MX : sans ce DNS, toute adresse serait refusée sur le réseau interne.
+. {
+    template IN MX invalid {
+        answer "{{ .Name }} 60 IN MX 10 mail.{{ .Name }}"
+    }
+    template ANY ANY {
+        rcode NXDOMAIN
+    }
+}

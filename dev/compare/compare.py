@@ -6,6 +6,7 @@
     dev/compare/compare.py state   [--base BASE]
     dev/compare/compare.py queue   [--base BASE]
     dev/compare/compare.py imports [--base BASE] [--only TEXTE]
+    dev/compare/compare.py accounts [--base BASE]
 
 SIDE nomme une instance (voir SIDES). Les cas sont tirés de la base BASE du serveur de référence,
 par des règles écrites ici : le dépôt ne contient ni données ni codes de chroniques. Le rapport et
@@ -213,14 +214,14 @@ class NoRedirect(urllib.request.HTTPRedirectHandler):
 class Client:
     """Un navigateur sans JavaScript, connecté ou non, qui ne suit pas les redirections."""
 
-    def __init__(self, side, email, slug):
+    def __init__(self, side, email, slug, password=PASSWORD):
         self.side = side
         jar = http.cookiejar.CookieJar()
         self.opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(jar), NoRedirect)
         if email:
             self.get(f'/{slug}/login')
             status, headers, _ = self.get(f'/{slug}/login_check', urllib.parse.urlencode(
-                {'_username': email, '_password': PASSWORD}).encode())
+                {'_username': email, '_password': password}).encode())
             if status != 302 or 'login' in headers.get('Location', ''):
                 raise RuntimeError(f'connexion refusée pour {email} sur {side.url}')
 
@@ -545,16 +546,24 @@ STATE_QUERIES = {
 MAILPIT = 'http://172.30.26.25:8025'  # service mailpit de compose.yaml (make mail-start)
 
 
-def mail_lines():
-    """Les courriels retenus par Mailpit, du plus ancien au plus récent, pièces jointes dépliées."""
+def mail_lines(ordered=True):
+    """Les courriels retenus par Mailpit, du plus ancien au plus récent (ou rangés par leur texte,
+    quand leur ordre ne compte pas), pièces jointes dépliées."""
     get = lambda path: urllib.request.urlopen(MAILPIT + path, timeout=60).read()
-    lines = []
+    messages = []
     for summary in sorted(json.loads(get('/api/v1/messages'))['messages'], key=lambda m: m['Created']):
         m = json.loads(get(f"/api/v1/message/{summary['ID']}"))
+        lines = []
+        messages.append(lines)
         address = lambda a: f"{a['Name']} <{a['Address']}>"
-        # Le texte sans ses fins de ligne finales, que Swiftmailer ajoute en l'encodant
+        # Les destinataires triés : leur ordre suit celui d'une requête sans tri. Le texte sans ses fins
+        # de ligne finales, que Swiftmailer ajoute en l'encodant ; un courriel en HTML, lu comme une page.
         lines += [f"Sujet : {m['Subject']}", f"De : {address(m['From'])}",
-                  'À : ' + ', '.join(map(address, m['To'])), *m['Text'].rstrip().splitlines()]
+                  'À : ' + ', '.join(sorted(map(address, m['To']))),
+                  *(['Cc : ' + ', '.join(sorted(map(address, m['Cc'])))] if m.get('Cc') else []),
+                  *m['Text'].rstrip().splitlines()]
+        if m['HTML']:
+            lines += page_lines(MAILPIT, 200, {'Content-Type': 'text/html'}, m['HTML'].encode())[2:]
         for part in m['Attachments']:
             lines.append(f"Pièce jointe : {part['FileName']} ({part['ContentType']})")
             with zipfile.ZipFile(io.BytesIO(get(f"/api/v1/message/{summary['ID']}/part/{part['PartID']}"))) as z:
@@ -566,7 +575,7 @@ def mail_lines():
                                                   for line in content.decode('utf-8', 'replace').splitlines())]
                     else:
                         lines.append(f'== {name} {hashlib.sha256(content).hexdigest()[:16]}')
-    return lines
+    return [line for lines in (messages if ordered else sorted(messages)) for line in lines]
 
 
 NEW_URL = 'postgresql://bdoh@db:5432/{}?serverVersion=17&charset=utf8'
@@ -603,9 +612,9 @@ def old_17_on(base, **params):
 
 @contextlib.contextmanager
 def new_on(base, template, *env):
-    """Le nouveau BDOH branché sur une base le temps du bloc, ses pages par .env.local, sa console par
-    l'environnement ; il lit ensuite de nouveau la base template."""
-    ENV_LOCAL.write_text(f'DATABASE_URL="{NEW_URL.format(base)}"\n')
+    """Le nouveau BDOH branché sur une base (et d'autres variables) le temps du bloc, ses pages par
+    .env.local, sa console par l'environnement ; il lit ensuite de nouveau la base template."""
+    ENV_LOCAL.write_text(f'DATABASE_URL="{NEW_URL.format(base)}"\n' + ''.join(f'{e}\n' for e in env))
     try:
         yield ['docker', 'exec', '-e', f'DATABASE_URL={NEW_URL.format(base)}',
                *[x for e in env for x in ('-e', e)], 'bdoh-app', 'php', 'bin/console']
@@ -1303,10 +1312,224 @@ def run_imports(args):
           f' {bases["ancien"]} et {bases["nouveau"]}.')
 
 
+# --- Comptes ---------------------------------------------------------------------------------------
+
+CAPTCHA_BYPASS = 'comparaison'  # passe outre le captcha des deux côtés (compose.yaml, install-app.sh)
+NEW_EMAIL = 'compte-essai@example.invalid'  # .invalid : le DNS de développement lui donne un MX
+
+
+class FormFields(html.parser.HTMLParser):
+    """Les champs d'un formulaire, tels qu'un navigateur les enverrait sans y toucher, et les options
+    de ses listes."""
+
+    def __init__(self, action):
+        super().__init__(convert_charrefs=True)
+        self.action, self.inside, self.select, self.textarea = action, False, None, None
+        self.fields, self.options = [], {}
+
+    def handle_starttag(self, tag, attrs):
+        a = {k: v or '' for k, v in attrs}
+        if tag == 'form':
+            self.inside = self.action in a.get('action', '')
+        elif not self.inside or 'name' not in a and tag != 'option':
+            return
+        elif tag == 'input' and a.get('type') not in ('submit', 'button', 'image', 'reset'):
+            if a.get('type') not in ('checkbox', 'radio') or 'checked' in a:
+                self.fields.append([a['name'], a.get('value', '' if a.get('type') != 'checkbox' else 'on')])
+        elif tag == 'select':
+            self.select = a['name']
+            self.options[self.select] = []
+        elif tag == 'option' and self.select:
+            self.options[self.select].append(a.get('value', ''))
+            if 'selected' in a:
+                self.fields.append([self.select, a.get('value', '')])
+        elif tag == 'textarea':
+            self.textarea = [a['name'], '']
+            self.fields.append(self.textarea)
+
+    def handle_endtag(self, tag):
+        if tag == 'form':
+            self.inside = False
+        elif tag == 'select':
+            self.select = None
+        elif tag == 'textarea':
+            self.textarea = None
+
+    def handle_data(self, data):
+        if self.textarea:
+            self.textarea[1] += data
+
+    @staticmethod
+    def match(name, key):
+        """Le nom d'un champ se termine-t-il par key ([email], [dateFin][day]…), sans ses [] ?"""
+        return name.removesuffix('[]').endswith(key)
+
+    def filled(self, values):
+        """Les champs, avec d'autres valeurs pour ceux dont le nom se termine par une clé : une
+        liste donne toutes les valeurs du champ ; une clé sans champ devient un nom de champ."""
+        fields = [f for f in self.fields if not any(self.match(f[0], k) for k in values)]
+        names = {*(f[0] for f in self.fields), *self.options}
+        for key, value in values.items():
+            name = next((n for n in sorted(names) if self.match(n, key)), key)
+            fields += [[name, v] for v in (value if isinstance(value, list) else [value])]
+        return urllib.parse.urlencode([tuple(f) for f in fields]).encode()
+
+    def choices(self, key):
+        """Les valeurs proposées par la liste dont le nom se termine par key, sans l'option vide."""
+        return [v for n, values in self.options.items() if self.match(n, key) for v in values if v]
+
+
+def form_of(client, path, action=None):
+    """Le formulaire d'une page, lu après l'avoir demandée comme un navigateur."""
+    parser = FormFields(action or path)
+    parser.feed(client.get(path)[2].decode('utf-8', 'replace'))
+    return parser
+
+
+ACCOUNT_QUERIES = {
+    # Ni le hachage du mot de passe ni le sel, tirés au hasard : seulement s'ils existent ; la date
+    # de dernière connexion, seulement si elle est récente.
+    'utilisateur': """
+        SELECT ((to_jsonb(u) - 'password' - 'salt' - 'derniereconnection' - 'confirmationtoken')
+                || jsonb_build_object('mot de passe', coalesce(u.password, '') <> '', 'sel', u.salt IS NOT NULL,
+                                      'jeton', u.confirmationtoken IS NOT NULL,
+                                      'connexion récente', u.derniereconnection > now() - interval '1 hour'))::text
+          FROM utilisateur u ORDER BY u.id""",
+    'role': """
+        SELECT (to_jsonb(r) - 'id')::text FROM role r WHERE r.utilisateur_id > {utilisateur} ORDER BY 1""",
+    'role des autres comptes': """
+        SELECT count(*), md5(string_agg(to_jsonb(r)::text, '|' ORDER BY r.id)) FROM role r
+         WHERE r.utilisateur_id <= {utilisateur}""",
+    'besoin': "SELECT to_jsonb(b)::text FROM besoin b WHERE b.id > {besoin} ORDER BY b.id",
+    'besoins_stations': "SELECT * FROM besoins_stations WHERE besoin_id > {besoin} ORDER BY 1, 2",
+    'besoins_parametres': "SELECT * FROM besoins_parametres WHERE besoin_id > {besoin} ORDER BY 1, 2",
+    'historique': STATE_QUERIES['historique'],
+}
+
+
+def run_accounts(args):
+    """Les parcours de comptes, par l'ancien code sur PostgreSQL 17 et par le nouveau, chacun sur sa
+    copie de BASE : inscription (et ses refus), modification de son compte, demande d'accès,
+    attribution de droits par un gestionnaire, création de comptes d'administration en ligne de
+    commande ; les réponses, les courriels et l'état des tables de comptes. Le mot de passe oublié
+    et le changement de mot de passe ne sont pas joués : ils partent avec la connexion par lien
+    (dev/plans/2026-10-26_comptes.md)."""
+    template = args.base
+    first = lambda sql: query(template, sql, NEW_SERVER)[0]
+    marks = {'historique': first('SELECT coalesce(max(id), 0) FROM historique')[0],
+             'utilisateur': first('SELECT max(id) FROM utilisateur')[0],
+             'besoin': first('SELECT coalesce(max(id), 0) FROM besoin')[0]}
+    # Un observatoire qui a des gestionnaires (ils reçoivent les courriels) et des stations
+    slug, manager = first("""
+        SELECT o.slug, u.email FROM observatoire o JOIN role r ON r.observatoire_id = o.id
+          JOIN utilisateur u ON u.id = r.utilisateur_id
+         WHERE r.valeur = 'gestionnaire' AND (u.finacces IS NULL OR u.finacces > now())
+         ORDER BY o.id, u.id LIMIT 1""")
+    taken = first('SELECT email FROM utilisateur ORDER BY id LIMIT 1')[0]
+
+    def play(side, console):
+        steps = {}
+
+        def post(name, client, path, data, then=None):
+            """Envoie un formulaire et garde la réponse, puis la page où elle renvoie."""
+            response = client.get(path, data, {'Referer': side.url + path})
+            steps[name] = page_lines(side.url, *response)
+            location = response[1].get('Location', '') if 300 <= response[0] < 400 else ''
+            if location:
+                steps[name] += ['== page suivante', *page_lines(side.url, *client.get(location.replace(side.url, '')))]
+
+        new = f'/{slug}/user/new'
+        good = {'[email]': NEW_EMAIL, '[password][main]': 'essai-2026', '[password][repeat]': 'essai-2026',
+                '[prenom]': 'Camille', '[nom]': 'Essai', '[organisme]': 'INRAE', '[telephone]': '0102030405',
+                '[adresse]': '1 rue de l’Essai\n69000 Lyon', '[captcha]': CAPTCHA_BYPASS}
+        anonymous = Client(side, None, slug)
+        for name, changes in [
+            ('captcha faux', {'[captcha]': 'faux'}),
+            ('mots de passe différents', {'[password][repeat]': 'autre-chose'}),
+            ('mot de passe trop court', {'[password][main]': 'abc', '[password][repeat]': 'abc'}),
+            ('téléphone trop court', {'[telephone]': '0102'}),
+            ('adresse sans MX', {'[email]': 'compte-essai@pas-de-courrier.example'}),
+            ('adresse mal formée', {'[email]': 'pas-une-adresse'}),
+            ('adresse déjà prise', {'[email]': taken}),
+            ('nom manquant', {'[nom]': ''}),
+            ('valide', {}),
+        ]:
+            form = form_of(anonymous, new)
+            categorie = form.choices('[categorie]')[:1]
+            post(f'inscription, {name}', anonymous, new, form.filled({**good, '[categorie]': categorie, **changes}))
+
+        def login(name, email, password):
+            try:
+                client = Client(side, email, slug, password)
+                steps[name] = ['connexion acceptée']
+                return client
+            except RuntimeError:
+                steps[name] = ['connexion refusée']
+
+        user = login('connexion du nouveau compte', NEW_EMAIL, 'essai-2026')
+        edit = f'/{slug}/user/edit'
+        for name, changes in [('téléphone trop court', {'[telephone]': '01'}),
+                              ('valide', {'[organisme]': 'INRAE, unité RiverLy', '[telephone]': '0607080910'})]:
+            post(f'modification du compte, {name}', user, edit, form_of(user, edit).filled(changes))
+        login('connexion après la modification', NEW_EMAIL, 'essai-2026')  # mot de passe inchangé
+
+        need = f'/{slug}/besoin/new'
+        for name, changes in [('détails manquants', {'[details]': ''}), ('valide', {})]:
+            form = form_of(user, need)
+            post(f"demande d'accès, {name}", user, need, form.filled({
+                '[stations]': form.choices('[stations]')[:2], '[objectif]': form.choices('[objectif]')[:1],
+                '[type]': form.choices('[type]')[:1], '[parametres]': form.choices('[parametres]')[:2],
+                '[duree]': '6 mois', '[details]': 'Essai de la comparaison.', **changes}))
+
+        boss = Client(side, manager, slug)
+        steps['liste des comptes'] = page_lines(side.url, *boss.get(f'/{slug}/user/all'))
+        right = f'/{slug}/user/right/{NEW_EMAIL}'
+        form = form_of(boss, right)
+        # Les demandes à traiter sont des cases à cocher, non cochées : absentes des champs envoyés
+        needs = sorted(set(re.findall(r'name="(form\[besoinATraiter\d+\])"', boss.get(right)[2].decode())))
+        post('droits', boss, right, form.filled({
+            **{n: '1' for n in needs}, '[dateFin][day]': '30', '[dateFin][month]': '6', '[dateFin][year]': '2027',
+            '[utilisateurChronique]': form.choices('[utilisateurChronique]')[:3]}))
+        steps['droits, page relue'] = page_lines(side.url, *boss.get(right))
+
+        for answer in ['y', 'non']:
+            r = subprocess.run([*console, 'security:users:create', 'Dominique', f'Admin-{answer}',
+                                f'admin-{answer}@example.invalid', 'admin-2026', 'FCT', answer, '-n', '--env=prod'],
+                               capture_output=True, text=True)
+            steps[f'commande security:users:create, {answer}'] = [f'code de sortie {r.returncode}',
+                                                                  *r.stdout.splitlines()]
+        return steps
+
+    sides = {}
+    for name, base in [('ancien', 'bdoh_accounts_old'), ('nouveau', 'bdoh_accounts_new')]:
+        copy_base(template, base)
+        urllib.request.urlopen(urllib.request.Request(MAILPIT + '/api/v1/messages', method='DELETE'), timeout=60)
+        if name == 'ancien':
+            side = SIDES['reference-17']
+            with old_17_on(base, mailer_transport='smtp', mailer_host='mailpit', mailer_port='1025') as console:
+                steps = play(side, console)
+        else:
+            side = SIDES['new']
+            with new_on(base, template, 'MAILER_DSN=smtp://mailpit:1025') as console:
+                steps = play(side, console)
+        # Deux courriels d'une même requête partent dans un ordre ou l'autre (l'ancien les met en file)
+        mails = [line.replace(side.url, '<site>') for line in mail_lines(ordered=False)]
+        sides[name] = {**steps, 'courriels': mails,
+                       **{table: ['\t'.join(row) for row in query(base, sql.format(**marks), NEW_SERVER)]
+                          for table, sql in ACCOUNT_QUERIES.items()}}
+
+    report = Report('accounts')
+    for part in sides['ancien']:
+        report.add(part, sides['ancien'][part], sides['nouveau'].get(part, []))
+    report.close()
+    print(f'Les instances lisent de nouveau {template}. Les deux copies restent pour examen :'
+          ' bdoh_accounts_old et bdoh_accounts_new.')
+
+
 def main():
     global CASES_SERVER
     parser = argparse.ArgumentParser(description=__doc__.split('\n')[0])
-    parser.add_argument('what', choices=['pages', 'exports', 'state', 'queue', 'imports'])
+    parser.add_argument('what', choices=['pages', 'exports', 'state', 'queue', 'imports', 'accounts'])
     parser.add_argument('--old', default='reference', choices=SIDES)
     parser.add_argument('--new', default='reference', choices=SIDES)
     parser.add_argument('--base', default='bdoh_small', help='base où tirer les cas')
@@ -1317,7 +1540,7 @@ def main():
     args = parser.parse_args()
     CASES_SERVER = args.server
     {'pages': run_pages, 'exports': run_exports, 'state': run_state, 'queue': run_queue,
-     'imports': run_imports}[args.what](args)
+     'imports': run_imports, 'accounts': run_accounts}[args.what](args)
 
 
 if __name__ == '__main__':

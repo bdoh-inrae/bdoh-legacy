@@ -11,6 +11,7 @@ use Doctrine\Common\Collections\Collection;
 use Irstea\BdohDataBundle\Entity\Chronique;
 use Irstea\BdohDataBundle\Entity\Observatoire;
 use Irstea\BdohDataBundle\Entity\SiteExperimental;
+use Irstea\BdohSecurityBundle\Validator\Constraint\EmailWithMx;
 use Serializable;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Security\Core\User\EquatableInterface;
@@ -35,11 +36,8 @@ class Utilisateur implements UserInterface, LegacyPasswordAuthenticatedUserInter
 
     /**
      * @var string
-     * @Assert\Email(
-     *      message = "Utilisateur.email.invalid",
-     *      checkMX = true
-     * )
      */
+    #[EmailWithMx]
     protected $email;
 
     /**
@@ -62,11 +60,8 @@ class Utilisateur implements UserInterface, LegacyPasswordAuthenticatedUserInter
 
     /**
      * @var string
-     * @Assert\Length(
-     *      min        = 4,
-     *      minMessage = "Utilisateur.password.minLength({{ limit }})"
-     * )
      */
+    #[Assert\Length(min: 4, minMessage: 'Utilisateur.password.minLength({{ limit }})')]
     protected $password;
 
     /**
@@ -82,11 +77,8 @@ class Utilisateur implements UserInterface, LegacyPasswordAuthenticatedUserInter
 
     /**
      * @var string
-     * @Assert\Length(
-     *      min        = 10,
-     *      minMessage = "Utilisateur.telephone.minLength({{ limit }})"
-     * )
      */
+    #[Assert\Length(min: 10, minMessage: 'Utilisateur.telephone.minLength({{ limit }})')]
     protected $telephone;
 
     /**

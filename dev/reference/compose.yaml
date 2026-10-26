@@ -14,9 +14,13 @@ x-app: &app
   user: "${HOST_UID:?}:${HOST_GID:?}"
   volumes:
     - ${REFERENCE_DIR:?}/app:/var/www/bdoh
+  # Le DNS du réseau interne (service dns), pour le contrôle des adresses e-mail
+  dns: [172.30.25.53]
   depends_on:
     db:
       condition: service_healthy
+    dns:
+      condition: service_started
   restart: unless-stopped
 
 services:
@@ -37,6 +41,18 @@ services:
       retries: 60
     restart: unless-stopped
     networks: [reference]
+
+  # Un MX pour les domaines des adresses de test (dev/dns/Corefile)
+  dns:
+    image: coredns/coredns:1.11.3
+    container_name: bdoh-reference-dns
+    command: [-conf, /Corefile]
+    volumes:
+      - ../dns/Corefile:/Corefile:ro
+    restart: unless-stopped
+    networks:
+      reference:
+        ipv4_address: 172.30.25.53
 
   app:
     <<: *app
