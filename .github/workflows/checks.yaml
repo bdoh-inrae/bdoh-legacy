@@ -1,0 +1,31 @@
+# Contrôles à chaque envoi : failles connues des dépendances, analyse statique, syntaxe des gabarits et
+# de la configuration, cohérence des services. Aucune base n'y sert. La comparaison avec l'ancien
+# BDOH (dev/compare/) tourne en local : elle demande les bases anonymisées, qui ne quittent pas le poste.
+name: Contrôles
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: intl, pdo_pgsql, zip, gd
+          tools: composer:v2
+      # La configuration de développement, comme make app-install
+      - run: cp .env.example .env
+      - run: composer validate --no-check-publish
+      - run: composer install --no-interaction --no-progress
+      - run: composer audit --abandoned=report
+      - run: vendor/bin/phpstan analyse --no-progress --memory-limit=-1
+      - run: bin/console lint:yaml config
+      - run: bin/console lint:twig templates src
+      - run: bin/console lint:container
