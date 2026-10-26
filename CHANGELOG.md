@@ -16,7 +16,8 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/). Numéros de v
 - Licence GNU AGPL v3.
 - Nouveau BDOH sous Symfony 7.4 et PHP 8.4 (paquets de Debian 13), sur la structure de base de la production, sans conversion des données. Socle : entités, types et correspondance Doctrine, lus exactement comme l'ancien les lisait (comparaison des métadonnées et des entités chargées). Plan : `dev/plans/2026-10-23_socle.md`.
 - File de tâches et exports du nouveau BDOH : recalculs, conversions, taux de remplissage, « vider une période », exports des quatre sortes aux formats BDOH et Qtvar, courriel de l'export, pages de suivi des tâches. Identiques à l'ancien sur les bases anonymisées, réduite et complète. Un exécuteur à nous sur les tables de JMS JobQueue garde une tâche à la fois par chronique (essai de l'audit passé). Plan : `dev/plans/2026-10-23_jobs-exports.md`.
-- Outil de comparaison : l'état de la base après les calculs, les exports demandés par le formulaire et la file de tâches (`compare.py state`, courriels lus dans Mailpit, `make mail-start`) ; l'essai de la file de tâches (`compare.py queue`).
+- Imports du nouveau BDOH : mesures (formats BDOH, BDOH par plages, QJO, Qtvar), points de contrôle et leur export, barèmes et transformations, shapefiles. Identiques à l'ancien, réponses de chaque étape et état de la base, sur 49 cas tirés de la base et leurs variantes. Plan : `dev/plans/2026-10-25_imports.md`.
+- Outil de comparaison : l'état de la base après les calculs, les exports demandés par le formulaire et la file de tâches (`compare.py state`, courriels lus dans Mailpit, `make mail-start`) ; l'essai de la file de tâches (`compare.py queue`) ; les imports étape par étape (`compare.py imports`).
 
 ### Corrigé
 
@@ -26,3 +27,5 @@ Bogues de l'ancien BDOH, corrigés dans le nouveau (détail dans `dev/difference
 - Erreurs internes sur des pages publiques : le choix de la langue, une station ou une chronique inconnues.
 - Un fichier joint impossible à supprimer arrêtait l'enregistrement d'un observatoire sur une erreur fatale.
 - Une tâche ne s'annule ou ne se relance que si son état le permet ; une annulation et un démarrage simultanés ne donnent plus une tâche annulée qui tourne.
+- Importer un barème sans fichier, ou d'un type refusé, affiche le message d'erreur au lieu d'une erreur interne.
+- Créer un compte d'administration en ligne de commande ne donne tous les droits que si on le demande.

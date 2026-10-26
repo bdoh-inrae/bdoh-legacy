@@ -106,11 +106,17 @@ class Manager
      */
     public function loadShapefile()
     {
+        // Le SQL écrit au fil de l'eau, comme le faisait le shell : un grand réseau de cours d'eau en
+        // produit trop pour le garder en mémoire.
+        $sql = fopen($this->filePath . '_Success.log', 'w');
+        $errors = fopen($this->filePath . '_Errors.log', 'w');
         $shp2pgsql = new Process(['shp2pgsql', '-s', (string) Station::SRID, '-ciD', $this->filePath, $this->tmpTable]);
         $shp2pgsql->setTimeout(null);
-        $shp2pgsql->run();
-        file_put_contents($this->filePath . '_Success.log', $shp2pgsql->getOutput());
-        file_put_contents($this->filePath . '_Errors.log', $shp2pgsql->getErrorOutput());
+        $shp2pgsql->run(function ($type, $buffer) use ($sql, $errors) {
+            fwrite($type === Process::ERR ? $errors : $sql, $buffer);
+        });
+        fclose($sql);
+        fclose($errors);
 
         $params = $this->em->getConnection()->getParams();
         $psql = new Process(

@@ -657,7 +657,11 @@ class TransformationController extends Controller
         }
         if ($errors->isDirty()) {
             $data = $this->getErrorsResponse();
-            $importer->clean();
+            // Sans fichier, ou d'un type refusé, il n'y a pas d'importeur : l'ancien s'arrêtait là
+            // sur une erreur 500 (dev/differences.md).
+            if (isset($importer)) {
+                $importer->clean();
+            }
         }
 
         // Patch: remove UTF-8 invalid characters in the view returned in order to avoid JsonResponse to throw an error

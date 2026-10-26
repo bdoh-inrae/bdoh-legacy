@@ -7,8 +7,7 @@ Code de référence : commit `523cf8e32` de l'ancien dépôt (version 5.0.3, fé
 ## En cours
 
 - **Consultation publique et visualiseur** (module 2 du portage) : [dev/plans/2026-10-23_consultation.md](dev/plans/2026-10-23_consultation.md).
-- **Imports** (module 4) : [dev/plans/2026-10-25_imports.md](dev/plans/2026-10-25_imports.md).
-- **Comptes, connexion et droits** (module 5), en préparation : [dev/plans/2026-10-26_comptes.md](dev/plans/2026-10-26_comptes.md).
+- **Comptes, connexion et droits** (module 5) : [dev/plans/2026-10-26_comptes.md](dev/plans/2026-10-26_comptes.md).
 
 ## À faire
 
@@ -18,7 +17,7 @@ Code de référence : commit `523cf8e32` de l'ancien dépôt (version 5.0.3, fé
   1. socle : fait ;
   2. consultation publique et visualiseur, en cours (ci-dessus) ;
   3. file de tâches et exports : fait ;
-  4. imports : mesures, barèmes, points de contrôle, shapefiles ; en cours (ci-dessus) ;
+  4. imports : fait ;
   5. comptes, connexion et droits, avec la confirmation de l'adresse à la création d'un compte et une double authentification (souhait de Lou, 26 octobre) ;
   6. administration (Sonata Admin 3 vers 4), le plus gros morceau ;
   7. envoi des fiches vers Theia/OZCAR, courriels.

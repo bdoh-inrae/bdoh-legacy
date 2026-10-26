@@ -111,7 +111,9 @@ class MeasureImportController extends Controller
 
         $idImporter = null;
         foreach ($importers as $key => $class) {
-            if (get_class($this->importer) === $class) {
+            // Sans importeur (refus dès l'étape 1), PHP 7.1 rendait la classe courante et rien ne
+            // correspondait ; PHP 8 lèverait une erreur.
+            if (null !== $this->importer && get_class($this->importer) === $class) {
                 $idImporter = $key;
                 break;
             }
@@ -172,7 +174,9 @@ class MeasureImportController extends Controller
 
         $manager = $this->getManager();
         $file = $request->files->get('file');
-        $format = $request->request->get('file-format');
+        // Au-delà de post_max_size, PHP vide le formulaire : le format manque, et l'ancien disait
+        // « format inconnu ».
+        $format = (string) $request->request->get('file-format');
         $importerClass = $manager->importers->get($format);
         $errors = $this->errors = new ImportErrors();
 

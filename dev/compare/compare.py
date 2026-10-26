@@ -517,7 +517,8 @@ STATE_QUERIES = {
                                                       ORDER BY debut, fin))
           FROM tauxremplissage GROUP BY 1 ORDER BY 1""",
     'historique': """
-        SELECT (to_jsonb(h) - 'id' - 'date')::text FROM historique h WHERE h.id > {historique} ORDER BY h.id""",
+        SELECT (to_jsonb(h) - 'id' - 'date' - 'datecreation')::text FROM historique h WHERE h.id > {historique}
+         ORDER BY h.id""",
     # La sortie d'erreur d'une tâche en échec : la console de Symfony 7 présente l'exception
     # autrement que celle de Symfony 2 (dev/differences.md) ; seul compte qu'elle en ait une.
     'jms_jobs': """
@@ -877,7 +878,8 @@ def import_steps(client, site, case):
                                            urllib.parse.urlencode(fields).encode(), ajax)
     read = lambda response: json.loads(response[2]) if response[0] == 200 else {}
     log = []
-    body, kind = multipart({'file-format': case['format']}, {'file': ('import.txt', case['content'])})
+    files = {'file': (case.get('filename', 'import.txt'), case['content'])} if case['content'] is not None else {}
+    body, kind = multipart({'file-format': case['format']}, files)
     response = client.get(f'/{slug}/admin/mesure/import/step2', body, {**ajax, 'Content-Type': kind})
     log += ['== étape 2', *step_lines(site, *response)]
     data = read(response)
@@ -915,6 +917,16 @@ def bdoh_import(base, cid, months, import_type='keepExisting'):
              *[';'.join(r) for r in rows]]
     return {'name': f'chronique {cid}', 'format': 'Bdoh', 'content': ('\n'.join(lines) + '\n').encode(),
             'type': import_type, 'cid': cid, 'slug': slug}
+
+
+def png_pixel():
+    """Une image PNG valide d'un pixel, que libmagic reconnaît dans toutes ses versions."""
+    import struct
+    import zlib
+    chunk = lambda kind, data: (struct.pack('>I', len(data)) + kind + data
+                                + struct.pack('>I', zlib.crc32(kind + data) & 0xffffffff))
+    return (b'\x89PNG\r\n\x1a\n' + chunk(b'IHDR', struct.pack('>IIBBBBB', 1, 1, 8, 2, 0, 0, 0))
+            + chunk(b'IDAT', zlib.compress(b'\x00\xff\x00\x00')) + chunk(b'IEND', b''))
 
 
 def import_cases(base):
@@ -957,6 +969,7 @@ def import_cases(base):
         cases.append({'name': name, 'format': 'Bdoh', 'content': content, 'type': import_type, 'cid': cid,
                       'slug': slug, **extra})
 
+
     add('nouvelle période', bdoh(rows(12)))
     add('fins de ligne Windows', bdoh(rows(13), eol='\r\n'))
     add('espaces autour des champs', bdoh([[f' {x} ' for x in r] for r in rows(14)]))
@@ -981,6 +994,16 @@ def import_cases(base):
     add('qualité inconnue', bdoh(unknown))
     add('mauvaise unité', bdoh(rows(22), unit='inconnue'))
     add('station inconnue', bdoh(rows(23), st='INCONNUE'))
+    # Refusés dès l'étape 2, avant que l'importeur existe
+    add('format inconnu', bdoh(rows(12)), format='Inconnu')
+    add('sans fichier', None)
+    add('fichier PDF', b'%PDF-1.4\n1 0 obj << /Type /Catalog >> endobj\ntrailer << /Root 1 0 R >>\n%%EOF\n',
+        filename='import.pdf')
+    # (une archive zip vide n'y est pas : libmagic la classe autrement selon sa version, dev/differences.md)
+    image_zip = io.BytesIO()
+    with zipfile.ZipFile(image_zip, 'w') as z:
+        z.writestr('image.png', png_pixel())
+    add('archive zip sans texte', image_zip.getvalue(), filename='import.zip')
     changed = [[r[0], str(float(r[1]) + 1) if r[1] != '-9999' else r[1], *r[2:]] for r in rows(0)]
     add('période existante, écraser', bdoh(changed), 'overwriteExisting')
     add('période existante, garder', bdoh(rows(0)), 'keepExisting')
@@ -1074,7 +1097,10 @@ def bareme_cases(base, slug):
     return [('barème', bareme('Courbe essai')),
             ('barème, unité inconnue', bareme('Courbe essai 2', unit_in='inconnue')),
             ('barème, valeur non numérique', bareme('Courbe essai 3', points=[(0, 0), (1, 'abc')])),
-            ('barème, qualité inconnue', bareme('Courbe essai 4', points=[(0, 0, 'zz'), (1, 1)]))]
+            ('barème, qualité inconnue', bareme('Courbe essai 4', points=[(0, 0, 'zz'), (1, 1)])),
+            # L'ancien rend une erreur 500 sans fichier, ou avec un fichier d'un type refusé (dev/differences.md)
+            ('barème, sans fichier', None),
+            ('barème, fichier PDF', b'%PDF-1.4\n1 0 obj << /Type /Catalog >> endobj\ntrailer << /Root 1 0 R >>\n%%EOF\n')]
 
 
 SHAPES = HERE.parent.parent / 'var' / 'compare-shapes'  # monté dans bdoh-app sous /var/www/bdoh/var
@@ -1182,7 +1208,7 @@ def run_imports(args):
             side = sides[name][0]
             client = client_for(name, slug)
             ajax = {'X-Requested-With': 'XMLHttpRequest'}
-            body, kind = multipart({}, {'file': ('bareme.txt', content)})
+            body, kind = multipart({}, {'file': ('bareme.txt', content)} if content is not None else {})
             response = client.get(f'/{slug}/admin/transformation/import/bareme/step2', body,
                                   {**ajax, 'Content-Type': kind})
             log = ['== étape 2', *step_lines(side.url, *response)]
