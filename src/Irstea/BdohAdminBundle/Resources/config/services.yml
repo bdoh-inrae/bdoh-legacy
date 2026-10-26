@@ -83,8 +83,6 @@ services:
     Irstea\BdohAdminBundle\Controller\:
         resource: '../../Controller/'
 
-    # La commande bdoh:import:measure attend son portage (étape 4 de dev/plans/2026-10-25_imports.md).
-
     # Managers of "measure import", "controle import", "shape import", "bareme import"
     Irstea\BdohAdminBundle\Manager\MeasureImportManager:
         arguments: [ "%kernel.project_dir%/var", "%irstea_bdoh_admin.measure_import%" ]

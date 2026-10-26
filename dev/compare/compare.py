@@ -770,6 +770,47 @@ def run_queue(args):
     report = Report('queue')
     for part in sides['une à une']:
         report.add(part, sides['une à une'][part], sides['deux à la fois'][part])
+
+    # Deux imports rapprochés, sur les deux chroniques mères d'une chronique calculée : chacun en
+    # lance le recalcul par propagation. La file les mène deux à la fois après les deux imports, ou
+    # une à une après chaque import.
+    found = query(template, """
+        SELECT t1.entree_id, t2.entree_id FROM transformation t1
+          JOIN transformation t2 ON t2.sortie_id = t1.sortie_id AND t2.entree_id > t1.entree_id
+          JOIN chronique a ON a.id = t1.entree_id JOIN chronique b ON b.id = t2.entree_id
+         WHERE a.dtype = 'continue' AND b.dtype = 'continue'
+           AND EXISTS (SELECT 1 FROM mesure m WHERE m.chronique_id = a.id AND m.date >= '2024-01-01' AND m.date < '2024-01-15')
+           AND EXISTS (SELECT 1 FROM mesure m WHERE m.chronique_id = b.id AND m.date >= '2024-01-01' AND m.date < '2024-01-15')
+         ORDER BY t1.sortie_id LIMIT 1""", NEW_SERVER)
+    if found:
+        imports = [bdoh_import(template, cid, 12) for cid in found[0]]
+        manager = query(template, f"""
+            SELECT u.email FROM utilisateur u JOIN role r ON r.utilisateur_id = u.id
+              JOIN observatoire o ON o.id = r.observatoire_id
+             WHERE r.valeur = 'gestionnaire' AND o.slug = '{imports[0]['slug']}'
+               AND (u.finacces IS NULL OR u.finacces > now()) ORDER BY u.id LIMIT 1""", NEW_SERVER)[0][0]
+        sides = {}
+        for name, base, jobs in [('imports, deux à la fois', 'bdoh_queue_parallel', 2),
+                                 ('imports, une à une', 'bdoh_queue_serial', 1)]:
+            copy_base(template, base)
+            with new_on(base, template) as console:
+                client = Client(SIDES['new'], manager, imports[0]['slug'])
+                for case in imports:
+                    import_steps(client, SIDES['new'].url, case)
+                    if jobs == 1:
+                        drain(console, 'bdoh:jobs:run', base, jobs=1, rounds=60)
+                drain(console, 'bdoh:jobs:run', base, jobs=jobs, rounds=60)
+            sides[name] = state_lines(base, 0, ['chronique', 'mesure', 'tauxremplissage'])
+            sides[name]['tâches'] = sorted(
+                re.sub(r'\d{4}-\d\d-\d\dT[\d:]+', '<date>', ' '.join(row)) for row in query(base, """
+                    SELECT command, args::text, state, exitcode FROM jms_jobs""", NEW_SERVER))
+            overlaps = query(base, """
+                SELECT a.queue, a.id, b.id FROM jms_jobs a JOIN jms_jobs b
+                  ON b.queue = a.queue AND b.id > a.id
+                 AND b.startedat < a.closedat AND a.startedat < b.closedat""", NEW_SERVER)
+            print(f'{name} : {len(sides[name]["tâches"])} tâches, {len(overlaps)} dans une même file {overlaps or ""}')
+        for part in sides['imports, une à une']:
+            report.add(f'imports, {part}', sides['imports, une à une'][part], sides['imports, deux à la fois'][part])
     report.close()
 
 
@@ -819,6 +860,54 @@ def step_lines(site, status, headers, body):
         else:
             lines.append(f'{key} : {json.dumps(value, ensure_ascii=False, sort_keys=True)}')
     return [line.replace(site, '<site>') for line in lines]
+
+
+def import_steps(client, site, case):
+    """Un import de mesures par ses étapes, comme le JavaScript les envoie ; rend les réponses."""
+    slug = case['slug']
+    ajax = {'X-Requested-With': 'XMLHttpRequest'}
+    post = lambda step, fields: client.get(f'/{slug}/admin/mesure/import/{step}',
+                                           urllib.parse.urlencode(fields).encode(), ajax)
+    read = lambda response: json.loads(response[2]) if response[0] == 200 else {}
+    log = []
+    body, kind = multipart({'file-format': case['format']}, {'file': ('import.txt', case['content'])})
+    response = client.get(f'/{slug}/admin/mesure/import/step2', body, {**ajax, 'Content-Type': kind})
+    log += ['== étape 2', *step_lines(site, *response)]
+    data = read(response)
+    if data.get('action') == 'step2.askStation':
+        response = post('step2/next', {'station': case['station']})
+        log += ['== station', *step_lines(site, *response)]
+        data = read(response)
+    if data.get('action') == 'step2':
+        # Les chroniques lues dans l'en-tête, gardées toutes, comme le fait le JavaScript ; sinon
+        # celle du cas, choisie dans la liste proposée.
+        chroniques = re.findall(r'<li name="([^"]+)"', data['view']) or [case['chronique']]
+        fields = {'timezone': case.get('timezone', ''), **{f'chroniques[{i}]': c for i, c in enumerate(chroniques)}}
+        response = post('step3', fields)
+        log += ['== étape 3', *step_lines(site, *response)]
+        data = read(response)
+    if data.get('action') == 'step3':
+        response = post('step4', {f"importTypes[{case['cid']}]": case['type'], 'propagate': 'propagate'})
+        log += ['== étape 4', *step_lines(site, *response)]
+    return log
+
+
+def bdoh_import(base, cid, months, import_type='keepExisting'):
+    """Un import au format BDOH sur la chronique cid : ses mesures de deux semaines de janvier 2024,
+    décalées de months mois."""
+    slug, station, code, unite = query(base, f"""
+        SELECT c.slug, c.station, c.code, u.libelle FROM ({CHRONIQUES}) c
+          JOIN chronique ch ON ch.id = c.id JOIN unite u ON u.id = ch.unite_id WHERE c.id = {cid}""", NEW_SERVER)[0]
+    rows = query(base, f"""
+        SELECT to_char(m.date + interval '1 hour' + interval '{months} month', 'DD/MM/YYYY HH24:MI:SS'),
+               coalesce(m.valeur::text, '-9999'), q.code
+          FROM mesure m JOIN qualite q ON q.id = m.qualite_id
+         WHERE m.chronique_id = {cid} AND m.date >= '2024-01-01' AND m.date < '2024-01-15'
+         ORDER BY m.date""", NEW_SERVER)
+    lines = ['Station;Fuseau;Chronique;Unite', f'{station};UTC+01;{code};{unite}', 'DateHeure;Valeur;Qualite',
+             *[';'.join(r) for r in rows]]
+    return {'name': f'chronique {cid}', 'format': 'Bdoh', 'content': ('\n'.join(lines) + '\n').encode(),
+            'type': import_type, 'cid': cid, 'slug': slug}
 
 
 def import_cases(base):
@@ -1051,33 +1140,7 @@ def run_imports(args):
 
         def play(name, case):
             side, console, runner = sides[name]
-            slug = case['slug']
-            client = client_for(name, slug)
-            ajax = {'X-Requested-With': 'XMLHttpRequest'}
-            post = lambda step, fields: client.get(f'/{slug}/admin/mesure/import/{step}',
-                                                   urllib.parse.urlencode(fields).encode(), ajax)
-            read = lambda response: json.loads(response[2]) if response[0] == 200 else {}
-            log = []
-            body, kind = multipart({'file-format': case['format']}, {'file': ('import.txt', case['content'])})
-            response = client.get(f'/{slug}/admin/mesure/import/step2', body, {**ajax, 'Content-Type': kind})
-            log += ['== étape 2', *step_lines(side.url, *response)]
-            data = read(response)
-            if data.get('action') == 'step2.askStation':
-                response = post('step2/next', {'station': case['station']})
-                log += ['== station', *step_lines(side.url, *response)]
-                data = read(response)
-            if data.get('action') == 'step2':
-                # Les chroniques lues dans l'en-tête, gardées toutes, comme le fait le JavaScript ;
-                # sinon celle du cas, choisie dans la liste proposée.
-                chroniques = re.findall(r'<li name="([^"]+)"', data['view']) or [case['chronique']]
-                fields = {'timezone': case.get('timezone', ''),
-                          **{f'chroniques[{i}]': c for i, c in enumerate(chroniques)}}
-                response = post('step3', fields)
-                log += ['== étape 3', *step_lines(side.url, *response)]
-                data = read(response)
-            if data.get('action') == 'step3':
-                response = post('step4', {f"importTypes[{case['cid']}]": case['type'], 'propagate': 'propagate'})
-                log += ['== étape 4', *step_lines(side.url, *response)]
+            log = import_steps(client_for(name, case['slug']), side.url, case)
             drain(console, runner, bases[name])
             return log
 

@@ -31,7 +31,7 @@ services:
     Irstea\BdohBundle\:
         resource: '../../'
         exclude:
-            - '../../{Command,DataTransformer,Exception,Model,Resources}'
+            - '../../{DataTransformer,Exception,Model,Resources}'
             - '../../Job/{Job,JobRepository}.php'
             - '../../IrsteaBdohBundle.php'
 
