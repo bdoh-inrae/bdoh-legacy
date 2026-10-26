@@ -7,6 +7,7 @@
 namespace Irstea\BdohAdminBundle\Admin;
 
 use Doctrine\ORM\EntityRepository as DoctrineEntityRepository;
+use Irstea\BdohBundle\Mailer\DeferredMailer;
 use Irstea\BdohBundle\Manager\ObservatoireManagerInterface;
 use Irstea\BdohDataBundle\Entity\Repository\EntityRepository;
 use Irstea\BdohLoggerBundle\Logger\BdohLogger;
@@ -14,8 +15,8 @@ use Irstea\BdohSecurityBundle\Entity\Utilisateur;
 use Psr\Container\ContainerInterface;
 use Sonata\AdminBundle\Admin\AbstractAdmin;
 use Sonata\AdminBundle\Translator\NoopLabelTranslatorStrategy;
+use Sonata\Form\Validator\Constraints\InlineConstraint;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
-use Symfony\Component\Mailer\MailerInterface;
 use Symfony\Component\Routing\RouterInterface;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
 use Symfony\Contracts\Service\Attribute\Required;
@@ -47,7 +48,7 @@ abstract class Admin extends AbstractAdmin implements ServiceSubscriberInterface
             'translator'                       => TranslatorInterface::class,
             'router'                           => RouterInterface::class,
             'twig'                             => Environment::class,
-            'mailer'                           => MailerInterface::class,
+            'mailer'                           => DeferredMailer::class, // après la réponse, comme Swiftmailer
             'parameter_bag'                    => ParameterBagInterface::class,
             'security.token_storage'           => TokenStorageInterface::class,
             'irstea_bdoh.manager.observatoire' => ObservatoireManagerInterface::class,
@@ -83,6 +84,17 @@ abstract class Admin extends AbstractAdmin implements ServiceSubscriberInterface
         }
     }
 
+    /**
+     * La validation propre à une administration, par sa méthode validate(ErrorElement, $object), comme
+     * dans Sonata 3.
+     */
+    protected function configureFormOptions(array &$formOptions): void
+    {
+        if (method_exists($this, 'validate')) {
+            $formOptions['constraints'][] = new InlineConstraint(service: $this, method: 'validate', serializingWarning: true);
+        }
+    }
+
     /* Route name */
     protected function generateBaseRouteName(bool $isChildAdmin = false): string
     {
@@ -96,11 +108,13 @@ abstract class Admin extends AbstractAdmin implements ServiceSubscriberInterface
     }
 
     /**
-     * Pagination de Sonata 3 : 32 lignes par page par défaut.
+     * Pagination et tri de Sonata 3 : 32 lignes par page, par identifiant croissant.
      */
     protected function configureDefaultSortValues(array &$sortValues): void
     {
         $sortValues['_per_page'] = 32;
+        $sortValues['_sort_by'] = 'id';
+        $sortValues['_sort_order'] = 'ASC';
     }
 
     /**

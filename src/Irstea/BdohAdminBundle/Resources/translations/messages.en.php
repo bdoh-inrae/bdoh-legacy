@@ -775,7 +775,7 @@ $various = [
 
 An account has been created for you on BDOH.
 
-Your login is the e-mail address at which you received this message and the password is “\u{a0}password\u{a0}”, we invite you to change it as soon as you sign in.
+Your login is the e-mail address at which you received this message. BDOH has no password: to sign in, enter this address on the sign-in page, and BDOH will send you a sign-in link.
 
 You can ask for specific data access form the following link: ',
             'footer' => 'This e-mail is automatically generated, thank you for not replying.',

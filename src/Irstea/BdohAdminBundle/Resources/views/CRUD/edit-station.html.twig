@@ -1,0 +1,43 @@
+{% extends '@IrsteaBdohAdmin/CRUD/edit.html.twig' %}
+
+{# bouton vers la consultation de la station #}
+{% import '@IrsteaBdohConsult/macros.html.twig' as macros %}
+{% block navbar_title %}
+    {{ parent() }}
+    {% if admin and admin.subject and admin.subject.code %}
+        <span class="toolbox-btns">
+            {{ macros.station_view(admin.subject) }}
+        </span>
+    {% endif %}
+{% endblock %}
+
+{# message pour expliquer l'interdiction de supprimer la station -> liste des chroniques #}
+{% block formactions %}
+    {% if admin.timeSeries and admin.timeSeries|length %}
+        <div class="well well-small form-actions">
+            <p style="margin-bottom:5px;">
+                <b>{{ 'admin.help.station.warning-station-has-time-series'|trans({'%count%': admin.timeSeries|length}) }}</b>
+            </p>
+            <ul style="margin-bottom:0;">
+                {% for t in admin.timeSeries %}
+                    <li>
+                        {% if is_granted('EDIT', t) and t.observatoire == currentObservatoire() %}
+                            {%  if t.dtype == 'continue' %}
+                                <a href="{{ path('bdoh_admin_chroniquecontinue_edit', {'id':t.id}) }}">{{ t }}</a>
+                            {% elseif t.dtype == 'discontinue' %}
+                                <a href="{{ path('bdoh_admin_chroniquediscontinue_edit', {'id':t.id}) }}">{{ t }}</a>
+                            {% elseif t.dtype == 'convertie' %}
+                                <a href="{{ path('bdoh_admin_chroniqueconvertie_edit', {'id':t.id}) }}">{{ t }}</a>
+                            {% else %}
+                                <a href="{{ path('bdoh_admin_chroniquecalculee_edit', {'id':t.id}) }}">{{ t }}</a>
+                            {% endif %}
+                        {% else %}
+                            {{ t }}
+                        {% endif %}
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+    {% endif %}
+    {{ parent() }}
+{% endblock %}

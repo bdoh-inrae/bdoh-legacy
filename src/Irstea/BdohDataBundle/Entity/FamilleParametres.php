@@ -14,6 +14,8 @@ use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
  */
 #[UniqueEntity(fields: 'nom', message: 'FamilleParametres.nom.alreadyExists')]
 #[UniqueEntity(fields: 'nomEn', message: 'FamilleParametres.nom.alreadyExists')]
+// FamilleParametresRepository::findAllHierachy y accroche la profondeur de chaque famille (depth).
+#[\AllowDynamicProperties]
 class FamilleParametres
 {
     /**

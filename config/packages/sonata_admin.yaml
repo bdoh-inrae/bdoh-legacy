@@ -6,6 +6,8 @@ sonata_admin:
 
     options:
         confirm_exit: false
+        # Comme Sonata 3 : les entités liées d'une liste mènent à leur page d'édition
+        default_admin_route: edit
 
     security:
         handler: irstea_bdoh_security.admin.security.handler

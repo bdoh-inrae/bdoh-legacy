@@ -779,7 +779,7 @@ $various = [
 
 Un compte vient d'être créé pour vous sur BDOH.
 
-Votre identifiant est l'adresse e-mail à laquelle vous recevez ce message et le mot de passe est «\u{a0}password\u{a0}», nous vous invitons à le changer dès votre première connexion.
+Votre identifiant est l'adresse e-mail à laquelle vous recevez ce message. BDOH n'a pas de mot de passe\u{a0}: pour vous connecter, saisissez cette adresse sur la page de connexion, et BDOH vous enverra un lien de connexion.
 
 Vous pouvez dès à présent préciser vos besoins d'accès aux données depuis le lien suivant : ",
             'footer' => 'Cet e-mail est généré automatiquement, merci de ne pas y répondre.',

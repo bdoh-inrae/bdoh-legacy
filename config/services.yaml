@@ -18,6 +18,9 @@ parameters:
     logo_short_web_link: images/Logo_INRAE.png
     mini_logo_sonata: images/MiniLogo_INRAE_REPUBLIQUE.png
 
+    # Le portail Theia/OZCAR, dont l'administration interroge le thésaurus (parameters.yml.dist de l'ancien)
+    uri_theia_ozcar: https://in-situ.theia-land.fr
+
     absent_quality_codes:
         VALID:     a
         Hydro2:    0

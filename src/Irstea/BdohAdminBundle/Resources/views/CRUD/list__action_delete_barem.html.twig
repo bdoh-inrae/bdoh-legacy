@@ -1,0 +1,7 @@
+{% if object.isOrphan and  is_granted('DELETE', object) %}
+    <a href="{{ admin.generateObjectUrl('delete', object) }}" class="btn btn-sm btn-default delete_link"
+       title="{{ 'action_delete'|trans({}, 'SonataAdminBundle') }}">
+        <i class="glyphicon glyphicon-remove"></i>
+        {{ 'action_delete'|trans({}, 'SonataAdminBundle') }}
+    </a>
+{% endif %}

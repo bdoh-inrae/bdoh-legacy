@@ -1,0 +1,41 @@
+/* Repris de Resources/assets/entries/crud/familles-types.css de l'ancien BDOH, pour les résultats de select2 4. */
+
+li.select2-results__option.hierarchy-level-0{
+    padding-left:calc(0 * 25px);
+}
+li.select2-results__option.hierarchy-level-1{
+    padding-left:calc(1 * 25px);
+}
+li.select2-results__option.hierarchy-level-2{
+    padding-left:calc(2 * 25px);
+}
+li.select2-results__option.hierarchy-level-3{
+    padding-left:calc(3 * 25px);
+}
+li.select2-results__option.hierarchy-level-4{
+    padding-left:calc(4 * 25px);
+}
+li.select2-results__option.hierarchy-level-5{
+    padding-left:calc(5 * 25px);
+}
+li.select2-results__option.hierarchy-level-6{
+    padding-left:calc(6 * 25px);
+}
+li.select2-results__option.hierarchy-level-7{
+    padding-left:calc(7 * 25px);
+}
+li.select2-results__option.hierarchy-level-8{
+    padding-left:calc(8 * 25px);
+}
+li.select2-results__option.hierarchy-level-9{
+    padding-left:calc(9 * 25px);
+}
+li.select2-results__option.hierarchy-level-10{
+    padding-left:calc(10 * 25px);
+}
+li.select2-results__option.hierarchy-level-11{
+    padding-left:calc(11 * 25px);
+}
+li.select2-results__option.hierarchy-level-12{
+    padding-left:calc(12 * 25px);
+}

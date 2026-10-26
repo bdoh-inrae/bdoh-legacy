@@ -1,0 +1,58 @@
+{% extends '@IrsteaBdohAdmin/CRUD/edit.html.twig' %}
+
+{% from 'macros.html.twig' import i18nEntityLabel %}
+
+{# ajout du javascrip pour le rendu hierarchique du select des familles #}
+{% block javascripts %}
+    {{ parent() }}
+    <script src="{{ asset('bundles/irsteabdohadmin/crud/familles-types.js') }}"></script>
+{% endblock %}
+
+{# ajout du css pour le rendu hierarchique du select des familles #}
+{% block stylesheets %}
+    {{ parent() }}
+    <link rel="stylesheet" href="{{ asset('bundles/irsteabdohadmin/crud/familles-types.css') }}">
+{% endblock %}
+
+{# message pour expliquer l'interdiction de supprimer la famille de paramètres -> liste des familles et des types qui l'utilisent #}
+{% block formactions %}
+    {% set margin_top = '' %}
+    {% if (admin.childrenFamilies and admin.childrenFamilies|length) or (admin.parameterTypes and admin.parameterTypes|length) %}
+        <div class="well well-small form-actions">
+            {% if admin.childrenFamilies and admin.childrenFamilies|length %}
+                <p style="margin-bottom:5px;">
+                    <b>{{ 'admin.help.familleParametres.warning-familleParametres-has-children'|trans({'%count%': admin.childrenFamilies|length}) }}</b>
+                </p>
+                <ul style="margin-bottom:0;">
+                    {% for f in admin.childrenFamilies %}
+                        <li>
+                            {% if is_granted('EDIT', f) %}
+                                <a href="{{ path('bdoh_admin_familleparametres_edit', {'id':f.id}) }}">{{ i18nEntityLabel(f, 'nom', '') }}</a>
+                            {% else %}
+                                {{ i18nEntityLabel(f, 'nom', '') }}
+                            {% endif %}
+                        </li>
+                    {% endfor %}
+                </ul>
+                {% set margin_top = 'margin-top:10px;' %}
+            {% endif %}
+            {% if admin.parameterTypes and admin.parameterTypes|length %}
+                <p style="margin-bottom:5px;{{ margin_top }}">
+                    <b>{{ 'admin.help.familleParametres.warning-familleParametres-has-types'|trans({'%count%': admin.parameterTypes|length}) }}</b>
+                </p>
+                <ul style="margin-bottom:0;">
+                    {% for t in admin.parameterTypes %}
+                        <li>
+                            {% if is_granted('EDIT', t) %}
+                                <a href="{{ path('bdoh_admin_typeparametre_edit', {'id':t.id}) }}">{{ i18nEntityLabel(t, 'nom', '') }}</a>
+                            {% else %}
+                                {{ i18nEntityLabel(t, 'nom', '') }}
+                            {% endif %}
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        </div>
+    {% endif %}
+    {{ parent() }}
+{% endblock %}

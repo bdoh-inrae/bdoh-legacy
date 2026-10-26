@@ -1,0 +1,26 @@
+{% extends '@IrsteaBdohAdmin/CRUD/edit.html.twig' %}
+
+{# message pour expliquer l'interdiction de supprimer le site -> liste des stations #}
+{% block formactions %}
+    {% if admin.stations and admin.stations|length %}
+        <div class="well well-small form-actions">
+            <p style="margin-bottom:5px;">
+                <b>{{ 'admin.help.site.warning-site-has-stations'|trans({'%count%': admin.stations|length}) }}</b>
+            </p>
+            <ul style="margin-bottom:0;">
+                {% for s in admin.stations %}
+                    <li>
+                        {% if is_granted('EDIT', s) and s.observatoire == currentObservatoire() %}
+                            <a href="{{ path('bdoh_admin_station_edit', {id:s.id}) }}">
+                                {{ s.nom }} ({{ s.code }})
+                            </a>
+                        {% else %}
+                            {{ s.nom }} ({{ s.code }})
+                        {% endif %}
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+    {% endif %}
+    {{ parent() }}
+{% endblock %}

@@ -1,0 +1,61 @@
+{% extends '@IrsteaBdohAdmin/CRUD/delete.html.twig' %}
+
+{# redefinition du contenu de confirmation de la suppression de la commune pour préciser les stations qui utilisent cette commune #}
+{% block content %}
+    <div class="sonata-ba-delete">
+        <div class="box box-danger">
+            <div class="box-header">
+                <h3 class="box-title">{{ 'title_delete'|trans({}, 'SonataAdminBundle') }}</h3>
+            </div>
+            <div class="box-body">
+                {% if admin.stations and admin.stations|length %}
+                    <p style="margin-bottom:5px;">
+                        <b>{{ 'admin.help.commune.warning-commune-has-stations'|trans({'%count%': admin.stations|length}) }}</b>
+                    </p>
+                    <ul style="margin-bottom:0;">
+                        {% for s in admin.stations %}
+                            <li>
+                                {% if is_granted('EDIT', s) and s.observatoire == currentObservatoire() %}
+                                    <a href="{{ path('bdoh_admin_station_edit', {id:s.id}) }}">
+                                        {{ s.nom }} ({{ s.code }})
+                                    </a>
+                                {% else %}
+                                    {{ s.nom }} ({{ s.code }})
+                                {% endif %}
+                                ({{ 'admin.help.from_the_observatory'|trans }}
+                                {% if is_granted('EDIT', s.observatoire) %}
+                                    <a href="{{ path('bdoh_admin_observatoire_edit', {id:s.observatoire.id}) }}">{{ s.observatoire }}</a>)
+                                {% else %}
+                                    {{ s.observatoire }})
+                                {% endif %}
+                            </li>
+                        {% endfor %}
+                    </ul>
+                    <p style="margin-top:20px;">
+                        {{ 'admin.help.commune.confirm-delete-commune(%name%)'|trans({'%name%':admin.toString(object)}) }}<br>
+                        <small>({{ 'admin.help.commune.confirm-delete-commune-info'|trans }})</small>
+                    </p>
+                {% else %}
+                    {{ 'message_delete_confirmation'|trans({'%object%':admin.toString(object)}, 'SonataAdminBundle') }}
+                {% endif %}
+            </div>
+            <div class="box-footer clearfix">
+                <form method="POST" action="{{ admin.generateObjectUrl('delete', object) }}">
+                    <input type="hidden" name="_method" value="DELETE">
+                    <input type="hidden" name="_sonata_csrf_token" value="{{ csrf_token }}">
+
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fa fa-trash" aria-hidden="true"></i> {{ 'btn_delete'|trans({}, 'SonataAdminBundle') }}
+                    </button>
+                    {% if admin.hasRoute('edit') and admin.hasAccess('edit', object) %}
+                        {{ 'delete_or'|trans({}, 'SonataAdminBundle') }}
+
+                        <a class="btn btn-success" href="{{ admin.generateObjectUrl('edit', object) }}">
+                            <i class="fa fa-pencil" aria-hidden="true"></i>
+                            {{ 'link_action_edit'|trans({}, 'SonataAdminBundle') }}</a>
+                    {% endif %}
+                </form>
+            </div>
+        </div>
+    </div>
+{% endblock %}

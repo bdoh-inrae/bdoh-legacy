@@ -265,10 +265,11 @@ class Extract(html.parser.HTMLParser):
               'footer', 'form', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'header', 'hr', 'label', 'legend',
               'li', 'nav', 'ol', 'option', 'p', 'pre', 'section', 'table', 'tbody', 'td', 'tfoot',
               'th', 'thead', 'title', 'tr', 'ul'}
-    TOKEN = re.compile(r'(^|\[)_?(csrf_)?token\]?$')
-    # Le câblage du JavaScript de Sonata 4 (Stimulus, arbre du menu d'AdminLTE 2.4), qui ne montre
-    # rien (dev/differences.md, « Administration sur Sonata 4 »)
-    WIRING = re.compile(r'data-(controller|action|widget|[\w-]+-(target|value|outlet|class|param))$')
+    TOKEN = re.compile(r'(^|\[)_?(sonata_)?(csrf_)?token\]?$')
+    # Le câblage du JavaScript de Sonata (Stimulus, arbre du menu d'AdminLTE 2.4, filtres des listes,
+    # texte d'attente de select2, que l'option vide de la liste montre déjà), qui ne montre rien (dev/differences.md, « Administration sur Sonata 4 ») ; data-toggle vaut
+    # advanced-filter dans Sonata 3, d'autres valeurs aussi dans Sonata 4
+    WIRING = re.compile(r'data-(controller|action|widget|filter|placeholder|[\w-]+-(target|value|outlet|class|param))$')
 
     def __init__(self):
         super().__init__(convert_charrefs=True)
@@ -309,7 +310,8 @@ class Extract(html.parser.HTMLParser):
             self.add('G', a.get('src', ''), a.get('alt', ''))
         elif tag == 'link':
             self.add('L', a.get('rel', ''), a.get('href', ''))
-        data = [f'{k}={v}' for k, v in sorted(a.items()) if k.startswith('data-') and not self.WIRING.match(k)]
+        data = [f'{k}={v}' for k, v in sorted(a.items())
+                if k.startswith('data-') and not self.WIRING.match(k) and (k, v) != ('data-toggle', 'advanced-filter')]
         if data:
             self.add('D', tag, *data)
 
@@ -333,8 +335,14 @@ NORMALIZE = [
     (re.compile(r'(/bundles/[\w/.-]+)\?v=\d+'), r'\1'),  # version des fichiers des bundles
     # Les fichiers propres aux pages de l'administration : compilés dans assets/admin/ par l'ancien,
     # servis tels quels par le nouveau depuis le bundle (dev/decisions.md)
-    (re.compile(r'^S /bundles/irsteabdohadmin/crud/'), 'S /assets/admin/crud/'),
-    (re.compile(r'\bs[0-9a-f]{13}\b'), 's<uniqid>'),  # identifiants de formulaires de Sonata
+    (re.compile(r'^(S|L stylesheet) /bundles/irsteabdohadmin/crud/'), r'\1 /assets/admin/crud/'),
+    # Sonata 4 nomme le bouton de suppression, que Sonata 3 ne nommait pas : son nom n'est pas lu
+    (re.compile(r'^I button submit btn_delete$'), 'I button submit'),
+    # Les opérateurs des filtres sur une entité liée, mal nommés par Sonata 3 (dev/differences.md,
+    # « Filtre des listes mal nommé »)
+    (re.compile(r'^T Est égal à$'), 'T est égal à'),
+    (re.compile(r'^T Ne contient pas$'), "T n'est pas égal à"),
+    (re.compile(r'(?<![0-9A-Za-z])s[0-9a-f]{13}(?![0-9a-f])'), 's<uniqid>'),  # identifiants de formulaires de Sonata
     (re.compile(r'data:image/[\w+]+;base64,[\w+/=]+'), '<image>'),  # captcha
     (re.compile(r'(data-target=#[a-z]+-)\d+'), r'\1<n>'),  # fenêtres numérotées au hasard
 ]
@@ -347,6 +355,12 @@ SONATA_PAGE = re.compile(r'^S /(assets/admin/sonata\.js|bundles/sonataadmin/app\
 SONATA_ASSETS = re.compile(r'^((L stylesheet|S) /(assets/(admin/sonata|manifest|vendor)\.(css|js)$|'
                            r'bundles/(sonataadmin|sonataform|sonatacore|irsteabdohadmin/(sonata|lib))/)'
                            r'|J window\.SONATA_CONFIG = )')
+
+
+# Les scripts des champs de Sonata (complétion automatique, fenêtres d'ajout et de choix d'une entité
+# liée), propres à chaque version de Sonata
+SONATA_AUTOCOMPLETE = re.compile(r'^J (jQuery\(function \(\$\) \{ (// Select2 v3 does not used same input as v4|'
+                                 r'var autocompleteInput = )|var field_dialog_)')
 
 
 def canonical_query(query, per_page_option=False):
@@ -386,7 +400,10 @@ def page_lines(site, status, headers, body):
     for pattern, repl in NORMALIZE:
         lines = [pattern.sub(repl, line) for line in lines]
     if any(SONATA_PAGE.match(line) for line in lines):
-        lines = [line for line in lines if not SONATA_ASSETS.match(line)]
+        lines = [line for line in lines if not SONATA_ASSETS.match(line) and not SONATA_AUTOCOMPLETE.match(line)]
+        # Le champ à complétion automatique : Sonata 3 y ajoutait un champ de texte sans nom, pour select2 3
+        lines = [line for k, line in enumerate(lines)
+                 if not (line == 'I input text' and lines[k + 1:k + 3] == ['I select', 'D select data-sonata-select2=false'])]
     # Symfony 7 ne code pas les paramètres d'adresse comme Symfony 2 (%20 ou +, %2C ou virgule…) :
     # même adresse, comparée sous une forme canonique (dev/differences.md).
     lines = [QUERY.sub(lambda m: m.group(1) + canonical_query(
@@ -1408,7 +1425,7 @@ class FormFields(html.parser.HTMLParser):
     def __init__(self, action):
         super().__init__(convert_charrefs=True)
         self.action, self.inside, self.select, self.textarea, self.url = action, False, None, None, None
-        self.fields, self.options, self.names = [], {}, set()
+        self.fields, self.options, self.names, self.buttons = [], {}, set(), []
 
     def handle_starttag(self, tag, attrs):
         a = {k: v or '' for k, v in attrs}
@@ -1420,6 +1437,8 @@ class FormFields(html.parser.HTMLParser):
             return
         if 'name' in a and tag in ('input', 'select', 'textarea'):
             self.names.add(a['name'])
+        if tag == 'button' and a.get('type', 'submit') == 'submit' and a.get('name'):
+            self.buttons.append(a['name'])
         if tag == 'input' and a.get('type') not in ('submit', 'button', 'image', 'reset'):
             if a.get('type') not in ('checkbox', 'radio') or 'checked' in a:
                 self.fields.append([a['name'], a.get('value', '' if a.get('type') != 'checkbox' else 'on')])
@@ -1765,33 +1784,99 @@ def run_accounts(args):
 
 # --- Administration --------------------------------------------------------------------------------
 
+FIRST = object()  # la première des valeurs que propose la liste du formulaire
+OBSERVATORY_PICK = '''SELECT min(t.id) FROM {table} t JOIN observatoire o ON o.id = t.observatoire_id
+                       WHERE o.slug = '{{slug}}' '''
+
 # Les administrations portées, dans l'ordre du menu, sous le nom qui fait leurs adresses : la table
 # qu'elles écrivent, les champs changés à l'édition et remplis à la création (la fin de leur nom,
 # sans l'identifiant de formulaire de Sonata), et la requête qui choisit l'entité dont on ouvre les
-# pages ({slug} : l'observatoire de la page). Par défaut, la première de la table.
+# pages ({slug} : l'observatoire de la page), par défaut la première de la table. Sans « change »,
+# l'édition n'est que renvoyée telle quelle ; sans « create », ni création ni suppression (routes
+# retirées par l'administration) ; « nodelete » : création sans suppression ; « state » : la requête
+# de ACCOUNT_QUERIES qui lit la table, quand elle a des colonnes que les deux côtés écrivent autrement.
+STATION_PICK = '''SELECT min(s.id) FROM station s JOIN stations_sites ss ON ss.station_id = s.id
+                   JOIN siteexperimental se ON se.id = ss.site_id JOIN observatoire o ON o.id = se.observatoire_id
+                  WHERE o.slug = '{slug}' '''
+
 ADMINS = {
+    'siteexperimental': {'table': 'siteexperimental', 'pick': OBSERVATORY_PICK.format(table='siteexperimental'),
+                         'change': {'[descriptionEn]': '<p>Site (test)</p>'}, 'create': {'[nom]': 'Site d’essai'}},
+    'station': {'table': 'station', 'also': ['stations_sites'], 'pick': STATION_PICK,
+                'change': {'[commentaireEn]': 'Station (test)'},
+                'create': {'[nom]': 'Station d’essai', '[code]': 'ESSAI', '[sites]': FIRST, '[altitude]': '123.4567',
+                           '[latitude]': '45.1', '[longitude]': '4.9'}},
+    'bareme': {'table': 'bareme', 'pick': OBSERVATORY_PICK.format(table='bareme')},
+    'jeuqualite': {'table': 'jeuqualite'},
+    'echantillonnage': {'table': 'echantillonnage'},
+    'pasechantillonnage': {'table': 'pasechantillonnage'},
+    'familleparametres': {'table': 'familleparametres', 'change': {'[nomEn]': 'Family (test)'},
+                          'create': {'[nom]': 'Famille d’essai', '[nomEn]': 'Test family', '[prefix]': 'ESS'}},
+    'typeparametre': {'table': 'typeparametre', 'also': ['parametres_unites'], 'change': {'[nomEn]': 'Type (test)'},
+                      'create': {'[nom]': 'Type d’essai', '[nomEn]': 'Test type', '[code]': 'ESSAI',
+                                 '[familleParametres]': FIRST}},
     'unite': {'table': 'unite', 'change': {'[libelleEn]': 'unit (test)'},
               'create': {'[libelle]': 'unité d’essai', '[libelleEn]': 'test unit'}},
+    'typefunding': {'table': 'typefunding', 'change': {'[nom]': 'Financeur (essai)'},
+                    'create': {'[nom]': 'Financeur d’essai'}},
+    'dataconstraint': {'table': 'dataconstraint', 'change': {'[nom]': 'Contrainte (essai)'},
+                       'create': {'[nom]': 'Contrainte d’essai'}},
+    'criteriaclimat': {'table': 'criteriaclimat', 'change': {'[nom]': 'Climat (essai)'},
+                       'create': {'[nom]': 'Climat d’essai'}},
+    'criteriageology': {'table': 'criteriageology', 'change': {'[nom]': 'Géologie (essai)'},
+                        'create': {'[nom]': 'Géologie d’essai'}},
+    'bassin': {'table': 'bassin', 'pick': OBSERVATORY_PICK.format(table='bassin'), 'change': {'[nom]': 'Bassin (essai)'}},
+    'courseau': {'table': 'courseau', 'pick': OBSERVATORY_PICK.format(table='courseau'),
+                 'change': {'[nom]': 'Cours d’eau (essai)'}},
+    'commune': {'table': 'commune', 'change': {'[nom]': 'Commune (essai)'},
+                'create': {'[nom]': 'Commune d’essai', '[codePostal]': '00000', '[codeInsee]': '00000'}},
+    'doi': {'table': 'doi', 'pick': OBSERVATORY_PICK.format(table='doi'), 'change': {'[descriptionEn]': 'DOI (test)'},
+            'create': {'[identifiant]': '10.0000/essai', '[description]': 'DOI d’essai', '[descriptionEn]': 'test DOI'}},
+    'milieu': {'table': 'milieu', 'change': {'[nom]': 'Milieu (essai)'}, 'create': {'[nom]': 'Milieu d’essai'}},
+    'topiccategory': {'table': 'topiccategory', 'change': {'[nom]': 'Catégorie (essai)'},
+                      'create': {'[nom]': 'Catégorie d’essai'}},
+    'inspiretheme': {'table': 'inspiretheme', 'change': {'[nom]': 'Thème (essai)'}, 'create': {'[nom]': 'Thème d’essai'}},
+    'theiacategories': {'table': 'theiacategories', 'change': {'[nom]': 'Correspondance (essai)'},
+                        'create': {'[milieu]': FIRST, '[familleParametre]': FIRST, '[nom]': 'Correspondance d’essai',
+                                   '[uriOzcarTheia]': 'https://w3id.org/ozcar-theia/essai'}},
+    'personnetheia': {'table': 'personnetheia', 'change': {'[prenom]': 'Camille'},
+                      'create': {'[nom]': 'Essai', '[prenom]': 'Camille', '[email]': 'personne-essai@example.invalid',
+                                 '[partenaire]': FIRST}},
+    'partenaire': {'table': 'partenaire', 'pick': OBSERVATORY_PICK.format(table='partenaire'),
+                   'change': {'[scanR]': 'essai'},
+                   'create': {'[nom]': 'Partenaire d’essai', '[iso]': 'FR', '[estFinanceur]': '0',
+                              '[typeFundings]': FIRST}},
+    'utilisateur': {'table': 'utilisateur', 'state': 'utilisateur', 'nodelete': True,
+                    'change': {'[telephone]': '0102030405'},
+                    'create': {'[email]': 'compte-admin@example.invalid', '[prenom]': 'Camille', '[nom]': 'Essai',
+                               '[organisme]': 'INRAE', '[categorie]': FIRST, '[telephone]': '0102030405',
+                               '[adresse]': '1 rue de l’Essai'}},
+    'categorie': {'table': 'categorie'},
+    'objectifrecherche': {'table': 'objectifrecherche'},
+    'typetravaux': {'table': 'typetravaux'},
 }
 
 
 def admin_profiles(base):
-    """Les comptes des pages de l'administration, chacun sur un observatoire où il a ce rôle : un
-    administrateur, et un gestionnaire qui n'est que gestionnaire (celui de « pages » est aussi
-    administrateur)."""
+    """Les comptes des pages de l'administration : un administrateur fonctionnel, sur celui des
+    observatoires qu'il gère qui a le plus d'entités à administrer (ce rôle ne donne de droits sur les
+    données que là), et un gestionnaire qui n'est que gestionnaire (celui de « pages » est aussi
+    administrateur), sur un observatoire où il a ce rôle."""
     active = "(u.finacces IS NULL OR u.finacces > now())"
-    found = {}
-    for name, where in [
-        ('administrateur', f"u.roleadmin = 'FCT' AND {active}"),
-        ('gestionnaire', f"u.roleadmin IS NULL AND {active} AND r.valeur = 'gestionnaire'"),
-    ]:
-        rows = query(base, f"""
-            SELECT u.email, o.slug FROM utilisateur u JOIN role r ON r.utilisateur_id = u.id
-              JOIN observatoire o ON o.id = r.observatoire_id
-             WHERE {where} ORDER BY u.id, o.id LIMIT 1""", NEW_SERVER)
-        if rows:
-            found[name] = rows[0]
-    return found
+    tables = ['bassin', 'courseau', 'doi', 'partenaire', 'siteexperimental', 'dataset', 'bareme']
+    admin, uid = query(base, f"""SELECT u.email, u.id FROM utilisateur u WHERE u.roleadmin = 'FCT' AND {active}
+                                  ORDER BY u.id LIMIT 1""", NEW_SERVER)[0]
+    richest = query(base, f"""
+        SELECT o.slug FROM observatoire o JOIN role r ON r.observatoire_id = o.id
+         WHERE r.utilisateur_id = {uid} AND r.valeur = 'gestionnaire'
+         ORDER BY {' + '.join(f'(SELECT count(*) FROM {t} WHERE observatoire_id = o.id)' for t in tables)} DESC, o.id
+         LIMIT 1""", NEW_SERVER)[0][0]
+    manager = query(base, f"""
+        SELECT u.email, o.slug FROM utilisateur u JOIN role r ON r.utilisateur_id = u.id
+          JOIN observatoire o ON o.id = r.observatoire_id
+         WHERE u.roleadmin IS NULL AND {active} AND r.valeur = 'gestionnaire' ORDER BY u.id, o.id LIMIT 1""",
+                    NEW_SERVER)[0]
+    return {'administrateur': (admin, richest), 'gestionnaire': tuple(manager)}
 
 
 def redirect_lines(site, status, headers):
@@ -1827,13 +1912,17 @@ def run_admin(args):
 
     def play(side, base):
         parts = {}
+        urllib.request.urlopen(urllib.request.Request(MAILPIT + '/api/v1/messages', method='DELETE'), timeout=60)
         for profile, (email, slug) in accounts.items():
             client = Client(side, email, slug)
             get = lambda path: page_lines(side.url, *client.get(path))
             parts[f'{profile} /{slug}/admin/dashboard'] = get(f'/{slug}/admin/dashboard')
             for name, spec in admins.items():
                 root, cid = f'/{slug}/admin/{name}', first(base, name, spec, slug)
-                for path in [f'{root}/list', f'{root}/create', f'{root}/{cid}/edit', f'{root}/{cid}/delete']:
+                paths = [f'{root}/list', f'{root}/create']
+                if cid:
+                    paths += [f'{root}/{cid}/edit', f'{root}/{cid}/delete']
+                for path in paths:
                     parts[f'{profile} {path}'] = get(path)
 
         email, slug = accounts['administrateur']
@@ -1844,6 +1933,9 @@ def run_admin(args):
             form = form_of(client, path, action)
             if form.url is None:
                 return [f'pas de formulaire {action} : {path}']
+            values = {k: (form.choices(k)[:1] or [''])[0] if v is FIRST else v for k, v in values.items()}
+            if form.buttons and button not in form.buttons:
+                button = form.buttons[0]
             body = form.filled(values) + b'&' + urllib.parse.urlencode({button: ''}).encode()
             status, headers, _ = client.get(form.url, body, {'Referer': side.url + path})
             lines = redirect_lines(side.url, status, headers)
@@ -1852,24 +1944,38 @@ def run_admin(args):
 
         for name, spec in admins.items():
             root, cid = f'/{slug}/admin/{name}', first(base, name, spec, slug)
+            if not cid:
+                continue
             parts[f'{name} : édition renvoyée telle quelle'] = send(
                 f'{root}/{cid}/edit', f'/{name}/{cid}/edit', {}, 'btn_update_and_edit')
-            parts[f'{name} : édition'] = send(f'{root}/{cid}/edit', f'/{name}/{cid}/edit', spec['change'],
-                                             'btn_update_and_edit')
-            parts[f'{name} : création'] = send(f'{root}/create', f'/{name}/create', spec['create'],
-                                              'btn_create_and_edit')
-            created = query(base, f"SELECT max(id) FROM {spec['table']}", NEW_SERVER)[0][0]
-            parts[f'{name} : suppression'] = send(f'{root}/{created}/delete', f'/{name}/{created}/delete', {},
-                                                 'btn_delete')
-        tables = {spec['table'] for spec in admins.values()}
-        for table in sorted(tables):
+            if 'change' in spec:
+                parts[f'{name} : édition'] = send(f'{root}/{cid}/edit', f'/{name}/{cid}/edit', spec['change'],
+                                                 'btn_update_and_edit')
+            if 'create' in spec:
+                parts[f'{name} : création'] = send(f'{root}/create', f'/{name}/create', spec['create'],
+                                                  'btn_create_and_edit')
+                if not spec.get('nodelete'):
+                    created = query(base, f"SELECT max(id) FROM {spec['table']}", NEW_SERVER)[0][0]
+                    parts[f'{name} : suppression'] = send(f'{root}/{created}/delete', f'/{name}/{created}/delete',
+                                                         {}, 'btn_delete')
+        time.sleep(2)  # les courriels du nouveau partent après la réponse (DeferredMailer)
+        parts['courriels'] = [line.replace(side.url, '<site>') for line in mail_lines()]
+        for name, spec in sorted(admins.items(), key=lambda item: item[1]['table']):
+            sql = ACCOUNT_QUERIES[spec['state']] if 'state' in spec else \
+                f"SELECT to_jsonb(t)::text FROM {spec['table']} t ORDER BY t.id"
+            # Symfony 7 écrit les fins de ligne des champs de texte long en \n, Symfony 2 telles que le
+            # navigateur les envoie, en \r\n (dev/differences.md, « Fins de ligne des textes longs »)
+            parts[f"état {spec['table']}"] = ['\t'.join(row).replace('\\r\\n', '\\n')
+                                             for row in query(base, sql, NEW_SERVER)]
+        for table in sorted({t for spec in admins.values() for t in spec.get('also', [])}):
             parts[f'état {table}'] = ['\t'.join(row) for row in query(
-                base, f"SELECT to_jsonb(t)::text FROM {table} t ORDER BY t.id", NEW_SERVER)]
+                base, f"SELECT to_jsonb(t)::text FROM {table} t ORDER BY 1", NEW_SERVER)]
         parts['état historique'] = state_lines(base, historique, ['historique'])['historique']
         return parts
 
     sides = {}
-    with old_17_on(bases['ancien']), new_on(bases['nouveau'], template):
+    with old_17_on(bases['ancien'], mailer_transport='smtp', mailer_host='mailpit', mailer_port='1025'), \
+            new_on(bases['nouveau'], template, 'MAILER_DSN=smtp://mailpit:1025'):
         sides['ancien'] = play(SIDES['reference-17'], bases['ancien'])
         sides['nouveau'] = play(SIDES['new'], bases['nouveau'])
     report = Report('admin')

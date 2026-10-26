@@ -82,6 +82,13 @@ services:
     Irstea\BdohAdminBundle\Controller\:
         resource: '../../Controller/'
 
+    Irstea\BdohAdminBundle\Form\:
+        resource: '../../Form/'
+
+    Irstea\BdohAdminBundle\Form\Type\TheiaThesaurusType:
+        arguments:
+            $thesaurusUrl: "%uri_theia_ozcar%"
+
     # Managers of "measure import", "controle import", "shape import", "bareme import"
     Irstea\BdohAdminBundle\Manager\MeasureImportManager:
         arguments: [ "%kernel.project_dir%/var", "%irstea_bdoh_admin.measure_import%" ]
@@ -107,7 +114,8 @@ services:
     # viennent par Admin::setLogger et Admin::setContainer.
     ############################################################################
 
-    Irstea\BdohAdminBundle\Admin\Extension\SingularFormGroupExtension:
+    Irstea\BdohAdminBundle\Admin\Extension\:
+        resource: '../../Admin/Extension/'
         tags:
             - { name: sonata.admin.extension, global: true }
 
@@ -116,7 +124,137 @@ services:
         tags:
             - { name: kernel.event_listener, event: sonata.admin.event.configure.menu.sidebar, method: addMenuItems }
 
+    irstea_bdoh_admin.admin.site_experimental:
+        class: Irstea\BdohAdminBundle\Admin\Data\SiteExperimental
+        tags:
+            - { name: sonata.admin, model_class: Irstea\BdohDataBundle\Entity\SiteExperimental, manager_type: orm, group: AdminCenter }
+
+    irstea_bdoh_admin.admin.station:
+        class: Irstea\BdohAdminBundle\Admin\Data\Station
+        tags:
+            - { name: sonata.admin, model_class: Irstea\BdohDataBundle\Entity\Station, manager_type: orm, group: AdminCenter }
+
+    irstea_bdoh_admin.admin.bareme:
+        class: Irstea\BdohAdminBundle\Admin\Data\Bareme
+        tags:
+            - { name: sonata.admin, model_class: Irstea\BdohDataBundle\Entity\Bareme, manager_type: orm, group: AdminCenter }
+
+    irstea_bdoh_admin.admin.jeu_qualite:
+        class: Irstea\BdohAdminBundle\Admin\Data\JeuQualite
+        tags:
+            - { name: sonata.admin, model_class: Irstea\BdohDataBundle\Entity\JeuQualite, manager_type: orm, group: AdminTechnical }
+
+    irstea_bdoh_admin.admin.echantillonnage:
+        class: Irstea\BdohAdminBundle\Admin\Data\Echantillonnage
+        tags:
+            - { name: sonata.admin, model_class: Irstea\BdohDataBundle\Entity\Echantillonnage, manager_type: orm, group: AdminTechnical }
+
+    irstea_bdoh_admin.admin.pas_echantillonnage:
+        class: Irstea\BdohAdminBundle\Admin\SimpleEntity
+        tags:
+            - { name: sonata.admin, model_class: Irstea\BdohDataBundle\Entity\PasEchantillonnage, manager_type: orm, group: AdminTechnical }
+
+    irstea_bdoh_admin.admin.famille_parametres:
+        class: Irstea\BdohAdminBundle\Admin\Data\FamilleParametres
+        tags:
+            - { name: sonata.admin, model_class: Irstea\BdohDataBundle\Entity\FamilleParametres, manager_type: orm, group: AdminTechnical }
+
+    irstea_bdoh_admin.admin.type_parametre:
+        class: Irstea\BdohAdminBundle\Admin\Data\TypeParametre
+        tags:
+            - { name: sonata.admin, model_class: Irstea\BdohDataBundle\Entity\TypeParametre, manager_type: orm, group: AdminTechnical }
+
     irstea_bdoh_admin.admin.unite:
         class: Irstea\BdohAdminBundle\Admin\Data\Unite
         tags:
             - { name: sonata.admin, model_class: Irstea\BdohDataBundle\Entity\Unite, manager_type: orm, group: AdminTechnical }
+
+    irstea_bdoh_admin.admin.bassin:
+        class: Irstea\BdohAdminBundle\Admin\Data\Bassin
+        tags:
+            - { name: sonata.admin, model_class: Irstea\BdohDataBundle\Entity\Bassin, manager_type: orm, group: AdminGeographic }
+
+    irstea_bdoh_admin.admin.courseau:
+        class: Irstea\BdohAdminBundle\Admin\Data\CoursEau
+        tags:
+            - { name: sonata.admin, model_class: Irstea\BdohDataBundle\Entity\CoursEau, manager_type: orm, group: AdminGeographic }
+
+    irstea_bdoh_admin.admin.commune:
+        class: Irstea\BdohAdminBundle\Admin\Data\Commune
+        tags:
+            - { name: sonata.admin, model_class: Irstea\BdohDataBundle\Entity\Commune, manager_type: orm, group: AdminGeographic }
+
+    irstea_bdoh_admin.admin.doi:
+        class: Irstea\BdohAdminBundle\Admin\Data\Doi
+        tags:
+            - { name: sonata.admin, model_class: Irstea\BdohDataBundle\Entity\Doi, manager_type: orm, group: AdminPeripheral }
+
+    irstea_bdoh_admin.admin.partenaire:
+        class: Irstea\BdohAdminBundle\Admin\Data\Partenaire
+        tags:
+            - { name: sonata.admin, model_class: Irstea\BdohDataBundle\Entity\Partenaire, manager_type: orm, group: AdminPeripheral }
+
+    irstea_bdoh_admin.admin.milieu:
+        class: Irstea\BdohAdminBundle\Admin\Data\Milieu
+        tags:
+            - { name: sonata.admin, model_class: Irstea\BdohDataBundle\Entity\Milieu, manager_type: orm, group: AdminPeripheral }
+
+    irstea_bdoh_admin.admin.type_funding:
+        class: Irstea\BdohAdminBundle\Admin\Data\TypeFunding
+        tags:
+            - { name: sonata.admin, model_class: Irstea\BdohDataBundle\Entity\TypeFunding, manager_type: orm, group: AdminTheia }
+
+    irstea_bdoh_admin.admin.dataconstraint:
+        class: Irstea\BdohAdminBundle\Admin\Data\DataConstraint
+        tags:
+            - { name: sonata.admin, model_class: Irstea\BdohDataBundle\Entity\DataConstraint, manager_type: orm, group: AdminTheia }
+
+    irstea_bdoh_admin.admin.inspire_theme:
+        class: Irstea\BdohAdminBundle\Admin\Data\InspireTheme
+        tags:
+            - { name: sonata.admin, model_class: Irstea\BdohDataBundle\Entity\InspireTheme, manager_type: orm, group: AdminTheia }
+
+    irstea_bdoh_admin.admin.topic_category:
+        class: Irstea\BdohAdminBundle\Admin\Data\TopicCategory
+        tags:
+            - { name: sonata.admin, model_class: Irstea\BdohDataBundle\Entity\TopicCategory, manager_type: orm, group: AdminTheia }
+
+    irstea_bdoh_admin.admin.theia_categories:
+        class: Irstea\BdohAdminBundle\Admin\Data\TheiaCategories
+        tags:
+            - { name: sonata.admin, model_class: Irstea\BdohDataBundle\Entity\TheiaCategories, manager_type: orm, group: AdminTheia }
+
+    irstea_bdoh_admin.admin.criteria_climat:
+        class: Irstea\BdohAdminBundle\Admin\Data\CriteriaClimat
+        tags:
+            - { name: sonata.admin, model_class: Irstea\BdohDataBundle\Entity\CriteriaClimat, manager_type: orm, group: AdminTheia }
+
+    irstea_bdoh_admin.admin.criteria_geology:
+        class: Irstea\BdohAdminBundle\Admin\Data\CriteriaGeology
+        tags:
+            - { name: sonata.admin, model_class: Irstea\BdohDataBundle\Entity\CriteriaGeology, manager_type: orm, group: AdminTheia }
+
+    irstea_bdoh_admin.admin.utilisateur:
+        class: Irstea\BdohAdminBundle\Admin\Security\Utilisateur
+        tags:
+            - { name: sonata.admin, model_class: Irstea\BdohSecurityBundle\Entity\Utilisateur, manager_type: orm, group: AdminUser }
+
+    irstea_bdoh_admin.admin.personnetheia:
+        class: Irstea\BdohAdminBundle\Admin\Data\PersonneTheia
+        tags:
+            - { name: sonata.admin, model_class: Irstea\BdohDataBundle\Entity\PersonneTheia, manager_type: orm, group: AdminUser }
+
+    irstea_bdoh_admin.admin.categorie:
+        class: Irstea\BdohAdminBundle\Admin\SimpleEntity
+        tags:
+            - { name: sonata.admin, model_class: Irstea\BdohSecurityBundle\Entity\Categorie, manager_type: orm, group: AdminUser }
+
+    irstea_bdoh_admin.admin.objectifrecherche:
+        class: Irstea\BdohAdminBundle\Admin\SimpleEntity
+        tags:
+            - { name: sonata.admin, model_class: Irstea\BdohSecurityBundle\Entity\ObjectifRecherche, manager_type: orm, group: AdminUser }
+
+    irstea_bdoh_admin.admin.typetravaux:
+        class: Irstea\BdohAdminBundle\Admin\SimpleEntity
+        tags:
+            - { name: sonata.admin, model_class: Irstea\BdohSecurityBundle\Entity\TypeTravaux, manager_type: orm, group: AdminUser }

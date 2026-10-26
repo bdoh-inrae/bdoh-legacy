@@ -1,0 +1,58 @@
+{% extends '@IrsteaBdohAdmin/CRUD/edit.html.twig' %}
+
+{# ajout du javascrip pour le rendu hierarchique du select des familles #}
+{% block javascripts %}
+    {{ parent() }}
+    <script src="{{ asset('bundles/irsteabdohadmin/crud/familles-types.js') }}"></script>
+{% endblock %}
+
+{# ajout du css pour le rendu hierarchique du select des familles #}
+{% block stylesheets %}
+    {{ parent() }}
+    <link rel="stylesheet" href="{{ asset('bundles/irsteabdohadmin/crud/familles-types.css') }}">
+{% endblock %}
+
+{# message pour expliquer l'interdiction de supprimer le type de paramètre -> liste des chroniques qui l'utilisent #}
+{% block formactions %}
+    {% if admin.timeSeries and admin.timeSeries|length %}
+        <div class="well well-small form-actions">
+            <p style="margin-bottom:5px;">
+                <b>{{ 'admin.help.typeParametre.warning-typeParametre-has-time-series'|trans({'%count%': admin.timeSeries|length}) }}</b>
+            </p>
+            <ul style="margin-bottom:0;">
+                {% for t in admin.timeSeries %}
+                    <li>
+                        {% if is_granted('EDIT', t) and t.observatoire == currentObservatoire() %}
+                            {%  if t.dtype == 'continue' %}
+                                <a href="{{ path('bdoh_admin_chroniquecontinue_edit', {'id':t.id}) }}">{{ t }}</a>
+                            {% elseif t.dtype == 'discontinue' %}
+                                <a href="{{ path('bdoh_admin_chroniquediscontinue_edit', {'id':t.id}) }}">{{ t }}</a>
+                            {% elseif t.dtype == 'convertie' %}
+                                <a href="{{ path('bdoh_admin_chroniqueconvertie_edit', {'id':t.id}) }}">{{ t }}</a>
+                            {% else %}
+                                <a href="{{ path('bdoh_admin_chroniquecalculee_edit', {'id':t.id}) }}">{{ t }}</a>
+                            {% endif %}
+                        {% else %}
+                            {{ t }}
+                        {% endif %}
+                        ({{ 'admin.help.from_the_observatory'|trans }}
+                        {% if is_granted('EDIT', t.observatoire) %}
+                            <a href="{{ path('bdoh_admin_observatoire_edit', {id:t.observatoire.id}) }}">{{ t.observatoire }}</a>)
+                        {% else %}
+                            {{ t.observatoire }})
+                        {% endif %}
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+    {% endif %}
+    {{ parent() }}
+{% endblock %}
+
+{# message warning pour signaler que ce type n'a pas de famille de paramètres #}
+{% block sonata_admin_content %}
+    {% if admin.getMustDefineParameterFamily() %}
+        <div class="form-actions alert alert-warning">{{ 'admin.help.typeParametre.warning-no-family-defined'|trans|raw }}</div>
+    {% endif %}
+    {{ parent() }}
+{% endblock %}
