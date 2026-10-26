@@ -1,0 +1,15 @@
+{% extends '@IrsteaBdohLogger/historique/base.html.twig' %}
+
+{% block HistoriqueTH %}
+    <th>{{ 'historique.dataset'|trans }}</th>
+{% endblock %}
+
+{% block HistoriqueTD %}
+    <td>
+        {% if historique.dataset %}
+            {{ historique.dataset }}
+        {% else %}
+            {{ 'historique.deleted.Dataset'|trans }}
+        {% endif %}
+    </td>
+{% endblock %}

@@ -1,0 +1,24 @@
+<div>{{ 'historique.action'|trans }}{{ 'deux_points'|trans }} {{ 'historique.actions.CalculChronique'|trans }}</div>
+<div>{{ 'bareme.childChronicle'|trans }}{{ 'deux_points'|trans }} {{ description.chronique_fille }}</div>
+{% set has_two_parents = description.chroniques_meres|length > 1 %}
+<div style="margin-top:2px;margin-bottom:2px;">
+    {{ ('bareme.'~(has_two_parents ? 'firstParentChronicle' : 'parentChronicle'))|trans }}{{ 'deux_points'|trans }} {{ description.chroniques_meres[0] }}
+    {% if has_two_parents %}
+        - {{ 'bareme.propagationTimeAbbr'|trans({'%time%': description.temps_propagation[0]|default(0)}) }}
+    {% endif %}
+    {% if description.transformations_limites[0] is defined and description.transformations_limites[0] %}
+        - {{ ('bareme.limitTransfoAbbr.'~description.transformations_limites[0])|trans({'%placeholder%': description.transformations_limites[1]|default(0)}) }}
+    {% endif %}
+    {% include '@IrsteaBdohLogger/baremesHistoriqueCalculChronique.html.twig' with {'baseId': random~'_firstBareme', 'baremesData': description.baremes[0]} %}
+</div>
+{% if has_two_parents %}
+    <div style="margin-top:2px;margin-bottom:2px;">
+        {{ 'bareme.secondParentChronicle'|trans }}{{ 'deux_points'|trans }} {{ description.chroniques_meres[0] }}
+        - {{ 'bareme.propagationTimeAbbr'|trans({'%time%': description.temps_propagation[1]|default(0)}) }}
+        {% if description.transformations_limites[2] is defined and description.transformations_limites[2] %}
+            - {{ ('bareme.limitTransfoAbbr.'~description.transformations_limites[2])|trans({'%placeholder%': description.transformations_limites[3]|default(0)}) }}
+        {% endif %}
+        {% include '@IrsteaBdohLogger/baremesHistoriqueCalculChronique.html.twig' with {'baseId': random~'_secondBareme', 'baremesData': description.baremes[1]} %}
+    </div>
+    <div>{{ 'bareme.multFactor'|trans }}{{ 'deux_points'|trans }} {{ description.facteur_multiplicatif }}</div>
+{% endif %}

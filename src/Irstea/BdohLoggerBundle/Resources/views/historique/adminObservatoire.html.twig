@@ -1,0 +1,15 @@
+{% extends '@IrsteaBdohLogger/historique/base.html.twig' %}
+
+{% block HistoriqueTH %}
+    <th>{{ 'historique.observatoire'|trans }}</th>
+{% endblock %}
+
+{% block HistoriqueTD %}
+    <td>
+        {% if historique.observatoireCible %}
+            {{ historique.observatoireCible }}
+        {% else %}
+            {{ 'historique.deleted.Observatoire'|trans }}
+        {% endif %}
+    </td>
+{% endblock %}

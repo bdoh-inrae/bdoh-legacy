@@ -6,3 +6,8 @@ services:
             - "@doctrine.orm.entity_manager"
             - "@translator"
     Irstea\BdohLoggerBundle\Logger\BdohLogger: '@irstea_bdoh_logger.logger'
+
+    Irstea\BdohLoggerBundle\Controller\:
+        resource: '../../Controller/'
+        autowire: true
+        autoconfigure: true

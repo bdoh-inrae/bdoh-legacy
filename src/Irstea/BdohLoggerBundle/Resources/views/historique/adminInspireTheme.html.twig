@@ -1,0 +1,15 @@
+{% extends '@IrsteaBdohLogger/historique/base.html.twig' %}
+
+{% block HistoriqueTH %}
+    <th>{{ 'historique.inspireTheme'|trans }}</th>
+{% endblock %}
+
+{% block HistoriqueTD %}
+    <td>
+        {% if historique.inspiretheme %}
+            {{ historique.inspiretheme }}
+        {% else %}
+            {{ 'historique.deleted.inspireTheme'|trans }}
+        {% endif %}
+    </td>
+{% endblock %}

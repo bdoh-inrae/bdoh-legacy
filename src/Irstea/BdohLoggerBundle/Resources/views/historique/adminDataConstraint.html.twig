@@ -1,0 +1,15 @@
+{% extends '@IrsteaBdohLogger/historique/base.html.twig' %}
+
+{% block HistoriqueTH %}
+    <th>{{ 'historique.dataconstraint'|trans }}</th>
+{% endblock %}
+
+{% block HistoriqueTD %}
+    <td>
+        {% if historique.dataconstraint %}
+            {{ historique.dataconstraint }}
+        {% else %}
+            {{ 'historique.deleted.DataConstraint'|trans }}
+        {% endif %}
+    </td>
+{% endblock %}

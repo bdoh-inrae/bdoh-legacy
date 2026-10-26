@@ -1,0 +1,22 @@
+{% set idCol = baseId~'_CollapseId' %}
+<a data-toggle="collapse" href="#{{- idCol -}}" class="btn btn-xs btn-info"
+   style="padding:0 5px;margin-left:5px;vertical-align:bottom;" aria-expanded="false" aria-controls="{{- idCol -}}">{{ 'bareme.seeBaremes'|trans }}</a>
+<div id="{{- idCol -}}" class="collapse" style="padding-top:0.4em;padding-bottom:0.4em;">
+    <div class="row">
+        <div class="col-md-9 info-high">{{ 'bareme.bareme'|trans }} [{{ 'UTC'|trans }}]</div>
+        <div class="col-md-6 info-high">{{ 'bareme.debutApplication'|trans }} [{{ 'UTC'|trans }}]</div>
+        <div class="col-md-6 info-high">{{ 'bareme.finApplication'|trans }} [{{ 'UTC'|trans }}]</div>
+    </div>
+    {% for baremeData in baremesData %}
+        <div class="row">
+            <div class="col-md-9">
+                {{ baremeData.nom }}
+                {% if baremeData.date_creation %}
+                    [{{ baremeData.date_creation|date('transformation.bareme.dateBareme'|trans, false) }}]
+                {% endif %}
+            </div>
+            <div class="col-md-6">{{ baremeData.date_debut|date('transformation.bareme.dateBareme'|trans, false) }}</div>
+            <div class="col-md-6">{% if baremeData.date_fin %}{{ baremeData.date_fin|date('transformation.bareme.dateBareme'|trans, false) }}{% else %}&mdash;{% endif %}</div>
+        </div>
+    {% endfor %}
+</div>

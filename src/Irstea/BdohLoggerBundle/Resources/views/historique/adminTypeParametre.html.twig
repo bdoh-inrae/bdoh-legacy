@@ -1,0 +1,25 @@
+{% extends '@IrsteaBdohLogger/historique/base.html.twig' %}
+
+{% from 'macros.html.twig' import i18nEntityLabel %}
+
+{% block HistoriqueTH %}
+    <th>{{ 'historique.typeParametre'|trans }}</th>
+    <th>{{ 'historique.familleParametres'|trans }}</th>
+{% endblock %}
+
+{% block HistoriqueTD %}
+    <td>
+        {% if historique.typeParametre %}
+            {{ i18nEntityLabel(historique.typeParametre, 'nom', 'historique.deleted.TypeParametre') }}
+        {% else %}
+            {{ 'historique.deleted.TypeParametre'|trans }}
+        {% endif %}
+    </td>
+    <td>
+        {% if historique.familleParametres %}
+            {{ i18nEntityLabel(historique.familleParametres, 'nom', 'historique.deleted.FamilleParametres') }}
+        {% else %}
+            {{ 'historique.deleted.FamilleParametres'|trans }}
+        {% endif %}
+    </td>
+{% endblock %}

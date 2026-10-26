@@ -1,0 +1,37 @@
+{%- import _self as macros %}
+
+<h1>{{ historiqueTitle|trans }}</h1>
+
+<div id="consult-advancedSearch">
+    <table class="table last-logins">
+        <thead>
+            <tr>
+                <th data-filter-with="#user-filter">{{ 'historique.utilisateur'|trans }}</th>
+                <th data-filter-with="#date-filter">{{ 'date'|trans }} [{{ 'UTC'|trans }}]</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for historique in historiques %}
+                <tr>
+                    <td data-order="{{ historique.nom }} {{ historique.prenom }}"
+                        data-search="{{ historique.prenom }} {{ historique.nom }}">
+                        {{ historique.prenom }} {{ historique.nom }}
+                        <br/>({{ 'historique.derniereConnection'|trans }})
+                    </td>
+                    {{ macros.dateField(historique.date) }}
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% macro dateField(date) %}
+    {%- if date %}
+        <td data-type="num"
+            data-order="{{ date|date('U', false) }}"
+            data-search="{{- date|date('Y-m-d', false) -}}"
+        >{{- date|date('historique.dateTime'|trans, false)|raw -}}</td>
+    {%- else %}
+        <td data-search="">-</td>
+    {%- endif %}
+{%- endmacro %}

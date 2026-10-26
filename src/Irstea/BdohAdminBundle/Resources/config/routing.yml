@@ -1,5 +1,4 @@
-# Les routes de l'administration, dans l'ordre de l'ancien Resources/config/routing.yml. Celles des
-# administrations et des contrôleurs pas encore portés attendent dans config/routes_pending/admin.yaml.
+# Les routes de l'administration, dans l'ordre de l'ancien Resources/config/routing.yml.
 
 admin:
     resource: '@SonataAdminBundle/Resources/config/routing/sonata_admin.php'
@@ -115,3 +114,7 @@ bdoh_admin_generate_chronique_code:
 bdoh_admin_get_filtered_chroniques:
     path: /get-filtered-chroniques
     controller: Irstea\BdohAdminBundle\Controller\InfoController::getFilteredChroniquesAction
+
+_annotated_controllers:
+    resource: '@IrsteaBdohAdminBundle/Controller/'
+    type:     attribute

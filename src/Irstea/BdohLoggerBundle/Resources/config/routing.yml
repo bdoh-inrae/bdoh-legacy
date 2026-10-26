@@ -1,0 +1,7 @@
+irstea_bdoh_logger_advancedSearch:
+    path:  /historique
+    controller: Irstea\BdohLoggerBundle\Controller\LoggerController::advancedSearchAction
+
+irstea_bdoh_logger_advancedSearch_recent:
+    path:  /historique/recent
+    controller: Irstea\BdohLoggerBundle\Controller\LoggerController::advancedSearchRecentAction

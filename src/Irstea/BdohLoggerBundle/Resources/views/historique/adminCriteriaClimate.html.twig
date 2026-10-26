@@ -1,0 +1,15 @@
+{% extends '@IrsteaBdohLogger/historique/base.html.twig' %}
+
+{% block HistoriqueTH %}
+    <th>{{ 'historique.criteriaclimate'|trans }}</th>
+{% endblock %}
+
+{% block HistoriqueTD %}
+    <td>
+        {% if historique.criteriaclimat %}
+            {{ historique.criteriaclimat }}
+        {% else %}
+            {{ 'historique.deleted.CriteriaClimate'|trans }}
+        {% endif %}
+    </td>
+{% endblock %}

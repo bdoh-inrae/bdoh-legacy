@@ -1,0 +1,15 @@
+{% extends '@IrsteaBdohLogger/historique/base.html.twig' %}
+
+{% block HistoriqueTH %}
+    <th>{{ 'historique.milieu'|trans }}</th>
+{% endblock %}
+
+{% block HistoriqueTD %}
+    <td>
+        {% if historique.milieu %}
+            {{ historique.milieu }}
+        {% else %}
+            {{ 'historique.deleted.Milieu'|trans }}
+        {% endif %}
+    </td>
+{% endblock %}

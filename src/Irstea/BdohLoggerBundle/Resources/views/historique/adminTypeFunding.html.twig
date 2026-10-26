@@ -1,0 +1,15 @@
+{% extends '@IrsteaBdohLogger/historique/base.html.twig' %}
+
+{% block HistoriqueTH %}
+    <th>{{ 'historique.typefunding'|trans }}</th>
+{% endblock %}
+
+{% block HistoriqueTD %}
+    <td>
+        {% if historique.typefunding %}
+            {{ historique.typefunding }}
+        {% else %}
+            {{ 'historique.deleted.TypeFunding'|trans }}
+        {% endif %}
+    </td>
+{% endblock %}

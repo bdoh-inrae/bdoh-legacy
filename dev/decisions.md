@@ -48,5 +48,7 @@ Les choix techniques du portage, avec leur raison : ce qu'un prochain Claude dé
   - Les arrondis de PHP 8.4 (« Nombres d'un export », plus haut).
   - Les messages flash s'affichent en HTML (toastr) : une saisie citée s'échappe.
   - Le routeur passe avant le pare-feu : une route que le pare-feu traite en POST doit accepter POST.
-  - Après une suppression faite par un script, comparer le fichier à l'ancien : des méthodes sont parties ainsi, deux fois. (2026-10-26)
+  - Après une suppression faite par un script, comparer le fichier à l'ancien : des méthodes sont parties ainsi, deux fois.
+  - `max()` et `min()` d'un tableau vide lèvent une erreur en PHP 8, quand PHP 7 rendait `false` avec un avertissement (`LoggerController`).
+  - Un nom de classe à la mauvaise casse ne se charge que si la classe l'a déjà été : PHP ne tient pas compte de la casse des classes, le chargement automatique et Doctrine, si (`LoggerController`, `HistoriqueAdministrationDataset`). (2026-10-26)
 

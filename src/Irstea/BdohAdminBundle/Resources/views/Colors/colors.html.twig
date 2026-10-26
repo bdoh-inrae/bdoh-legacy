@@ -1,0 +1,224 @@
+{% extends 'layout.html.twig' %}
+{% from 'macros.html.twig' import pageTitle, submit, reset%}
+{% import '@IrsteaBdohConsult/macros.html.twig' as macros %}
+
+{% block title %}
+    {{ pageTitle('colors.title'|trans) }}
+{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <link rel="stylesheet" href="{{ asset('assets/admin/colors.css') }}"/>
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script src="{{ asset('assets/admin/colors.js') }}"></script>
+{% endblock %}
+
+{% block breadcrumb %}
+    <ul class="breadcrumb">
+        <li><a href="{{ path('bdoh_home') }}">{{ 'home'|trans }}</a></li>
+        <li class="active">{{ 'colors.title'|trans }}</li>
+    </ul>
+{% endblock %}
+
+{% block main %}
+    <div id="colors">
+        <h1>{{ 'colors.longTitle'|trans }}</h1>
+
+        <form class="form-horizontal" name="main" action="{{ path('bdoh_admin_colors_form') }}"
+              method="post" enctype="multipart/form-data" id="formColorsId">
+
+            <div class="form-group">
+                <label for="jeuQualiteId" class="col-sm-4 control-label">{{ 'JeuQualite'|trans }}</label>
+                <div class="col-md-4">
+                    <select id="jeuQualiteId" name="jeuQualiteId" class="form-control" autocomplete="off"
+                        {% if jeuQualite is defined -%}
+                            data-id="{{ jeuQualite.id }}"
+                        {%- endif -%}
+                    >
+                        <option></option>
+                        {% for jeu in jeux %}
+                            <option value="{{ jeu.id }}"
+                                {% if jeuQualite is defined and jeuQualite.id == jeu.id %}
+                                    selected="selected"
+                                {% endif %}
+                            >{{ jeu }}</option>
+                        {% endfor %}
+                    </select>
+                    <input type="hidden" autocomplete="off" id="jeuQualiteChangedId" name="jeuQualiteChanged" value=""/>
+                    <input type="hidden" autocomplete="off" name="{{ CSRFTokenName }}" value="{{ CSRFTokenValue }}"/>
+                </div>
+            </div>
+
+            {% if jeuQualite is defined %}
+
+                <fieldset id="blocQualites" class="box">
+                    <legend>{{ 'colors.titles.qualite'|trans }}</legend>
+                    <div class="alert alert-info">{{ 'colors.default.qualite'|trans|raw }}</div>
+                    <table class="table table-condensed table-hover">
+                        <tr><th>{{ 'Qualite'|trans }}</th><th>{{ 'colors.color'|trans }}</th><th>{{ 'colors.thickness'|trans }}</th></tr>
+                    {% for qualite in qualitesData %}
+                        <tr>
+                            <td class="qualiteLabel">
+                                {{ qualite.label }}&nbsp;&nbsp;&nbsp;&nbsp;<span class="code">{{ 'open_quote'|trans~qualite.code~'close_quote'|trans }}</span>
+                                {%- if qualite.gap %}&nbsp;&nbsp;&nbsp;&nbsp;<span class="gap">{{ 'colors.gap'|trans }}</span>{% endif %}
+                            </td>
+                            <td>
+                                <input id="colorId_{{ qualite.id }}" type="text" name="colorId_{{ qualite.id }}" autocomplete="off"
+                                       class="form-control colorpicker" value="{{ qualite.color }}" />
+                            </td>
+                            <td>
+                                <select id="thicknessId_{{ qualite.id }}" name="thicknessId_{{ qualite.id }}" autocomplete="off"
+                                        class="form-control">
+                                    {% for thickness in thicknesses %}
+                                        <option value="{{ thickness }}"
+                                            {% if thickness == qualite.thickness %}
+                                                selected="selected"
+                                            {% endif %}
+                                        >{{ thickness }}</option>
+                                    {% endfor %}
+                                </select>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </table>
+                </fieldset>
+
+                <fieldset id="blocDiscontinuous" class="box">
+                    <legend>{{ 'colors.titles.discontinuous'|trans }}</legend>
+                    <div class="alert alert-info">{{ 'colors.default.discontinuous'|trans|raw }}</div>
+                    <table class="table table-condensed table-hover">
+                        <tr>
+                            <th>{{ 'colors.shape'|trans }}</th>
+                            <th>{{ 'colors.stroke'|trans }} <sup class="strokeHelp" title="{{ 'colors.strokeHelp'|trans }}">(?)</sup></th>
+                            <th>{{ 'colors.size'|trans }}</th>
+                        </tr>
+                        <tr>
+                            <td>
+                                <select id="discontinuousShapeId" name="discontinuousShapeId_{{ jeuQualite.id }}" autocomplete="off"
+                                        class="form-control">
+                                    {% for shape, shapeShape in shapes %}
+                                        <option value="{{ shape }}"
+                                            {% if shape == discontinuousData.shape %}
+                                                selected="selected"
+                                            {% endif %}
+                                        >{{ shapeShape }}</option>
+                                    {% endfor %}
+                                </select>
+                            </td>
+                            <td>
+                                <select id="discontinuousStrokeId" name="discontinuousStrokeId_{{ jeuQualite.id }}" autocomplete="off"
+                                        class="form-control">
+                                    {%- for stroke in strokes -%}
+                                        <option value="{{ stroke }}"
+                                            {% if stroke == discontinuousData.stroke %}
+                                                selected="selected"
+                                            {% endif %}
+                                        >{{ stroke }}</option>
+                                    {%- endfor -%}
+                                </select>
+                            </td>
+                            <td>
+                                <select id="discontinuousSizeId" name="discontinuousSizeId_{{ jeuQualite.id }}" autocomplete="off"
+                                        class="form-control">
+                                    {%- for size in sizes -%}
+                                        <option value="{{ size }}"
+                                            {% if size == discontinuousData.size %}
+                                                selected="selected"
+                                            {% endif %}
+                                        >{{ size }}</option>
+                                    {%- endfor -%}
+                                </select>
+                            </td>
+                        </tr>
+                    </table>
+                </fieldset>
+
+                <fieldset id="blocCheckpoint" class="box">
+                    <legend>{{ 'colors.titles.checkpoint'|trans }}</legend>
+                    <div class="alert alert-info">{{ 'colors.default.checkpoint'|trans|raw }}</div>
+                    <table class="table table-condensed table-hover">
+                        <tr>
+                            <th>{{ 'colors.shape'|trans }}</th>
+                            <th>{{ 'colors.stroke'|trans }} <sup class="strokeHelp" title="{{ 'colors.strokeHelp'|trans }}">(?)</sup></th>
+                            <th>{{ 'colors.color'|trans }}</th>
+                            <th>{{ 'colors.size'|trans }}</th>
+                        </tr>
+                        <tr>
+                            <td>
+                                <select id="checkpointShapeId" name="checkpointShapeId_{{ jeuQualite.id }}" autocomplete="off"
+                                        class="form-control">
+                                    {% for shape, shapeShape in shapes %}
+                                        <option value="{{ shape }}"
+                                            {% if shape == checkpointData.shape %}
+                                                selected="selected"
+                                            {% endif %}
+                                        >{{ shapeShape }}</option>
+                                    {% endfor %}
+                                </select>
+                            </td>
+                            <td>
+                                <select id="checkpointStrokeId" name="checkpointStrokeId_{{ jeuQualite.id }}" autocomplete="off"
+                                        class="form-control">
+                                    {%- for stroke in strokes -%}
+                                        <option value="{{ stroke }}"
+                                            {% if stroke == checkpointData.stroke %}
+                                                selected="selected"
+                                            {% endif %}
+                                        >{{ stroke }}</option>
+                                    {%- endfor -%}
+                                </select>
+                            </td>
+                            <td>
+                                <input id="checkpointColorId" type="text" name="checkpointColorId_{{ jeuQualite.id }}" autocomplete="off"
+                                       class="form-control colorpicker" value="{{ checkpointData.color }}" />
+                            </td>
+                            <td>
+                                <select id="checkpointSizeId" name="checkpointSizeId_{{ jeuQualite.id }}" autocomplete="off"
+                                        class="form-control">
+                                    {%- for size in sizes -%}
+                                        <option value="{{ size }}"
+                                            {% if size == checkpointData.size %}
+                                                selected="selected"
+                                            {% endif %}
+                                        >{{ size }}</option>
+                                    {%- endfor -%}
+                                </select>
+                            </td>
+                        </tr>
+                    </table>
+                </fieldset>
+
+                <div id="btnDivId">
+                    {{ submit('colors.save'|trans, 'btn btn-success') }}
+                    {{ reset('colors.cancel'|trans, 'btn btn-danger') }}
+                </div>
+
+            {% endif %}
+
+        </form>
+
+        {% if errorsColors is defined %}
+            <div class="alert alert-block alert-danger" id="errorsColorsAlertId" style="margin-top:1em;margin-bottom:0;">
+                <a class="close" id="errorsColorsCloseId">&times;</a>
+                <h4 class="alert-heading">{{ 'errors'|trans }}{{ 'deux_points'|trans }}</h4>
+                <ul>
+                    {% for error in errorsColors %}
+                        <li>{{ error|raw }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        {% endif %}
+
+        {% if successColors is defined %}
+            <div class="alert alert-block alert-success" id="successColorsAlertId" style="margin-top:1em;margin-bottom:0;">
+                <a class="close" id="successColorsCloseId">&times;</a>
+                <strong>{{ 'colors.success(%link%, %chronique%)'|trans({'%link%': successColors.link, '%chronique%': successColors.chronique})|raw }}<br/>
+                    {{ 'colors.seeJobPage(%jobPage%, %jobId%)'|trans({'%jobPage%': successColors.jobPage, '%jobId%': successColors.jobId})|raw }}</strong>
+            </div>
+        {% endif %}
+
+    </div>
+{% endblock %}

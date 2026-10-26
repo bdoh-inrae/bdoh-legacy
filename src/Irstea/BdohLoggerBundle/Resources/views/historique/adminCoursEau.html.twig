@@ -1,0 +1,15 @@
+{% extends '@IrsteaBdohLogger/historique/base.html.twig' %}
+
+{% block HistoriqueTH %}
+    <th>{{ 'historique.coursEau'|trans }}</th>
+{% endblock %}
+
+{% block HistoriqueTD %}
+    <td>
+        {% if historique.coursEau %}
+            {{ historique.coursEau }}
+        {% else %}
+            {{ 'historique.deleted.CoursEau'|trans }}
+        {% endif %}
+    </td>
+{% endblock %}

@@ -1,0 +1,55 @@
+{%- import _self as macros %}
+
+{% block HistoriqueTitle %}<h1>{{ historiqueTitle|trans({'%recent%':recent ? ' '~('historique.recent'|trans) : '',
+    '%from%':recent ? '' : ' '~('historique.from'|trans)~' '~year}) }}</h1>{% endblock %}
+
+<div id="consult-advancedSearch">
+    <table class="table" data-group-by="0">
+        <thead>
+            <tr>
+                <th>{{ 'observatoire'|trans }}</th>
+                <th data-filter-with="#user-filter">{{ 'historique.author'|trans }}</th>
+                <th data-filter-with="#date-filter">{{ 'date'|trans }} [{{ 'UTC'|trans }}]</th>
+                <th data-orderable="false">{{ 'historique.description'|trans }}</th>
+                {% block HistoriqueTH %}{% endblock %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for historique in historiques %}
+                <tr>
+                    <td class="criteria" data-order="{{ historique.observatoire.nom|default('') }}">
+                        <strong>
+                            {{ 'observatoire'| trans }}{{ 'deux_points'|trans }}
+                            {{ 'open_quote'|trans }}{{ historique.observatoire.nom|default('historique.deleted.Observatoire')|trans }}{{ 'close_quote'|trans }}
+                        </strong>
+                    </td>
+                    {%- if historique.auteur %}
+                        <td data-order="{{ historique.auteur.nom }} {{ historique.auteur.prenom }}">
+                            {{- historique.auteur -}}
+                        </td>
+                    {%- else %}
+                        <td data-search="">
+                            {{- 'historique.deleted.Utilisateur'|trans -}}
+                        </td>
+                    {%- endif %}
+                    {{ macros.dateField(historique.date) }}
+                    <td>
+                        {{ historique.description|replace({'\n': '<br/>'})|replace({'_CollapseId': '_CollapseId_'~key})|raw }}
+                    </td>
+                    {% block HistoriqueTD %}{% endblock %}
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% macro dateField(date) %}
+    {%- if date %}
+        <td data-type="num"
+            data-order="{{ date|date('U', false) }}"
+            data-search="{{- date|date('Y-m-d', false) -}}"
+        >{{- date|date('historique.dateTime'|trans, false)|raw -}}</td>
+    {%- else %}
+        <td data-search="">-</td>
+    {%- endif %}
+{%- endmacro %}

@@ -1,0 +1,15 @@
+{% extends '@IrsteaBdohLogger/historique/base.html.twig' %}
+
+{% block HistoriqueTH %}
+    <th>{{ 'historique.topiccategory'|trans }}</th>
+{% endblock %}
+
+{% block HistoriqueTD %}
+    <td>
+        {% if historique.topiccategory %}
+            {{ historique.topiccategory }}
+        {% else %}
+            {{ 'historique.deleted.TopicCategory'|trans }}
+        {% endif %}
+    </td>
+{% endblock %}

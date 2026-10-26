@@ -1,0 +1,11 @@
+{% extends '@IrsteaBdohLogger/historique/base.html.twig' %}
+
+{% block HistoriqueTH %}
+    <th data-searchable="false">{{ 'historique.nbNewSig'|trans }}</th>
+    <th data-searchable="false">{{ 'historique.nbMajSig'|trans }}</th>
+{% endblock %}
+
+{% block HistoriqueTD %}
+    <td>{{ historique.nombreInserts }}</td>
+    <td>{{ historique.nombreMesures }}</td>
+{% endblock %}

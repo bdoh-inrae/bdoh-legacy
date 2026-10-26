@@ -1,0 +1,141 @@
+{% extends '@IrsteaBdohLogger/layout.html.twig' %}
+{% from 'macros.html.twig' import pageTitle %}
+
+{% block title %}
+    {{ pageTitle(('historique.advancedSearch'~(recent ? 'Recent' : ''))|trans) }}
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script src="{{ asset('assets/logger.js') }}"></script>
+{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <link rel="stylesheet" href="{{ asset('assets/logger.css') }}"/>
+    <style type="text/css">
+        div#main .nav .open > a, div#main .nav .open > a:hover, div#main .nav .open > a:focus {
+            border-color:#e5e5e5;
+        }
+        div#main .nav .active > a:hover {
+            /*background-color:#e5e5e5;*/
+            /*cursor:pointer;*/
+        }
+    </style>
+{% endblock %}
+
+{% block breadcrumb %}
+    <ul class="breadcrumb">
+        <li><a href="{{ path('bdoh_home') }}">{{ 'home'|trans }}</a></li>
+        <li class="active">{{ ('historique.advancedSearch'~(recent ? 'Recent' : ''))|trans }}</li>
+    </ul>
+{% endblock %}
+
+{% block main %}
+    <div class="alert alert-info">{{ 'historique.go-to-menus-for-detail'|trans }}</div>
+    <div class="pull-right form-inline">
+        {% if years %}
+            <div class="form-group form-group-sm">
+                <select style="width:75px" id="historiqueYear" class="form-control input-sm"
+                        data-url="{{ path('irstea_bdoh_logger_advancedSearch') }}">
+                    {% for historiqueYear in years %}
+                        <option value="{{ historiqueYear }}" {% if historiqueYear == year -%}
+                                selected="selected"
+                            {%- endif %}>{{ historiqueYear }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        {% endif %}
+        <div class="form-group form-group-sm">
+            <select style="width:210px" id="user-filter" class="form-control input-sm"
+                    data-placeholder="{% trans %}historique.author{% endtrans %}"></select>
+        </div>
+        <div class="form-group form-group-sm">
+            <select style="width:105px" id="date-filter" class="form-control input-sm"
+                    data-placeholder="{% trans %}date{% endtrans %}"></select>
+        </div>
+    </div>
+    <ul class="nav nav-tabs">
+        <li class="active">
+            <a href="#all" data-toggle="tab">
+                {{ 'historique.menu.title.all(%recent%)'|trans({'%recent%':recent ? ' '~('historique.recent'|trans) : ''}) }}
+            </a>
+        </li>
+        <li class="dropdown">
+            <a class="dropdown-toggle" href="#" data-toggle="dropdown">
+                {{ 'historique.menu.title.admin'|trans }}
+                <b class="caret"></b>
+            </a>
+            <ul class="dropdown-menu">
+                <li><a href="#admin" data-toggle="tab">{{ 'historique.menu.admin'|trans }}</a></li>
+                <li><a href="#adminObservatoire" data-toggle="tab">{{ 'historique.menu.adminObservatoire'|trans }}</a></li>
+                <li><a href="#adminSiteExperimental" data-toggle="tab">{{ 'historique.menu.adminSiteExperimental'|trans }}</a></li>
+                <li><a href="#adminStation" data-toggle="tab">{{ 'historique.menu.adminStation'|trans }}</a></li>
+                <li><a href="#adminChronique" data-toggle="tab">{{ 'historique.menu.adminChronique'|trans }}</a></li>
+                <li><a href="#adminDataset" data-toggle="tab">{{ 'historique.menu.adminDataset'|trans }}</a></li>
+                <li><a href="#adminBassin" data-toggle="tab">{{ 'historique.menu.adminBassin'|trans }}</a></li>
+                <li><a href="#adminCoursEau" data-toggle="tab">{{ 'historique.menu.adminCoursEau'|trans }}</a></li>
+                <li><a href="#adminCommune" data-toggle="tab">{{ 'historique.menu.adminCommune'|trans }}</a></li>
+                <li><a href="#adminMilieu" data-toggle="tab">{{ 'historique.menu.adminMilieu'|trans }}</a></li>
+                <li><a href="#adminDoi" data-toggle="tab">{{ 'historique.menu.adminDoi'|trans }}</a></li>
+                <li><a href="#adminPartenaire" data-toggle="tab">{{ 'historique.menu.adminPartenaire'|trans }}</a></li>
+                <li><a href="#adminFamilleParametres" data-toggle="tab">{{ 'historique.menu.adminFamilleParametres'|trans }}</a></li>
+                <li><a href="#adminTypeParametre" data-toggle="tab">{{ 'historique.menu.adminTypeParametre'|trans }}</a></li>
+                <li><a href="#adminUnite" data-toggle="tab">{{ 'historique.menu.adminUnite'|trans }}</a></li>
+                <li><a href="#adminUtilisateur" data-toggle="tab">{{ 'historique.menu.adminUtilisateur'|trans }}</a></li>
+                <li><a href="#adminPersonneTheia" data-toggle="tab">{{ 'historique.menu.adminPersonneTheia'|trans }}</a></li>
+                <li><a href="#adminTypeFunding" data-toggle="tab">{{ 'historique.menu.adminTypeFunding'|trans }}</a></li>
+                <li><a href="#adminTopicCategory" data-toggle="tab">{{ 'historique.menu.adminTopicCategory'|trans }}</a></li>
+                <li><a href="#adminTheiaCategories" data-toggle="tab">{{ 'historique.menu.adminTheiaCategories'|trans }}</a></li>
+                <li><a href="#adminInspireTheme" data-toggle="tab">{{ 'historique.menu.adminInspireTheme'|trans }}</a></li>
+                <li><a href="#adminDataConstraint" data-toggle="tab">{{ 'historique.menu.adminDataConstraint'|trans }}</a></li>
+                <li><a href="#adminCriteriaGeology" data-toggle="tab">{{ 'historique.menu.adminCriteriaGeology'|trans }}</a></li>
+                <li><a href="#adminCriteriaClimate" data-toggle="tab">{{ 'historique.menu.adminCriteriaClimate'|trans }}</a></li>
+                <li><a href="#derniereConnection" data-toggle="tab">{{ 'historique.menu.derniereConnection'|trans }}</a></li>
+            </ul>
+        </li>
+        <li class="dropdown">
+            <a class="dropdown-toggle" href="#" data-toggle="dropdown">
+                {{ 'historique.menu.title.donnees'|trans }}
+                <b class="caret"></b>
+            </a>
+            <ul class="dropdown-menu">
+                <li><a href="#donnees" data-toggle="tab">{{ 'historique.menu.donnees'|trans }}</a></li>
+                <li><a href="#donneesImport" data-toggle="tab">{{ 'historique.menu.donneesImport'|trans }}</a></li>
+                <li><a href="#donneesExport" data-toggle="tab">{{ 'historique.menu.donneesExport'|trans }}</a></li>
+                <li><a href="#donneesSuppression" data-toggle="tab">{{ 'historique.menu.donneesSuppression'|trans }}</a></li>
+                <li><a href="#donneesPointControle" data-toggle="tab">{{ 'historique.menu.donneesPointControle'|trans }}</a></li>
+            </ul>
+        </li>
+        <li class="dropdown">
+            <a class="dropdown-toggle" href="#" data-toggle="dropdown">
+                {{ 'historique.menu.title.transformations'|trans }}
+                <b class="caret"></b>
+            </a>
+            <ul class="dropdown-menu">
+                <li><a href="#transformations" data-toggle="tab">{{ 'historique.menu.transformations'|trans }}</a></li>
+                <li><a href="#baremesImport" data-toggle="tab">{{ 'historique.menu.baremesImport'|trans }}</a></li>
+                <li><a href="#baremesExport" data-toggle="tab">{{ 'historique.menu.baremesExport'|trans }}</a></li>
+                <li><a href="#calculsChroniques" data-toggle="tab">{{ 'historique.menu.calculsChroniques'|trans }}</a></li>
+                <li><a href="#donneesImportManuel" data-toggle="tab">{{ 'historique.menu.donneesImportManuel'|trans }}</a></li>
+                <li><a href="#conversionsChroniques" data-toggle="tab">{{ 'historique.menu.conversionsChroniques'|trans }}</a></li>
+            </ul>
+        </li>
+        <li>
+            <a href="#sig" data-toggle="tab">
+                {{ 'historique.menu.title.sig'|trans }}
+            </a>
+        </li>
+    </ul>
+
+    <div class="tab-content">
+        {% for key, historique in historiques %}
+            <div id="{{ key }}" class="tab-pane log-tab{% if loop.first %} active{% endif %}">
+                {% include '@IrsteaBdohLogger/historique/' ~ key ~ '.html.twig' with {
+                    'historiques':historique,
+                    'historiqueTitle':'historique.title.'~key~'(%recent%, %from%)'
+                } %}
+            </div>
+        {% endfor %}
+    </div>
+{% endblock %}

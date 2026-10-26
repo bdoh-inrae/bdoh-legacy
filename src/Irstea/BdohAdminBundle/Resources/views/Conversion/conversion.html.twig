@@ -1,0 +1,191 @@
+{% extends 'layout.html.twig' %}
+{% from 'macros.html.twig' import pageTitle, submit, reset%}
+{% import '@IrsteaBdohConsult/macros.html.twig' as macros %}
+
+{% block title %}
+    {{ pageTitle('ConversionChroniques'|trans) }}
+{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <link rel="stylesheet" href="{{ asset('assets/admin/conversion.css') }}"/>
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script src="{{ asset('assets/admin/conversion.js') }}"></script>
+{% endblock %}
+
+{% block breadcrumb %}
+    <ul class="breadcrumb">
+        <li><a href="{{ path('bdoh_home') }}">{{ 'home'|trans }}</a></li>
+        <li class="active">{{ 'ConversionChroniques'|trans }}</li>
+    </ul>
+{% endblock %}
+
+{% block main %}
+    <div id="conversion">
+        <h1>{{ 'ConversionChroniques'|trans }}</h1>
+
+        <form class="form-horizontal" name="main" action="{{ path('bdoh_admin_conversion_form') }}"
+              method="post" enctype="multipart/form-data" id="formConversionId">
+
+            <div class="form-group">
+                <label for="chroniqueConvertieId" class="col-sm-4 control-label">{{ 'ChroniqueConvertie'|trans }}</label>
+                <div class="col-md-8">
+                    <select id="chroniqueConvertieId" name="chroniqueConvertieId" class="form-control" autocomplete="off"
+                            {% if chroniqueConvertie is defined %}
+                                data-id="{{ chroniqueConvertie.id }}"
+                            {% endif %}
+                    >
+                        <option></option>
+                        {% for station in stations|filter(station => chroniquesConverties[station.id] is defined) %}
+                            <optgroup label="{{ station.code }}">
+                                {% for chroniqueConvertieInList in chroniquesConverties[station.id] %}
+                                    <option value="{{ chroniqueConvertieInList.id }}"
+                                        {% if chroniqueConvertie is defined and chroniqueConvertie.id == chroniqueConvertieInList.id %}
+                                            selected="selected"
+                                        {% endif %}
+                                    >{{ chroniqueConvertieInList }}</option>
+                                {% endfor %}
+                            </optgroup>
+                        {% endfor %}
+                    </select>
+                    <input type="hidden" autocomplete="off" id="chroniqueChangedId" name="chroniqueChanged" value=""/>
+                    <input type="hidden" autocomplete="off" name="{{ CSRFTokenName }}" value="{{ CSRFTokenValue }}"/>
+                </div>
+
+                {% if chroniqueConvertie is defined %}
+                    <div>
+                        <label for="stationId" class="col-sm-4 control-label" style="padding-right:5px;">
+                            {{ 'Station'|trans }}
+                        </label>
+                        <div class="col-md-8">
+                            <p id="stationId" class="form-control-static">
+                                <a href="{{ path('bdoh_consult_station', {station: chroniqueConvertie.station.code}) }}"
+                                   class="viewStation"
+                                   title="{{ 'viewStation'|trans }}">
+                                    {{ chroniqueConvertie.station.nom }} ({{ chroniqueConvertie.station.code }})
+                                </a>
+                            </p>
+                        </div>
+                    </div>
+                {% endif %}
+
+            </div>
+
+            {% if chroniqueConvertie is defined %}
+
+                <div class="form-group">
+                    <div>
+                        <label for="uniteId" class="col-sm-4 control-label">{{ 'unite'|trans }}</label>
+                        <div class="col-md-8">
+                            <p id="uniteId" class="form-control-static">{{ unite }}</p>
+                        </div>
+                    </div>
+
+                    {% if maj %}
+                        <div>
+                            <label for="dateMajId" class="col-sm-4 control-label">{{ 'miseAJour'|trans }}</label>
+                            <div class="col-md-8">
+                                <p id="dateMajId" class="form-control-static">{{ maj }}</p>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="form-group">
+                    <label for="genealogieId" class="col-sm-4 control-label">{{ 'genealogie'|trans }}</label>
+                    <div class="col-md-20">
+                        <textarea id="genealogieId" name="genealogie" class="form-control" rows="3">{{ genealogie }}</textarea>
+                    </div>
+                    <label for="genealogieEnId" class="col-sm-4 control-label">{{ 'genealogieEn'|trans }}</label>
+                    <div class="col-md-20">
+                        <textarea id="genealogieEnId" name="genealogieEn" class="form-control" rows="3">{{ genealogieEn }}</textarea>
+                    </div>
+                </div>
+
+                {% if hasChildren %}
+                    <div class="form-group">
+                        <div class="col-md-20 col-sm-offset-4">
+                            <input id="propagateId" name="propagate" value="propagate" type="checkbox" checked="checked" autocomplete="off" style="vertical-align:-3px;"/>
+                            <label for="propagateId">
+                                <strong><span>{{ 'measure.import.question.computeChildren'|trans({'%count%': childrenCount}) }}</span>
+                                    <i id="childrenHelpId" class="fam-help"
+                                       data-original-title="{{ 'measure.import.help.children'|trans({'%count%': childrenCount}) }}"
+                                       data-content="{{ childrenList }}" style="vertical-align:-3px;"></i>
+                                </strong>
+                            </label>
+                        </div>
+                    </div>
+                {% endif %}
+
+                <div class="form-group">
+                    <label for="chroniqueMereId" class="col-sm-4 control-label">{{ 'conversion.chroniqueMere'|trans }}</label>
+                    <div class="col-md-8">
+                        {% if chroniqueMere is defined %}
+                            <p id="chroniqueMereId" class="form-control-static" data-id="{{ chroniqueConvertie.id }}">
+                                <a href="{{ path('bdoh_consult_chronique', {station: chroniqueMere.station.code, chronique: chroniqueMere.code}) }}"
+                                   class="viewChroniqueMere"
+                                   title="{{ 'viewChronique'|trans }}">{{ chroniqueMere }}</a>{{- macros.chronique_isVisible(chroniqueMere) }}
+                            </p>
+                        {% else %}
+                            {% if chroniquesDiscontinues is empty %}
+                                <p id="chroniqueMereId" class="noChroniqueMere form-control-static" data-no-chronique-mere="noChroniqueMere">{{ 'conversion.noChroniqueMere'|trans }}</p>
+                            {% else %}
+                                <select id="chroniqueMereId" name="chroniqueMereId" class="form-control" autocomplete="off" required="required">
+                                    <option></option>
+                                    {% for chroniqueDiscontinue in chroniquesDiscontinues %}
+                                        <option value="{{ chroniqueDiscontinue.id }}">{{ chroniqueDiscontinue }}</option>
+                                    {% endfor %}
+                                </select>
+                            {% endif %}
+                        {% endif %}
+                    </div>
+
+                    <div class="col-md-12" style="text-align:right;">
+                        <label for="paramConversionId" class="control-label" style="padding-right:5px;">
+                            {{ 'conversion.paramConversion'|trans }}
+                            <sup title="{{ 'conversion.paramConversionHelp'|trans|raw }}" id="paramConversionHelpId">(?)</sup>
+                        </label>
+                        {% set paramConversionMinuntes = paramConversion ? paramConversion // 60 %}
+                        <div style="display:inline-block;width:20%;padding-right:5px;">
+                            <input type="text" class="form-control" id="paramConversionId" name="paramConversion" autocomplete="off"
+                                   required="required" value="{{ paramConversionMinuntes }}"
+                                   title="{{ 'conversion.paramConversionTitle'|trans }}"/>
+                        </div>
+                        <div id="displayParamConversionId" style="display:inline-block;width:46%;text-align:left;"></div>
+                    </div>
+                </div>
+
+                <div id="btnDivId" style="display:none;">
+                    {{ submit('conversion.saveAndConvert'|trans, 'btn btn-success') }}
+                    {{ reset('conversion.cancelModifications'|trans, 'btn btn-danger') }}
+                </div>
+
+            {% endif %}
+
+        </form>
+
+        {% if errorsConversion is defined %}
+            <div class="alert alert-block alert-danger" id="errorsConversionAlertId" style="margin-top:1em;margin-bottom:0;">
+                <a class="close" id="errorsConversionCloseId">&times;</a>
+                <h4 class="alert-heading">{{ 'errors'|trans }}{{ 'deux_points'|trans }}</h4>
+                <ul>
+                    {% for error in errorsConversion %}
+                        <li>{{ error|raw }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        {% endif %}
+
+        {% if successConversion is defined %}
+            <div class="alert alert-block alert-success" id="successConversionAlertId" style="margin-top:1em;margin-bottom:0;">
+                <a class="close" id="successConversionCloseId">&times;</a>
+                <strong>{{ 'conversion.success(%link%, %chronique%)'|trans({'%link%': successConversion.link, '%chronique%': successConversion.chronique})|raw }}<br/>
+                    {{ 'conversion.seeJobPage(%jobPage%, %jobId%)'|trans({'%jobPage%': successConversion.jobPage, '%jobId%': successConversion.jobId})|raw }}</strong>
+            </div>
+        {% endif %}
+
+    </div>
+{% endblock %}

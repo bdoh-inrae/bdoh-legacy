@@ -143,6 +143,18 @@ def page_cases(base):
         paths.append(f'/{slug}/{station}/{code}')
         paths.append(f'/{slug}/chronique/{cid}/measures?beginDate=2024-03-01T00:00:00Z'
                      '&endDate=2024-04-01T00:00:00Z')
+    # Les configurations incomplètes relevées par l'inspection des bases, qui doivent s'afficher : la
+    # première chronique calculée sans première transformation, et la page des transformations qui
+    # la décrit ; la première chronique convertie sans conversion
+    for slug, station, code, cid, dtype in query(base, f"""
+            SELECT DISTINCT ON (c.dtype) c.slug, c.station, c.code, c.id, c.dtype FROM ({CHRONIQUES}) c
+              JOIN chronique ch ON ch.id = c.id
+             WHERE (c.dtype = 'calculee' AND ch.premiereentree_id IS NULL)
+                OR (c.dtype = 'convertie' AND ch.conversion_id IS NULL)
+             ORDER BY c.dtype, c.id"""):
+        paths.append(f'/{slug}/{station}/{code}')
+        if dtype == 'calculee':
+            paths.append(f'/{slug}/admin/get-chronique-calculee?id={cid}')
     datasets = query(base, """
         SELECT DISTINCT ON (d.id) o.slug, d.uuid FROM dataset d
           JOIN observatoire o ON o.id = d.observatoire_id ORDER BY d.id""")
@@ -345,6 +357,10 @@ NORMALIZE = [
     (re.compile(r'(?<![0-9A-Za-z])s[0-9a-f]{13}(?![0-9a-f])'), 's<uniqid>'),  # identifiants de formulaires de Sonata
     (re.compile(r'data:image/[\w+]+;base64,[\w+/=]+'), '<image>'),  # captcha
     (re.compile(r'(data-target=#[a-z]+-)\d+'), r'\1<n>'),  # fenêtres numérotées au hasard
+    # Le jeton CSRF des pages des couleurs et de la conversion, nom et valeur tirés au hasard
+    (re.compile(r'^I input hidden CSRFToken[0-9a-f]{16} [0-9a-f]{128}$'), 'I input hidden CSRFToken<jeton>'),
+    # Les barèmes d'un calcul dans l'historique, repliés sous un identifiant tiré au hasard (mt_rand)
+    (re.compile(r'(?<![\w])\d+_(first|second)Bareme_CollapseId'), r'<n>_\1_CollapseId'),
 ]
 
 
@@ -554,7 +570,9 @@ OLD_17_PARAMETERS = OUT.parent / 'app-17' / 'app' / 'config' / 'parameters.yml'
 def state_commands(base):
     """Les calculs, choisis par des règles : une chaîne de trois chroniques calculées, recalculée
     depuis la première avec propagation ; une chronique convertie qui a une fille, avec propagation,
-    et une sans fille ; les taux de remplissage d'une chronique continue."""
+    et une sans fille ; les taux de remplissage d'une chronique continue ; enfin le recalcul des
+    configurations incomplètes relevées par l'inspection des bases, qui doit être refusé proprement :
+    une chronique calculée sans première transformation, une convertie sans conversion."""
     first = lambda sql: query(base, sql, NEW_SERVER)[0][0]
     user = first("SELECT id FROM utilisateur WHERE roleadmin = 'FCT' ORDER BY id LIMIT 1")
     chain = first("""
@@ -574,6 +592,10 @@ def state_commands(base):
         ['bdoh:convert:chronique', first(converted.format('')), user, '--propagate'],
         ['bdoh:convert:chronique', first(converted.format('NOT')), user],
         ['bdoh:compute:filling_rates', continuous],
+        ['bdoh:compute:chronique', first("""SELECT min(id) FROM chronique
+                                             WHERE dtype = 'calculee' AND premiereentree_id IS NULL"""), user],
+        ['bdoh:convert:chronique', first("""SELECT min(c.id) FROM chronique c WHERE c.dtype = 'convertie'
+             AND NOT EXISTS (SELECT 1 FROM conversion cv WHERE cv.sortie_id = c.id)"""), user],
     ]
 
 
@@ -1912,6 +1934,84 @@ def admin_profiles(base):
     return {'administrateur': (admin, slugs), 'gestionnaire': (manager, [slug])}
 
 
+# Les contrôleurs à part de l'administration, sous le nom que --only reconnaît dans leurs adresses,
+# et les tables qu'ils écrivent (lues par la requête de STATE_QUERIES ou d'OTHER_STATE).
+OTHERS = {'colors': ['jeuqualite', 'qualite'],
+          'conversion': ['chronique', 'conversion', 'jeuconversion', 'jms_jobs', 'jms_job_related_entities'],
+          'fillingrate': ['jms_jobs', 'jms_job_related_entities'],
+          'historique': []}
+OTHER_STATE = {
+    'jeuqualite': "SELECT to_jsonb(j)::text FROM jeuqualite j ORDER BY j.id",
+    'qualite': "SELECT to_jsonb(q)::text FROM qualite q ORDER BY q.id",
+    'conversion': "SELECT to_jsonb(c)::text FROM conversion c ORDER BY c.id",
+    'jeuconversion': "SELECT (to_jsonb(j) - 'datecreation')::text FROM jeuconversion j ORDER BY j.id",
+}
+# Les chroniques converties qu'ouvre la page de la conversion : sans conversion (configuration
+# incomplète relevée par l'inspection des bases), avec une chronique fille, sans fille.
+CONVERTED = {
+    'sans conversion': "NOT EXISTS (SELECT 1 FROM conversion cv WHERE cv.sortie_id = c.id)",
+    'avec fille': """EXISTS (SELECT 1 FROM conversion cv WHERE cv.sortie_id = c.id)
+                     AND EXISTS (SELECT 1 FROM transformation t WHERE t.entree_id = c.id)""",
+    'sans fille': """EXISTS (SELECT 1 FROM conversion cv WHERE cv.sortie_id = c.id)
+                     AND NOT EXISTS (SELECT 1 FROM transformation t WHERE t.entree_id = c.id)""",
+}
+
+
+def converted(base, rule):
+    """La première chronique convertie qui suit la règle, avec son observatoire."""
+    rows = query(base, f"SELECT c.id, c.slug FROM ({CHRONIQUES}) c WHERE c.dtype = 'convertie' AND {CONVERTED[rule]}"
+                       " ORDER BY c.id LIMIT 1", NEW_SERVER)
+    return rows[0] if rows else (None, None)
+
+
+def other_pages(base, slugs):
+    """Les pages des contrôleurs à part pour un compte dont slugs sont les observatoires, en (observatoire
+    de la page, adresse sous l'observatoire) : les couleurs, sans jeu de qualité puis de chacun ; la
+    conversion, sans chronique puis de chaque chronique de CONVERTED, ouverte dans son observatoire s'il
+    est du compte, comme l'édition des chroniques à configuration incomplète ; l'historique de l'année la plus récente, des deux derniers mois, de l'année la plus
+    ancienne et d'une année que la liste n'a pas."""
+    slug = slugs[0]
+    pages = [(slug, '/admin/colors')]
+    pages += [(slug, f'/admin/colors/{j}') for j, in query(base, 'SELECT id FROM jeuqualite ORDER BY id', NEW_SERVER)]
+    pages.append((slug, '/admin/conversion'))
+    for rule in CONVERTED:
+        cid, cslug = converted(base, rule)
+        if cid:
+            pages.append((cslug if cslug in slugs else slug, f'/admin/conversion/{cid}'))
+    # Le formulaire d'édition des configurations incomplètes (voir page_cases)
+    for cid, cslug, dtype in query(base, f"""
+            SELECT DISTINCT ON (c.dtype) c.id, c.slug, c.dtype FROM ({CHRONIQUES}) c JOIN chronique ch ON ch.id = c.id
+             WHERE (c.dtype = 'calculee' AND ch.premiereentree_id IS NULL)
+                OR (c.dtype = 'convertie' AND ch.conversion_id IS NULL) ORDER BY c.dtype, c.id""", NEW_SERVER):
+        pages.append((cslug if cslug in slugs else slug, f'/admin/chronique{dtype}/{cid}/edit'))
+    oldest = query(base, f"""SELECT coalesce(min(extract(year FROM h.date))::int, 2000) FROM historique h
+                              JOIN observatoire o ON o.id = h.observatoire_id WHERE o.slug = '{slug}'""",
+                   NEW_SERVER)[0][0]
+    pages += [(slug, '/historique'), (slug, '/historique/recent'), (slug, f'/historique?year={oldest}'),
+              (slug, '/historique?year=1899')]
+    return pages
+
+
+def today_lines(lines):
+    """Les dates du jour dans une page de l'historique : celles des connexions de la comparaison elle-même,
+    et la date de début d'un barème qui n'en a pas, que Twig remplace par celle du moment (filtre date
+    d'une valeur nulle). Aucune date de la base n'est du jour."""
+    days = {datetime.date.today(), datetime.datetime.now(datetime.timezone.utc).date()}
+    marks = [d.strftime('%d/%m/%Y') for d in days] + [d.isoformat() for d in days]
+    out, time_follows = [], False
+    for line in lines:
+        if time_follows and re.fullmatch(r'T \d\d:\d\d:\d\d', line):
+            line = 'T <heure>'
+        time_follows = False
+        if any(mark in line for mark in marks):
+            line = re.sub(r'\d\d:\d\d:\d\d', '<heure>', re.sub(r'data-order=\d+', 'data-order=<date>', line))
+            for mark in marks:
+                line = line.replace(mark, '<aujourd’hui>')
+            time_follows = line == 'T <aujourd’hui>'
+        out.append(line)
+    return out
+
+
 def redirect_lines(site, status, headers):
     """Le statut d'une réponse et l'adresse où elle renvoie, sous la forme des pages. Sonata 4 renvoie
     à une liste avec ses filtres du moment, Sonata 3 sans eux (dev/differences.md, « Administration
@@ -1934,6 +2034,7 @@ def run_admin(args):
     template = args.base
     historique = query(template, 'SELECT coalesce(max(id), 0) FROM historique', NEW_SERVER)[0][0]
     admins = {name: spec for name, spec in ADMINS.items() if args.only in name}
+    others = [name for name in OTHERS if args.only in name]
     accounts = admin_profiles(template)
     bases = {'ancien': 'bdoh_admin_old', 'nouveau': 'bdoh_admin_new'}
     for base in bases.values():
@@ -1973,19 +2074,29 @@ def run_admin(args):
                     paths += [f'{root}/{cid}/edit', f'{root}/{cid}/delete']
                 for path in paths:
                     parts[f'{profile} {path}'] = page_lines(side.url, *client.get(path))
+            for slug, path in other_pages(base, slugs):
+                if any(f'/{name}/' in path + '/' or f'/{name}?' in path for name in [*others, *admins]):
+                    lines = page_lines(side.url, *client_for(email, slug).get(f'/{slug}{path}'))
+                    parts[f'{profile} /{slug}{path}'] = today_lines(lines) if path.startswith('/historique') else lines
 
         email, slugs = accounts['administrateur']
 
-        def send(path, action, values, button):
-            """Un formulaire de la page, envoyé comme par un navigateur, et la page où il renvoie."""
+        def send(path, action, values, button, token=True):
+            """Un formulaire de la page, envoyé comme par un navigateur, et la page où il renvoie. Sans
+            button, aucun bouton n'est envoyé (bouton sans nom) ; sans token, le formulaire part sans le
+            jeton CSRF que les couleurs et la conversion tirent eux-mêmes."""
             client = client_for(email, path.split('/')[1])
             form = form_of(client, path, action)
             if form.url is None:
                 return [f'pas de formulaire {action} : {path}']
+            if not token:
+                form.fields = [f for f in form.fields if not f[0].startswith('CSRFToken')]
             values = {k: (form.choices(k)[:1] or [''])[0] if v is FIRST else v for k, v in values.items()}
-            if form.buttons and button not in form.buttons:
-                button = form.buttons[0]
-            body = form.filled(values) + b'&' + urllib.parse.urlencode({button: ''}).encode()
+            body = form.filled(values)
+            if button:
+                if form.buttons and button not in form.buttons:
+                    button = form.buttons[0]
+                body += b'&' + urllib.parse.urlencode({button: ''}).encode()
             status, headers, _ = client.get(form.url, body, {'Referer': side.url + path})
             lines = redirect_lines(side.url, status, headers)
             location = headers.get('Location', '').replace(side.url, '')
@@ -2008,6 +2119,7 @@ def run_admin(args):
                     created = query(base, f"SELECT max(id) FROM {spec['table']}", NEW_SERVER)[0][0]
                     parts[f'{name} : suppression'] = send(f'{root}/{created}/delete', f'/{name}/{created}/delete',
                                                          {}, 'btn_delete')
+        parts.update(other_writes(send, base, client_for(email, slugs[0]), slugs))
         time.sleep(2)  # les courriels du nouveau partent après la réponse (DeferredMailer)
         parts['courriels'] = [line.replace(side.url, '<site>') for line in mail_lines()]
         for name, spec in sorted(admins.items(), key=lambda item: item[1]['table']):
@@ -2019,9 +2131,60 @@ def run_admin(args):
         for table in sorted({t for spec in admins.values() for t in spec.get('also', [])}):
             parts[f'état {table}'] = ['\t'.join(row) for row in query(
                 base, f"SELECT to_jsonb(t)::text FROM {table} t ORDER BY 1", NEW_SERVER)]
+        for table in sorted({t for name in others for t in OTHERS[name]} - {f[5:] for f in parts if f.startswith('état ')}):
+            parts[f'état {table}'] = (['\t'.join(row) for row in query(base, OTHER_STATE[table], NEW_SERVER)]
+                                      if table in OTHER_STATE else state_lines(base, historique, [table])[table])
         parts['état historique'] = state_lines(base, historique, ['historique'])['historique']
         if side.login_link:
             checks.update(new_only(send, base))
+        return parts
+
+    def other_writes(send, base, client, slugs):
+        """Les écritures des contrôleurs à part, au nom de l'administrateur : les couleurs du premier jeu
+        de qualité affectable, enregistrées telles quelles, changées (dont des valeurs refusées, que le
+        contrôleur remplace par les valeurs par défaut), sans jeton CSRF, pour un simple changement de
+        jeu, pour un jeu non affectable ; la conversion de chaque chronique de CONVERTED de ses
+        observatoires ; le taux de remplissage d'une chronique continue, sans chronique, d'une chronique
+        inconnue."""
+        parts = {}
+        slug = slugs[0]
+        if 'colors' in others:
+            jeu = query(base, 'SELECT min(id) FROM jeuqualite WHERE estaffectable', NEW_SERVER)[0][0]
+            qualite = query(base, f"SELECT min(id) FROM qualite WHERE jeu_id = {jeu} AND code <> 'gap'", NEW_SERVER)[0][0]
+            other = query(base, 'SELECT min(id) FROM jeuqualite WHERE NOT estaffectable', NEW_SERVER)[0][0]
+            page, action = f'/{slug}/admin/colors/{jeu}', '/admin/colors'
+            for label, values, token in [
+                ('telles quelles', {}, True),
+                ('changées', {f'colorId_{qualite}': '#12ab34', f'thicknessId_{qualite}': '3',
+                              f'checkpointColorId_{jeu}': '#00FF00', f'discontinuousSizeId_{jeu}': '7',
+                              f'checkpointShapeId_{jeu}': 'triangle', f'checkpointSizeId_{jeu}': '99'}, True),
+                ('sans jeton CSRF', {f'colorId_{qualite}': '#000000'}, False),
+                ('changement de jeu seulement', {'jeuQualiteChanged': 'jeuQualiteChanged',
+                                                 f'colorId_{qualite}': '#000000'}, True),
+                ('jeu non affectable', {'jeuQualiteId': str(other)}, True),
+            ]:
+                parts[f'couleurs : {label}'] = send(page, action, values, None, token)
+        if 'conversion' in others:
+            for rule, cases in {
+                'sans conversion': [('création', {'chroniqueMereId': FIRST, 'paramConversion': '60'}, True)],
+                'avec fille': [('telle quelle', {}, True)],
+                'sans fille': [('telle quelle', {}, True),
+                               ('changée', {'paramConversion': '1234', 'genealogie': 'Généalogie (essai)'}, True),
+                               ('paramètre invalide', {'paramConversion': 'abc'}, True),
+                               ('paramètre vide', {'paramConversion': ''}, True),
+                               ('sans jeton CSRF', {'paramConversion': '30'}, False)],
+            }.items():
+                cid, cslug = converted(base, rule)
+                if cslug in slugs:
+                    for label, values, token in cases:
+                        parts[f'conversion, {rule} : {label}'] = send(
+                            f'/{cslug}/admin/conversion/{cid}', '/admin/conversion', values, None, token)
+        if 'fillingrate' in others:
+            cid = query(base, CHRONIQUE_PICK.format(dtype='continue').format(slug=slug), NEW_SERVER)[0][0]
+            for label, params in [('chronique continue', f'?id={cid}'), ('sans chronique', ''),
+                                  ('chronique inconnue', '?id=999999999')]:
+                status, headers, _ = client.get(f'/{slug}/admin/fillingrate{params}')
+                parts[f'taux de remplissage : {label}'] = redirect_lines(client.side.url, status, headers)
         return parts
 
     def new_only(send, base):

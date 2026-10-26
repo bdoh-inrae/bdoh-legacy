@@ -1,0 +1,15 @@
+{% extends '@IrsteaBdohLogger/historique/base.html.twig' %}
+
+{% block HistoriqueTH %}
+    <th>{{ 'historique.criteriageology'|trans }}</th>
+{% endblock %}
+
+{% block HistoriqueTD %}
+    <td>
+        {% if historique.criteriageology %}
+            {{ historique.criteriageology }}
+        {% else %}
+            {{ 'historique.deleted.CriteriaGeology'|trans }}
+        {% endif %}
+    </td>
+{% endblock %}

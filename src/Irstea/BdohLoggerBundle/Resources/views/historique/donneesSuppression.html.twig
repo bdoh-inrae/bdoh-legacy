@@ -1,0 +1,21 @@
+{% extends '@IrsteaBdohLogger/historique/base.html.twig' %}
+
+{% block HistoriqueTH %}
+    <th>{{ 'historique.chronique'|trans }}</th>
+    <th data-searchable="false">{{ 'historique.debut'|trans }} [{{ 'UTC'|trans }}]</th>
+    <th data-searchable="false">{{ 'historique.fin'|trans }} [{{ 'UTC'|trans }}]</th>
+    <th data-searchable="false">{{ 'historique.nbMesures'|trans }}</th>
+{% endblock %}
+
+{% block HistoriqueTD %}
+    <td>
+        {% if historique.chronique %}
+            {{ historique.chronique }}
+        {% else %}
+            {{ 'historique.deleted.Chronique'|trans }}
+        {% endif %}
+    </td>
+    <td>{{ historique.debut|date('historique.dateTime'|trans, false)|raw }}</td>
+    <td>{{ historique.fin|date('historique.dateTime'|trans, false)|raw }}</td>
+    <td>{{ historique.nombreMesures }}</td>
+{% endblock %}
