@@ -657,10 +657,13 @@ def drain(console, runner, base, jobs=1, rounds=30):
 
 
 def state_lines(base, historique, tables=STATE_QUERIES):
-    """L'état d'une copie, table par table ; les dates du moment, dans les arguments des taux de
-    remplissage d'une chronique vide, sont normalisées."""
-    days = '|'.join(str(datetime.date.today() - datetime.timedelta(days=n)) for n in (0, 1))
-    return {table: [re.sub(f'(?:{days})T[\\d:]+', '<maintenant>', '\t'.join(row))
+    """L'état d'une copie, table par table ; les dates du moment sont normalisées : dans les arguments
+    des taux de remplissage d'une chronique vide, et dans les descriptions de l'historique (« Créé le
+    26/10/2026 13:18:50 UTC »), que les deux côtés écrivent à une seconde d'écart."""
+    recent = [datetime.date.today() - datetime.timedelta(days=n) for n in (0, 1)]
+    moment = re.compile('|'.join([*(f'{d}T[\\d:]+' for d in recent),
+                                  *(f'{d:%d/%m/%Y} [\\d:]+' for d in recent)]))
+    return {table: [moment.sub('<maintenant>', '\t'.join(row))
                     for row in query(base, STATE_QUERIES[table].format(historique=historique), NEW_SERVER)]
             for table in tables}
 
