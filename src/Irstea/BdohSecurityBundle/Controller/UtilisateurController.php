@@ -10,6 +10,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\ExpressionLanguage\Expression;
 use Irstea\BdohBundle\Controller\Controller;
+use Irstea\BdohBundle\Mailer\DeferredMailer;
 use Irstea\BdohSecurityBundle\Entity\Besoin;
 use Irstea\BdohSecurityBundle\Entity\Observatoire;
 use Irstea\BdohSecurityBundle\Entity\Role;
@@ -24,9 +25,10 @@ use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\DateType;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Mailer\MailerInterface;
 use Symfony\Component\Mime\Email;
 use Symfony\Component\RateLimiter\RateLimiterFactoryInterface;
+use Symfony\Bundle\SecurityBundle\Security;
+use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\Security\Http\LoginLink\LoginLinkHandlerInterface;
 
 /**
@@ -37,19 +39,11 @@ use Symfony\Component\Security\Http\LoginLink\LoginLinkHandlerInterface;
 #[Route('/user')]
 class UtilisateurController extends Controller
 {
-    public function __construct(private MailerInterface $mailer)
-    {
-    }
-
     /**
-     * Envoie un courriel s'il a un destinataire : Swiftmailer n'envoyait rien, sans erreur, à une
-     * liste vide (aucun gestionnaire), quand Symfony Mailer lèverait une exception.
+     * Les courriels partent après la réponse, et pas sans destinataire (DeferredMailer).
      */
-    private function send(Email $message): void
+    public function __construct(private DeferredMailer $mailer)
     {
-        if ($message->getTo() || $message->getCc()) {
-            $this->mailer->send($message);
-        }
     }
     /**
      * Creates a new 'Utilisateur' entity.
@@ -73,19 +67,22 @@ class UtilisateurController extends Controller
 
         // Some POST parameters ? Checks the form.
         if (count($request->request) !== 0) {
+            // Chaque envoi compte, en nombre limité par adresse IP : une inscription écrit à l'adresse
+            // saisie, et le refus d'une adresse déjà prise dit qu'elle a un compte
+            if (!$signupIpLimiter->create($request->getClientIp())->consume()->isAccepted()) {
+                $this->getSession()->getFlashBag()->add('error', $this->get('translator')->trans('security.tooManyRequests'));
+
+                return $this->render('@IrsteaBdohSecurity/Utilisateur/new.html.twig', ['form' => $form->createView()], new Response('', 429));
+            }
+
             $form->handleRequest($request);
 
             if ($form->isSubmitted() && $form->isValid()) {
-                // Chaque inscription envoie un courriel à l'adresse saisie : en nombre limité par adresse IP
-                if (!$signupIpLimiter->create($request->getClientIp())->consume()->isAccepted()) {
-                    $this->getSession()->getFlashBag()->add('error', $this->get('translator')->trans('security.tooManyRequests'));
-
-                    return $this->render('@IrsteaBdohSecurity/Utilisateur/new.html.twig', ['form' => $form->createView()], new Response('', 429));
-                }
-
                 // Pas de mot de passe : on se connecte par un lien (la colonne n'accepte pas NULL)
                 $user->setPassword('');
                 $user->setSalt('');
+                // En attente de la confirmation de l'adresse, que donne la première connexion
+                $user->setConfirmationToken(Utilisateur::AWAITING_CONFIRMATION);
 
                 // Persists the new user
                 $em = $this->getEm();
@@ -106,7 +103,7 @@ class UtilisateurController extends Controller
                         )
                     );
 
-                $this->send($messageUtilisateur);
+                $this->mailer->send($messageUtilisateur);
 
                 $this->container->get('irstea_bdoh_logger.logger')
                     ->createHistoriqueAdministrationUtilisateur(
@@ -137,9 +134,10 @@ class UtilisateurController extends Controller
      */
     #[Route('/edit', name: 'bdoh_security_utilisateur_edit', methods: ['GET', 'POST'])]
     #[IsGranted(new Expression("is_granted('ROLE_USER')"))]
-    public function editAction(Request $request)
+    public function editAction(Request $request, Security $security, LoginLinkHandlerInterface $loginLinkHandler)
     {
         $user = $this->get('security.token_storage')->getToken()->getUser();
+        $email = $user->getEmail();
         $form = $this->createForm(EditUtilisateurType::class, $user, ['locale' => $this->get('session')->get('_locale') ?? 'fr']);
 
         // Some POST parameters ? Checks the form.
@@ -159,6 +157,33 @@ class UtilisateurController extends Controller
                         'historique.actions.UtilisateurUpdate',
                         $user
                     );
+
+                // Une nouvelle adresse se confirme comme à l'inscription : on est déconnecté, et un lien
+                // de connexion part vers elle
+                if ($user->getEmail() !== $email) {
+                    $this->mailer->send(
+                        (new Email())
+                            ->subject($this->get('translator')->trans('security.login_link.mail.title'))
+                            ->from('bdoh@inrae.fr')
+                            ->to($user->getEmail())
+                            ->text($this->renderView('@IrsteaBdohSecurity/Security/loginLinkMail.txt.twig', [
+                                'user' => $user,
+                                'link' => $loginLinkHandler->createLoginLink($user)->getUrl(),
+                            ]))
+                    );
+                    $response = $security->logout(false);
+                    $this->getSession()->getFlashBag()->add('success', $this->get('translator')->trans(
+                        'security.utilisateur.edit.emailChanged(%email%)',
+                        ['%email%' => htmlspecialchars($user->getEmail())]
+                    ));
+                    $login = $this->generateUrl('bdoh_security_login');
+                    if ($response instanceof RedirectResponse) {
+                        // La réponse de la déconnexion, qui efface le cookie de session de 30 jours
+                        return $response->setTargetUrl($login);
+                    }
+
+                    return $this->redirect($login);
+                }
 
                 // Redirects to home, with a success message
                 $this->getSession()->getFlashBag()->add('success', $this->get('translator')->trans('security.utilisateur.edit.isCompleted'));
@@ -401,7 +426,11 @@ class UtilisateurController extends Controller
 
         $form = $formBuilder->getForm();
 
-        if ($request->isMethod('POST')) { //count($request->request) !== 0) //Processing
+        if ($request->isMethod('POST')) {
+            $form->handleRequest($request);
+        }
+        // Rien ne s'applique d'un formulaire invalide, jeton CSRF compris (l'ancien l'appliquait quel qu'il soit)
+        if ($form->isSubmitted() && $form->isValid()) { //Processing
             //A little boring :
             //rights should be granted according to what is on the form
             //AND removed if not in the form
@@ -409,7 +438,6 @@ class UtilisateurController extends Controller
 
             //so basically we're going to go through all sites and chroniques
 
-            $form->handleRequest($request);
             $data = $form->getData();
             $besoinsATraiter = preg_grep('#besoinATraiter#', array_keys($data));
             if ($besoinsATraiter) {
@@ -557,7 +585,7 @@ class UtilisateurController extends Controller
                     )
                 );
 
-            $this->send($message);
+            $this->mailer->send($message);
 
             //log the rights granting
             $this->get('irstea_bdoh_logger.logger')

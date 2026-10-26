@@ -221,7 +221,7 @@ class Client:
 
     def __init__(self, side, email, slug, password=PASSWORD):
         self.side = side
-        jar = http.cookiejar.CookieJar()
+        self.jar = jar = http.cookiejar.CookieJar()
         self.opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(jar), NoRedirect)
         if email and side.login_link:
             # Un lien créé par la console, comme celui du courriel. Deux liens d'un même compte créés
@@ -1344,16 +1344,30 @@ CAPTCHA_BYPASS = 'comparaison'  # passe outre le captcha de l'ancien (install-ap
 LOGIN_LINK = re.compile(r'(<site>)?/[\w-]+/login_check\?[^\s"<]+')
 
 
+def mail_messages():
+    """Les courriels retenus par Mailpit, résumés, du plus récent au plus ancien."""
+    return json.loads(urllib.request.urlopen(MAILPIT + '/api/v1/messages', timeout=60).read())['messages']
+
+
+def last_mail(email, wait=10):
+    """Le dernier courriel reçu par une adresse ; le nouveau les envoie après la réponse
+    (DeferredMailer) : on l'attend quelques secondes."""
+    for _ in range(wait * 4):
+        for summary in mail_messages():
+            if any(to['Address'] == email for to in summary['To']):
+                return json.loads(urllib.request.urlopen(f"{MAILPIT}/api/v1/message/{summary['ID']}",
+                                                         timeout=60).read())
+        time.sleep(0.25)
+    raise RuntimeError(f'aucun courriel pour {email}')
+
+
 def mailed_link(email):
-    """Le lien de connexion du dernier courriel reçu par une adresse, retenu par Mailpit."""
-    get = lambda path: json.loads(urllib.request.urlopen(MAILPIT + path, timeout=60).read())
-    for summary in sorted(get('/api/v1/messages')['messages'], key=lambda m: m['Created'], reverse=True):
-        if any(to['Address'] == email for to in summary['To']):
-            m = get(f"/api/v1/message/{summary['ID']}")
-            found = re.search(r'https?://[^\s"<]+/login_check\?[^\s"<]+', m['HTML'] or m['Text'])
-            if found:
-                return html.unescape(found.group(0))
-    raise RuntimeError(f'aucun lien de connexion pour {email}')
+    """Le lien de connexion du dernier courriel reçu par une adresse."""
+    m = last_mail(email)
+    found = re.search(r'https?://[^\s"<]+/login_check\?[^\s"<]+', m['HTML'] or m['Text'])
+    if not found:
+        raise RuntimeError(f'aucun lien de connexion pour {email}')
+    return html.unescape(found.group(0))
 NEW_EMAIL = 'compte-essai@example.invalid'  # .invalid : le DNS de développement lui donne un MX
 
 
@@ -1547,31 +1561,171 @@ def run_accounts(args):
                                                                   *r.stdout.splitlines()]
         return steps
 
-    sides = {}
+    def snapshot(side, base):
+        """Les courriels et les tables de comptes d'une copie, après les parcours. Deux courriels d'une
+        même requête partent dans un ordre ou l'autre (l'ancien les met en file) ; le nouveau prévient
+        les gestionnaires à la première connexion, et non à l'inscription."""
+        mails = [LOGIN_LINK.sub('<lien de connexion>', line.replace(side.url, '<site>'))
+                 for line in mail_lines(ordered=False)]
+        return {'courriels': mails,
+                **{table: ['\t'.join(row) for row in query(base, sql.format(**marks), NEW_SERVER)]
+                   for table, sql in ACCOUNT_QUERIES.items()}}
+
+    def new_only_checks(side, console, base):
+        """Ce que seul le nouveau fait, sur sa copie, après la photo comparée à l'ancien : la relecture
+        du module 5 (dev/plans/2026-10-26_comptes.md). Rend, pour chaque vérification, « conforme » ou
+        ce qui ne l'est pas."""
+        results = {}
+
+        def check(name, ok, detail=''):
+            results[f'nouveau seul : {name}'] = ['conforme' if ok else f'non conforme : {detail}']
+
+        def ask_link(client, email, headers=None):
+            """Demande un lien comme la page de connexion, jeton CSRF compris."""
+            token = dict(form_of(client, f'/{slug}/login').fields).get('_csrf_token', '')
+            return client.get(f'/{slug}/login', urllib.parse.urlencode({'email': email, '_csrf_token': token}).encode(),
+                              headers)
+
+        def notices(client):
+            return next((l for l in page_lines(side.url, *client.get(f'/{slug}/login')) if 'data-notices' in l), '')
+
+        # Le message de la page de connexion cite l'adresse saisie, échappée
+        anonymous = Client(side, None, slug)
+        ask_link(anonymous, '<b>x</b>@example.invalid')
+        shown = notices(anonymous)
+        check("message de la page de connexion échappé", '&lt;b&gt;' in shown and '<b>' not in shown, shown)
+
+        # Un nom d'hôte que BDOH ne connaît pas : 400, et pas de lien à ce nom
+        status = Client(side, None, slug).get(f'/{slug}/login', None, {'Host': 'piege.invalid'})[0]
+        check("hôte inconnu refusé", status == 400, f'statut {status}')
+
+        # Les liens sont limités par adresse et adresse IP : 3 par quart d'heure
+        client = Client(side, None, slug)
+        for _ in range(3):
+            ask_link(client, NEW_EMAIL)
+        ask_link(client, NEW_EMAIL)
+        shown = notices(client)
+        check("quatrième lien refusé", 'Trop de demandes' in shown, shown)
+
+        # Le courriel de bienvenue échappe les noms (il part en HTML)
+        signup = Client(side, None, slug)
+        form = form_of(signup, f'/{slug}/user/new')
+        signup.get(f'/{slug}/user/new', form.filled({
+            '[email]': 'compte-html@example.invalid', '[prenom]': '<b>Camille</b>', '[nom]': 'Essai',
+            '[organisme]': 'INRAE', '[telephone]': '0102030405', '[adresse]': 'Lyon',
+            '[categorie]': form.choices('[categorie]')[:1]}))
+        html_mail = last_mail('compte-html@example.invalid')['HTML']
+        check("noms échappés dans le courriel de bienvenue",
+              '&lt;b&gt;Camille' in html_mail and '<b>Camille' not in html_mail, html_mail[:200])
+
+        # Une panne du serveur de courriel ne fait échouer ni l'inscription ni la demande de lien
+        ENV_LOCAL.write_text(f'DATABASE_URL="{NEW_URL.format(base)}"\nMAILER_DSN=smtp://mailpit:1\n')
+        down = Client(side, None, slug)
+        form = form_of(down, f'/{slug}/user/new')
+        status = down.get(f'/{slug}/user/new', form.filled({
+            '[email]': 'compte-panne@example.invalid', '[prenom]': 'Camille', '[nom]': 'Panne',
+            '[organisme]': 'INRAE', '[telephone]': '0102030405', '[adresse]': 'Lyon',
+            '[categorie]': form.choices('[categorie]')[:1]}))[0]
+        created = query(base, "SELECT count(*) FROM utilisateur WHERE email = 'compte-panne@example.invalid'",
+                        NEW_SERVER)[0][0]
+        link_status = ask_link(down, manager)[0]
+        ENV_LOCAL.write_text(f'DATABASE_URL="{NEW_URL.format(base)}"\nMAILER_DSN=smtp://mailpit:1025\n')
+        check("panne du courriel sans erreur", status == 302 and created == '1' and link_status == 302,
+              f'inscription {status}, compte créé {created}, demande de lien {link_status}')
+
+        # Changer d'adresse déconnecte, et un lien part vers la nouvelle
+        user = Client(side, NEW_EMAIL, slug)
+        changed = 'compte-essai-2@example.invalid'
+        user.get(f'/{slug}/user/edit', form_of(user, f'/{slug}/user/edit').filled({'[email]': changed}))
+        status, headers, _ = user.get(f'/{slug}/user/edit')
+        try:
+            link = mailed_link(changed)
+        except RuntimeError:
+            link = ''
+        check("changer d'adresse déconnecte", status == 302 and 'login' in headers.get('Location', '') and link,
+              f"statut {status} {headers.get('Location', '')}, lien {'envoyé' if link else 'absent'}")
+
+        # Le cookie de 30 jours, seul, reconnecte et note la dernière connexion
+        boss = Client(side, manager, slug)
+        query(base, f"UPDATE utilisateur SET derniereconnection = '2000-01-01' WHERE email = '{manager}'", NEW_SERVER)
+        for cookie in [c for c in boss.jar if c.name != 'REMEMBERME']:
+            boss.jar.clear(cookie.domain, cookie.path, cookie.name)
+        status = boss.get(f'/{slug}/user/edit')[0]
+        recent = query(base, f"""SELECT derniereconnection > now() - interval '5 minutes' FROM utilisateur
+                                 WHERE email = '{manager}'""", NEW_SERVER)[0][0]
+        check("le cookie reconnecte et note la connexion", status == 200 and recent == 't',
+              f'statut {status}, date récente {recent}')
+
+        # Reconnecté par le cookie, une page refusée répond 403, sans renvoyer à la connexion
+        plain = Client(side, NEW_EMAIL.replace('compte-essai', 'compte-html'), slug)
+        for cookie in [c for c in plain.jar if c.name != 'REMEMBERME']:
+            plain.jar.clear(cookie.domain, cookie.path, cookie.name)
+        status = plain.get(f'/{slug}/admin/mesure/import')[0]
+        check("page refusée par le cookie : 403", status == 403, f'statut {status}')
+
+        # Les rôles suivent l'observatoire : gestionnaire ici, pas ailleurs (un gestionnaire qui n'administre
+        # pas tous les observatoires)
+        local, = query(base, f"""
+            SELECT u.email FROM utilisateur u JOIN role r ON r.utilisateur_id = u.id
+              JOIN observatoire o ON o.id = r.observatoire_id
+             WHERE r.valeur = 'gestionnaire' AND o.slug = '{slug}' AND u.roleadmin IS NULL
+               AND (u.finacces IS NULL OR u.finacces > now()) ORDER BY u.id LIMIT 1""", NEW_SERVER)[0]
+        elsewhere, = query(base, f"""
+            SELECT o.slug FROM observatoire o WHERE NOT EXISTS (
+                SELECT 1 FROM role r JOIN utilisateur u ON u.id = r.utilisateur_id
+                 WHERE u.email = '{local}' AND r.valeur = 'gestionnaire'
+                   AND (r.observatoire_id = o.id OR r.site_id IN (SELECT id FROM siteexperimental
+                                                                   WHERE observatoire_id = o.id)))
+             ORDER BY o.id LIMIT 1""", NEW_SERVER)[0]
+        boss = Client(side, local, slug)
+        statuses = [boss.get(f'/{s}/admin/mesure/import')[0] for s in (slug, elsewhere, slug)]
+        check("les rôles suivent l'observatoire", statuses == [200, 403, 200], f'statuts {statuses}')
+
+        # Un compte créé en console ne prévient pas les gestionnaires à sa première connexion
+        subprocess.run([*console, 'security:users:create', 'Dominique', 'Console', 'console@example.invalid',
+                        'FCT', 'non', '-n', '--env=prod'], capture_output=True)
+        urllib.request.urlopen(urllib.request.Request(MAILPIT + '/api/v1/messages', method='DELETE'), timeout=60)
+        Client(side, 'console@example.invalid', slug)
+        time.sleep(2)
+        subjects = [m['Subject'] for m in mail_messages()]
+        check("compte créé en console : pas de courriel aux gestionnaires", not subjects, f'courriels {subjects}')
+
+        # Les droits ne s'appliquent pas avec un jeton CSRF invalide
+        boss = Client(side, manager, slug)
+        right = f'/{slug}/user/right/{changed}'
+        form = form_of(boss, right)
+        before = query(base, "SELECT count(*) FROM role", NEW_SERVER)[0][0]
+        status = boss.get(right, form.filled({'[_token]': 'faux', '[utilisateurChronique]': form.choices('[utilisateurChronique]')[:5]}))[0]
+        after = query(base, "SELECT count(*) FROM role", NEW_SERVER)[0][0]
+        check("droits sans jeton CSRF valide : rien ne change", before == after and status == 200,
+              f'rôles {before} puis {after}, statut {status}')
+
+        # La commande refuse un observatoire inconnu
+        r = subprocess.run([*console, 'security:users:login-link', manager, 'INCONNU', '--env=prod'], capture_output=True)
+        check("commande : observatoire inconnu refusé", r.returncode != 0, f'code {r.returncode}')
+        return results
+
+    sides, checks = {}, {}
     for name, base in [('ancien', 'bdoh_accounts_old'), ('nouveau', 'bdoh_accounts_new')]:
         copy_base(template, base)
         urllib.request.urlopen(urllib.request.Request(MAILPIT + '/api/v1/messages', method='DELETE'), timeout=60)
         if name == 'ancien':
             side = SIDES['reference-17']
             with old_17_on(base, mailer_transport='smtp', mailer_host='mailpit', mailer_port='1025') as console:
-                steps = play(side, console)
+                sides[name] = {**play(side, console), **snapshot(side, base)}
         else:
             side = SIDES['new']
             # Les limites de fréquence repartent de zéro : d'une comparaison à l'autre, elles compteraient
             subprocess.run([*side.console, 'cache:pool:clear', 'cache.rate_limiter'], check=True, capture_output=True)
             with new_on(base, template, 'MAILER_DSN=smtp://mailpit:1025') as console:
-                steps = play(side, console)
-        # Deux courriels d'une même requête partent dans un ordre ou l'autre (l'ancien les met en file) ;
-        # le nouveau prévient les gestionnaires à la première connexion, et non à l'inscription
-        mails = [LOGIN_LINK.sub('<lien de connexion>', line.replace(side.url, '<site>'))
-                 for line in mail_lines(ordered=False)]
-        sides[name] = {**steps, 'courriels': mails,
-                       **{table: ['\t'.join(row) for row in query(base, sql.format(**marks), NEW_SERVER)]
-                          for table, sql in ACCOUNT_QUERIES.items()}}
+                sides[name] = {**play(side, console), **snapshot(side, base)}
+                checks = new_only_checks(side, console, base)
 
     report = Report('accounts')
     for part in sides['ancien']:
         report.add(part, sides['ancien'][part], sides['nouveau'].get(part, []))
+    for part, lines in checks.items():
+        report.add(part, ['conforme'], lines)
     report.close()
     print(f'Les instances lisent de nouveau {template}. Les deux copies restent pour examen :'
           ' bdoh_accounts_old et bdoh_accounts_new.')

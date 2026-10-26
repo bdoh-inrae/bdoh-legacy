@@ -23,10 +23,11 @@ $user = [
             ],
         ],
         'edit'                         => [
-            'title'       => 'Modifiy my BDOH account',
-            'submit'      => 'Save the changes',
-            'isCompleted' => 'Your BDOH account has been updated.',
-            'info'        => [
+            'title'                 => 'Modifiy my BDOH account',
+            'submit'                => 'Save the changes',
+            'isCompleted'           => 'Your BDOH account has been updated.',
+            'emailChanged(%email%)' => "Your address has changed: confirm it with the sign-in link just sent to “\u{a0}%email%\u{a0}”.",
+            'info'                  => [
                 'changeEmail' => 'Changing your e-mail address signs you out: you will sign in again with a link sent to the new address.',
             ],
         ],
@@ -146,6 +147,7 @@ $various = [
             'submit'        => 'Sign in',
         ],
         'login_link'      => [
+            'invalidForm'   => 'The form has expired: please ask for your link again.',
             'sent(%email%)' => "If a BDOH account exists for “\u{a0}%email%\u{a0}”, a sign-in link has just been sent to it. It is valid for 15 minutes.",
             'mail'          => [
                 'title'  => 'BDOH: your sign-in link',

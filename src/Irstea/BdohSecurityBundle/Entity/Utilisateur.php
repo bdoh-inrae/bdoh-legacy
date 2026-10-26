@@ -24,6 +24,10 @@ class Utilisateur implements UserInterface, EquatableInterface, Serializable
     const ROLE_ADMIN_FCT = 'FCT';
     const ROLE_ADMIN_TECH = 'TECH';
 
+    // Dans confirmationToken, un compte inscrit par le formulaire dont l'adresse attend d'être
+    // confirmée par une première connexion (BdohAuthenticationHandler)
+    const AWAITING_CONFIRMATION = 'inscription';
+
     /***************************************************************************
      * Data stored in database
      **************************************************************************/

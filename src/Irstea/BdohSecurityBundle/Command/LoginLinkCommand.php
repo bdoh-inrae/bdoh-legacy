@@ -7,6 +7,7 @@
 namespace Irstea\BdohSecurityBundle\Command;
 
 use Doctrine\ORM\EntityManagerInterface;
+use Irstea\BdohDataBundle\Entity\Observatoire;
 use Irstea\BdohSecurityBundle\Entity\Utilisateur;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -51,7 +52,14 @@ class LoginLinkCommand extends Command
             return Command::FAILURE;
         }
 
-        $this->router->getContext()->setParameter('_observatoire', strtoupper($input->getArgument('observatoire')));
+        $slug = strtoupper($input->getArgument('observatoire'));
+        if (null === $this->em->getRepository(Observatoire::class)->findOneBySlug($slug)) {
+            $output->writeln('<error>Aucun observatoire ' . $slug . '.</error>');
+
+            return Command::FAILURE;
+        }
+
+        $this->router->getContext()->setParameter('_observatoire', $slug);
         $output->writeln($this->loginLinkHandler->createLoginLink($user)->getUrl());
 
         return Command::SUCCESS;

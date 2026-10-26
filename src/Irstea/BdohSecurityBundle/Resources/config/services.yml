@@ -19,6 +19,13 @@ services:
     # Voteurs de droits et gestionnaire de connexion
     Irstea\BdohSecurityBundle\Security\:
         resource: '../../Security/'
-        exclude: '../../Security/BdohSecurityHandler.php'
+        exclude: '../../Security/{BdohSecurityHandler.php,Voter/ObservatoryRoleVoter.php}'
+
+    # Le voteur des rôles de Symfony, remplacé sous son identifiant : les rôles suivent l'observatoire
+    # de la page, et non celui de la connexion (Security/Voter/ObservatoryRoleVoter.php)
+    security.access.role_hierarchy_voter:
+        class: Irstea\BdohSecurityBundle\Security\Voter\ObservatoryRoleVoter
+        arguments: ['@security.role_hierarchy']
+        tags: [{ name: security.voter, priority: 245 }]
 
     irstea_bdoh_security.security.success_handler: '@Irstea\BdohSecurityBundle\Security\BdohAuthenticationHandler'

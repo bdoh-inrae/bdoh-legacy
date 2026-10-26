@@ -9,12 +9,15 @@ framework:
             policy: sliding_window
             limit: 10
             interval: '15 minutes'
-        # Par adresse e-mail : quelques liens par quart d'heure
+        # Par adresse e-mail et adresse IP : quelques liens par quart d'heure. Une limite par adresse
+        # e-mail seule laisserait n'importe qui empêcher un compte de recevoir son lien.
         login_link_email:
             policy: sliding_window
             limit: 3
             interval: '15 minutes'
+        # Chaque envoi du formulaire d'inscription, réussi ou non : de quoi corriger ses erreurs, pas
+        # d'essayer des adresses en masse
         signup_ip:
             policy: sliding_window
-            limit: 5
+            limit: 10
             interval: '1 hour'

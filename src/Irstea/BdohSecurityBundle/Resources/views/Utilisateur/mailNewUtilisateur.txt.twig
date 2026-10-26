@@ -1,6 +1,6 @@
-{{'security.utilisateur.newMailUtilisateur.body.hello'|trans}} {{ user.prenom|default('') }} {{ user.nom|default('') }},<br/><br/>
+{{'security.utilisateur.newMailUtilisateur.body.hello'|trans}} {{ user.prenom|default('')|e }} {{ user.nom|default('')|e }},<br/><br/>
 {{ 'security.utilisateur.newMailUtilisateur.body.step1'|trans|raw }}<br/><br/>
-{{ 'security.utilisateur.newMailUtilisateur.body.confirm'|trans }} <a href="{{ loginLink }}">{{ loginLink }}</a><br/>
+{{ 'security.utilisateur.newMailUtilisateur.body.confirm'|trans }} <a href="{{ loginLink|e }}">{{ loginLink|e }}</a><br/>
 {{ 'security.utilisateur.newMailUtilisateur.body.confirmLater'|trans }}<br/><br/>
 {{ 'security.utilisateur.newMailUtilisateur.body.step2'|trans|raw }}<br/><br/>
 {{ 'askDataAccess'|trans }}{{ 'deux_points'|trans }} <a href="{{ url('bdoh_security_besoin_new') }}">{{ url('bdoh_security_besoin_new') }}</a><br/>

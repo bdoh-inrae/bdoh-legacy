@@ -19,11 +19,12 @@
         <div class="well" style="margin-bottom:14px;">
             <p>{{ 'security.login_form.info'|trans }}</p>
             <form action="{{ path('bdoh_security_login_send') }}" method="post">
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token('login_link') }}"/>
 
                 <!-- Username -->
                 <div class="form-group">
                     <label for="email">{{ 'security.login_form.username' | trans }}</label>
-                    <input style="width:25%;" class="form-control" type="email" id="email" name="email" value="{{ last_username }}" required="required" autocomplete="email"/>
+                    <input style="width:25%;" class="form-control" type="text" inputmode="email" id="email" name="email" value="{{ last_username }}" required="required" autocomplete="email"/>
                 </div>
 
                 <div style="display:flex;">

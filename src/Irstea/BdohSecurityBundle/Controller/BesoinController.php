@@ -10,17 +10,17 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\ExpressionLanguage\Expression;
 use Irstea\BdohBundle\Controller\Controller;
+use Irstea\BdohBundle\Mailer\DeferredMailer;
 use Irstea\BdohSecurityBundle\Entity\Besoin;
 use Irstea\BdohSecurityBundle\Entity\Utilisateur;
 use Irstea\BdohSecurityBundle\Form\BesoinType;
 use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\Mailer\MailerInterface;
 use Symfony\Component\Mime\Email;
 
 #[Route('/besoin')]
 class BesoinController extends Controller
 {
-    public function __construct(private MailerInterface $mailer)
+    public function __construct(private DeferredMailer $mailer)
     {
     }
 
@@ -71,10 +71,8 @@ class BesoinController extends Controller
                         )
                     );
 
-                // Swiftmailer n'envoyait rien, sans erreur, sans gestionnaire à qui écrire
-                if ($validatorMails) {
-                    $this->mailer->send($message);
-                }
+                // Après la réponse, et pas sans destinataire (DeferredMailer)
+                $this->mailer->send($message);
 
                 // Redirects to home, with a success message
                 $this->getSession()->getFlashBag()->add('success', $this->get('translator')->trans('security.besoin.create.isCompleted'));

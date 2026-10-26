@@ -8,8 +8,9 @@ namespace Irstea\BdohSecurityBundle\Controller;
 
 use Symfony\Component\Routing\Attribute\Route;
 use Irstea\BdohBundle\Controller\Controller;
+use Irstea\BdohBundle\Mailer\DeferredMailer;
+use Irstea\BdohSecurityBundle\Entity\Utilisateur;
 use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\Mailer\MailerInterface;
 use Symfony\Component\Mime\Email;
 use Symfony\Component\RateLimiter\RateLimiterFactoryInterface;
 use Symfony\Component\Security\Http\LoginLink\LoginLinkHandlerInterface;
@@ -56,29 +57,39 @@ class SecurityController extends Controller
 
     /**
      * Envoie un lien de connexion à l'adresse saisie, si un compte y correspond. La réponse est la
-     * même dans tous les cas, pour ne pas dire quelles adresses ont un compte ; les envois sont
-     * limités par adresse IP et par adresse e-mail.
+     * même dans tous les cas, pour ne pas dire quelles adresses ont un compte, et le courriel part
+     * après elle (DeferredMailer). Les envois sont limités par adresse IP, et par adresse e-mail
+     * depuis une même adresse IP : une limite par adresse e-mail seule laisserait n'importe qui
+     * empêcher un compte de se connecter.
      */
     #[Route('/login', name: 'bdoh_security_login_send', methods: ['POST'])]
     public function sendLoginLinkAction(
         Request $request,
         LoginLinkHandlerInterface $loginLinkHandler,
-        MailerInterface $mailer,
+        DeferredMailer $mailer,
         RateLimiterFactoryInterface $loginLinkIpLimiter,
         RateLimiterFactoryInterface $loginLinkEmailLimiter
     ) {
         $email = trim((string) $request->request->get('email'));
         $translator = $this->get('translator');
+        $flashes = $this->getSession()->getFlashBag();
         $request->getSession()->set(CoreSecurity::LAST_USERNAME, $email);
 
-        if (!$loginLinkIpLimiter->create($request->getClientIp())->consume()->isAccepted()
-            || !$loginLinkEmailLimiter->create(mb_strtolower($email))->consume()->isAccepted()) {
-            $this->getSession()->getFlashBag()->add('error', $translator->trans('security.tooManyRequests'));
+        if (!$this->isCsrfTokenValid('login_link', (string) $request->request->get('_csrf_token'))) {
+            $flashes->add('error', $translator->trans('security.login_link.invalidForm'));
 
             return $this->redirectToRoute('bdoh_security_login');
         }
 
-        $user = '' === $email ? null : $this->getSecurityRepo('Utilisateur')->findOneByEmail($email);
+        $ip = (string) $request->getClientIp();
+        if (!$loginLinkIpLimiter->create($ip)->consume()->isAccepted()
+            || !$loginLinkEmailLimiter->create(mb_strtolower($email) . '|' . $ip)->consume()->isAccepted()) {
+            $flashes->add('error', $translator->trans('security.tooManyRequests'));
+
+            return $this->redirectToRoute('bdoh_security_login');
+        }
+
+        $user = $this->findUser($email);
         if (null !== $user) {
             // Sans la requête, qui ferait perdre au routeur l'observatoire courant
             $link = $loginLinkHandler->createLoginLink($user);
@@ -94,9 +105,29 @@ class SecurityController extends Controller
             );
         }
 
-        $this->getSession()->getFlashBag()->add('success', $translator->trans('security.login_link.sent(%email%)', ['%email%' => $email]));
+        // L'adresse est échappée : les messages s'affichent en HTML (toastr)
+        $flashes->add('success', $translator->trans('security.login_link.sent(%email%)', ['%email%' => htmlspecialchars($email)]));
 
         return $this->redirectToRoute('bdoh_security_login');
+    }
+
+    /**
+     * Le compte d'une adresse, à la casse près si elle n'en désigne qu'un : l'adresse saisie ne
+     * s'écrit pas toujours comme à l'inscription.
+     */
+    private function findUser(string $email): ?Utilisateur
+    {
+        if ('' === $email) {
+            return null;
+        }
+        $repository = $this->getSecurityRepo('Utilisateur');
+        $users = $repository->findBy(['email' => $email]) ?: $repository->createQueryBuilder('u')
+            ->where('LOWER(u.email) = LOWER(:email)')
+            ->setParameter('email', $email)
+            ->getQuery()
+            ->getResult();
+
+        return 1 === count($users) ? $users[0] : null;
     }
 
     /**

@@ -23,10 +23,11 @@ $user = [
             ],
         ],
         'edit'                         => [
-            'title'       => 'Modifier mon compte BDOH',
-            'submit'      => 'Enregistrer les modifications',
-            'isCompleted' => 'Votre compte BDOH a été mis à jour.',
-            'info'        => [
+            'title'                 => 'Modifier mon compte BDOH',
+            'submit'                => 'Enregistrer les modifications',
+            'isCompleted'           => 'Votre compte BDOH a été mis à jour.',
+            'emailChanged(%email%)' => "Votre adresse a changé : confirmez-la par le lien de connexion qui vient d'être envoyé à «\u{a0}%email%\u{a0}».",
+            'info'                  => [
                 'changeEmail' => "Changer d'adresse e-mail vous déconnecte : vous vous reconnecterez par un lien envoyé à la nouvelle adresse.",
             ],
         ],
@@ -146,6 +147,7 @@ $various = [
             'submit'        => 'Se connecter',
         ],
         'login_link'      => [
+            'invalidForm'   => 'Le formulaire a expiré : demandez de nouveau votre lien.',
             'sent(%email%)' => "Si un compte BDOH existe pour l'adresse «\u{a0}%email%\u{a0}», un lien de connexion vient d'y être envoyé. Il est valable 15 minutes.",
             'mail'          => [
                 'title'  => 'BDOH : votre lien de connexion',

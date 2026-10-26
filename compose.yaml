@@ -41,9 +41,11 @@ services:
     user: "${HOST_UID:?}:${HOST_GID:?}"
     # Comme la référence et la production : environnement prod ; la console s'emploie en dev avec
     # « docker exec -e APP_ENV=dev bdoh-app php bin/console … ».
+    # SYMFONY_TRUSTED_HOSTS : le seul nom sous lequel on joint le conteneur ($$ : un $ pour compose)
     environment:
       APP_ENV: prod
       APP_DEBUG: 0
+      SYMFONY_TRUSTED_HOSTS: '^172\.30\.26\.10$$'
     volumes:
       - .:/var/www/bdoh
     dns: [172.30.26.53]  # service dns, pour le contrôle des adresses e-mail
