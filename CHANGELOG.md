@@ -33,3 +33,5 @@ Bogues de l'ancien BDOH, corrigés dans le nouveau (détail dans `dev/difference
 - Une tâche ne s'annule ou ne se relance que si son état le permet ; une annulation et un démarrage simultanés ne donnent plus une tâche annulée qui tourne.
 - Importer un barème sans fichier, ou d'un type refusé, affiche le message d'erreur au lieu d'une erreur interne.
 - Créer un compte d'administration en ligne de commande ne donne tous les droits que si on le demande.
+- Les seuils de validité d'une chronique ne sont plus arrondis à trois décimales à chaque enregistrement.
+- Demander le calcul des taux de remplissage d'une chronique inconnue répond 404 au lieu d'une erreur interne.

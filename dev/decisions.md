@@ -49,6 +49,10 @@ Les choix techniques du portage, avec leur raison : ce qu'un prochain Claude dé
   - Les messages flash s'affichent en HTML (toastr) : une saisie citée s'échappe.
   - Le routeur passe avant le pare-feu : une route que le pare-feu traite en POST doit accepter POST.
   - Après une suppression faite par un script, comparer le fichier à l'ancien : des méthodes sont parties ainsi, deux fois.
+  - Sonata 4 lit autrement des réglages vides ou absents : `getExportFormats()` vide y vaut « tous les formats » (d'où `NoExportExtension`, qui retire la route) ; `ModelListType` montre « Supprimer » sans regarder les droits (`Admin::listDeleteButton`, condition de Sonata 3).
+  - Le `UrlType` de Symfony 7 n'ajoute `http://` qu'en se rendant en `type="text"` ; `default_protocol: null` garde `type="url"` mais laisse passer `javascript:` (`LinkType` rend les deux).
+  - PHP écrit un nombre en texte à 14 chiffres significatifs (réglage `precision`), y compris pour l'envoyer à PostgreSQL.
+  - Les `findOneById` des dépôts de BDOH ne cherchent que dans l'observatoire de la page et lèvent une exception sur une entité absente (`getSingleResult`) : `find()` n'en est pas l'équivalent ; attraper `NoResultException` pour répondre 404.
   - `max()` et `min()` d'un tableau vide lèvent une erreur en PHP 8, quand PHP 7 rendait `false` avec un avertissement (`LoggerController`).
   - Un nom de classe à la mauvaise casse ne se charge que si la classe l'a déjà été : PHP ne tient pas compte de la casse des classes, le chargement automatique et Doctrine, si (`LoggerController`, `HistoriqueAdministrationDataset`). (2026-10-26)
 
