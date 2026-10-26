@@ -29,7 +29,7 @@ Ce que le nouveau BDOH fait autrement que l'ancien, exprès : bogues de l'ancien
 
 - **Taux de remplissage d'une chronique inconnue.** L'adresse qui met en file le calcul des taux de remplissage d'une chronique (`/<observatoire>/admin/fillingrate?id=…`, qu'aucune page ne propose plus : « à virer ? » dans l'ancien code) répond par une erreur interne quand la chronique n'existe pas : le dépôt lève une exception (`findOneById`, `getSingleResult`) avant le test prévu pour ce cas. Le nouveau répond 404. Corrigé le 2026-10-26 (administration) ; vérification : « taux de remplissage : chronique inconnue » dans `compare.py admin`, seul écart admis des contrôleurs à part.
 
-- **Import d'un barème sans fichier.** Sans fichier, ou avec un fichier d'un type refusé, l'ancien s'arrête sur une erreur 500 en nettoyant un importeur qui n'existe pas (`TransformationController::importBaremeStep2Action`). Le nouveau affiche le message d'erreur. Relevé par la relecture du portage des imports, corrigé le 2026-10-26 ; vérification : les cas « barème, sans fichier » et « barème, fichier PDF » de `compare.py imports`, seuls écarts admis de ce mode.
+- **Import d'un barème sans fichier.** Sans fichier, ou avec un fichier d'un type refusé, l'ancien s'arrête sur une erreur 500 en nettoyant un importeur qui n'existe pas (`TransformationController::importBaremeStep2Action`). Le nouveau affiche le message d'erreur. Relevé par la relecture du portage des imports, corrigé le 2026-10-26 ; vérification : les cas « barème, sans fichier » et « barème, fichier PDF » de `compare.py imports`, seuls écarts admis de ce mode avec les deux cas écrits en HTML (« Corrections de sécurité »).
 
 ## Améliorations
 

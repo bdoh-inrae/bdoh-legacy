@@ -55,11 +55,24 @@ abstract class Errors
 
         foreach ($this->errors as $type => $errorsForType) {
             foreach ($errorsForType as $params) {
-                $errorsTrans[] = $translator->trans($type, $params, static::ERRORS_CATALOG);
+                $errorsTrans[] = $translator->trans($type, array_map([static::class, 'escape'], $params), static::ERRORS_CATALOG);
             }
         }
 
         return $errorsTrans;
+    }
+
+    /**
+     * Les pages affichent les messages en HTML : une valeur citée, lue dans un fichier importé ou saisie,
+     * s'échappe ; les messages eux-mêmes gardent leur HTML.
+     *
+     * @param mixed $value
+     *
+     * @return mixed
+     */
+    protected static function escape($value)
+    {
+        return \is_string($value) || $value instanceof \Stringable ? htmlspecialchars((string) $value) : $value;
     }
 
     /**

@@ -1105,6 +1105,11 @@ def import_cases(base):
     add('qualité inconnue', bdoh(unknown))
     add('mauvaise unité', bdoh(rows(22), unit='inconnue'))
     add('station inconnue', bdoh(rows(23), st='INCONNUE'))
+    # Une station et une valeur écrites en HTML, que les messages d'erreur citent
+    add('station écrite en HTML', bdoh(rows(24), st='<b>INCONNUE</b>'))
+    html_value = rows(25)
+    html_value[1][1] = '<i>abc</i>'
+    add('valeur écrite en HTML', bdoh(html_value))
     # Refusés dès l'étape 2, avant que l'importeur existe
     add('format inconnu', bdoh(rows(12)), format='Inconnu')
     add('sans fichier', None)

@@ -76,3 +76,4 @@ Sonata Admin 4.43 et `sonata-project/doctrine-orm-admin-bundle` 4.21 prennent Sy
   - Relevé en route, dans `dev/local/security.md` : les erreurs d'import et de conversion citent en HTML brut des valeurs lues dans le fichier ou saisies ; correction à faire à part.
   - À essayer dans un navigateur (Lou) : les pages des couleurs (sélecteur de couleur) et de la conversion, compilées par l'ancien et copiées de la référence, et les onglets et filtres de l'historique.
   - Suite : l'échappement des erreurs, puis l'étape 5, la relecture.
+- 2026-10-26 : les valeurs citées dans les erreurs d'import et de conversion s'échappent (`Errors::translations`, `dev/local/security.md`) ; `compare.py imports` : deux cas de plus, seuls nouveaux écarts.
