@@ -1,0 +1,146 @@
+{% extends '@SonataAdmin/standard_layout.html.twig' %}
+
+{# ajout du favicon #}
+{% block meta_tags %}
+    {{ parent() }}
+<link rel="shortcut icon" href="{{ asset('favicon.ico') }}"/>
+{% endblock %}
+
+{# titre de la page #}
+{% block sonata_head_title %}
+    BDOH Admin - {{ currentObservatoire() }}
+    {% if action is defined %}
+        -
+        {% for menu in breadcrumbs_builder.breadcrumbs(admin, action) %}
+            {% if loop.last %}
+                {%- set translation_domain = menu.extra('translation_domain', 'messages') -%}
+                {%- set label = menu.label -%}
+                {%- if translation_domain is not same as(false) -%}
+                    {%- set label = label|trans(menu.extra('translation_params', {}), translation_domain) -%}
+                {%- endif -%}
+                {% if action == 'edit' %}
+                    {% set entity_edition = admin.classnameLabel~'_edit_defined' %}
+                    {{ "title_edit_defined"|trans({'%entity%': entity_edition|trans, '%name%': label}) }}
+                {% elseif action == 'create' %}
+                    {% set entity_creation = admin.classnameLabel~'_create_undefined' %}
+                    {{ "title_create_undefined"|trans({'%entity%': entity_creation|trans}) }}
+                {% elseif action == 'delete' %}
+                    {% set entity_deletion = admin.classnameLabel~'_delete_defined' %}
+                    {{ "title_delete_defined"|trans({'%entity%': entity_deletion|trans, '%name%': admin.tostring(object)}) }}
+                {% else %}
+                    {{ label }}
+                {% endif %}
+            {% endif %}
+        {% endfor %}
+    {% else %}
+        {% if _title is not empty %}
+            -
+            {{ _title|striptags|raw }}
+        {% endif %}
+    {% endif %}
+{% endblock %}
+
+{# changement du lien qui ne sert a rien en un span dans la barre de titre #}
+{% block tab_menu_navbar_header %}
+    {% if _navbar_title is not empty %}
+        <div class="navbar-header">
+            <span class="navbar-brand">{{ _navbar_title|raw }}</span>
+        </div>
+    {% endif %}
+{% endblock %}
+
+{# suppression du lien vers sonata-project en bas du menu de gauche #}
+{% block side_bar_after_nav %}{% endblock %}
+
+{# breadcrumb : suppression du burger button (toggle)
+suppression du home button (confusing avec le home de BDOH)
+et amélioration des titres création, modification et suppression #}
+{% block sonata_nav %}
+    <nav class="navbar navbar-static-top" role="navigation" {{ stimulus_target('sonata-sticky', 'topNavbar') }}>
+        <div class="navbar-left">
+            {% block sonata_breadcrumb %}
+                <div class="hidden-xs">
+                    {% if _breadcrumb is not empty or action is defined %}
+                        <ol class="nav navbar-top-links breadcrumb">
+                            {% if _breadcrumb is empty %}
+                                {% if action is defined %}
+                                    <li><span><b>{{ currentObservatoire() }}</b></span></li>
+                                    {% for menu in breadcrumbs_builder.breadcrumbs(admin, action) %}
+                                        {% if not loop.first %}
+                                            {%- set translation_domain = menu.extra('translation_domain', 'messages') -%}
+                                            {%- set label = menu.label -%}
+                                            {%- if translation_domain is not same as(false) -%}
+                                                {%- set label = label|trans(menu.extra('translation_params', {}), translation_domain) -%}
+                                            {%- endif -%}
+                                            {% if not loop.last %}
+                                                <li>
+                                                    {% if menu.uri is not empty %}
+                                                        <a href="{{ menu.uri }}">
+                                                            {% if menu.extra('safe_label', true) %}
+                                                                {{- label|raw -}}
+                                                            {% else %}
+                                                                {{- label -}}
+                                                            {% endif %}
+                                                        </a>
+                                                    {% else %}
+                                                        <span>{{ label }}</span>
+                                                    {% endif %}
+                                                </li>
+                                            {% else %}
+                                                {% if action == 'edit' %}
+                                                    {% set entity_edition = admin.classnameLabel~'_edit_defined' %}
+                                                    {% set label = "title_edit_defined"|trans({'%entity%': entity_edition|trans, '%name%': label}) %}
+                                                {% elseif action == 'create' %}
+                                                    {% set entity_creation = admin.classnameLabel~'_create_undefined' %}
+                                                    {% set label = "title_create_undefined"|trans({'%entity%': entity_creation|trans}) %}
+                                                {% elseif action == 'delete' %}
+                                                    {% set entity_deletion = admin.classnameLabel~'_delete_defined' %}
+                                                    {% set label = "title_delete_defined"|trans({'%entity%': entity_deletion|trans, '%name%': admin.tostring(object)}) %}
+                                                {% endif %}
+                                                <li class="active"><span>{{ label }}</span></li>
+                                            {% endif %}
+                                        {% endif %}
+                                    {% endfor %}
+                                {% endif %}
+                            {% else %}
+                                {{ _breadcrumb|raw }}
+                            {% endif %}
+                        </ol>
+                    {% endif %}
+                </div>
+            {% endblock sonata_breadcrumb %}
+        </div>
+        {# Sonata 3 ne montrait ce menu qu'au rôle ROLE_SONATA_ADMIN, que BDOH ne donne pas #}
+        {% block sonata_top_nav_menu %}
+            {% if app.user and is_granted('ROLE_SONATA_ADMIN') %}
+                {{ parent() }}
+            {% endif %}
+        {% endblock %}
+    </nav>
+{% endblock sonata_nav %}
+
+        {% block sonata_left_side %}
+            <aside class="main-sidebar" style="width: 242px">
+                <section class="sidebar">
+                    {% block sonata_side_nav %}
+                        {% block sonata_sidebar_search %}
+                            <form action="{{ path('sonata_admin_search') }}" method="GET" class="sidebar-form" role="search">
+                                <div class="input-group custom-search-form">
+                                    <input type="text" name="q" value="{{ app.request.query.get('q') }}" class="form-control" placeholder="{{ 'search_placeholder'|trans({}, 'SonataAdminBundle') }}">
+                                    <span class="input-group-btn">
+                                            <button class="btn btn-flat" type="submit">
+                                                <i class="fa fa-search" aria-hidden="true"></i>
+                                            </button>
+                                        </span>
+                                </div>
+                            </form>
+                        {% endblock sonata_sidebar_search %}
+
+                        {% block side_bar_before_nav %} {% endblock %}
+                        {% block side_bar_nav %}
+                            {{ knp_menu_render('sonata_admin_sidebar', {template: get_global_template('knp_menu_template')}) }}
+                        {% endblock side_bar_nav %}
+                    {% endblock sonata_side_nav %}
+                </section>
+            </aside>
+        {% endblock sonata_left_side %}

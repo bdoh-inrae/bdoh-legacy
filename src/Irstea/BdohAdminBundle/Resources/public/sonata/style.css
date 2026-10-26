@@ -1,0 +1,31 @@
+/* Repris de Resources/assets/entries/sonata/style.less de l'ancien BDOH ; fam-icons.css à côté. */
+
+label.required::after {
+    content: none;
+}
+label.required.control-label::after {
+    content: "*";
+}
+aside.main-sidebar ul.sidebar-menu > li.last a{
+    color:white;
+    text-align:center;
+    padding:12px 3px 12px 0;
+}
+ol.nav.navbar-top-links.breadcrumb li span{
+    display:inline-block;
+}
+span.toolbox-btns {
+    vertical-align:5px;
+    display:inline-block;
+    margin:-5px 0 -5px 5px;
+}
+span.toolbox-btns a {
+    display:inline-block;
+    border-radius:3px;
+    border:1px solid #ccc;
+    padding:5px;
+    -webkit-box-shadow:inset 0 1px 0 rgba(255, 255, 255, 0.15), 0 1px 1px rgba(0, 0, 0, 0.075);
+    box-shadow:inset 0 1px 0 rgba(255, 255, 255, 0.15), 0 1px 1px rgba(0, 0, 0, 0.075);
+    line-height:1;
+    font-size:11px;
+}

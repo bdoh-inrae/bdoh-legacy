@@ -1,6 +1,14 @@
-# Les routes des imports et des transformations (module 4 du portage), dans l'ordre de l'ancien
-# Resources/config/routing.yml. Celles de Sonata et des autres contrôleurs de l'administration
-# attendent le module 6 dans config/routes_pending/admin.yaml.
+# Les routes de l'administration, dans l'ordre de l'ancien Resources/config/routing.yml. Celles des
+# administrations et des contrôleurs pas encore portés attendent dans config/routes_pending/admin.yaml.
+
+admin:
+    resource: '@SonataAdminBundle/Resources/config/routing/sonata_admin.php'
+    prefix: /
+
+_sonata_admin:
+    resource: .
+    type: sonata_admin
+    prefix: /
 
 bdoh_admin_measure_import_stop:
     path: /mesure/import/stop

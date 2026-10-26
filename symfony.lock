@@ -35,8 +35,32 @@
             "migrations/.gitignore"
         ]
     },
+    "knplabs/knp-menu-bundle": {
+        "version": "v3.8.0"
+    },
     "phpstan/phpstan": {
         "version": "2.3.1"
+    },
+    "sonata-project/admin-bundle": {
+        "version": "4.43.0"
+    },
+    "sonata-project/block-bundle": {
+        "version": "5.5.0"
+    },
+    "sonata-project/doctrine-extensions": {
+        "version": "2.6.0"
+    },
+    "sonata-project/doctrine-orm-admin-bundle": {
+        "version": "4.21.0"
+    },
+    "sonata-project/exporter": {
+        "version": "3.4.0"
+    },
+    "sonata-project/form-extensions": {
+        "version": "2.7.0"
+    },
+    "sonata-project/twig-extensions": {
+        "version": "2.6.0"
     },
     "symfony/console": {
         "version": "7.4",
@@ -155,6 +179,21 @@
         "files": [
             "config/packages/security.yaml",
             "config/routes/security.yaml"
+        ]
+    },
+    "symfony/stimulus-bundle": {
+        "version": "3.6",
+        "recipe": {
+            "repo": "github.com/symfony/recipes",
+            "branch": "main",
+            "version": "3.3",
+            "ref": "7ce779ee74ea8d8aae6afed73e8438af5a392b30"
+        },
+        "files": [
+            "assets/controllers.json",
+            "assets/controllers/csrf_protection_controller.js",
+            "assets/controllers/hello_controller.js",
+            "assets/stimulus_bootstrap.js"
         ]
     },
     "symfony/translation": {

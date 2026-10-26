@@ -352,7 +352,7 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *         enabled?: bool|Param, // Default: false
  *     },
  *     serializer?: bool|array{ // Serializer configuration
- *         enabled?: bool|Param, // Default: false
+ *         enabled?: bool|Param, // Default: true
  *         enable_attributes?: bool|Param, // Default: true
  *         name_converter?: scalar|Param|null,
  *         circular_reference_handler?: scalar|Param|null,
@@ -1406,6 +1406,32 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *     enable_profiler?: bool|Param, // Whether or not to enable the profiler collector to calculate and visualize migration status. This adds some queries overhead. // Default: false
  *     transactional?: bool|Param, // Whether or not to wrap migrations in a single transaction. // Default: true
  * }
+ * @psalm-type KnpMenuConfig = array{
+ *     providers?: array{
+ *         builder_alias?: bool|Param, // Default: true
+ *     },
+ *     twig?: array{
+ *         template?: scalar|Param|null, // Default: "@KnpMenu/menu.html.twig"
+ *     },
+ *     route_voter?: bool|Param, // Default: true
+ *     default_renderer?: scalar|Param|null, // Default: "twig"
+ * }
+ * @psalm-type StimulusConfig = array{
+ *     controller_paths?: list<scalar|Param|null>,
+ *     controllers_json?: scalar|Param|null, // Default: "%kernel.project_dir%/assets/controllers.json"
+ * }
+ * @psalm-type SonataDoctrineOrmAdminConfig = array{
+ *     entity_manager?: scalar|Param|null, // Default: null
+ *     audit?: array{
+ *         force?: bool|Param, // Default: true
+ *     },
+ *     templates?: array{
+ *         types?: array{
+ *             list?: array<string, scalar|Param|null>,
+ *             show?: array<string, scalar|Param|null>,
+ *         },
+ *     },
+ * }
  * @psalm-type ConfigType = array{
  *     imports?: ImportsConfig,
  *     parameters?: ParametersConfig,
@@ -1417,6 +1443,9 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *     doctrine?: DoctrineConfig,
  *     bazinga_js_translation?: BazingaJsTranslationConfig,
  *     doctrine_migrations?: DoctrineMigrationsConfig,
+ *     knp_menu?: KnpMenuConfig,
+ *     stimulus?: StimulusConfig,
+ *     sonata_doctrine_orm_admin?: SonataDoctrineOrmAdminConfig,
  *     "when@dev"?: array{
  *         imports?: ImportsConfig,
  *         parameters?: ParametersConfig,
@@ -1428,6 +1457,9 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *         doctrine?: DoctrineConfig,
  *         bazinga_js_translation?: BazingaJsTranslationConfig,
  *         doctrine_migrations?: DoctrineMigrationsConfig,
+ *         knp_menu?: KnpMenuConfig,
+ *         stimulus?: StimulusConfig,
+ *         sonata_doctrine_orm_admin?: SonataDoctrineOrmAdminConfig,
  *     },
  *     "when@prod"?: array{
  *         imports?: ImportsConfig,
@@ -1440,6 +1472,9 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *         doctrine?: DoctrineConfig,
  *         bazinga_js_translation?: BazingaJsTranslationConfig,
  *         doctrine_migrations?: DoctrineMigrationsConfig,
+ *         knp_menu?: KnpMenuConfig,
+ *         stimulus?: StimulusConfig,
+ *         sonata_doctrine_orm_admin?: SonataDoctrineOrmAdminConfig,
  *     },
  *     "when@test"?: array{
  *         imports?: ImportsConfig,
@@ -1452,6 +1487,9 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *         doctrine?: DoctrineConfig,
  *         bazinga_js_translation?: BazingaJsTranslationConfig,
  *         doctrine_migrations?: DoctrineMigrationsConfig,
+ *         knp_menu?: KnpMenuConfig,
+ *         stimulus?: StimulusConfig,
+ *         sonata_doctrine_orm_admin?: SonataDoctrineOrmAdminConfig,
  *     },
  *     ...<string, ExtensionType|array{ // extra keys must follow the when@%env% pattern or match an extension alias
  *         imports?: ImportsConfig,

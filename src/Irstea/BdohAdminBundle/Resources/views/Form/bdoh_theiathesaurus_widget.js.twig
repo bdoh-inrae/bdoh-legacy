@@ -1,0 +1,80 @@
+jQuery(function() { // une fois la page chargée...
+    const $ = jQuery;
+
+    const createQuery = term => ({
+        query: `
+            PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+            PREFIX theia: <https://w3id.org/ozcar-theia/>
+            SELECT REDUCED ?uri ?prefLabel
+            FROM theia:
+            WHERE {
+                ?uri skos:prefLabel ?prefLabel .
+                ?uri a theia:CategoryOfVariable .
+                FILTER (
+                    lang(?prefLabel) = "en"
+                    && CONTAINS(LCASE(?prefLabel), "${term.toLowerCase()}")
+                )
+            }
+            ORDER BY ?prefLabel
+            LIMIT 10
+            `
+            .replaceAll(/\s+/g, ' ')
+    });
+
+    const processResults = data => ({
+        results: data.results.bindings.map(
+            entry => ({
+                prefLabel: entry.prefLabel.value,
+                uri: entry.uri.value
+            })
+        )
+    });
+
+    function reloadSelection (element, callback) {
+        const uris = element.val().split(',');
+        if (uris.length === 0) {
+            callback([]);
+        }
+
+        const values = uris
+            .map(uri => uri.replace('https://w3id.org/ozcar-theia/', 'theia:'))
+            .join(', ');
+
+        $.ajax({
+            method: 'GET',
+            url: {{ ( thesaurusUrl ~ "/sparql" ) | json_encode | raw }},
+            dataType: 'json',
+            data: {
+                query: `
+                    PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+                    PREFIX theia: <https://w3id.org/ozcar-theia/>
+                    SELECT ?uri ?prefLabel
+                    FROM theia:
+                    WHERE {
+                        ?uri skos:prefLabel ?prefLabel .
+                        FILTER ( ?uri IN (${values}) )
+                    }`
+                    .replaceAll(/\s+/g, ' ')
+            },
+            success: data => callback(processResults(data).results)
+        });
+    }
+
+    $('#{{ id }}').select2({
+        width: '100%',
+        multiple: {{ multiple | json_encode }},
+        minimumInputLength: 0,
+        id: 'uri',
+        separator: ',',
+        ajax: {
+            method: 'GET',
+            url: {{ ( thesaurusUrl ~ "/sparql" ) | json_encode | raw }},
+            dataType: 'json',
+            data: createQuery,
+            results: processResults
+        },
+        formatResult: result => result.prefLabel,
+        formatSelection: selection => selection.prefLabel,
+        initSelection: reloadSelection
+    });
+});

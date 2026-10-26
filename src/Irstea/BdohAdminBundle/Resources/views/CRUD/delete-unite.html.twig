@@ -1,0 +1,56 @@
+{% extends '@IrsteaBdohAdmin/CRUD/delete.html.twig' %}
+
+{# redefinition du contenu de confirmation de la suppression de l'unité pour préciser les types de paramètre qui utilisent cette unité #}
+{% from 'macros.html.twig' import i18nEntityLabel %}
+{% block content %}
+    <div class="sonata-ba-delete">
+        <div class="box box-danger">
+            <div class="box-header">
+                <h3 class="box-title">{{ 'title_delete'|trans({}, 'SonataAdminBundle') }}</h3>
+            </div>
+            <div class="box-body">
+                {% if admin.parameterTypes and admin.parameterTypes|length %}
+                    <p style="margin-bottom:5px;">
+                        <b>{{ 'admin.help.unite.warning-unit-has-parameter-types'|trans({'%count%': admin.parameterTypes|length}) }}</b>
+                    </p>
+                    <ul style="margin-bottom:0;">
+                        {% for p in admin.parameterTypes %}
+                            <li>
+                                {% if is_granted('EDIT', p) %}
+                                    <a href="{{ path('bdoh_admin_typeparametre_edit', {id:p.id}) }}">
+                                        {{ i18nEntityLabel(p, 'nom') }}
+                                    </a>
+                                {% else %}
+                                    {{ i18nEntityLabel(p, 'nom') }}
+                                {% endif %}
+                            </li>
+                        {% endfor %}
+                    </ul>
+                    <p style="margin-top:20px;">
+                        {{ 'admin.help.unite.confirm-delete-unit(%name%)'|trans({'%name%':admin.toString(object)}) }}<br>
+                        <small>({{ 'admin.help.unite.confirm-delete-unit-info'|trans }})</small>
+                    </p>
+                {% else %}
+                    {{ 'message_delete_confirmation'|trans({'%object%':admin.toString(object)}, 'SonataAdminBundle') }}
+                {% endif %}
+            </div>
+            <div class="box-footer clearfix">
+                <form method="POST" action="{{ admin.generateObjectUrl('delete', object) }}">
+                    <input type="hidden" name="_method" value="DELETE">
+                    <input type="hidden" name="_sonata_csrf_token" value="{{ csrf_token }}">
+
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fa fa-trash" aria-hidden="true"></i> {{ 'btn_delete'|trans({}, 'SonataAdminBundle') }}
+                    </button>
+                    {% if admin.hasRoute('edit') and admin.hasAccess('edit', object) %}
+                        {{ 'delete_or'|trans({}, 'SonataAdminBundle') }}
+
+                        <a class="btn btn-success" href="{{ admin.generateObjectUrl('edit', object) }}">
+                            <i class="fa fa-pencil" aria-hidden="true"></i>
+                            {{ 'link_action_edit'|trans({}, 'SonataAdminBundle') }}</a>
+                    {% endif %}
+                </form>
+            </div>
+        </div>
+    </div>
+{% endblock %}

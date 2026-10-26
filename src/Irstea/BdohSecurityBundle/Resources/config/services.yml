@@ -1,4 +1,3 @@
-# Le gestionnaire de droits de Sonata viendra avec l'administration (module 6).
 services:
     _defaults:
         autowire: true
@@ -16,10 +15,12 @@ services:
     Irstea\BdohSecurityBundle\Validator\:
         resource: '../../Validator/'
 
-    # Voteurs de droits et gestionnaire de connexion
+    # Voteurs de droits, gestionnaire de connexion, gestionnaire de droits de Sonata
     Irstea\BdohSecurityBundle\Security\:
         resource: '../../Security/'
-        exclude: '../../Security/{BdohSecurityHandler.php,Voter/ObservatoryRoleVoter.php}'
+        exclude: '../../Security/Voter/ObservatoryRoleVoter.php'
+
+    irstea_bdoh_security.admin.security.handler: '@Irstea\BdohSecurityBundle\Security\BdohSecurityHandler'
 
     # Le voteur des rôles de Symfony, remplacé sous son identifiant : les rôles suivent l'observatoire
     # de la page, et non celui de la connexion (Security/Voter/ObservatoryRoleVoter.php)

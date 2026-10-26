@@ -2,11 +2,11 @@
 # app/config/routing_observatory.yml. Celles des modules pas encore portés attendent dans
 # config/routes_pending/ (dev/plans/2026-10-23_consultation.md).
 irstea_bdoh_admin:
-    resource: routes_pending/admin.yaml
+    resource: "@IrsteaBdohAdminBundle/Resources/config/routing.yml"
     prefix:   /admin
 
-irstea_bdoh_admin_imports:
-    resource: "@IrsteaBdohAdminBundle/Resources/config/routing.yml"
+irstea_bdoh_admin_pending:
+    resource: routes_pending/admin.yaml
     prefix:   /admin
 
 bdoh_security_logout:

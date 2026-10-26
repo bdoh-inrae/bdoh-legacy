@@ -5,3 +5,8 @@ AdminPeripheral : Données périphériques
 AdminTechnical  : Données techniques
 AdminTheia      : Données Theia/OZCAR
 AdminUser       : Utilisateurs
+
+# Libellés de Sonata 3, que Sonata 4 a changés
+link_actions     : Liste d'actions
+link_action_edit : Editer
+link_edit_acl    : Editer les permissions

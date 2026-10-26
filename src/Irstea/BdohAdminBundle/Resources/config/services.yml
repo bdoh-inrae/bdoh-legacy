@@ -73,8 +73,7 @@ parameters:
     # The description file of bareme export formats (relative to the web dir)
     irstea_bdoh_admin.bareme_export.formats_export_file: documents/FormatsExport.pdf
 
-# Les imports (module 4 du portage) ; l'administration par Sonata viendra avec le module 6. Les
-# fichiers à importer vont sous var/, et non plus sous app/ (dossier des fichiers écrits par BDOH).
+# Les fichiers à importer vont sous var/, et non plus sous app/ (dossier des fichiers écrits par BDOH).
 services:
     _defaults:
         autowire: true
@@ -99,3 +98,25 @@ services:
     Irstea\BdohAdminBundle\Manager\BaremeImportManager:
         arguments: [ "%kernel.project_dir%/var", "%irstea_bdoh_admin.bareme_import%" ]
     irstea_bdoh_admin.manager.bareme_import: '@Irstea\BdohAdminBundle\Manager\BaremeImportManager'
+
+    ############################################################################
+    # Administration by SonataAdminBundle
+    #
+    # Mêmes identifiants que l'ancien, qui font les adresses (_sonata_admin) ; dans le même ordre,
+    # qui fait celui du menu. Le journal et les services que les administrations demandent leur
+    # viennent par Admin::setLogger et Admin::setContainer.
+    ############################################################################
+
+    Irstea\BdohAdminBundle\Admin\Extension\SingularFormGroupExtension:
+        tags:
+            - { name: sonata.admin.extension, global: true }
+
+    app.menu_listener:
+        class: Irstea\BdohAdminBundle\EventListener\MenuBuilderListener
+        tags:
+            - { name: kernel.event_listener, event: sonata.admin.event.configure.menu.sidebar, method: addMenuItems }
+
+    irstea_bdoh_admin.admin.unite:
+        class: Irstea\BdohAdminBundle\Admin\Data\Unite
+        tags:
+            - { name: sonata.admin, model_class: Irstea\BdohDataBundle\Entity\Unite, manager_type: orm, group: AdminTechnical }

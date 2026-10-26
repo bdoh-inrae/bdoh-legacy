@@ -1,0 +1,33 @@
+{#
+
+Repris de Sonata 4.43, avec le libellé « Nouveau » de l'ancien BDOH
+(app/Resources/SonataAdminBundle/views/Button/create_button.html.twig).
+
+This file is part of the Sonata package.
+
+(c) Thomas Rabaix <thomas.rabaix@sonata-project.org>
+
+For the full copyright and license information, please view the LICENSE
+file that was distributed with this source code.
+
+#}
+
+{% if admin.hasAccess('create') and admin.hasRoute('create') %}
+    {% if admin.subClasses is empty %}
+        <li>
+            <a class="sonata-action-element" href="{{ admin.generateUrl('create') }}">
+                <i class="fas fa-plus-circle" aria-hidden="true"></i>
+                {{ 'new'|trans() }}
+            </a>
+        </li>
+    {% else %}
+        {% for subclass in admin.subclasses|keys %}
+            <li>
+                <a class="sonata-action-element" href="{{ admin.generateUrl('create', {'subclass': subclass}) }}">
+                    <i class="fas fa-plus-circle" aria-hidden="true"></i>
+                    {{ 'new'|trans() }} {{ subclass|trans({}, admin.translationdomain) }}
+                </a>
+            </li>
+        {% endfor %}
+    {% endif %}
+{% endif %}

@@ -1,6 +1,6 @@
 # Administration
 
-État : à commencer, plan écrit le 2026-10-26 ; suit les comptes (`dev/plans/2026-10-26_comptes.md`). Point 6 du portage dans `ROADMAP.md`.
+État : en cours, commencé le 2026-10-26 ; suit les comptes (`dev/plans/2026-10-26_comptes.md`). Point 6 du portage dans `ROADMAP.md`.
 
 But : l'administration servie par le nouveau BDOH, sur Sonata Admin 4, montrant les mêmes listes et les mêmes formulaires que l'ancien sur Sonata Admin 3, et laissant la base dans le même état après chaque enregistrement et chaque suppression.
 
@@ -10,7 +10,7 @@ Relevé dans l'ancien code (`../bdoh/src/Irstea/`) :
 
 - **34 administrations Sonata** (`BdohAdminBundle/Admin/`, 4 479 lignes), déclarées dans `BdohAdminBundle/Resources/config/services.yml` (étiquette `sonata.admin`, groupes AdminCenter, AdminGeographic, AdminPeripheral, AdminTechnical, AdminTheia, AdminUser) ; la classe de base `Admin/Admin.php` (nom et adresse des routes tirés du nom de la classe, `bdoh_admin_…`, libellés traduits sans stratégie, pas d'export ni d'action groupée) et `Admin/SimpleEntity.php`. Les plus grosses : `Partenaire` (479 lignes), `Observatoire` (461), `Chronique` (396), `DataSet` et `ChroniqueContinue` (269), `Station`, `TypeParametre`, `FamilleParametres`, `Unite`, `Utilisateur`.
 - **Contrôleurs à part** : `ChroniqueController` de Sonata (recalcul, codes de chronique, chroniques filtrées), `ColorsController` (383 lignes), `ConversionController` (331), `FillingRateController`, `InfoController`.
-- **Gabarits** : `standard_layout.html.twig`, `CRUD/` (édition et suppression propres à plusieurs entités, actions de liste), `Form/widgets.html.twig`, `Colors/`, `Conversion/`, `Mail/newAccount.txt.twig`.
+- **Gabarits** : `standard_layout.html.twig`, `CRUD/` (édition et suppression propres à plusieurs entités, actions de liste), `Form/widgets.html.twig`, `Colors/`, `Conversion/`, `Mail/newAccount.txt.twig` ; et trois gabarits de Sonata surchargés au niveau de l'application (`app/Resources/SonataAdminBundle/views/`) : le bouton « Nouveau », les boutons « Annuler » et « Cloner » du formulaire, la page de clonage.
 - **Formulaires** : `FileType`, `TheiaThesaurusType`, `WysiwygType` et leurs transformateurs.
 - **Menu** : `MenuBuilderListener` (barre latérale de Sonata, KnpMenu 2 vers 3).
 - **Droits** : `BdohSecurityHandler` (`BdohSecurityBundle/Security`, 108 lignes), le gestionnaire de droits de Sonata, exclu du module 5.
@@ -49,3 +49,8 @@ Sonata Admin 4.43 et `sonata-project/doctrine-orm-admin-bundle` 4.21 prennent Sy
 ## Suivi
 
 - 2026-10-26 : plan écrit, à reprendre une fois le module 5 clos.
+- 2026-10-26 : étapes 1 et 2.
+  - Sonata Admin 4.43, `doctrine-orm-admin-bundle` 4.21, KnpMenu 3 et `symfony/stimulus-bundle` (que les gabarits de Sonata 4 emploient), bundles rangés dans l'ordre de l'ancien noyau ; les fichiers que la recette de Stimulus ajoutait (`assets/`, `package.json`) retirés. Configuration reprise de `sonata.yml` (`config/packages/sonata_admin.yaml`), routes de Sonata en tête du `routing.yml` du bundle comme dans l'ancien.
+  - Classe de base, `SimpleEntity`, `Unite`, gestionnaire de droits, menu, mise en page et gabarits CRUD portés ; surcharges de l'application dans `templates/bundles/SonataAdminBundle/`. Ce qui change de forme et pourquoi : `dev/decisions.md` (« Classe de base des administrations », « JavaScript de l'administration »).
+  - `compare.py admin` : les pages de chaque administration portée pour un administrateur et un gestionnaire qui n'est que gestionnaire, puis les écritures (édition renvoyée telle quelle, édition, création, suppression) et l'état des tables. Unité : pages identiques hors du menu, qui attend les autres administrations ; écritures identiques, tables `unite` et `historique` comprises. Les écarts propres à Sonata 4 sont admis (`dev/differences.md`, « Administration sur Sonata 4 »).
+  - Suite : les autres administrations, par groupe (étape 3), en commençant par les plus simples (`SimpleEntity`, données Theia/OZCAR, données techniques).

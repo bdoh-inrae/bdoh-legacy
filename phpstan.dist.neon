@@ -6,7 +6,6 @@ parameters:
     # Pas encore portés : chaque module retire ses lignes (ROADMAP.md, portage).
     excludePaths:
         - src/Irstea/BdohConsultBundle/Service/JsonSchema
-        - src/Irstea/BdohSecurityBundle/Security/BdohSecurityHandler.php
     ignoreErrors:
         # Le module Theia/OZCAR n'est pas encore porté.
         - '#Irstea\\BdohTheiaOzcarBundle\\#'

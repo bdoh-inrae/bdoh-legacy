@@ -3,45 +3,6 @@
 # « pas encore porté » (App\Controller\PendingController) jusqu'au portage du module. Tirées de
 # « app/console debug:router » de la référence.
 
-sonata_admin_redirect:
-    path: '/'
-    controller: App\Controller\PendingController
-    defaults:
-        route: 'sonata_admin_dashboard'
-        permanent: 'true'
-
-sonata_admin_dashboard:
-    path: '/dashboard'
-    controller: App\Controller\PendingController
-
-sonata_admin_retrieve_form_element:
-    path: '/core/get-form-field-element'
-    controller: App\Controller\PendingController
-
-sonata_admin_append_form_element:
-    path: '/core/append-form-field-element'
-    controller: App\Controller\PendingController
-
-sonata_admin_short_object_information:
-    path: '/core/get-short-object-description.{_format}'
-    controller: App\Controller\PendingController
-    defaults:
-        _format: 'html'
-    requirements:
-        _format: 'html|json'
-
-sonata_admin_set_object_field_value:
-    path: '/core/set-object-field-value'
-    controller: App\Controller\PendingController
-
-sonata_admin_search:
-    path: '/search'
-    controller: App\Controller\PendingController
-
-sonata_admin_retrieve_autocomplete_items:
-    path: '/core/get-autocomplete-items'
-    controller: App\Controller\PendingController
-
 bdoh_admin_observatoire_list:
     path: '/observatoire/list'
     controller: App\Controller\PendingController
@@ -755,55 +716,6 @@ bdoh_admin_typeparametre_export:
     defaults:
         _sonata_admin: 'irstea_bdoh_admin.admin.type_parametre'
         _sonata_name: 'bdoh_admin_typeparametre_export'
-
-bdoh_admin_unite_list:
-    path: '/unite/list'
-    controller: App\Controller\PendingController
-    defaults:
-        _sonata_admin: 'irstea_bdoh_admin.admin.unite'
-        _sonata_name: 'bdoh_admin_unite_list'
-
-bdoh_admin_unite_create:
-    path: '/unite/create'
-    controller: App\Controller\PendingController
-    defaults:
-        _sonata_admin: 'irstea_bdoh_admin.admin.unite'
-        _sonata_name: 'bdoh_admin_unite_create'
-
-bdoh_admin_unite_batch:
-    path: '/unite/batch'
-    controller: App\Controller\PendingController
-    defaults:
-        _sonata_admin: 'irstea_bdoh_admin.admin.unite'
-        _sonata_name: 'bdoh_admin_unite_batch'
-
-bdoh_admin_unite_edit:
-    path: '/unite/{id}/edit'
-    controller: App\Controller\PendingController
-    defaults:
-        _sonata_admin: 'irstea_bdoh_admin.admin.unite'
-        _sonata_name: 'bdoh_admin_unite_edit'
-
-bdoh_admin_unite_delete:
-    path: '/unite/{id}/delete'
-    controller: App\Controller\PendingController
-    defaults:
-        _sonata_admin: 'irstea_bdoh_admin.admin.unite'
-        _sonata_name: 'bdoh_admin_unite_delete'
-
-bdoh_admin_unite_show:
-    path: '/unite/{id}/show'
-    controller: App\Controller\PendingController
-    defaults:
-        _sonata_admin: 'irstea_bdoh_admin.admin.unite'
-        _sonata_name: 'bdoh_admin_unite_show'
-
-bdoh_admin_unite_export:
-    path: '/unite/export'
-    controller: App\Controller\PendingController
-    defaults:
-        _sonata_admin: 'irstea_bdoh_admin.admin.unite'
-        _sonata_name: 'bdoh_admin_unite_export'
 
 bdoh_admin_bassin_list:
     path: '/bassin/list'

@@ -7,6 +7,7 @@ Code de référence : commit `523cf8e32` de l'ancien dépôt (version 5.0.3, fé
 ## En cours
 
 - **Consultation publique et visualiseur** (module 2 du portage) : [dev/plans/2026-10-23_consultation.md](dev/plans/2026-10-23_consultation.md).
+- **Administration** (module 6 du portage) : [dev/plans/2026-10-26_administration.md](dev/plans/2026-10-26_administration.md).
 
 ## À faire
 
@@ -18,7 +19,7 @@ Code de référence : commit `523cf8e32` de l'ancien dépôt (version 5.0.3, fé
   3. file de tâches et exports : fait ;
   4. imports : fait ;
   5. comptes, connexion et droits : fait, avec la connexion par lien envoyé par courriel, sans mot de passe ;
-  6. administration (Sonata Admin 3 vers 4), le plus gros morceau, à commencer : [dev/plans/2026-10-26_administration.md](dev/plans/2026-10-26_administration.md) ; les comptes qu'elle crée n'ont plus de mot de passe (l'ancien leur en donnait un par défaut) : chaîne vide, connexion par lien ;
+  6. administration (Sonata Admin 3 vers 4), le plus gros morceau, en cours (ci-dessus) ; les comptes qu'elle crée n'ont plus de mot de passe (l'ancien leur en donnait un par défaut) : chaîne vide, connexion par lien ;
   7. envoi des fiches vers Theia/OZCAR, courriels.
 - **Comportements de l'ancien à trancher**, un à un, à la fin du portage ou quand l'un d'eux bloque : les entrées « à trancher » de `dev/differences.md` (format Vigilance, zéro importé comme une lacune, jours manquants d'un fichier QJO, deux fuseaux horaires…). Le nouveau les reproduit en attendant.
 - **Fonctions SQL d'OTHU.** La base d'OTHU a trois fonctions qui diffèrent de la production : `bdoh_interp_cumul_to_cumul` et `bdoh_interp_to_mean_or_cumul`, faute de la migration `Version20241216124726` (correction du pas mensuel des exports), et `bdoh_chronique_calcul_dates_mesures`, qui y remet à `NULL` les dates et le nombre de mesures d'une chronique devenue vide, comme le code, quand la version de la production les laisse inchangés (relevé le 23 octobre). Les exports mensuels d'OTHU ont donc encore le bogue corrigé en production. À aligner sur la production à la bascule d'OTHU, après comparaison.

@@ -1,0 +1,66 @@
+{% extends '@IrsteaBdohAdmin/CRUD/edit.html.twig' %}
+
+{# message pour expliquer l'interdiction de supprimer l'unité -> liste des chroniques et des barèmes qui l'utilise #}
+{% block formactions %}
+    {% set margin_top = '' %}
+    {% if (admin.timeSeries and admin.timeSeries|length) or (admin.scales and admin.scales|length) %}
+        <div class="well well-small form-actions">
+            {% if admin.timeSeries and admin.timeSeries|length %}
+                <p style="margin-bottom:5px;">
+                    <b>{{ 'admin.help.unite.warning-unit-has-time-series'|trans({'%count%': admin.timeSeries|length}) }}</b>
+                </p>
+                <ul style="margin-bottom:0;">
+                    {% for t in admin.timeSeries %}
+                        <li>
+                            {% if is_granted('EDIT', t) and t.observatoire == currentObservatoire() %}
+                                {%  if t.dtype == 'continue' %}
+                                    <a href="{{ path('bdoh_admin_chroniquecontinue_edit', {'id':t.id}) }}">{{ t }}</a>
+                                {% elseif t.dtype == 'discontinue' %}
+                                    <a href="{{ path('bdoh_admin_chroniquediscontinue_edit', {'id':t.id}) }}">{{ t }}</a>
+                                {% elseif t.dtype == 'convertie' %}
+                                    <a href="{{ path('bdoh_admin_chroniqueconvertie_edit', {'id':t.id}) }}">{{ t }}</a>
+                                {% else %}
+                                    <a href="{{ path('bdoh_admin_chroniquecalculee_edit', {'id':t.id}) }}">{{ t }}</a>
+                                {% endif %}
+                            {% else %}
+                                {{ t }}
+                            {% endif %}
+                            ({{ 'admin.help.from_the_observatory'|trans }}
+                            {% if is_granted('EDIT', t.observatoire) %}
+                                <a href="{{ path('bdoh_admin_observatoire_edit', {id:t.observatoire.id}) }}">{{ t.observatoire }}</a>)
+                            {% else %}
+                                {{ t.observatoire }})
+                            {% endif %}
+                        </li>
+                    {% endfor %}
+                </ul>
+                {% set margin_top = 'margin-top:10px;' %}
+            {% endif %}
+            {% if admin.scales and admin.scales|length %}
+                <p style="margin-bottom:5px;{{ margin_top }}">
+                    <b>{{ 'admin.help.unite.warning-unit-has-scales'|trans({'%count%': admin.scales|length}) }}</b>
+                </p>
+                <ul style="margin-bottom:0;">
+                    {% for s in admin.scales %}
+                        <li>
+                            {% if is_granted('EDIT', s) and s.observatoire == currentObservatoire() %}
+                                <a href="{{ path('bdoh_admin_bareme_edit', {id:s.id}) }}">
+                                    {{ s }} [{{ s.dateCreation|date('transformation.bareme.dateBareme'|trans, false) }}]
+                                </a>
+                            {% else %}
+                                {{ s }} [{{ s.dateCreation|date('transformation.bareme.dateBareme'|trans, false) }}]
+                            {% endif %}
+                            ({{ 'admin.help.from_the_observatory'|trans }}
+                            {% if is_granted('EDIT', s.observatoire) %}
+                                <a href="{{ path('bdoh_admin_observatoire_edit', {id:s.observatoire.id}) }}">{{ s.observatoire }}</a>)
+                            {% else %}
+                                {{ s.observatoire }})
+                            {% endif %}
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        </div>
+    {% endif %}
+    {{ parent() }}
+{% endblock %}

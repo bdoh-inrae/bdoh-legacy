@@ -33,7 +33,7 @@ class BdohSecurityHandler implements SecurityHandlerInterface
     /**
      * {@inheritdoc}
      */
-    public function isGranted(AdminInterface $admin, $attributes, $object = null)
+    public function isGranted(AdminInterface $admin, $attributes, ?object $object = null): bool
     {
         if ($attributes instanceof \Traversable) {
             $attributes = iterator_to_array($attributes);
@@ -43,7 +43,8 @@ class BdohSecurityHandler implements SecurityHandlerInterface
 
         // Transforme les demande de droit LIST en demande de droit AJAX
         // pour la liste des Communes faite en autocomplete (AJAX)
-        if (\strpos($admin->getRequest()->attributes->get('_controller'), 'retrieveAutocompleteItemsAction')
+        if ($admin->hasRequest()
+            && $admin->getRequest()->attributes->get('_route') === 'sonata_admin_retrieve_autocomplete_items'
             && in_array('LIST', $attributes, true)
             && $admin->getClass() === Commune::class) {
             $attributes[] = 'AJAX';
@@ -63,8 +64,16 @@ class BdohSecurityHandler implements SecurityHandlerInterface
             $object = $object->getClass();
         }
 
+        // Symfony 2 jugeait tous les attributs en une fois, accordés si l'un l'était ; Symfony 7
+        // n'en juge qu'un à la fois.
         try {
-            return $this->authorizationChecker->isGranted($actualAttributes, $object);
+            foreach ($actualAttributes as $attribute) {
+                if ($this->authorizationChecker->isGranted($attribute, $object)) {
+                    return true;
+                }
+            }
+
+            return false;
         } catch (AuthenticationCredentialsNotFoundException $e) {
             return false;
         }
@@ -73,7 +82,7 @@ class BdohSecurityHandler implements SecurityHandlerInterface
     /**
      * {@inheritdoc}
      */
-    public function getBaseRole(AdminInterface $admin)
+    public function getBaseRole(AdminInterface $admin): string
     {
         return '%s';
     }
@@ -81,7 +90,7 @@ class BdohSecurityHandler implements SecurityHandlerInterface
     /**
      * {@inheritdoc}
      */
-    public function buildSecurityInformation(AdminInterface $admin)
+    public function buildSecurityInformation(AdminInterface $admin): array
     {
         return [];
     }
@@ -89,14 +98,14 @@ class BdohSecurityHandler implements SecurityHandlerInterface
     /**
      * {@inheritdoc}
      */
-    public function createObjectSecurity(AdminInterface $admin, $object)
+    public function createObjectSecurity(AdminInterface $admin, object $object): void
     {
     }
 
     /**
      * {@inheritdoc}
      */
-    public function deleteObjectSecurity(AdminInterface $admin, $object)
+    public function deleteObjectSecurity(AdminInterface $admin, object $object): void
     {
     }
 }

@@ -8,5 +8,7 @@ twig:
         exportFormatsDiscont: "%irstea_bdoh_data.measure_discontinuous_export.exporters%"
         logo_long_link_parameters: "%logo_long_web_link%"
         logo_short_link_parameters: "%logo_short_web_link%"
+        # Global que Sonata 3 déclarait, et que les gabarits de l'administration emploient
+        breadcrumbs_builder: '@sonata.admin.breadcrumbs_builder'
     form_themes:
         - 'form_fields.html.twig'

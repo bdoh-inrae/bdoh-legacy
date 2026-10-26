@@ -7,6 +7,7 @@
     dev/compare/compare.py queue   [--base BASE]
     dev/compare/compare.py imports [--base BASE] [--only TEXTE]
     dev/compare/compare.py accounts [--base BASE]
+    dev/compare/compare.py admin   [--base BASE] [--only TEXTE]
 
 SIDE nomme une instance (voir SIDES). Les cas sont tirés de la base BASE du serveur de référence,
 par des règles écrites ici : le dépôt ne contient ni données ni codes de chroniques. Le rapport et
@@ -265,6 +266,9 @@ class Extract(html.parser.HTMLParser):
               'li', 'nav', 'ol', 'option', 'p', 'pre', 'section', 'table', 'tbody', 'td', 'tfoot',
               'th', 'thead', 'title', 'tr', 'ul'}
     TOKEN = re.compile(r'(^|\[)_?(csrf_)?token\]?$')
+    # Le câblage du JavaScript de Sonata 4 (Stimulus, arbre du menu d'AdminLTE 2.4), qui ne montre
+    # rien (dev/differences.md, « Administration sur Sonata 4 »)
+    WIRING = re.compile(r'data-(controller|action|widget|[\w-]+-(target|value|outlet|class|param))$')
 
     def __init__(self):
         super().__init__(convert_charrefs=True)
@@ -305,7 +309,7 @@ class Extract(html.parser.HTMLParser):
             self.add('G', a.get('src', ''), a.get('alt', ''))
         elif tag == 'link':
             self.add('L', a.get('rel', ''), a.get('href', ''))
-        data = [f'{k}={v}' for k, v in sorted(a.items()) if k.startswith('data-')]
+        data = [f'{k}={v}' for k, v in sorted(a.items()) if k.startswith('data-') and not self.WIRING.match(k)]
         if data:
             self.add('D', tag, *data)
 
@@ -326,10 +330,34 @@ QUERY = re.compile(r'(\S+?\?)([^\s#]*)')
 
 NORMALIZE = [
     (re.compile(r'(/assets/[\w/.-]+?)\.[0-9a-f]{8,20}(\.\w+)'), r'\1\2'),  # empreintes des fichiers
+    (re.compile(r'(/bundles/[\w/.-]+)\?v=\d+'), r'\1'),  # version des fichiers des bundles
+    # Les fichiers propres aux pages de l'administration : compilés dans assets/admin/ par l'ancien,
+    # servis tels quels par le nouveau depuis le bundle (dev/decisions.md)
+    (re.compile(r'^S /bundles/irsteabdohadmin/crud/'), 'S /assets/admin/crud/'),
     (re.compile(r'\bs[0-9a-f]{13}\b'), 's<uniqid>'),  # identifiants de formulaires de Sonata
     (re.compile(r'data:image/[\w+]+;base64,[\w+/=]+'), '<image>'),  # captcha
     (re.compile(r'(data-target=#[a-z]+-)\d+'), r'\1<n>'),  # fenêtres numérotées au hasard
 ]
+
+
+# Les fichiers communs de Sonata, que chaque page de l'administration charge : ceux de Sonata 3,
+# compilés avec ceux de BDOH par l'ancien, ceux de Sonata 4 et ceux de BDOH à part dans le nouveau
+# (dev/differences.md, « Administration sur Sonata 4 »).
+SONATA_PAGE = re.compile(r'^S /(assets/admin/sonata\.js|bundles/sonataadmin/app\.js)$')
+SONATA_ASSETS = re.compile(r'^((L stylesheet|S) /(assets/(admin/sonata|manifest|vendor)\.(css|js)$|'
+                           r'bundles/(sonataadmin|sonataform|sonatacore|irsteabdohadmin/(sonata|lib))/)'
+                           r'|J window\.SONATA_CONFIG = )')
+
+
+def canonical_query(query, per_page_option=False):
+    """Les paramètres d'une adresse sous une forme canonique : triés (Sonata 4 ne les écrit pas dans
+    l'ordre de Sonata 3), sans le mode de liste par défaut que Sonata 4 ajoute aux liens de tri ;
+    dans le choix du nombre de lignes par page, sans le tri, que Sonata 3 y omettait quand il était
+    celui par défaut."""
+    pairs = urllib.parse.parse_qsl(query, keep_blank_values=True)
+    pairs = [(k, v) for k, v in pairs if (k, v) != ('_list_mode', 'list')
+             and not (per_page_option and k == 'filter[_sort_by]')]
+    return urllib.parse.urlencode(sorted(pairs))
 
 
 def page_lines(site, status, headers, body):
@@ -357,11 +385,13 @@ def page_lines(site, status, headers, body):
         lines += body.decode('utf-8', 'replace').splitlines()
     for pattern, repl in NORMALIZE:
         lines = [pattern.sub(repl, line) for line in lines]
+    if any(SONATA_PAGE.match(line) for line in lines):
+        lines = [line for line in lines if not SONATA_ASSETS.match(line)]
     # Symfony 7 ne code pas les paramètres d'adresse comme Symfony 2 (%20 ou +, %2C ou virgule…) :
     # même adresse, comparée sous une forme canonique (dev/differences.md).
-    lines = [QUERY.sub(lambda m: m.group(1) + urllib.parse.urlencode(
-                 urllib.parse.parse_qsl(m.group(2), keep_blank_values=True)), line)
-             if line[:2] in ('A ', 'F ', 'D ', 'S ', 'L ', 'G ') else line
+    lines = [QUERY.sub(lambda m: m.group(1) + canonical_query(
+                 m.group(2), line.startswith('O ') and 'filter%5B_per_page%5D' in line), line)
+             if line[:2] in ('A ', 'F ', 'D ', 'S ', 'L ', 'G ', 'O ') else line
              for line in lines]
     return [line.replace(site, '<site>') for line in lines]
 
@@ -1377,13 +1407,15 @@ class FormFields(html.parser.HTMLParser):
 
     def __init__(self, action):
         super().__init__(convert_charrefs=True)
-        self.action, self.inside, self.select, self.textarea = action, False, None, None
+        self.action, self.inside, self.select, self.textarea, self.url = action, False, None, None, None
         self.fields, self.options, self.names = [], {}, set()
 
     def handle_starttag(self, tag, attrs):
         a = {k: v or '' for k, v in attrs}
         if tag == 'form':
             self.inside = self.action in a.get('action', '')
+            if self.inside:
+                self.url = a.get('action', '')
         elif not self.inside or 'name' not in a and tag != 'option':
             return
         if 'name' in a and tag in ('input', 'select', 'textarea'):
@@ -1731,10 +1763,127 @@ def run_accounts(args):
           ' bdoh_accounts_old et bdoh_accounts_new.')
 
 
+# --- Administration --------------------------------------------------------------------------------
+
+# Les administrations portées, dans l'ordre du menu, sous le nom qui fait leurs adresses : la table
+# qu'elles écrivent, les champs changés à l'édition et remplis à la création (la fin de leur nom,
+# sans l'identifiant de formulaire de Sonata), et la requête qui choisit l'entité dont on ouvre les
+# pages ({slug} : l'observatoire de la page). Par défaut, la première de la table.
+ADMINS = {
+    'unite': {'table': 'unite', 'change': {'[libelleEn]': 'unit (test)'},
+              'create': {'[libelle]': 'unité d’essai', '[libelleEn]': 'test unit'}},
+}
+
+
+def admin_profiles(base):
+    """Les comptes des pages de l'administration, chacun sur un observatoire où il a ce rôle : un
+    administrateur, et un gestionnaire qui n'est que gestionnaire (celui de « pages » est aussi
+    administrateur)."""
+    active = "(u.finacces IS NULL OR u.finacces > now())"
+    found = {}
+    for name, where in [
+        ('administrateur', f"u.roleadmin = 'FCT' AND {active}"),
+        ('gestionnaire', f"u.roleadmin IS NULL AND {active} AND r.valeur = 'gestionnaire'"),
+    ]:
+        rows = query(base, f"""
+            SELECT u.email, o.slug FROM utilisateur u JOIN role r ON r.utilisateur_id = u.id
+              JOIN observatoire o ON o.id = r.observatoire_id
+             WHERE {where} ORDER BY u.id, o.id LIMIT 1""", NEW_SERVER)
+        if rows:
+            found[name] = rows[0]
+    return found
+
+
+def redirect_lines(site, status, headers):
+    """Le statut d'une réponse et l'adresse où elle renvoie, sous la forme des pages. Sonata 4 renvoie
+    à une liste avec ses filtres du moment, Sonata 3 sans eux (dev/differences.md, « Administration
+    sur Sonata 4 ») : ils ne comptent pas."""
+    location = headers.get('Location', '').replace(site, '<site>')
+    for pattern, repl in NORMALIZE:
+        location = pattern.sub(repl, location)
+    location = QUERY.sub(lambda m: m.group(1) + canonical_query(m.group(2)), location)
+    location = re.sub(r'(/list)\?(filter%5B\w+%5D=[^&]*&?)+$', r'\1', location)
+    return [f'statut {status}', f'redirection {location}']
+
+
+def run_admin(args):
+    """L'administration (module 6), par l'ancien code sur PostgreSQL 17 et par le nouveau, chacun sur
+    sa copie de BASE. Pour chaque administration portée (ADMINS), au nom d'un administrateur et d'un
+    gestionnaire : la liste, la création, l'édition et la suppression de son entité, sans rien
+    envoyer ; puis, au nom de l'administrateur, l'édition renvoyée telle quelle, une édition qui
+    change un champ, une création et la suppression de ce qui a été créé, avec les pages où elles
+    renvoient ; enfin l'état des tables écrites et l'historique."""
+    template = args.base
+    historique = query(template, 'SELECT coalesce(max(id), 0) FROM historique', NEW_SERVER)[0][0]
+    admins = {name: spec for name, spec in ADMINS.items() if args.only in name}
+    accounts = admin_profiles(template)
+    bases = {'ancien': 'bdoh_admin_old', 'nouveau': 'bdoh_admin_new'}
+    for base in bases.values():
+        copy_base(template, base)
+
+    def first(base, name, spec, slug):
+        sql = spec.get('pick', f"SELECT min(id) FROM {spec['table']}").format(slug=slug)
+        return query(base, sql, NEW_SERVER)[0][0]
+
+    def play(side, base):
+        parts = {}
+        for profile, (email, slug) in accounts.items():
+            client = Client(side, email, slug)
+            get = lambda path: page_lines(side.url, *client.get(path))
+            parts[f'{profile} /{slug}/admin/dashboard'] = get(f'/{slug}/admin/dashboard')
+            for name, spec in admins.items():
+                root, cid = f'/{slug}/admin/{name}', first(base, name, spec, slug)
+                for path in [f'{root}/list', f'{root}/create', f'{root}/{cid}/edit', f'{root}/{cid}/delete']:
+                    parts[f'{profile} {path}'] = get(path)
+
+        email, slug = accounts['administrateur']
+        client = Client(side, email, slug)
+
+        def send(path, action, values, button):
+            """Un formulaire de la page, envoyé comme par un navigateur, et la page où il renvoie."""
+            form = form_of(client, path, action)
+            if form.url is None:
+                return [f'pas de formulaire {action} : {path}']
+            body = form.filled(values) + b'&' + urllib.parse.urlencode({button: ''}).encode()
+            status, headers, _ = client.get(form.url, body, {'Referer': side.url + path})
+            lines = redirect_lines(side.url, status, headers)
+            location = headers.get('Location', '').replace(side.url, '')
+            return lines + (['== page suivante', *page_lines(side.url, *client.get(location))] if location else [])
+
+        for name, spec in admins.items():
+            root, cid = f'/{slug}/admin/{name}', first(base, name, spec, slug)
+            parts[f'{name} : édition renvoyée telle quelle'] = send(
+                f'{root}/{cid}/edit', f'/{name}/{cid}/edit', {}, 'btn_update_and_edit')
+            parts[f'{name} : édition'] = send(f'{root}/{cid}/edit', f'/{name}/{cid}/edit', spec['change'],
+                                             'btn_update_and_edit')
+            parts[f'{name} : création'] = send(f'{root}/create', f'/{name}/create', spec['create'],
+                                              'btn_create_and_edit')
+            created = query(base, f"SELECT max(id) FROM {spec['table']}", NEW_SERVER)[0][0]
+            parts[f'{name} : suppression'] = send(f'{root}/{created}/delete', f'/{name}/{created}/delete', {},
+                                                 'btn_delete')
+        tables = {spec['table'] for spec in admins.values()}
+        for table in sorted(tables):
+            parts[f'état {table}'] = ['\t'.join(row) for row in query(
+                base, f"SELECT to_jsonb(t)::text FROM {table} t ORDER BY t.id", NEW_SERVER)]
+        parts['état historique'] = state_lines(base, historique, ['historique'])['historique']
+        return parts
+
+    sides = {}
+    with old_17_on(bases['ancien']), new_on(bases['nouveau'], template):
+        sides['ancien'] = play(SIDES['reference-17'], bases['ancien'])
+        sides['nouveau'] = play(SIDES['new'], bases['nouveau'])
+    report = Report('admin')
+    for part in sides['ancien']:
+        report.add(part, sides['ancien'][part], sides['nouveau'].get(part, []))
+    report.close()
+    print(f'Les instances lisent de nouveau {template}. Les deux copies restent pour examen :'
+          f' {bases["ancien"]} et {bases["nouveau"]}.')
+
+
 def main():
     global CASES_SERVER
     parser = argparse.ArgumentParser(description=__doc__.split('\n')[0])
-    parser.add_argument('what', choices=['pages', 'exports', 'state', 'queue', 'imports', 'accounts'])
+    parser.add_argument('what', choices=['pages', 'exports', 'state', 'queue', 'imports', 'accounts', 'admin'])
     parser.add_argument('--old', default='reference', choices=SIDES)
     parser.add_argument('--new', default='reference', choices=SIDES)
     parser.add_argument('--base', default='bdoh_small', help='base où tirer les cas')
@@ -1745,7 +1894,7 @@ def main():
     args = parser.parse_args()
     CASES_SERVER = args.server
     {'pages': run_pages, 'exports': run_exports, 'state': run_state, 'queue': run_queue,
-     'imports': run_imports, 'accounts': run_accounts}[args.what](args)
+     'imports': run_imports, 'accounts': run_accounts, 'admin': run_admin}[args.what](args)
 
 
 if __name__ == '__main__':

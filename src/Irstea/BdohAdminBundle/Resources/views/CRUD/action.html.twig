@@ -1,0 +1,58 @@
+{%- set template = (action != 'create') ? action : 'edit' %}
+{%- extends '@SonataAdmin/CRUD/'~template~'.html.twig' %}
+
+{%- if form is defined %}
+    {%- form_theme form '@IrsteaBdohAdmin/Form/widgets.html.twig' %}
+{%- elseif delete_form is defined %}
+    {%- form_theme delete_form '@IrsteaBdohAdmin/Form/widgets.html.twig' %}
+{%- endif %}
+
+{# titre dans la barre de titre #}
+{% block navbar_title %}
+    BDOH Admin - <b>{{ currentObservatoire() }}</b>
+    {% if currentObservatoire().theiaCode == true %} <strong style="color: orange">(Contraintes Theia/Ozcar)</strong>
+    {% endif %}
+
+    {% if action is defined %}
+        -
+        {% for menu in breadcrumbs_builder.breadcrumbs(admin, action) %}
+            {% if loop.last %}
+                {%- set translation_domain = menu.extra('translation_domain', 'messages') -%}
+                {%- set label = menu.label -%}
+                {%- if translation_domain is not same as(false) -%}
+                    {%- set label = label|trans(menu.extra('translation_params', {}), translation_domain) -%}
+                {%- endif -%}
+                {% if action == 'edit' %}
+                    {% set entity_edition = admin.classnameLabel~'_edit_defined' %}
+                    {{ "title_edit_defined"|trans({'%entity%': entity_edition|trans, '%name%': label}) }}
+                {% elseif action == 'clone' %}
+                    {% set entity_creation = admin.classnameLabel~'_create_undefined' %}
+                    {{ "title_create_undefined"|trans({'%entity%': entity_creation|trans}) }}  (clone)
+                {% elseif action == 'create' %}
+                    {% set entity_creation = admin.classnameLabel~'_create_undefined' %}
+                    {{ "title_create_undefined"|trans({'%entity%': entity_creation|trans}) }}
+                {% elseif action == 'delete' %}
+                    {% set entity_deletion = admin.classnameLabel~'_delete_defined' %}
+                    {{ "title_delete_defined"|trans({'%entity%': entity_deletion|trans, '%name%': admin.tostring(object)}) }}
+                {% else %}
+                    {{ label }}
+                {% endif %}
+            {% endif %}
+        {% endfor %}
+    {% else %}
+        {% if _title is not empty %}
+            -
+            {{ _title|striptags|raw }}
+        {% endif %}
+    {% endif %}
+{% endblock %}
+
+{# in order to have the title bar even when there is no action nor filter button #}
+{% block tab_menu %}&nbsp;{% endblock %}
+
+{# Les traductions du JavaScript de BDOH, après les fichiers de Sonata, qui traduit lui-même select2 #}
+{% block javascripts %}
+    {{ parent() }}
+    {% set locale = app.request.locale[:2] %}
+    <script src="{{ asset('assets/locales/'~locale~'.js') }}"></script>
+{% endblock %}

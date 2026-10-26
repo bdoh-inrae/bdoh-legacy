@@ -1,0 +1,47 @@
+# Repris de app/config/sonata.yml de l'ancien BDOH
+sonata_admin:
+    title: BDOH Admin
+    title_logo: "%mini_logo_sonata%"
+    show_mosaic_button: false
+
+    options:
+        confirm_exit: false
+
+    security:
+        handler: irstea_bdoh_security.admin.security.handler
+
+    templates:
+        layout: '@IrsteaBdohAdmin/standard_layout.html.twig'
+
+    dashboard:
+        blocks:
+            - { position: left, type: sonata.admin.block.admin_list }
+
+        groups:
+            # group translations are in 'BdohAdminBundle/Resources/translations/SonataAdminBundle.*.yml'
+            AdminCenter: ~
+            AdminGeographic: ~
+            AdminPeripheral: ~
+            AdminTechnical: ~
+            AdminTheia: ~
+            AdminUser: ~
+
+    # L'ancien remplaçait les fichiers de Sonata 3 par les siens, compilés avec eux (sonata.js) ;
+    # Sonata 4 garde les siens, et ceux de BDOH s'y ajoutent (dev/decisions.md, « JavaScript de
+    # l'administration »).
+    assets:
+        extra_stylesheets:
+            - bundles/irsteabdohadmin/sonata/fam-icons.css
+            - bundles/irsteabdohadmin/sonata/style.css
+        extra_javascripts:
+            - bundles/irsteabdohadmin/lib/file-widget.js
+            - bundles/irsteabdohadmin/lib/colorpicker.js
+            - bundles/irsteabdohadmin/lib/htmleditor.js
+
+sonata_block:
+    default_contexts: [cms]
+    blocks:
+        sonata.admin.block.admin_list:
+            contexts: [admin]
+        sonata.admin.block.search_result:
+            contexts: [admin]

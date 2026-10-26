@@ -1,0 +1,57 @@
+{##
+ # Customized fields for 'Observatoire' admin.
+ #}
+
+{% extends '@SonataDoctrineORMAdmin/Form/form_admin_fields.html.twig' %}
+
+{% block wysiwyg_widget %}
+    {%- set attr = attr | merge({'class': (attr.class|default('') ~ ' htmleditor') | trim }) %}
+    {{ block('textarea_widget') }}
+{% endblock %}
+
+{% block couleur_widget %}
+    {%- set attr = attr | merge({'class': (attr.class|default('') ~ ' colorpicker') | trim }) %}
+    {{ block('form_widget') }}
+{% endblock %}
+
+{% block bdoh_file_widget %}
+    {% apply spaceless %}
+        {%- set isImage = 'image/' in accept %}
+        <div id="{{ id }}-file-widget"
+            data-file-widget="{{- isImage ? 'image' : 'file' -}}"
+            data-base-path="{{ asset('') }}"
+        >
+            {% if isImage %}
+                <div class="thumbnail text-center" style="width:150px;">
+                    <img class="preview"/>
+                    <i class="placeholder glyphicon glyphicon-picture text-muted" style="font-size:50px"></i>
+                </div>
+            {% else %}
+                <p class="preview form-control">
+                    <a><i class="glyphicon glyphicon-file"></i>&nbsp;<span>-</span></a>
+                </p>
+            {% endif %}
+
+            <a class="pull-left btn btn-danger delete" title="Supprimer">
+                <i class="glyphicon glyphicon-trash"></i>
+            </a>
+
+            <a class="pull-left btn btn-default undo" title="Annuler">
+                <i class="glyphicon glyphicon-step-backward"></i>
+            </a>
+
+            {{ form_widget(form.current) }}
+            {{ form_widget(form.new) }}
+        </div>
+        <script>enableFileWidget('#{{ id }}-file-widget');</script>
+    {% endapply %}
+{% endblock %}
+
+{% block bdoh_theiathesaurus_widget %}
+    {% apply spaceless %}
+        <input type="hidden" id="{{ id }}" name="{{ full_name }}" value="{{ value | e('html_attr') }}"/>
+        <script>
+        {% include '@IrsteaBdohAdmin/Form/bdoh_theiathesaurus_widget.js.twig' %}
+        </script>
+    {% endapply %}
+{% endblock %}
