@@ -48,6 +48,7 @@ Les choix techniques du portage, avec leur raison : ce qu'un prochain Claude dé
   - Les arrondis de PHP 8.4 (« Nombres d'un export », plus haut).
   - Les messages flash s'affichent en HTML (toastr) : une saisie citée s'échappe.
   - Le routeur passe avant le pare-feu : une route que le pare-feu traite en POST doit accepter POST.
+  - `@Security` de Sensio évaluait son expression sans les voteurs ; `#[IsGranted(new Expression(…))]` la leur passe, et un voteur qui ne regarde pas l'attribut l'accorde (`SuperAdminVoter` laissait l'administrateur technique entrer partout) : un voteur ne se prononce que sur les attributs qu'il comprend.
   - Après une suppression faite par un script, comparer le fichier à l'ancien : des méthodes sont parties ainsi, deux fois.
   - Sonata 4 lit autrement des réglages vides ou absents : `getExportFormats()` vide y vaut « tous les formats » (d'où `NoExportExtension`, qui retire la route) ; `ModelListType` montre « Supprimer » sans regarder les droits (`Admin::listDeleteButton`, condition de Sonata 3).
   - Le `UrlType` de Symfony 7 n'ajoute `http://` qu'en se rendant en `type="text"` ; `default_protocol: null` garde `type="url"` mais laisse passer `javascript:` (`LinkType` rend les deux).

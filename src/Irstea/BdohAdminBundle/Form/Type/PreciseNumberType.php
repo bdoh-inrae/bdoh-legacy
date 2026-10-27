@@ -9,7 +9,7 @@ use Symfony\Component\Form\FormBuilderInterface;
 
 /**
  * Un champ de nombre qui garde la valeur saisie (PreciseNumberTransformer) : les seuils de validité
- * d'une chronique.
+ * d'une chronique, l'altitude et les coordonnées d'une station.
  */
 final class PreciseNumberType extends AbstractType
 {

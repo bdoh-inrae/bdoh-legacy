@@ -123,8 +123,9 @@ services:
     Irstea\BdohAdminBundle\Filter\DateFilter:
         tags: [sonata.admin.filter.type]
 
-    # Le clonage des chroniques
+    # Le clonage des chroniques ; l'édition d'un observatoire depuis sa propre page
     Irstea\BdohAdminBundle\Admin\Data\ChroniqueController: ~
+    Irstea\BdohAdminBundle\Admin\Data\ObservatoireController: ~
 
     app.menu_listener:
         class: Irstea\BdohAdminBundle\EventListener\MenuBuilderListener
@@ -134,7 +135,7 @@ services:
     irstea_bdoh_admin.admin.observatoire:
         class: Irstea\BdohAdminBundle\Admin\Data\Observatoire
         tags:
-            - { name: sonata.admin, model_class: Irstea\BdohDataBundle\Entity\Observatoire, manager_type: orm, group: AdminCenter }
+            - { name: sonata.admin, model_class: Irstea\BdohDataBundle\Entity\Observatoire, manager_type: orm, group: AdminCenter, controller: Irstea\BdohAdminBundle\Admin\Data\ObservatoireController }
 
     irstea_bdoh_admin.admin.site_experimental:
         class: Irstea\BdohAdminBundle\Admin\Data\SiteExperimental

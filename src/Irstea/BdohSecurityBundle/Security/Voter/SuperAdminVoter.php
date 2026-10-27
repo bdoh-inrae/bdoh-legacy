@@ -40,6 +40,12 @@ class SuperAdminVoter extends RoleHierarchyVoter
      */
     public function vote(TokenInterface $token, mixed $object, array $attributes): int
     {
+        // L'expression d'un #[IsGranted] arrive ici comme attribut ; l'ancien @Security l'évaluait sans
+        // les voteurs : le super administrateur n'y passe pas outre.
+        if (!array_filter($attributes, is_string(...))) {
+            return self::ACCESS_ABSTAIN;
+        }
+
         $vote = parent::vote($token, $object, ['ROLE_SUPER_ADMIN']);
 
         return $vote === self::ACCESS_GRANTED ? $vote : self::ACCESS_ABSTAIN;

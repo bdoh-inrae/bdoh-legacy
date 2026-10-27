@@ -11,9 +11,16 @@ class ChroniqueController extends CRUDController
 {
     public function cloneAction(Request $request): Response
     {
-        $object = $this->admin->getSubject();
-        /** @var Chronique $object */
+        // 404 sur une chronique inconnue, et le droit de modifier celle qu'on copie, comme le bouton
+        // « Cloner » de son édition : l'ancien ne vérifiait que le droit de créer (dev/differences.md)
+        $object = $this->assertObjectExists($request, true);
+        \assert($object instanceof Chronique);
+        $this->admin->checkAccess('edit', $object);
         $newObject = clone $object;
+        // Le clone n'a pas de mesures : son formulaire cache le jeu de données comme celui de la création,
+        // qui le reçoit (l'ancien le montrait, et la création échouait sur la valeur choisie)
+        $newObject->setDateDebutMesures(null);
+        $newObject->setDateFinMesures(null);
 
         $newObject->setCode($object->getCode().' (Clone)');
 

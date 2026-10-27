@@ -7,12 +7,14 @@
 namespace Irstea\BdohAdminBundle\Admin\Data;
 
 use Irstea\BdohAdminBundle\Admin\Admin;
+use Irstea\BdohAdminBundle\Form\Type\PreciseNumberType;
 use Sonata\AdminBundle\Datagrid\ListMapper;
 use Sonata\AdminBundle\Form\FormMapper;
 use Sonata\AdminBundle\Form\Type\ModelAutocompleteType;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
-use Symfony\Component\Form\Extension\Core\Type\NumberType;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
+use Symfony\Component\Form\FormEvent;
+use Symfony\Component\Form\FormEvents;
 
 /**
  * Class Station.
@@ -115,22 +117,37 @@ class Station extends Admin
             )
             ->add('sites', null, ['required' => true, 'query_builder' => $repoSite->createSecuredQueryBuilder($this->getUser())])
             ->add('codeAlternatif', null, ['help' => $translator->trans('admin.help.station.codeAlternatif'), 'help_html' => true])
-            ->add('altitude', NumberType::class, ['required' => false, 'scale' => 3])
-            ->add('latitude', NumberType::class, [
+            // Sans arrondi, que l'ancien faisait à 3 décimales (dev/differences.md)
+            ->add('altitude', PreciseNumberType::class, ['required' => false])
+            ->add('latitude', PreciseNumberType::class, [
                 'required'  => false,
-                'scale'     => 3,
                 'help'      => $translator->trans('admin.help.station.latlong'),
                 'help_html' => true,
             ])
-            ->add('longitude', NumberType::class, [
+            ->add('longitude', PreciseNumberType::class, [
                 'required'  => false,
-                'scale'     => 3,
                 'help'      => $translator->trans('admin.help.station.latlong'),
                 'help_html' => true,
             ])
             ->add('commentaire', TextareaType::class, ['required' => false])
             ->add('commentaireEn', TextareaType::class, ['required' => false])
             ->add('estActive', CheckboxType::class, ['required' => false]);
+
+        // Le formulaire ne propose que les sites que le compte gère, et retirerait les autres de la
+        // station : ils lui sont rendus (dev/differences.md, « Sites perdus d'une station »).
+        $managed = $repoSite->createSecuredQueryBuilder($this->getUser())->getQuery()->getResult();
+        $kept = $this->hasSubject() ? array_filter(
+            $this->getSubject()->getSites()->toArray(),
+            fn ($site) => !in_array($site, $managed, true)
+        ) : [];
+        $formMapper->getFormBuilder()->addEventListener(FormEvents::POST_SUBMIT, function (FormEvent $event) use ($kept) {
+            $sites = $event->getData()->getSites();
+            foreach ($kept as $site) {
+                if (!$sites->contains($site)) {
+                    $sites->add($site);
+                }
+            }
+        });
     }
 
     /**

@@ -354,6 +354,13 @@ NORMALIZE = [
     # « Opérateurs des filtres sur une entité liée »)
     (re.compile(r'^T Est égal à$'), 'T est égal à'),
     (re.compile(r'^T Ne contient pas$'), "T n'est pas égal à"),
+    # Le bouton qui retire l'entité choisie d'un champ ModelListType : un lien vide sous Sonata 3, un
+    # bouton sous Sonata 4
+    (re.compile(r'^A$'), 'I button button'),
+    # La page du choix du type d'une chronique à créer : Sonata 3.23 n'en traduisait pas les libellés
+    # (dev/differences.md, « Administration sur Sonata 4 »)
+    (re.compile(r"^T Sélectionnez le type d'objet$"), 'T title_select_subclass'),
+    (re.compile(r"^T Aucun type d'objet disponible$"), 'T no_subclass_available'),
     (re.compile(r'(?<![0-9A-Za-z])s[0-9a-f]{13}(?![0-9a-f])'), 's<uniqid>'),  # identifiants de formulaires de Sonata
     (re.compile(r'data:image/[\w+]+;base64,[\w+/=]+'), '<image>'),  # captcha
     (re.compile(r'(data-target=#[a-z]+-)\d+'), r'\1<n>'),  # fenêtres numérotées au hasard
@@ -443,8 +450,8 @@ NUMBER = re.compile(r'-?\d+(?:[.,]\d+)?(?:[eE][-+]?\d+)?')
 
 def same_but_rounding(a, b):
     """Deux lignes qui ne diffèrent que par des nombres écrits à une unité près du dernier chiffre,
-    ou par -0 et 0 (règle « Arrondis à la limite »)."""
-    if NUMBER.sub('#', a) != NUMBER.sub('#', b):
+    ou par -0 et 0 (règle « Arrondis à la limite »). Un statut de réponse n'est pas un nombre arrondi."""
+    if a.startswith('statut ') or NUMBER.sub('#', a) != NUMBER.sub('#', b):
         return False
     for x, y in zip(NUMBER.findall(a), NUMBER.findall(b)):
         if x == y:
@@ -1948,12 +1955,32 @@ def admin_profiles(base):
             'administrateur technique': (tech, slugs)}
 
 
+# Une station de plusieurs sites, et un compte actif qui ne gère que l'un d'eux (ni les autres, ni
+# l'observatoire), avec l'observatoire de la page : le formulaire ne lui propose pas les autres sites.
+SITE_MANAGER_OF_ONE = """
+    SELECT ss.station_id, u.email, o.slug FROM stations_sites ss
+      JOIN siteexperimental s ON s.id = ss.site_id JOIN observatoire o ON o.id = s.observatoire_id
+      JOIN role r ON r.site_id = ss.site_id AND r.dtype = 'site' AND r.valeur = 'gestionnaire'
+      JOIN utilisateur u ON u.id = r.utilisateur_id AND (u.finacces IS NULL OR u.finacces > now())
+     WHERE ss.station_id IN (SELECT station_id FROM stations_sites GROUP BY 1 HAVING count(*) > 1)
+       AND NOT EXISTS (SELECT 1 FROM role r2 WHERE r2.utilisateur_id = u.id AND r2.valeur = 'gestionnaire'
+                         AND (r2.observatoire_id = o.id OR r2.site_id IN (
+                              SELECT site_id FROM stations_sites WHERE station_id = ss.station_id AND site_id <> ss.site_id)))
+     ORDER BY 1, 2 LIMIT 1"""
+
+
 # Les contrôleurs à part de l'administration, sous le nom que --only reconnaît dans leurs adresses,
 # et les tables qu'ils écrivent (lues par la requête de STATE_QUERIES ou d'OTHER_STATE).
 OTHERS = {'colors': ['jeuqualite', 'qualite'],
           'conversion': ['chronique', 'conversion', 'jeuconversion', 'jms_jobs', 'jms_job_related_entities'],
           'fillingrate': ['jms_jobs', 'jms_job_related_entities'],
-          'historique': []}
+          'historique': [],
+          # Pages d'autres modules, ouvertes ici pour chaque profil (voir GUARDED)
+          'mesure': [], 'controle': [], 'transformation': [], 'shape': [], 'user': []}
+# Les premières pages des contrôleurs gardés par une expression (#[IsGranted]) : l'ancien @Security
+# l'évaluait sans les voteurs, et le super administrateur ne passait pas outre (SuperAdminVoter).
+GUARDED = ['/admin/mesure/import', '/admin/controle/import', '/admin/transformation', '/admin/shape/import',
+           '/user/all']
 OTHER_STATE = {
     'jeuqualite': "SELECT to_jsonb(j)::text FROM jeuqualite j ORDER BY j.id",
     'qualite': "SELECT to_jsonb(q)::text FROM qualite q ORDER BY q.id",
@@ -1988,6 +2015,7 @@ def other_pages(base, slugs):
     pages = [(slug, '/admin/colors')]
     pages += [(slug, f'/admin/colors/{j}') for j, in query(base, 'SELECT id FROM jeuqualite ORDER BY id', NEW_SERVER)]
     pages.append((slug, '/admin/conversion'))
+    pages += [(slug, path) for path in GUARDED]
     for rule in CONVERTED:
         cid, cslug = converted(base, rule)
         if cid:
@@ -2036,6 +2064,38 @@ def redirect_lines(site, status, headers):
     location = QUERY.sub(lambda m: m.group(1) + canonical_query(m.group(2)), location)
     location = re.sub(r'(/list)\?(filter%5B\w+%5D=[^&]*&?)+$', r'\1', location)
     return [f'statut {status}', f'redirection {location}']
+
+
+# Les fichiers joints que cite la base (logos, photos) : la base vient de la production, pas ses fichiers,
+# et un formulaire qui cite un fichier absent est refusé (« Le fichier n'a pas été trouvé »), des deux
+# côtés : l'enregistrement d'un observatoire ou d'un partenaire n'était pas joué.
+WEB_ROOTS = [OUT.parent / 'app-17' / 'web', HERE.parent.parent / 'public']
+ATTACHED_FILES = '''
+    SELECT DISTINCT path FROM (SELECT unnest(ARRAY[pathlogo, pathphotoprincipale, pathphotosecondaire]) AS path
+                                 FROM observatoire UNION ALL SELECT pathlogo FROM partenaire) p
+     WHERE path LIKE 'uploads/%' AND path NOT LIKE '%..%' '''
+GIF = b'GIF89a\x01\x00\x01\x00\x80\x00\x00\x00\x00\x00\xff\xff\xff!\xf9\x04\x01\x00\x00\x00\x00,\x00\x00\x00\x00\x01\x00\x01\x00\x00\x02\x02D\x01\x00;'
+
+
+@contextlib.contextmanager
+def attached_files(base):
+    """Un fichier de remplacement (une image GIF d'un pixel) pour chaque fichier joint de la base qui
+    manque, dans les deux instances, le temps du bloc."""
+    created = []
+    for path, in query(base, ATTACHED_FILES, NEW_SERVER):
+        for root in WEB_ROOTS:
+            target = root / path
+            if not target.exists():
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_bytes(GIF)
+                created.append(target)
+    try:
+        yield
+    finally:
+        for target in created:
+            target.unlink(missing_ok=True)
+            with contextlib.suppress(OSError):  # le dossier, s'il est vide
+                target.parent.rmdir()
 
 
 def run_admin(args):
@@ -2101,11 +2161,12 @@ def run_admin(args):
 
         email, slugs = accounts['administrateur']
 
-        def send(path, action, values, button, token=True):
+        def send(path, action, values, button, token=True, who=None):
             """Un formulaire de la page, envoyé comme par un navigateur, et la page où il renvoie. Sans
             button, aucun bouton n'est envoyé (bouton sans nom) ; sans token, le formulaire part sans le
-            jeton CSRF que les couleurs et la conversion tirent eux-mêmes."""
-            client = client_for(email, path.split('/')[1])
+            jeton CSRF que les couleurs et la conversion tirent eux-mêmes ; who : un autre compte que
+            l'administrateur."""
+            client = client_for(who or email, path.split('/')[1])
             form = form_of(client, path, action)
             if form.url is None:
                 return [f'pas de formulaire {action} : {path}']
@@ -2224,8 +2285,7 @@ def run_admin(args):
             results['nouveau seul : chemin fabriqué du fichier enregistré, ignoré'] = (
                 ['conforme'] if logo() == before else [f'chemin enregistré : {logo()}'])
             # Une image GIF valide, suivie de PHP, sous un nom en .php
-            gif = (b'GIF89a\x01\x00\x01\x00\x80\x00\x00\x00\x00\x00\xff\xff\xff!\xf9\x04\x01\x00\x00\x00\x00'
-                   b',\x00\x00\x00\x00\x01\x00\x01\x00\x00\x02\x02D\x01\x00;<?php echo 1; ?>')
+            gif = GIF + b'<?php echo 1; ?>'
             client = client_for(email, slug)
             form = form_of(client, path, action)
             field = next(n for n in form.names if n.endswith('[pathLogo][new]'))
@@ -2234,8 +2294,63 @@ def run_admin(args):
             status, _, _ = client.get(form.url, body, {'Content-Type': kind, 'Referer': client.side.url + path})
             results['nouveau seul : extension d’un fichier téléversé tirée de son contenu'] = (
                 ['conforme'] if status == 302 and logo().endswith('.gif') else [f'statut {status}, chemin : {logo()}'])
+        if 'station' in admins:
+            slug, sid = first(base, admins['station'], accounts['administrateur'][1])
+            send(f'/{slug}/admin/station/{sid}/edit', f'/station/{sid}/edit', {'[latitude]': '45,1234567'},
+                 'btn_update_and_edit')
+            value, = query(base, f'SELECT latitude FROM station WHERE id = {sid}', NEW_SERVER)[0]
+            results['nouveau seul : latitude d’une station gardée à 7 décimales'] = (
+                ['conforme'] if value == '45.1234567' else [f'valeur enregistrée : {value}'])
+            # Une station de deux sites, enregistrée telle quelle par un gestionnaire de l'un seulement
+            label = 'nouveau seul : sites d’une station que le compte ne gère pas, gardés'
+            rows = query(base, SITE_MANAGER_OF_ONE, NEW_SERVER)
+            if rows:
+                sid, manager, mslug = rows[0]
+                sites = lambda: query(base, f"SELECT string_agg(site_id::text, ',' ORDER BY site_id) FROM stations_sites"
+                                            f" WHERE station_id = {sid}", NEW_SERVER)[0][0]
+                before = sites()
+                lines = send(f'/{mslug}/admin/station/{sid}/edit', f'/station/{sid}/edit', {}, 'btn_update_and_edit',
+                             who=manager)
+                results[label] = (['conforme'] if lines[0] == 'statut 302' and sites() == before
+                                  else [lines[0], f'sites avant : {before}, après : {sites()}'])
+            else:
+                results[label] = ['aucun cas dans la base']
+        if 'observatoire' in admins:
+            # Un observatoire qui a des gestionnaires de données, ouvert depuis la page d'un autre : renvoyé
+            # vers la sienne, où il s'enregistre tel quel
+            label = 'nouveau seul : responsable et gestionnaires de données d’un observatoire modifié ailleurs, gardés'
+            email, slugs = accounts['administrateur']
+            rows = query(base, f"""SELECT o.id, o.slug FROM observatoire o WHERE o.slug <> '{slugs[0]}' AND EXISTS (
+                                     SELECT 1 FROM observatoires_data_manager d WHERE d.observatoire_id = o.id)
+                                   ORDER BY o.id LIMIT 1""", NEW_SERVER)
+            if rows:
+                oid, slug = rows[0]
+                status, headers, _ = client_for(email, slugs[0]).get(f'/{slugs[0]}/admin/observatoire/{oid}/edit')
+                moved = status == 302 and headers.get('Location', '').endswith(f'/{slug}/admin/observatoire/{oid}/edit')
+                people = lambda: query(base, f"""SELECT o.projectleader_id, string_agg(d.personnetheia_id::text, ','
+                                                  ORDER BY d.personnetheia_id) FROM observatoire o
+                                                  LEFT JOIN observatoires_data_manager d ON d.observatoire_id = o.id
+                                                 WHERE o.id = {oid} GROUP BY o.id""", NEW_SERVER)[0]
+                before = people()
+                lines = send(f'/{slug}/admin/observatoire/{oid}/edit', f'/observatoire/{oid}/edit', {},
+                             'btn_update_and_edit')
+                results[label] = (['conforme'] if moved and lines[0] == 'statut 302' and people() == before
+                                  else [f'renvoi : {status} {headers.get("Location")}', lines[0],
+                                        f'avant : {before}, après : {people()}'])
+            else:
+                results[label] = ['aucun cas dans la base']
         if 'chroniquecontinue' in admins:
             slug, cid = first(base, admins['chroniquecontinue'], accounts['administrateur'][1])
+            status = client_for(accounts['administrateur'][0], slug).get(
+                f'/{slug}/admin/chroniquecontinue/999999999/clone')[0]
+            results['nouveau seul : clonage d’une chronique inconnue, 404'] = (
+                ['conforme'] if status == 404 else [f'statut {status}'])
+            # Le formulaire du clonage, envoyé à la création, sans choix du jeu de données (500 dans l'ancien
+            # quand on en choisissait un)
+            lines = send(f'/{slug}/admin/chroniquecontinue/{cid}/clone', '/chroniquecontinue/create',
+                         {'[code]': 'CLONE'}, 'btn_create_and_edit')
+            results['nouveau seul : clonage d’une chronique enregistré'] = (
+                ['conforme'] if lines[0] == 'statut 302' else lines[:2])
             send(f'/{slug}/admin/chroniquecontinue/{cid}/edit', f'/chroniquecontinue/{cid}/edit',
                  {'[minimumValide]': '0,12345'}, 'btn_update_and_edit')
             value, = query(base, f'SELECT minimumvalide FROM chronique WHERE id = {cid}', NEW_SERVER)[0]
@@ -2245,7 +2360,7 @@ def run_admin(args):
 
     sides, checks = {}, {}
     with old_17_on(bases['ancien'], mailer_transport='smtp', mailer_host='mailpit', mailer_port='1025'), \
-            new_on(bases['nouveau'], template, 'MAILER_DSN=smtp://mailpit:1025'):
+            new_on(bases['nouveau'], template, 'MAILER_DSN=smtp://mailpit:1025'), attached_files(template):
         sides['ancien'] = play(SIDES['reference-17'], bases['ancien'])
         sides['nouveau'] = play(SIDES['new'], bases['nouveau'])
     report = Report('admin')
