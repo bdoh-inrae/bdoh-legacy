@@ -187,10 +187,15 @@ class ObservatoireController extends Controller
      */
     public function fetchObservatoire(ParameterBag $parameters)
     {
-        /** @var ObservatoireRepository $obseRepo */
-        $obseRepo = $this->getBdohRepo('Observatoire');
+        // Seulement l'observatoire de la page, celui dont le droit est vérifié : l'ancien prenait celui
+        // de l'adresse, et un gestionnaire d'un observatoire envoyait la fiche d'un autre à Theia, avec
+        // son mot de passe (dev/local/security.md)
+        $observatoire = $this->getCurrentObservatoire();
+        if ($observatoire === null || (string) $observatoire->getId() !== (string) $parameters->get('id')) {
+            throw $this->createNotFoundException();
+        }
 
-        return $obseRepo->findOneById($parameters->get('id'));
+        return $observatoire;
     }
 
     /**

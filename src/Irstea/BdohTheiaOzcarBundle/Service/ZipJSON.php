@@ -7,7 +7,8 @@ class ZipJSON
     public function zipArchive(string $serializerJSON, string $filename, string $theiaCode)
     {
         $zip = new \ZipArchive();
-        if ($zip->open($filename, \ZipArchive::CREATE) !== true) {
+        // le fichier, vide, vient de tempnam() : PHP 8 refuse d'y voir une archive sans OVERWRITE
+        if ($zip->open($filename, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) !== true) {
             throw new \RuntimeException("cannot open <$filename>\n");
         }
         $zip->addFromString($theiaCode . '_en.json', $serializerJSON);

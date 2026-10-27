@@ -115,6 +115,9 @@ class EnvoiJSON
                                     ],
                                     'body'         => $content,
                                     'auth'         => [$username, $passwordDecrypt],
+                                    // Sans délai, un serveur qui ne répond pas gelait la file de tâches
+                                    'connect_timeout' => 10,
+                                    'timeout'         => 300,
                                 ]
                             );
                             $responseBody = $response->getBody()->getContents();

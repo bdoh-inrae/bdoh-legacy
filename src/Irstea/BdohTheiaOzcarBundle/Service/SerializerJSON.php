@@ -43,6 +43,15 @@ final class SerializerJSON
             return $value;
         }
 
+        // JMS écrivait aussi les propriétés d'un \stdClass, les collections, les dates : le format pivot
+        // n'en a pas ; un objet d'une autre sorte s'écrirait ici autrement, sans erreur
+        if ($value instanceof \stdClass) {
+            return self::normalize(get_object_vars($value)) ?: new \stdClass();
+        }
+        if (!str_starts_with($value::class, 'Irstea\\BdohTheiaOzcarBundle\\Model\\')) {
+            throw new \LogicException(sprintf('Le format pivot ne sait pas écrire un objet %s.', $value::class));
+        }
+
         $object = [];
         foreach ((new \ReflectionClass($value))->getProperties() as $property) {
             if (!$property->isStatic() && null !== $item = self::normalize($property->getValue($value))) {

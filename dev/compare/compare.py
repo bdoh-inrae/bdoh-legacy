@@ -2484,12 +2484,20 @@ def run_theia(args):
              WHERE command = 'theia:send:json:data' ORDER BY id""", NEW_SERVER) for line in theia_lines('\t'.join(row), *sites)]
         parts['mise à jour automatique'] = ['\t'.join(row) for row in query(
             base, 'SELECT slug, miseajourautomatique FROM observatoire ORDER BY id', NEW_SERVER)]
+        if side.login_link and len(cases) > 1:
+            # Les pages Theia d'un autre observatoire que celui de la page (dev/local/security.md)
+            (oid, _, _), (_, slug, email) = cases[0], cases[1]
+            client = Client(side, email, slug)
+            statuses = [client.get(f'/{slug}/observatoire/{oid}/{action}')[0]
+                        for action in ('downloadJson', 'jsonValidator', 'envoieJson')]
+            checks['nouveau seul : pages Theia d’un autre observatoire, 404'] = (
+                ['conforme'] if statuses == [404, 404, 404] else [f'statuts {statuses}'])
         return parts
 
     THEIA_RECEIVED.mkdir(parents=True, exist_ok=True)
     for stale in THEIA_RECEIVED.glob('*'):
         stale.unlink()
-    sides = {}
+    sides, checks = {}, {}
     with theia_stand_in(served), attached_files(template):
         with old_17_on(bases['ancien'], uri_theia_send_data=f"'{served}/theia-receiver.php/'",
                        uri_theia_ozcar_schema_json=f"'{served}/theia-schema/pivotSchemaDraft7.json'") as console:
@@ -2500,6 +2508,8 @@ def run_theia(args):
     report = Report('theia')
     for part in sides['ancien']:
         report.add(part, sides['ancien'][part], sides['nouveau'].get(part, []))
+    for part, lines in checks.items():
+        report.add(part, ['conforme'], lines)
     report.close()
     print(f'Les instances lisent de nouveau {template}. Les deux copies restent pour examen :'
           f' {bases["ancien"]} et {bases["nouveau"]}.')

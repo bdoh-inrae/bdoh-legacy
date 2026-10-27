@@ -1,6 +1,6 @@
 # Administration
 
-État : en cours, commencé le 2026-10-26 ; suit les comptes (`dev/plans/2026-10-26_comptes.md`). Point 6 du portage dans `ROADMAP.md`.
+État : terminé le 2026-10-27, commencé le 2026-10-26 ; suit les comptes (`dev/plans/2026-10-26_comptes.md`). Point 6 du portage dans `ROADMAP.md`.
 
 But : l'administration servie par le nouveau BDOH, sur Sonata Admin 4, montrant les mêmes listes et les mêmes formulaires que l'ancien sur Sonata Admin 3, et laissant la base dans le même état après chaque enregistrement et chaque suppression.
 
@@ -101,3 +101,4 @@ Sonata Admin 4.43 et `sonata-project/doctrine-orm-admin-bundle` 4.21 prennent Sy
 - 2026-10-27 : contrôles et relecture des corrections du jour.
   - `compare.py pages` (base réduite, quatre profils), `imports`, `state`, `accounts` : mêmes résultats qu'au dernier passage, seuls les écarts admis.
   - Relecture des corrections par un second Claude (commit `ddd6b81`) : rien de grave. Traités : l'écouteur qui rend ses sites à une station passe avant la validation (priorité 1), qui demande au moins un site ; le bouton « Cloner » de la liste ne se montre qu'à qui peut modifier la chronique, comme le clonage. Vérifiés sans défaut : les autres appels de droits (tous en attributs texte), le renvoi de l'édition d'un observatoire (pas de boucle), le clonage, les coordonnées. Hérités de l'ancien, laissés : un compte sans rôle de gestionnaire n'a aucun site à choisir pour une station ; le point d'une station n'est pas calculé à sa création.
+  - Contrôle final après ces deux corrections (rapport `2026-10-27_034400_admin`) : 631 parties identiques, 6 écarts admis. Module clos ; restent, inscrits dans `ROADMAP.md`, la décision sur les comptes qu'un gestionnaire peut modifier, les points de sécurité faibles et les comportements à trancher, et l'essai dans un navigateur.

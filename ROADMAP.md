@@ -6,7 +6,7 @@ Code de référence : commit `523cf8e32` de l'ancien dépôt (version 5.0.3, fé
 
 ## En cours
 
-- **Envoi des fiches vers Theia/OZCAR** (module 7 du portage, le dernier) : [dev/plans/2026-10-27_theia.md](dev/plans/2026-10-27_theia.md).
+Rien : les sept modules du portage sont portés et comparés. Ce qui reste avant la mise en service est ci-dessous.
 
 ## À faire
 
@@ -19,7 +19,7 @@ Code de référence : commit `523cf8e32` de l'ancien dépôt (version 5.0.3, fé
   4. imports : fait ;
   5. comptes, connexion et droits : fait, avec la connexion par lien envoyé par courriel, sans mot de passe ;
   6. administration (Sonata Admin 3 vers 4) : fait, relecture traitée, sauf ce qui attend une décision (ci-dessous) ; les comptes qu'elle crée n'ont plus de mot de passe (connexion par lien) ;
-  7. envoi des fiches vers Theia/OZCAR, en cours (ci-dessus). Les courriels, que ce point rangeait aussi, sont portés avec leurs modules.
+  7. envoi des fiches vers Theia/OZCAR : fait ([dev/plans/2026-10-27_theia.md](dev/plans/2026-10-27_theia.md)). Les courriels, que ce point rangeait aussi, sont portés avec leurs modules.
 - **Comportements de l'ancien à trancher**, un à un, à la fin du portage ou quand l'un d'eux bloque : les entrées « à trancher » de `dev/differences.md` (format Vigilance, zéro importé comme une lacune, jours manquants d'un fichier QJO, deux fuseaux horaires, recalcul d'une configuration incomplète, suppression refusée, paramètres en tableau, routes inutilisées…). Le nouveau les reproduit en attendant.
 - **Prévenir les gestionnaires** que les fiches publiées sur Theia/OZCAR par l'ancien BDOH ont des coordonnées décalées de 300 à 700 m, corrigées au prochain envoi par le nouveau (`dev/differences.md`, « Coordonnées envoyées à Theia/OZCAR ») ; à joindre au message sur la connexion par lien (`dev/plans/2026-10-26_deployment.md`).
 - **Points de sécurité à traiter** : la section « À traiter » de `dev/local/security.md` (ignoré par Git), dont une décision de Lou, les comptes qu'un gestionnaire peut modifier (options et recommandation écrites), et une vérification à ajouter pour l'historique. Les failles corrigées passent dans `dev/differences.md` à la mise en service.
