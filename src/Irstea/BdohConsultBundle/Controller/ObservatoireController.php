@@ -39,11 +39,11 @@ use Symfony\Component\Validator\Constraints\NotBlank;
  */
 class ObservatoireController extends Controller
 {
-    /** @var SerializerJSON|null */
+    /** @var SerializerJSON */
     private $serializerJson;
 
     /**
-     * @var SchemaJSON|null
+     * @var SchemaJSON
      */
     private $schemaJSON;
 
@@ -52,13 +52,10 @@ class ObservatoireController extends Controller
      */
     private $jobManager;
 
-    /**
-     * Les services de Theia sont facultatifs tant que leur module n'est pas porté (module 7).
-     */
     public function __construct(
         #[Autowire(service: 'irstea_bdoh.job_manager')] JobManagerInterface $jobManager,
-        #[Autowire(service: '?irstea_bdoh_theia_ozcar.serializerjson')] ?SerializerJSON $serializerJson = null,
-        #[Autowire(service: '?irstea_bdoh_theia_ozcar.schemajson')] ?SchemaJSON $schemaJSON = null
+        #[Autowire(service: 'irstea_bdoh_theia_ozcar.serializerjson')] SerializerJSON $serializerJson,
+        #[Autowire(service: 'irstea_bdoh_theia_ozcar.schemajson')] SchemaJSON $schemaJSON
     ) {
         $this->jobManager = $jobManager;
         $this->serializerJson = $serializerJson;

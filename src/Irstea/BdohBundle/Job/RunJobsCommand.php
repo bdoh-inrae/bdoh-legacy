@@ -137,8 +137,9 @@ class RunJobsCommand extends Command
 
             // Comme JMS : php console --env=… [--verbose] commande --jms-job-id=… arguments ; sans
             // la verbosité de l'exécuteur, que Symfony passe aux enfants (SHELL_VERBOSITY) et qui,
-            // avec --quiet, viderait leur sortie.
-            $command = [PHP_BINARY, $this->console, '--env=' . $this->environment];
+            // avec --quiet, viderait leur sortie. Sans interaction : Symfony 2 la coupait d'elle-même
+            // quand l'entrée n'était pas un terminal, Symfony 7 ne le fait plus.
+            $command = [PHP_BINARY, $this->console, '--env=' . $this->environment, '--no-interaction'];
             if ($output->isVerbose()) {
                 $command[] = '--verbose';
             }

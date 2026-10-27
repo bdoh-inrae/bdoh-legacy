@@ -2,26 +2,23 @@
 
 namespace Irstea\BdohConsultBundle\Service\JsonSchema;
 
-use Doctrine\Common\Cache\ArrayCache;
 use Opis\JsonSchema\ISchemaLoader;
 
+/**
+ * Les schémas déjà chargés, gardés le temps d'une requête, comme dans l'ancien BDOH (ArrayCache de
+ * Doctrine Cache, bibliothèque retirée depuis ; le cache APCu prévu y était en commentaire).
+ */
 final class CachingLoader implements ISchemaLoader
 {
     /** @var ISchemaLoader */
     private $decorated;
 
-    /** @var int */
-    private $lifeTime;
+    /** @var array */
+    private $cache = [];
 
-    /** @var ArrayCache */
-    private $cache;
-
-    public function __construct(ISchemaLoader $decorated, int $lifeTime = 0)
+    public function __construct(ISchemaLoader $decorated)
     {
         $this->decorated = $decorated;
-//        $this->apcuCache = $apcuCache ?: new ArrayCache();
-        $this->lifeTime = $lifeTime;
-        $this->cache =  new ArrayCache();
     }
 
     /**
@@ -29,13 +26,13 @@ final class CachingLoader implements ISchemaLoader
      */
     public function loadSchema(string $uri)
     {
-        if ($this->cache->contains($uri)) {
-            return $this->cache->fetch($uri);
+        if (\array_key_exists($uri, $this->cache)) {
+            return $this->cache[$uri];
         }
 
         $schema = $this->decorated->loadSchema($uri);
         if ($schema !== null) {
-            $this->cache->save($uri, $schema, $this->lifeTime);
+            $this->cache[$uri] = $schema;
         }
 
         return $schema;

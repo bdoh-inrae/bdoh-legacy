@@ -134,7 +134,8 @@ class Station extends Admin
             ->add('estActive', CheckboxType::class, ['required' => false]);
 
         // Le formulaire ne propose que les sites que le compte gère, et retirerait les autres de la
-        // station : ils lui sont rendus (dev/differences.md, « Sites perdus d'une station »).
+        // station : ils lui sont rendus (dev/differences.md, « Sites perdus d'une station »), avant la
+        // validation (priorité 1), qui demande au moins un site.
         $managed = $repoSite->createSecuredQueryBuilder($this->getUser())->getQuery()->getResult();
         $kept = $this->hasSubject() ? array_filter(
             $this->getSubject()->getSites()->toArray(),
@@ -147,7 +148,7 @@ class Station extends Admin
                     $sites->add($site);
                 }
             }
-        });
+        }, 1);
     }
 
     /**

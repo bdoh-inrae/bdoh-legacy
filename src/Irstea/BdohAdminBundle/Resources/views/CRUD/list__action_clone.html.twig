@@ -8,7 +8,10 @@
     {% set href = path('bdoh_admin_chroniquediscontinue_clone', {id : object.id}) %}
 {% endif %}
 
+{# Seulement à qui peut modifier la chronique, comme le clonage lui-même (Admin/Data/ChroniqueController) #}
+{% if admin.hasAccess('edit', object) %}
 <a class="btn btn-sm btn-default" href="{{ href }}">
     <i class="fa fa-clone" aria-hidden="true"></i>
     Cloner
 </a>
+{% endif %}

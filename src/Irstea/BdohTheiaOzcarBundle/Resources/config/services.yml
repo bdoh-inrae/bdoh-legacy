@@ -1,6 +1,55 @@
-# Le chiffrement du mot de passe Theia des observatoires, que le formulaire de l'administration emploie
-# (module 6) ; le reste du bundle, l'envoi des fiches vers Theia/OZCAR, vient avec le module 7.
+# L'envoi des fiches des observatoires vers Theia/OZCAR, et le chiffrement de leur mot de passe Theia,
+# que le formulaire de l'administration emploie.
 services:
+    irstea_bdoh_theia_ozcar_sendjsontotheia_service:
+        class: Irstea\BdohTheiaOzcarBundle\Service\EnvoiJSON
+        arguments:
+            - "%uri_theia_send_data%"
+            - "@irstea_bdoh_theia_ozcar.encryption_service"
+            - "@router"
+            - "@irstea_bdoh_theia_ozcar.serializerjson"
+            - "@irstea_bdoh_theia_ozcar.schemajson"
+            - "@irstea_bdoh_theia_ozcar_zip"
+            - "@doctrine"
+
+    irstea_bdoh_theia_ozcar_zip:
+        class: Irstea\BdohTheiaOzcarBundle\Service\ZipJSON
+
+    irstea_bdoh_theia_ozcar.sendjsontotheia:
+        class: Irstea\BdohTheiaOzcarBundle\Command\SendJSONToTheiaCommand
+        arguments:
+            - "@doctrine"
+            - "@security.token_storage"
+            - "@irstea_bdoh_theia_ozcar_sendjsontotheia_service"
+        tags:
+            - { name: console.command }
+
+    irstea_bdoh_theia_ozcar.mapper:
+        class: Irstea\BdohTheiaOzcarBundle\Mapper\Mapper
+        arguments:
+            - "@doctrine"
+            - "@router"
+
+    irstea_bdoh_theia_ozcar.schemajson:
+        class: Irstea\BdohTheiaOzcarBundle\Service\SchemaJSON
+        arguments:
+            - "%uri_theia_ozcar_schema_json%"
+            - "@irstea_bdoh_consult.json_schema.loader"
+
+    irstea_bdoh_theia_ozcar.serializerjson:
+        class: Irstea\BdohTheiaOzcarBundle\Service\SerializerJSON
+        arguments:
+            - "@irstea_bdoh_theia_ozcar.mapper"
+
+    irstea_bdoh_theia_ozcar.command.dump_formatpivot:
+        class: Irstea\BdohTheiaOzcarBundle\Command\DumpFormatPivotCommand
+        arguments:
+            - "@doctrine"
+            - "@irstea_bdoh_theia_ozcar.serializerjson"
+            - "@router"
+        tags:
+            - { name: console.command }
+
     irstea_bdoh_theia_ozcar.encryption_service:
         class: Irstea\BdohTheiaOzcarBundle\Service\PasswordEncryptionService
         arguments:

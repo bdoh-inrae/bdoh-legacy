@@ -3,12 +3,7 @@ parameters:
     level: 1
     paths:
         - src
-    # Pas encore portés : chaque module retire ses lignes (ROADMAP.md, portage).
-    excludePaths:
-        - src/Irstea/BdohConsultBundle/Service/JsonSchema
     ignoreErrors:
-        # Le module Theia/OZCAR n'est pas encore porté.
-        - '#Irstea\\BdohTheiaOzcarBundle\\#'
         # Chaque commande d'export définit sa sorte d'extraction.
         - '#undefined constant static\(Irstea\\BdohDataBundle\\Command\\AbstractExportCommand\)::EXTRACTOR_TYPE#'
         # Code de l'ancien BDOH, gardé tel quel : des chemins que PHPStan ne suit pas (états des erreurs

@@ -20,8 +20,10 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/). Numéros de v
 - Imports du nouveau BDOH : mesures (formats BDOH, BDOH par plages, QJO, Qtvar), points de contrôle et leur export, barèmes et transformations, shapefiles. Identiques à l'ancien, réponses de chaque étape et état de la base, sur 49 cas tirés de la base et leurs variantes. Plan : `dev/plans/2026-10-25_imports.md`.
 - Comptes, connexion et droits du nouveau BDOH : inscription, modification du compte, demandes d'accès, attribution des droits, liste des comptes, courriels aux gestionnaires, création d'un compte d'administration en ligne de commande ; identiques à l'ancien sur la base anonymisée, sauf la connexion (ci-dessous). Plan : `dev/plans/2026-10-26_comptes.md`.
 - Connexion par un lien envoyé par courriel, sans mot de passe ni captcha : lien valable 15 minutes et une seule fois, session de 30 jours, adresse confirmée par la première connexion, formulaires qui envoient un courriel limités en fréquence. Le mot de passe oublié disparaît ; ses adresses renvoient à la page de connexion. La console crée un lien pour un compte dont le courriel n'arrive pas (`security:users:login-link`).
+- Consultation publique et visualiseur du nouveau BDOH : pages, données des chroniques, manuel, choix de la langue ; identiques à l'ancien pour chaque profil, sur les bases réduite et complète. JavaScript et feuilles de style compilés dans le dépôt, avec les paquets de l'ancien et le Node de Debian 13 (`make assets`). Plan : `dev/plans/2026-10-23_consultation.md`.
+- Administration du nouveau BDOH sur Sonata Admin 4 : les 34 administrations, les couleurs, la conversion, les taux de remplissage, l'historique ; mêmes listes, mêmes formulaires et même état de la base après chaque écriture que l'ancien, pour un administrateur, un gestionnaire et un administrateur technique. Plan : `dev/plans/2026-10-26_administration.md`.
 - Les droits d'un compte suivent l'observatoire de la page consultée, et non celui où il s'est connecté.
-- Outil de comparaison : l'état de la base après les calculs, les exports demandés par le formulaire et la file de tâches (`compare.py state`, courriels lus dans Mailpit, `make mail-start`) ; l'essai de la file de tâches (`compare.py queue`) ; les imports étape par étape (`compare.py imports`) ; les parcours de comptes (`compare.py accounts`), avec un DNS de développement qui donne un MX aux adresses de test.
+- Outil de comparaison : l'administration (`compare.py admin`, avec des fichiers joints de remplacement), l'envoi vers Theia/OZCAR (`compare.py theia`, avec un récepteur de développement) ; l'état de la base après les calculs, les exports demandés par le formulaire et la file de tâches (`compare.py state`, courriels lus dans Mailpit, `make mail-start`) ; l'essai de la file de tâches (`compare.py queue`) ; les imports étape par étape (`compare.py imports`) ; les parcours de comptes (`compare.py accounts`), avec un DNS de développement qui donne un MX aux adresses de test.
 
 ### Corrigé
 
@@ -35,3 +37,7 @@ Bogues de l'ancien BDOH, corrigés dans le nouveau (détail dans `dev/difference
 - Créer un compte d'administration en ligne de commande ne donne tous les droits que si on le demande.
 - Les seuils de validité d'une chronique ne sont plus arrondis à trois décimales à chaque enregistrement.
 - Demander le calcul des taux de remplissage d'une chronique inconnue répond 404 au lieu d'une erreur interne.
+- Enregistrer une station rattachée à un site que le compte ne gère pas ne l'en détache plus.
+- Modifier un observatoire depuis la page d'un autre n'efface plus ses gestionnaires de données ni son responsable : l'édition se fait depuis sa propre page.
+- Le clonage d'une chronique vérifie qu'elle existe et qu'on peut la modifier, et n'échoue plus sur le choix d'un jeu de données.
+- L'altitude et les coordonnées d'une station ne sont plus arrondies à trois décimales à chaque enregistrement.

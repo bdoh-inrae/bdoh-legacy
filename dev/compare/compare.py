@@ -8,6 +8,7 @@
     dev/compare/compare.py imports [--base BASE] [--only TEXTE]
     dev/compare/compare.py accounts [--base BASE]
     dev/compare/compare.py admin   [--base BASE] [--only TEXTE]
+    dev/compare/compare.py theia   [--base BASE] [--only TEXTE]
 
 SIDE nomme une instance (voir SIDES). Les cas sont tirés de la base BASE du serveur de référence,
 par des règles écrites ici : le dépôt ne contient ni données ni codes de chroniques. Le rapport et
@@ -2066,28 +2067,31 @@ def redirect_lines(site, status, headers):
     return [f'statut {status}', f'redirection {location}']
 
 
-# Les fichiers joints que cite la base (logos, photos) : la base vient de la production, pas ses fichiers,
+# Les fichiers joints que cite la base (logos, photos, conditions d'utilisation) : la base vient de la production, pas ses fichiers,
 # et un formulaire qui cite un fichier absent est refusé (« Le fichier n'a pas été trouvé »), des deux
 # côtés : l'enregistrement d'un observatoire ou d'un partenaire n'était pas joué.
 WEB_ROOTS = [OUT.parent / 'app-17' / 'web', HERE.parent.parent / 'public']
 ATTACHED_FILES = '''
-    SELECT DISTINCT path FROM (SELECT unnest(ARRAY[pathlogo, pathphotoprincipale, pathphotosecondaire]) AS path
+    SELECT DISTINCT path FROM (SELECT unnest(ARRAY[pathlogo, pathphotoprincipale, pathphotosecondaire,
+                                                  conditionsutilisation]) AS path
                                  FROM observatoire UNION ALL SELECT pathlogo FROM partenaire) p
      WHERE path LIKE 'uploads/%' AND path NOT LIKE '%..%' '''
+PDF = b'%PDF-1.4\n1 0 obj << /Type /Catalog >> endobj\ntrailer << /Root 1 0 R >>\n%%EOF\n'
 GIF = b'GIF89a\x01\x00\x01\x00\x80\x00\x00\x00\x00\x00\xff\xff\xff!\xf9\x04\x01\x00\x00\x00\x00,\x00\x00\x00\x00\x01\x00\x01\x00\x00\x02\x02D\x01\x00;'
 
 
 @contextlib.contextmanager
 def attached_files(base):
-    """Un fichier de remplacement (une image GIF d'un pixel) pour chaque fichier joint de la base qui
-    manque, dans les deux instances, le temps du bloc."""
+    """Un fichier de remplacement (une image GIF d'un pixel, ou un PDF vide pour les conditions
+    d'utilisation, dont le formulaire vérifie le type) pour chaque fichier joint de la base qui manque,
+    dans les deux instances, le temps du bloc."""
     created = []
     for path, in query(base, ATTACHED_FILES, NEW_SERVER):
         for root in WEB_ROOTS:
             target = root / path
             if not target.exists():
                 target.parent.mkdir(parents=True, exist_ok=True)
-                target.write_bytes(GIF)
+                target.write_bytes(PDF if path.endswith('.pdf') else GIF)
                 created.append(target)
     try:
         yield
@@ -2373,10 +2377,139 @@ def run_admin(args):
           f' {bases["ancien"]} et {bases["nouveau"]}.')
 
 
+# --- Envoi vers Theia/OZCAR (module 7) ------------------------------------------------------------
+
+# Les schémas du format pivot (celui de Theia, et celui de GeoJSON qu'il cite), copiés du portail (pas
+# d'accès à l'extérieur), hors du dépôt ; ils sont servis aux deux instances par le nouveau, à son adresse,
+# avec le récepteur qui tient lieu de Theia.
+THEIA_PORTAL = 'https://in-situ.theia-land.fr/json-schema/'
+THEIA_SCHEMAS = OUT.parent / 'theia'
+THEIA_RECEIVED = HERE.parent.parent / 'var' / 'theia-receiver'
+THEIA_PASSWORD = 'theia-essai'
+
+
+@contextlib.contextmanager
+def theia_stand_in(served):
+    """Les schémas (public/theia-schema/) et le récepteur dans public/ du nouveau, le temps du bloc."""
+    public = HERE.parent.parent / 'public'
+    (public / 'theia-schema').mkdir(exist_ok=True)
+    for schema in THEIA_SCHEMAS.glob('*.json'):
+        (public / 'theia-schema' / schema.name).write_text(
+            schema.read_text().replace(THEIA_PORTAL, f'{served}/theia-schema/'))
+    (public / 'theia-receiver.php').write_bytes((HERE / 'theia-receiver.php').read_bytes())
+    try:
+        yield
+    finally:
+        for schema in (public / 'theia-schema').glob('*.json'):
+            schema.unlink()
+        (public / 'theia-schema').rmdir()
+        (public / 'theia-receiver.php').unlink(missing_ok=True)
+
+
+def theia_lines(text, *sites):
+    """Un JSON du format pivot en lignes, lisibles ; l'adresse des instances devient <site>. Les fins de
+    ligne des textes longs que le nouveau a enregistrés sont en \\n (dev/differences.md, « Fins de ligne
+    des textes longs »)."""
+    try:
+        text = json.dumps(json.loads(text), indent=1, ensure_ascii=False)
+    except ValueError:
+        pass
+    text = text.replace('\\r\\n', '\\n')
+    for site in sites:
+        text = text.replace(site, '<site>')
+    return text.splitlines()
+
+
+def theia_received(*sites):
+    """Ce que le récepteur a reçu, envoi par envoi, et le vide."""
+    lines = []
+    for record in sorted(THEIA_RECEIVED.glob('*.json')):
+        sent = json.loads(record.read_text())
+        lines += [f"{sent['method']} {sent['path']}", f"type {sent['content_type']}",
+                  f"authentification {sent['authorization'][:16]}"]
+        for name, content in sent['files'].items():
+            lines += [f'fichier {name}', *theia_lines(content, *sites)]
+        record.unlink()
+    return lines or ['rien reçu']
+
+
+def run_theia(args):
+    """L'envoi des fiches vers Theia/OZCAR (module 7), par l'ancien code sur PostgreSQL 17 et par le
+    nouveau, chacun sur sa copie de BASE. Pour chaque observatoire qui a un code Theia, au nom d'un de
+    ses gestionnaires : le JSON téléchargé et la page de son contrôle ; puis un mot de passe Theia
+    enregistré par le formulaire, l'envoi mené par la file et reçu par le récepteur, et un envoi refusé
+    (401). L'état des tâches et de la mise à jour automatique. Sur la base réduite, les envois échouent au
+    contrôle du schéma (chroniques sans mesures) : --base bdoh pour les jouer jusqu'au récepteur."""
+    template = args.base
+    cases = query(template, """
+        SELECT DISTINCT ON (o.id) o.id, o.slug, u.email FROM observatoire o
+          JOIN role r ON r.observatoire_id = o.id AND r.valeur = 'gestionnaire'
+          JOIN utilisateur u ON u.id = r.utilisateur_id AND (u.finacces IS NULL OR u.finacces > now())
+         WHERE o.theiacode IS NOT NULL ORDER BY o.id, u.id""", NEW_SERVER)
+    cases = [c for c in cases if args.only in c[1]]
+    bases = {'ancien': 'bdoh_theia_old', 'nouveau': 'bdoh_theia_new'}
+    for base in bases.values():
+        copy_base(template, base)
+    served = SIDES['new'].url
+
+    def play(side, console, runner, base):
+        parts = {}
+        # Les adresses du format pivot : celle de la page, ou celle de la console pour l'envoi
+        # (router.request_context de l'ancien, DEFAULT_URI du nouveau)
+        # et celle des schémas, servis par le nouveau, dont page_lines a déjà fait <site>
+        sites = [f'{served}/theia-schema/', '<site>/theia-schema/', f'{served}/theia-receiver.php', side.url,
+                 'http://bdoh.dvp', 'http://localhost']
+        sites += [site.replace('/', '\\/') for site in sites]
+        for oid, slug, email in cases:
+            client = Client(side, email, slug)
+            status, _, body = client.get(f'/{slug}/observatoire/{oid}/downloadJson')
+            parts[f'JSON {slug}'] = [f'statut {status}', *theia_lines(body.decode('utf-8', 'replace'), *sites)]
+            lines = page_lines(side.url, *client.get(f'/{slug}/observatoire/{oid}/jsonValidator'))
+            parts[f'contrôle {slug}'] = [theia_lines(line, *sites)[0] if line else line for line in lines]
+            path = f'/{slug}/admin/observatoire/{oid}/edit'
+            form = form_of(client, path, f'/observatoire/{oid}/edit')
+            body = form.filled({'[theiaPassword]': THEIA_PASSWORD}) + b'&btn_update_and_edit='
+            status = client.get(form.url, body, {'Referer': side.url + path})[0]
+            parts[f'mot de passe Theia {slug}'] = [f'statut {status}']
+            for label, refuse in [('envoi', False), ('envoi refusé', True)]:
+                (THEIA_RECEIVED / 'refuse').unlink(missing_ok=True)
+                if refuse:
+                    (THEIA_RECEIVED / 'refuse').touch()
+                parts[f'{label} {slug}'] = redirect_lines(side.url, *client.get(f'/{slug}/observatoire/{oid}/envoieJson')[:2])
+                drain(console, runner, base)
+                parts[f'{label} {slug}'] += ['== reçu', *theia_received(*sites)]
+            (THEIA_RECEIVED / 'refuse').unlink(missing_ok=True)
+        parts['tâches'] = [line for row in query(base, """
+            SELECT state, args::text, coalesce(exitcode::text, ''), coalesce(output, '') FROM jms_jobs
+             WHERE command = 'theia:send:json:data' ORDER BY id""", NEW_SERVER) for line in theia_lines('\t'.join(row), *sites)]
+        parts['mise à jour automatique'] = ['\t'.join(row) for row in query(
+            base, 'SELECT slug, miseajourautomatique FROM observatoire ORDER BY id', NEW_SERVER)]
+        return parts
+
+    THEIA_RECEIVED.mkdir(parents=True, exist_ok=True)
+    for stale in THEIA_RECEIVED.glob('*'):
+        stale.unlink()
+    sides = {}
+    with theia_stand_in(served), attached_files(template):
+        with old_17_on(bases['ancien'], uri_theia_send_data=f"'{served}/theia-receiver.php/'",
+                       uri_theia_ozcar_schema_json=f"'{served}/theia-schema/pivotSchemaDraft7.json'") as console:
+            sides['ancien'] = play(SIDES['reference-17'], console, 'jms-job-queue:run', bases['ancien'])
+        with new_on(bases['nouveau'], template, f'THEIA_SEND_URI={served}/theia-receiver.php/',
+                    f'THEIA_SCHEMA_URI={served}/theia-schema/pivotSchemaDraft7.json') as console:
+            sides['nouveau'] = play(SIDES['new'], console, 'bdoh:jobs:run', bases['nouveau'])
+    report = Report('theia')
+    for part in sides['ancien']:
+        report.add(part, sides['ancien'][part], sides['nouveau'].get(part, []))
+    report.close()
+    print(f'Les instances lisent de nouveau {template}. Les deux copies restent pour examen :'
+          f' {bases["ancien"]} et {bases["nouveau"]}.')
+
+
 def main():
     global CASES_SERVER
     parser = argparse.ArgumentParser(description=__doc__.split('\n')[0])
-    parser.add_argument('what', choices=['pages', 'exports', 'state', 'queue', 'imports', 'accounts', 'admin'])
+    parser.add_argument('what', choices=['pages', 'exports', 'state', 'queue', 'imports', 'accounts', 'admin',
+                                         'theia'])
     parser.add_argument('--old', default='reference', choices=SIDES)
     parser.add_argument('--new', default='reference', choices=SIDES)
     parser.add_argument('--base', default='bdoh_small', help='base où tirer les cas')
@@ -2387,7 +2520,7 @@ def main():
     args = parser.parse_args()
     CASES_SERVER = args.server
     {'pages': run_pages, 'exports': run_exports, 'state': run_state, 'queue': run_queue,
-     'imports': run_imports, 'accounts': run_accounts, 'admin': run_admin}[args.what](args)
+     'imports': run_imports, 'accounts': run_accounts, 'admin': run_admin, 'theia': run_theia}[args.what](args)
 
 
 if __name__ == '__main__':
