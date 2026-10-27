@@ -1,0 +1,42 @@
+fieldset.box{
+    width:90%;
+    margin-left:auto;
+    margin-right:auto;
+}
+.box .form-control{
+    height:34px;
+}
+table.table{
+    width:90%;
+    margin-left:auto;
+    margin-right:auto;
+}
+.box table.table th{
+    border-top:0;
+    text-align:center;
+}
+.box table.table td.qualiteLabel{
+    font-weight:bold;
+    vertical-align:middle;
+}
+.box table.table td:not(.qualiteLabel){
+    text-align:center;
+}
+span.code{
+    color:grey;
+}
+span.gap{
+    font-weight:normal;
+    color:grey;
+}
+div.minicolors{
+    width:175px;
+    margin:0 auto;
+}
+.box select{
+    width:100px;
+    margin:0 auto;
+}
+sup.strokeHelp{
+    cursor:default;
+}

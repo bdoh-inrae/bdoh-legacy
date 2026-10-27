@@ -1,0 +1,38 @@
+div.bareme{
+    margin-bottom:2px;
+}
+div.bareme > div.input-group.listeBareme > select.form-control.bareme{
+    border-radius:4px 0 0 4px;
+    width:211px;
+}
+div.bareme > div.input-group{
+    margin-left:-1px;
+}
+div.bareme > div.input-group > input[type="text"]{
+    width:145px;
+    padding-left:2px;
+    padding-right:2px;
+}
+div.bareme > div.input-group.divEndDate > input.endDate{
+    border-top-right-radius:4px;
+    border-bottom-right-radius:4px;
+}
+div.bareme > div.input-group.divEndDate > span.input-group-btn:last-of-type{
+    left:-17px;
+    display:block;
+}
+div.bareme > div.input-group.divEndDate > span.input-group-btn:last-of-type > a{
+    padding-left:2px;
+    padding-right:2px;
+    opacity:0.25;
+}
+div.bareme > div.input-group.divEndDate > span.input-group-btn:last-of-type > a.disabled{
+    opacity:0;
+}
+div.bareme > div.input-group.divEndDate > span.input-group-btn:last-of-type > a:hover{
+    opacity:0.65;
+}
+/* import de barèmes */
+div#bareme-import div.alert-info:last-child{
+    margin-bottom:0;
+}

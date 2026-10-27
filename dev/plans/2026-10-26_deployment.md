@@ -20,7 +20,7 @@ Chaque tâche renvoie à l'endroit où elle s'explique. Un module qui découvre 
 - Le serveur SMTP accepte `bdoh@inrae.fr` depuis la nouvelle machine (SPF, relais) : la connexion passe désormais par le courriel. Essayer l'envoi d'un lien vers une adresse INRAE et vers une adresse extérieure, et vérifier qu'une messagerie qui ouvre les liens pour les analyser ne les consomme pas (page du bouton, `check_post_only`).
 - Dossiers inscriptibles par le serveur web : `var/` (cache, journaux, sessions, imports), `public/css/themes/` (thèmes compilés par `CssManager`), `public/uploads/`.
 - File de tâches : le service systemd `config/bdoh-job-worker.service` (`KillMode=mixed`, `dev/differences.md`, « Tâche interrompue par un signal »).
-- JavaScript et feuilles de style compilés sur place, et non plus copiés de la référence (`dev/plans/2026-10-23_consultation.md`, étape 6).
+- JavaScript et feuilles de style : `public/assets/`, compilés par `make assets` (Docker, à la préparation d'une version), ou sur la VM avec le Node de Debian 13 (`npm ci`, puis `NODE_OPTIONS=--openssl-legacy-provider node_modules/.bin/encore production`) : le résultat est le même (`dev/decisions.md`, « JavaScript compilé comme l'ancien »). `npm ci` a besoin du registre npm et de GitHub (jqPlot y est pris à un commit).
 
 ## La base
 

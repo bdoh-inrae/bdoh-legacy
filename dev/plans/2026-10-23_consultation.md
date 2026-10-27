@@ -1,6 +1,6 @@
 # Consultation publique et visualiseur
 
-État : en cours, commencé le 2026-10-23. Point 2 du portage dans `ROADMAP.md` ; suit le socle (`dev/plans/2026-10-23_socle.md`).
+État : terminé le 2026-10-27, commencé le 2026-10-23 ; reste l'essai dans un navigateur, avec les autres (`ROADMAP.md`). Point 2 du portage dans `ROADMAP.md` ; suit le socle (`dev/plans/2026-10-23_socle.md`).
 
 But : les pages que l'on consulte sans administrer, servies par le nouveau BDOH à l'identique de l'ancien, pour chaque profil (anonyme, utilisateur, gestionnaire, administrateur) : `compare.py pages` sans écart hors de `dev/differences.md`.
 
@@ -32,3 +32,4 @@ Pour les comparer par profil, il faut se connecter : la connexion par formulaire
 - 2026-10-24 : consultation validée côté serveur. Sur la base réduite (1 000 cas, quatre profils) puis sur la base complète, contre l'ancien code sur PostgreSQL 17 comme contre la référence sur PostgreSQL 11 : toutes les pages sont identiques, à un arrondi près ou de même contenu dans un autre ordre (listes désormais triées), sauf le choix de la langue (erreur 500 de l'ancien, corrigée). L'outil de comparaison a appris en route : adresse de chaque instance, paramètres d'adresse sous forme canonique, traductions pour le JavaScript triées, pages qui ne diffèrent que par l'ordre rangées à part, choix de la langue dans une session à lui.
   - Reste au module : le JavaScript et les feuilles de style compilés ici et non plus copiés de la référence (étape 6 du plan, second temps) ; un coup d'œil dans un navigateur, visualiseur compris, par Lou.
 - 2026-10-26 : l'échafaudage temporaire a disparu avec l'étape 4 de l'administration : plus de routes d'attente ni de `PendingController` (`dev/plans/2026-10-26_administration.md`).
+- 2026-10-27 : JavaScript et feuilles de style compilés ici (étape 6, premier temps), et non plus copiés de la référence : sources et configuration de l'ancien, ses paquets, le Node de Debian 13 (`make assets`, `dev/decisions.md`, « JavaScript compilé comme l'ancien »). Fichiers identiques à ceux de la référence, aux numéros près ; `compare.py pages` en contrôle. Le second temps (un Encore récent) n'est plus nécessaire à la mise en service : il passe après la bascule (`ROADMAP.md`). Module clos côté serveur ; l'essai dans un navigateur, visualiseur compris, reste à Lou.

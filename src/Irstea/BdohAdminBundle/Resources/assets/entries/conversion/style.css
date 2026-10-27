@@ -1,0 +1,13 @@
+#paramConversionId{
+    text-align:right;
+}
+#conversion .tooltip-inner {
+    max-width:400px;
+}
+p.noChroniqueMere, #displayParamConversionId.paramConversionError{
+    color:#a94442;
+    font-style:italic;
+}
+#displayParamConversionId{
+    color:grey;
+}

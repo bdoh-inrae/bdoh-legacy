@@ -16,9 +16,13 @@ NEW = docker compose -f compose.yaml
 # Composer a besoin du réseau : il tourne dans un conteneur jetable, hors du réseau interne.
 COMPOSER = docker run --rm --user $(HOST_UID):$(HOST_GID) -e HOME=/tmp -v $(CURDIR):/var/www/bdoh bdoh-app composer
 NPM = docker run --rm --user $(HOST_UID):$(HOST_GID) -e HOME=/tmp -v $(CURDIR):/var/www/bdoh bdoh-app npm
+# Encore 0.15 (webpack 3) de l'ancien BDOH, sous le Node 20 de Debian 13 : il lui faut les algorithmes
+# de hachage qu'OpenSSL 3 range à part (dev/decisions.md, « JavaScript compilé comme l'ancien »).
+ENCORE = docker run --rm --network none --user $(HOST_UID):$(HOST_GID) -e HOME=/tmp -e NODE_OPTIONS=--openssl-legacy-provider \
+	-v $(CURDIR):/var/www/bdoh bdoh-app node_modules/.bin/encore
 DB_CONTAINER = $(if $(filter new,$(SERVER)),bdoh-db,bdoh-reference-db)
 
-.PHONY: help app-install start stop composer phpstan anonymize db db-small inspect reference-app reference-start reference-stop reference-base reference-17-start mail-start worker-start
+.PHONY: help app-install assets start stop composer phpstan anonymize db db-small inspect reference-app reference-start reference-stop reference-base reference-17-start mail-start worker-start
 
 help: ## Liste les commandes
 	@grep -E '^[a-z0-9-]+:.*## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*## "} {printf "  %-19s %s\n", $$1, $$2}'
@@ -27,13 +31,13 @@ app-install: ## Installe le nouveau BDOH : image, dépendances, .env copié de .
 	$(NEW) build app
 	test -f .env || cp .env.example .env
 	$(COMPOSER) install --no-interaction
-	$(NPM) ci --no-audit --no-fund
 	mkdir -p public/css/themes public/uploads
-	@# JavaScript et feuilles de style compilés par la référence, le temps de les compiler ici
-	@# (dev/plans/2026-10-23_consultation.md)
-	mkdir -p public/assets public/js
-	cp -a $(REFERENCE_DIR)/app/web/assets/. public/assets/
-	cp -a $(REFERENCE_DIR)/app/web/js/. public/js/
+	$(MAKE) assets
+
+assets: ## Compile le JavaScript et les feuilles de style dans public/assets
+	$(NPM) ci --no-audit --no-fund
+	mkdir -p public/assets
+	$(ENCORE) production
 
 start: ## Lance le nouveau BDOH : http://172.30.26.10/
 	$(NEW) up -d --wait db app

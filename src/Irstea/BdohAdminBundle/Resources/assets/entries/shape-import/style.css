@@ -1,0 +1,26 @@
+form > div.panel > div.panel-body > div.panel{
+    margin:0;
+}
+form > div.panel > div.panel-body > div.panel:not(:first-child){
+    margin-top:15px;
+}
+form > div.panel > div.panel-body > div.alert.alert-warning,
+form > div.panel > div.panel-body > div.alert.alert-danger{
+    margin:15px 0 0;
+}
+a.collapse-title,
+a.collapse-title:hover,
+a.collapse-title:focus{
+    cursor:pointer;
+    text-decoration:none;
+    color:#444444;
+}
+a.collapse-title b.caret{
+    margin:0;
+    padding:0;
+    vertical-align:3px;
+    transition:transform 0.3s ease-in-out;
+}
+a.collapse-title.collapsed b.caret{
+    transform:rotate(-90deg);
+}
