@@ -210,7 +210,7 @@ class ChroniqueRepository extends EntityRepository
         $query = <<<SQL
             WITH env AS (
                 SELECT
-                        ST_Transform(st.point, 4236) AS env
+                        ST_Transform(st.point, 4326) AS env -- WGS 84 (GeoJSON) ; l'ancien écrivait 4236 (dev/differences.md)
                 FROM station st
                     INNER JOIN chronique c ON (c.station_id = st.id)
                 WHERE
