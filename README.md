@@ -2,7 +2,7 @@
 
 BDOH, la Base de Données des Observatoires Hydrologiques, telle qu'elle est en service, portée de Symfony 2.8 et PHP 7.1 vers Symfony 7.4 et PHP 8.4. Elle est maintenue jusqu'à son remplacement par le nouveau BDOH, développé dans les autres dépôts de [bdoh-inrae](https://github.com/bdoh-inrae), puis archivée.
 
-Le portage garde le comportement, les adresses et les données de l'application en service. Rien n'y tourne encore : l'application en service reste celle du dépôt d'origine (forge INRAE, accès réservé) jusqu'à la bascule. L'avancée est dans [ROADMAP.md](ROADMAP.md).
+Le portage garde le comportement, les adresses et les données de l'application en service. Rien n'y tourne encore : il remplacera à la bascule le code du dépôt d'origine (forge INRAE, accès réservé). L'avancée est dans [ROADMAP.md](ROADMAP.md).
 
 Les commandes du projet sont dans le `Makefile` : `make` les liste.
 
@@ -19,8 +19,13 @@ make reference-base    la branche sur une autre base (BASE=bdoh_small)
 make reference-stop    l'arrête
 ```
 
-Le nouveau BDOH aura son propre serveur de base, PostgreSQL 17 comme Debian 13 (`compose.yaml`) : `SERVER=new` y mène les commandes `db`, `db-small` et `inspect`.
+Le nouveau BDOH a son propre serveur de base, PostgreSQL 17 comme Debian 13 (`compose.yaml`) : `SERVER=new` y mène les commandes `db`, `db-small` et `inspect`. Il se lance par `make start` et répond sur http://172.30.26.10/.
 
-Dans la référence, tous les comptes de la base anonymisée ont le mot de passe `bdoh-test`. Le nouveau BDOH n'a pas de mot de passe : il envoie un lien de connexion par courriel. En développement, où les courriels ne partent pas, la console en crée un : `docker exec bdoh-app php bin/console security:users:login-link ADRESSE OBSERVATOIRE`.
+Dans la référence, tous les comptes de la base anonymisée ont le mot de passe `bdoh-test`. Le nouveau BDOH n'a pas de mot de passe : il envoie un lien de connexion par courriel. En développement, rien ne part ; le lien s'obtient de deux façons :
+
+- par la console : `docker exec bdoh-app php bin/console security:users:login-link ADRESSE OBSERVATOIRE` ;
+- par Mailpit, qui retient les courriels (`make mail-start`, puis http://172.30.26.25:8025/), une fois la ligne `MAILER_DSN=smtp://mailpit:1025` ajoutée à `.env.local`. `dev/compare/use-base.sh` et `compare.py` réécrivent ce fichier, et la ligne disparaît.
+
+Une adresse e-mail, à l'inscription comme ailleurs, doit finir en `.invalid` : BDOH refuse un domaine sans serveur de courrier, et le DNS du développement n'en donne qu'à ceux-là (`dev/dns/Corefile`).
 
 Licence : [GNU AGPL v3](LICENSE).
