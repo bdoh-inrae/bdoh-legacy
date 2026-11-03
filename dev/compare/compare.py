@@ -2450,6 +2450,15 @@ def run_admin(args):
                         'champ d’un compte, pour un administrateur': (helper(email, slug, 'utilisateur', target, 'email'), 200),
                         'champ d’une station, pour un administrateur': (helper(email, slug, 'station', sid, 'nom'), 200),
                         'description courte, pour un administrateur': (short(email, slug, 'station', sid), 200)}
+            # Ce que les formulaires d'un gestionnaire demandent : le bouton d'ajout d'un producteur, le choix d'un DOI
+            own = query(base, f"""SELECT c.id FROM ({CHRONIQUES}) c WHERE c.slug = '{mslug}' AND c.dtype = 'continue'
+                                    ORDER BY c.id LIMIT 1""", NEW_SERVER)
+            doi = query(base, f"""SELECT d.id FROM doi d JOIN observatoire o ON o.id = d.observatoire_id
+                                    WHERE o.slug = '{mslug}' ORDER BY d.id LIMIT 1""", NEW_SERVER)
+            if own:
+                observed['producteur d’une chronique, pour un gestionnaire'] = (helper(manager, mslug, 'chronique_continue', own[0][0], 'producteur'), 200)
+            if doi:
+                observed['description d’un DOI, pour un gestionnaire'] = (short(manager, mslug, 'doi', doi[0][0]), 200)
             rows = query(base, """SELECT u.email, o.slug FROM utilisateur u JOIN role r ON r.utilisateur_id = u.id
                                      JOIN siteexperimental s ON s.id = r.site_id JOIN observatoire o ON o.id = s.observatoire_id
                                     WHERE r.valeur = 'contributeur' AND u.roleadmin IS NULL
