@@ -4,6 +4,10 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/). Numéros de v
 
 ## Non publié
 
+## 0.1.0 - 2026-11-03
+
+Le portage complet vers Symfony 7.4 et PHP 8.4, comparé module par module à l'ancien BDOH. Pas encore en service : cette version marque l'état à faire essayer aux gestionnaires d'observatoire.
+
 ### Ajouté
 
 - Anonymisation des dumps de production (`make anonymize`) : chaque colonne de texte est classée, une colonne non classée arrête tout ; le rapport ne contient que des comptes, et aucun dump n'est produit en cas de fuite possible. Passée sur les bases de production et d'OTHU du 21 octobre 2026.

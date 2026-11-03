@@ -19,10 +19,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://gitlab-ssh.irstea.fr/pole-is/bdoh"
+    "url": "https://github.com/bdoh-inrae/bdoh-legacy"
   },
   "author": "Guillaume Perréal <guillaume.perreal@irstea.fr>",
-  "license": "ISC",
+  "license": "AGPL-3.0-or-later",
   "dependencies": {
     "@claviska/jquery-minicolors": "^2.2.6",
     "babel-polyfill": "^6.26.0",
