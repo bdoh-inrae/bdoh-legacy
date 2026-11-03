@@ -132,6 +132,11 @@ services:
         tags:
             - { name: kernel.event_listener, event: sonata.admin.event.configure.menu.sidebar, method: addMenuItems }
 
+    Irstea\BdohAdminBundle\EventListener\SonataHelperAccessListener:
+        arguments: ['@sonata.admin.request.fetcher']
+        tags:
+            - { name: kernel.event_listener, event: kernel.controller }
+
     irstea_bdoh_admin.admin.observatoire:
         class: Irstea\BdohAdminBundle\Admin\Data\Observatoire
         tags:

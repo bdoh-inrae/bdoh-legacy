@@ -668,6 +668,7 @@ $various = [
             'resultMessage'     => 'Your JSON valided',
             'resultMessageFail' => 'Your JSON failed!',
             'schema'            => 'Validation schema',
+            'missingCredentials' => 'To send the record, first fill in the Theia code and password of the observatory.',
         ],
         'shapeImport'    => 'Geographic data upload',
         'help'           => [

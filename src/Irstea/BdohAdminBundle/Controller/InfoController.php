@@ -38,22 +38,4 @@ class InfoController extends Controller
         return new Response($parametre->getCode() . ($count === 1 ? '' : ("-$count")));
     }
 
-    /**
-     * @return Response
-     */
-    #[IsGranted('ROLE_ADMIN')]
-    public function getFilteredChroniquesAction()
-    {
-        $request = $this->getRequest()->query;
-        $bassinId = $request->get('bassinId');
-        $coursEauId = $request->get('coursEauId');
-
-        $chronRepo = $this->getBdohRepo('Chronique');
-
-        // cette methode n'existe pas ...
-        // TODO à virer ou à corriger, cette action ne semble pas être utilisée non plus
-        $chroniques = $chronRepo->richFindByGeography($bassinId, $coursEauId);
-
-        return new Response($chroniques);
-    }
 }

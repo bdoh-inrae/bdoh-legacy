@@ -15,7 +15,7 @@ class HistoriqueAdministrationInspireTheme extends HistoriqueAdministration
     /**
      * @return InspireTheme
      */
-    public function getInspireTheme(): InspireTheme
+    public function getInspireTheme(): ?InspireTheme
     {
         return $this->inspireTheme;
     }

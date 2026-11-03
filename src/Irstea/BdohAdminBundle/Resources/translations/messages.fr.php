@@ -666,6 +666,7 @@ $various = [
             'resultMessage'     => 'Votre JSON est validé',
             'resultMessageFail' => "Votre JSON n'est pas valide !",
             'schema'            => 'Schéma de validation',
+            'missingCredentials' => "Pour envoyer la fiche, renseignez d'abord le code et le mot de passe Theia de l'observatoire.",
         ],
         'measuresImport' => 'Import de mesures',
         'controleImport' => 'Import et export de points de contrôle',

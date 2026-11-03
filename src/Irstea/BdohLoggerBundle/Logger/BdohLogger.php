@@ -133,6 +133,13 @@ class BdohLogger
         $historique->constructDescription($this->translator);
         $historique->constructLien();
         $this->entityManager->persist($historique);
+
+        // A removal is written with the removal itself, by the flush that Sonata does next: if the database
+        // refuses it (foreign key), the history must not say that it took place.
+        if ($historique instanceof HistoriqueAdministration && str_ends_with((string) $historique->getAction(), 'Remove')) {
+            return;
+        }
+
         $this->entityManager->flush();
     }
 

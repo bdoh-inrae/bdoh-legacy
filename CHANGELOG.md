@@ -7,6 +7,13 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/). Numéros de v
 ### Corrigé
 
 - Aux imports QJO et Qtvar, une valeur écrite `0` reste un zéro : l'ancien BDOH en faisait une lacune, sans message.
+- À l'import QJO, un trou de plus d'un mois se comble entièrement par des lacunes, et des lignes qui reviennent en arrière n'en ajoutent plus.
+- Une suppression que la base refuse n'est plus notée dans l'historique.
+- La page de l'historique ne tombe plus en erreur après la suppression d'un milieu, d'un critère, d'une contrainte d'accès ou d'un thème INSPIRE.
+- L'emprise d'un jeu de données envoyée à Theia/OZCAR est la vraie, et non le point d'une de ses stations.
+- Un envoi vers Theia/OZCAR redirigé est un échec, et non un envoi réussi sans contenu ; sans code ou sans mot de passe, un message remplace l'erreur brute de la tâche.
+- Le format d'export Vigilance, que rien ne savait écrire, n'est plus accepté, et une adresse de l'administration qui répondait toujours par une erreur interne est retirée.
+- Des corrections de sécurité, décrites à la mise en service du nouveau BDOH.
 
 ## 0.1.0 - 2026-11-03
 

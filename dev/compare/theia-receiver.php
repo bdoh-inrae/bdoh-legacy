@@ -2,8 +2,8 @@
 /*
  * Tient lieu de Theia/OZCAR pour dev/compare/compare.py theia : copié dans public/ le temps de la
  * comparaison, il garde chaque envoi des deux BDOH dans var/theia-receiver/ (méthode, adresse, type,
- * empreinte de l'authentification, fichiers du zip) et répond 201, ou 401 si le fichier « refuse »
- * de ce dossier existe.
+ * empreinte de l'authentification, fichiers du zip) et répond 201, 401 si le fichier « refuse »
+ * de ce dossier existe, ou 302 si le fichier « redirige » existe.
  */
 
 $dir = __DIR__ . '/../var/theia-receiver';
@@ -33,7 +33,10 @@ $record = [
 ];
 file_put_contents(sprintf('%s/%s.json', $dir, microtime(true)), json_encode($record));
 
-if (file_exists($dir . '/refuse')) {
+if (file_exists($dir . '/redirige')) {
+    http_response_code(302);
+    header('Location: /theia-receiver.php/ailleurs');
+} elseif (file_exists($dir . '/refuse')) {
     http_response_code(401);
     echo 'Bad credentials';
 } else {

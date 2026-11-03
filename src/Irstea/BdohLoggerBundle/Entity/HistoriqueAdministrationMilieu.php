@@ -15,7 +15,7 @@ class HistoriqueAdministrationMilieu extends HistoriqueAdministration
     /**
      * @return Milieu
      */
-    public function getMilieu(): Milieu
+    public function getMilieu(): ?Milieu
     {
         return $this->milieu;
     }

@@ -15,7 +15,7 @@ class HistoriqueAdministrationCriteriaClimate extends HistoriqueAdministration
     /**
      * @return CriteriaClimat
      */
-    public function getCriteriaClimat(): CriteriaClimat
+    public function getCriteriaClimat(): ?CriteriaClimat
     {
         return $this->criteriaClimat;
     }

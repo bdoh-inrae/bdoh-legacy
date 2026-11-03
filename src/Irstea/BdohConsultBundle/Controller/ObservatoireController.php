@@ -127,7 +127,12 @@ class ObservatoireController extends Controller
     public function getSendJsonToTheia(Request $request)
     {
         $observatoire = $this->fetchObservatoire($request->attributes);
-        // récupération des autre paramètres
+        // Sans code ou sans mot de passe, la tâche échouerait sur une erreur brute
+        if (!$observatoire->getTheiaCode() || !$observatoire->getTheiaPassword()) {
+            $request->getSession()->getFlashBag()->add('error', $this->getTranslator()->trans('admin.sendJson.missingCredentials'));
+
+            return $this->redirectToRoute('bdoh_admin_observatoire_edit', ['id' => $observatoire->getId()]);
+        }
 
         $this->jobManager->enqueueJsonTheia($observatoire);
 

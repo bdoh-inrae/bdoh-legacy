@@ -152,7 +152,9 @@ class QjoImporter extends Importer implements ImporterInterface
 
         // Gap can be a missing line for a given date.
         if (isset($this->previousDate)) {
-            $days = date_diff($this->previousDate, $currentDateTime)->d;
+            // In days all told (->days, not the day part ->d), and nothing to fill when going backwards
+            $interval = date_diff($this->previousDate, $currentDateTime);
+            $days = $interval->invert ? 0 : $interval->days;
 
             // Gap(s) if this difference is not 1
             if ($days > 1) {

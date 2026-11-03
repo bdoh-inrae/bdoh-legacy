@@ -3,12 +3,10 @@
 {% set modalId     = 'export-' ~ random() %}
 {% set exportTitle = 'measure.export.title'|trans({'%count%': chroniques|length}) %}
 {% set nbChroniques = chroniques|length %}
-{% set allowVigilance = false %}
 {% set hasWithValueLimits = false %}
 {% set hasDiscontChronique = false %}
 {% for chronique in chroniques %}
     {% set hasDiscontChronique = hasDiscontChronique or not chronique.continue %}
-    {% set allowVigilance = allowVigilance and chronique.station.oneCodeAlternatif('vigilance') %}
     {% set hasWithValueLimits = hasWithValueLimits or chronique.allowValueLimits %}
 {% endfor %}
 
@@ -16,9 +14,6 @@
     {% set allowedExportFormats = ['Bdoh'] %}
 {% else %}
     {% set allowedExportFormats = ['Bdoh', 'Qtvar'] %}
-    {% if allowVigilance %}
-        {% set allowedExportFormats = allowedExportFormats|merge(['Vigilance']) %}
-    {% endif %}
 {% endif %}
 
 {% if termsOfUses is defined %}

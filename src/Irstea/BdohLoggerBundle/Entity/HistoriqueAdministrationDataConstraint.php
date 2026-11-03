@@ -15,7 +15,7 @@ class HistoriqueAdministrationDataConstraint extends HistoriqueAdministration
     /**
      * @return DataConstraint
      */
-    public function getDataConstraint(): DataConstraint
+    public function getDataConstraint(): ?DataConstraint
     {
         return $this->dataConstraint;
     }

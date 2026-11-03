@@ -15,7 +15,7 @@ class HistoriqueAdministrationCriteriaGeology extends HistoriqueAdministration
     /**
      * @return CriteriaGeology
      */
-    public function getCriteriaGeology(): CriteriaGeology
+    public function getCriteriaGeology(): ?CriteriaGeology
     {
         return $this->criteriaGeology;
     }

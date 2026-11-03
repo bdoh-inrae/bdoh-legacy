@@ -202,8 +202,8 @@ def export_cases(base):
             period = ['1816-01-01T00:00:00+00:00', '1821-01-01T00:00:00+00:00']
         else:
             period = ['2024-01-01T00:00:00+00:00', '2025-01-01T00:00:00+00:00']
-        # Le format Vigilance n'est proposé nulle part dans l'ancien (Modal/export.html.twig) et
-        # n'a pas de classe : il échoue des deux côtés.
+        # Le format Vigilance n'était proposé nulle part dans l'ancien et n'avait pas de classe : il échouait,
+        # et le nouveau ne l'accepte plus (dev/differences.md).
         formats = ['bdoh'] if kind == 'discontinue' else ['bdoh', 'qtvar']
         for fmt in formats:
             # Le fuseau entre apostrophes, comme JobManager le passe à la commande.
@@ -766,6 +766,11 @@ def run_state(args):
           JOIN observatoire o ON o.id = r.observatoire_id
          WHERE r.valeur = 'gestionnaire' AND o.slug = '{slug}' AND (u.finacces IS NULL OR u.finacces > now())
          ORDER BY u.id LIMIT 1""", NEW_SERVER)[0][0]
+    # Un export en moyenne d'une chronique discontinue échoue des deux côtés : la tâche à relancer
+    discontinue, discontinue_slug = query(template, f"""
+        SELECT c.id, c.slug FROM ({CHRONIQUES}) c JOIN chronique ch ON ch.id = c.id
+         WHERE c.dtype = 'discontinue' AND ch.nbmesures > 0 ORDER BY c.id LIMIT 1""", NEW_SERVER)[0]
+    checks = {}
     def play(side, console, runner, base):
         """Les calculs, les exports demandés par le formulaire, une tâche annulée, une semaine de
         mesures vidée avec propagation, une tâche relancée, la file jusqu'au bout ; rend ce que
@@ -781,11 +786,19 @@ def run_state(args):
         form = {'beginDate': '2024-01-01T00:00:00Z', 'endDate': '2024-02-01T00:00:00Z',
                 'exportFormat': 'Bdoh', 'exportType': 'identical', 'instantStep': '60',
                 'meanCumulStep': '7', 'timezone': '1', 'chroniques[]': cid, 'termsOfUses': '1'}
-        for fields in [form, dict(form, exportType='mean'), dict(form, exportFormat='Vigilance'),
-                       dict(form, exportFormat='Qtvar')]:
-            status, headers, _ = post(f'/{slug}/mesure/export', fields)
+        for fields, where in [(form, slug), (dict(form, exportType='mean'), slug),
+                              (dict(form, exportType='mean', **{'chroniques[]': discontinue}), discontinue_slug),
+                              (dict(form, exportFormat='Qtvar'), slug)]:
+            status, headers, _ = post(f'/{where}/mesure/export', fields)
             log.append(f"export {fields['exportFormat']} {fields['exportType']} : {status} "
                        f"{headers.get('Location', '').replace(side.url, '')}")
+        if side.login_link:
+            # Le format Vigilance, que rien ne sait écrire, ne part plus en tâche (dev/differences.md)
+            jobs = lambda: query(base, 'SELECT count(*) FROM jms_jobs', NEW_SERVER)[0][0]
+            before = jobs()
+            post(f'/{slug}/mesure/export', dict(form, exportFormat='Vigilance'))
+            checks['nouveau seul : format Vigilance refusé, aucune tâche'] = (
+                ['conforme'] if jobs() == before else [f'{before} tâches avant, {jobs()} après'])
         last = query(base, "SELECT max(id) FROM jms_jobs", NEW_SERVER)[0][0]
         status, headers, _ = post(f'/{slug}/jobs/{last}', {'action': 'cancel'})
         log.append(f"annulation : {status} {headers.get('Location', '').replace(side.url, '')}")
@@ -819,6 +832,8 @@ def run_state(args):
     report = Report('state')
     for part in sides['ancien']:
         report.add(part, sides['ancien'][part], sides['nouveau'][part])
+    for part, lines in checks.items():
+        report.add(part, ['conforme'], lines)
     report.close()
 
     # Les mêmes dates dans les deux copies, pour en comparer les pages de suivi des tâches
@@ -1178,6 +1193,14 @@ def import_cases(base):
     cases.append({'name': 'Qtvar', 'format': 'Qtvar', 'content': ('\n'.join(qtvar) + '\n').encode(),
                   'type': 'keepExisting', 'cid': cid, 'slug': slug, 'station': station, 'chronique': code,
                   'timezone': '+0'})
+    # Jours manquants (dev/differences.md) : un trou de plus d'un mois, des lignes qui reviennent en arrière
+    for name, dates in [('QJO, trou de plus d’un mois', ['20220301', '20220415']),
+                        ('QJO, lignes dans le désordre', ['20210601', '20210520'])]:
+        lines = ['DEC;.  6 13', f'950;{station};essai;0;0;0;0;essai;0;',
+                 *[f'QJO;{station};{d};1.5; ;9;' for d in dates], 'FIN;EXP-HYDRO;1;']
+        cases.append({'name': name, 'format': 'Qjo', 'content': ('\n'.join(lines) + '\n').encode(),
+                      'type': 'keepExisting', 'cid': cid, 'slug': slug, 'station': station, 'chronique': code,
+                      'timezone': '+1'})
     return cases
 
 
@@ -1423,15 +1446,28 @@ def run_imports(args):
             sides[name] = state_lines(bases[name], historique)
     for table in sides['ancien']:
         report.add(f'état {table}', sides['ancien'][table], sides['nouveau'][table])
-    # Un zéro écrit « 0 » reste une mesure, le 10 de chaque fichier (dev/differences.md, « Zéro importé »)
-    zeros = {'QJO': ('2025-09-09 12:00', '2025-09-10 12:00', 1), 'Qtvar': ('2025-10-10 00:00', '2025-10-11 00:00', 2)}
-    for case in cases:
-        if case['name'] in zeros:
-            begin, end, expected = zeros[case['name']]
-            found = int(query(bases['nouveau'], f"""SELECT count(*) FROM mesure WHERE chronique_id = {case['cid']}
-                                AND date >= '{begin}' AND date < '{end}' AND valeur = 0""", NEW_SERVER)[0][0])
-            report.add(f"nouveau seul : zéro écrit 0 gardé, {case['name']}", ['conforme'],
-                       ['conforme' if found == expected else f'non conforme : {found} au lieu de {expected}'])
+    # Ce que seul le nouveau fait aux formats QJO et Qtvar (dev/differences.md, « Zéro importé » et
+    # « Jours manquants ») : chaque cas, les mesures attendues, et combien de mesures diffèrent de l'ancien
+    hydro = {'QJO': (1, 'zéro écrit 0 gardé', "date >= '2025-09-09 12:00' AND date < '2025-09-10 12:00' AND valeur = 0", 1),
+             'Qtvar': (2, 'zéro écrit 0 gardé', "date >= '2025-10-10 00:00' AND date < '2025-10-11 00:00' AND valeur = 0", 2),
+             'QJO, trou de plus d’un mois': (31, 'trou de plus d’un mois comblé par des lacunes',
+                                             "date >= '2022-03-01 12:00' AND date < '2022-04-14 12:00' AND valeur IS NULL", 44),
+             'QJO, lignes dans le désordre': (11, 'lignes dans le désordre, aucune lacune ajoutée',
+                                              "date >= '2021-05-19 00:00' AND date < '2021-06-20 00:00'", 2)}
+    played = [c for c in cases if c['name'] in hydro]
+    for case in played:
+        _, label, where, expected = hydro[case['name']]
+        found = int(query(bases['nouveau'], f"SELECT count(*) FROM mesure WHERE chronique_id = {case['cid']} AND {where}",
+                          NEW_SERVER)[0][0])
+        report.add(f"nouveau seul : {label}, {case['name']}", ['conforme'],
+                   ['conforme' if found == expected else f'non conforme : {found} au lieu de {expected}'])
+    if played:
+        rows = lambda base: {tuple(row) for row in query(base, f"""SELECT date, valeur, minimum, maximum, qualite_id FROM mesure
+                                                                     WHERE chronique_id = {played[0]['cid']}""", NEW_SERVER)}
+        changed = len({row[0] for row in rows(bases['ancien']) ^ rows(bases['nouveau'])})
+        expected = sum(hydro[c['name']][0] for c in played)
+        report.add('nouveau seul : seules ces mesures diffèrent de l’ancien', ['conforme'],
+                   ['conforme' if changed == expected else f'non conforme : {changed} au lieu de {expected}'])
     report.close()
     print(f'Les instances lisent de nouveau {template}. Les deux copies restent pour examen :'
           f' {bases["ancien"]} et {bases["nouveau"]}.')
@@ -2381,8 +2417,57 @@ def run_admin(args):
             status, _, _ = client.get(form.url, body, {'Content-Type': kind, 'Referer': client.side.url + path})
             results['nouveau seul : extension d’un fichier téléversé tirée de son contenu'] = (
                 ['conforme'] if status == 302 and logo().endswith('.gif') else [f'statut {status}, chemin : {logo()}'])
+        if 'personnetheia' in admins:
+            # La base refuse la suppression (responsable d'un observatoire) : l'historique n'en dit rien
+            label = 'nouveau seul : suppression refusée par la base, historique muet'
+            email, slugs = accounts['administrateur']
+            rows = query(base, 'SELECT projectleader_id FROM observatoire WHERE projectleader_id IS NOT NULL ORDER BY 1 LIMIT 1', NEW_SERVER)
+            if rows:
+                pid = rows[0][0]
+                removed = lambda: query(base, "SELECT count(*) FROM historique WHERE action = 'historique.actions.PersonneTheiaRemove'", NEW_SERVER)[0][0]
+                before = removed()
+                lines = send(f'/{slugs[0]}/admin/personnetheia/{pid}/delete', f'/personnetheia/{pid}/delete', {}, 'btn_delete')
+                still = query(base, f'SELECT count(*) FROM personnetheia WHERE id = {pid}', NEW_SERVER)[0][0]
+                results[label] = (['conforme'] if lines[0] == 'statut 302' and still == '1' and removed() == before
+                                  else [lines[0], f'personne présente : {still}, suppressions notées : {before}, puis {removed()}'])
+            else:
+                results[label] = ['aucun cas dans la base']
+        if 'utilisateur' in admins and 'station' in admins:
+            # Les aides de Sonata demandent le droit du formulaire qui les appelle (dev/local/security.md)
+            email, slugs = accounts['administrateur']
+            manager, (mslug,) = accounts['gestionnaire']
+            target = query(base, "SELECT id FROM utilisateur WHERE roleadmin = 'FCT' ORDER BY id LIMIT 1", NEW_SERVER)[0][0]
+            code = 'irstea_bdoh_admin.admin.'
+            helper = lambda who, slug, name, oid, field: client_for(who, slug).get(
+                f'/{slug}/admin/core/get-form-field-element?' + urllib.parse.urlencode(
+                    {'_sonata_admin': code + name, 'objectId': oid, 'uniqid': 'x', 'elementId': f'x_{field}'}),
+                b'', {'X-Requested-With': 'XMLHttpRequest'})[0]
+            short = lambda who, slug, name, oid: client_for(who, slug).get(
+                f'/{slug}/admin/core/get-short-object-description.html?' + urllib.parse.urlencode(
+                    {'_sonata_admin': code + name, 'objectId': oid}))[0]
+            slug, sid = first(base, admins['station'], slugs)
+            observed = {'champ du compte d’un autre, pour un gestionnaire': (helper(manager, mslug, 'utilisateur', target, 'email'), 403),
+                        'champ d’un compte, pour un administrateur': (helper(email, slug, 'utilisateur', target, 'email'), 200),
+                        'champ d’une station, pour un administrateur': (helper(email, slug, 'station', sid, 'nom'), 200),
+                        'description courte, pour un administrateur': (short(email, slug, 'station', sid), 200)}
+            rows = query(base, """SELECT u.email, o.slug FROM utilisateur u JOIN role r ON r.utilisateur_id = u.id
+                                     JOIN siteexperimental s ON s.id = r.site_id JOIN observatoire o ON o.id = s.observatoire_id
+                                    WHERE r.valeur = 'contributeur' AND u.roleadmin IS NULL
+                                      AND (u.finacces IS NULL OR u.finacces > now()) ORDER BY u.id LIMIT 1""", NEW_SERVER)
+            if rows:
+                observed['champ du compte d’un autre, pour un contributeur'] = (helper(rows[0][0], rows[0][1], 'utilisateur', target, 'email'), 403)
+            for name, (status, expected) in observed.items():
+                results[f'nouveau seul : aides de Sonata, {name}'] = ['conforme'] if status == expected else [f'statut {status}']
         if 'station' in admins:
             slug, sid = first(base, admins['station'], accounts['administrateur'][1])
+            # Un nom fait de HTML s'affiche échappé dans l'historique (dev/local/security.md)
+            email = accounts['administrateur'][0]
+            send(f'/{slug}/admin/station/{sid}/edit', f'/station/{sid}/edit', {'[nom]': 'Essai <b id="brut">gras</b>'},
+                 'btn_update_and_edit')
+            body = client_for(email, slug).get(f'/{slug}/historique/recent')[2].decode('utf-8', 'replace')
+            results['nouveau seul : nom fait de HTML, échappé dans l’historique'] = (
+                ['conforme'] if '<b id="brut">' not in body and 'id=&quot;brut&quot;' in body
+                else ['écrit tel quel' if '<b id="brut">' in body else 'absent de la page'])
             send(f'/{slug}/admin/station/{sid}/edit', f'/station/{sid}/edit', {'[latitude]': '45,1234567'},
                  'btn_update_and_edit')
             value, = query(base, f'SELECT latitude FROM station WHERE id = {sid}', NEW_SERVER)[0]
@@ -2489,14 +2574,54 @@ def theia_stand_in(served):
         (public / 'theia-receiver.php').unlink(missing_ok=True)
 
 
+def without_extents(value):
+    """Un JSON du format pivot sans les coordonnées de l'emprise des jeux de données : le nouveau écrit
+    l'emprise réelle, l'ancien le point d'une station (dev/differences.md, « Emprise d'un jeu de données »)."""
+    if isinstance(value, list):
+        return [without_extents(item) for item in value]
+    if isinstance(value, dict):
+        return {key: ('<emprise>' if key == 'spatialExtent' else without_extents(item)) for key, item in value.items()}
+    return value
+
+
+def extents_hold_points(data):
+    """Les jeux de données d'une fiche dont l'emprise ne contient pas tous les points de ses chroniques ;
+    et le nombre de jeux à plusieurs points, dont l'emprise doit avoir une largeur ou une hauteur."""
+    wrong, wide = [], 0
+    def walk(value):
+        nonlocal wide
+        if isinstance(value, list):
+            for item in value:
+                walk(item)
+        elif isinstance(value, dict):
+            metadata = value.get('metadata')
+            if isinstance(metadata, dict) and 'spatialExtent' in metadata:
+                ring = metadata['spatialExtent']['geometry']['coordinates'][0]
+                xs, ys = [p[0] for p in ring], [p[1] for p in ring]
+                # (0, 0) : une station sans point, que l'emprise ne compte pas (dev/differences.md)
+                points = {tuple(o['featureOfInterest']['samplingFeature']['geometry']['coordinates'])
+                          for o in value.get('observations', [])} - {(0, 0)}
+                if any(not (min(xs) - 1e-9 <= x <= max(xs) + 1e-9 and min(ys) - 1e-9 <= y <= max(ys) + 1e-9) for x, y in points):
+                    wrong.append(metadata.get('title') or '?')
+                if len(points) > 1:
+                    wide += 1
+                    if min(xs) == max(xs) and min(ys) == max(ys):
+                        wrong.append(metadata.get('title') or '?')
+            for item in value.values():
+                walk(item)
+    walk(data)
+    return wrong, wide
+
+
 def theia_lines(text, *sites):
     """Un JSON du format pivot en lignes, lisibles ; l'adresse des instances devient <site>. Les fins de
     ligne des textes longs que le nouveau a enregistrés sont en \\n (dev/differences.md, « Fins de ligne
     des textes longs »)."""
     try:
-        text = json.dumps(json.loads(text), indent=1, ensure_ascii=False)
+        text = json.dumps(without_extents(json.loads(text)), indent=1, ensure_ascii=False)
     except ValueError:
-        pass
+        # Le JSON cité dans une ligne de page
+        text = re.sub(r'"spatialExtent":\{"geometry":\{.*?\]\]\}', '"spatialExtent":{"geometry":"<emprise>"', text)
     text = text.replace('\\r\\n', '\\n')
     for site in sites:
         text = text.replace(site, '<site>')
@@ -2547,6 +2672,10 @@ def run_theia(args):
             client = Client(side, email, slug)
             status, _, body = client.get(f'/{slug}/observatoire/{oid}/downloadJson')
             parts[f'JSON {slug}'] = [f'statut {status}', *theia_lines(body.decode('utf-8', 'replace'), *sites)]
+            if side.login_link:
+                wrong, wide = extents_hold_points(json.loads(body))
+                checks[f'nouveau seul : emprise des jeux de données de {slug}'] = (
+                    ['conforme'] if not wrong else [f'{len(wrong)} jeux sur {wide} à plusieurs points : emprise fausse'])
             lines = page_lines(side.url, *client.get(f'/{slug}/observatoire/{oid}/jsonValidator'))
             parts[f'contrôle {slug}'] = [theia_lines(line, *sites)[0] if line else line for line in lines]
             path = f'/{slug}/admin/observatoire/{oid}/edit'
@@ -2575,6 +2704,42 @@ def run_theia(args):
                         for action in ('downloadJson', 'jsonValidator', 'envoieJson')]
             checks['nouveau seul : pages Theia d’un autre observatoire, 404'] = (
                 ['conforme'] if statuses == [404, 404, 404] else [f'statuts {statuses}'])
+        # Une fiche qui passe le contrôle du schéma, seule à aller jusqu'à l'envoi
+        sendable = [c for c in cases if query(base, f"""SELECT count(*) FROM jms_jobs j, observatoire o WHERE o.id = {c[0]}
+                                                         AND j.command = 'theia:send:json:data' AND j.state = 'finished'
+                                                         AND j.args::text LIKE '%' || o.theiacode || '%'""", NEW_SERVER)[0][0] != '0']
+        if side.login_link and sendable:
+            # Ce que seul le nouveau fait d'un envoi (dev/differences.md, « Envoi vers Theia/OZCAR ») ; la dernière
+            # tâche : son état, son code de sortie, sa sortie, et la mise à jour automatique coupée
+            oid, slug, email = sendable[0]
+            client = Client(side, email, slug)
+            set_auto = lambda: query(base, f'UPDATE observatoire SET miseajourautomatique = true WHERE id = {oid} RETURNING id', NEW_SERVER)
+            last = lambda: query(base, f"""SELECT j.state, coalesce(j.exitcode::text, ''),
+                                               translate(coalesce(j.output, ''), chr(10) || chr(9), '  '),
+                                               (SELECT o.miseajourautomatique::text FROM observatoire o WHERE o.id = {oid})
+                                          FROM jms_jobs j WHERE j.command = 'theia:send:json:data' ORDER BY j.id DESC LIMIT 1""",
+                                 NEW_SERVER)[0]
+            def failed_send(label, expected, run_console):
+                set_auto()
+                client.get(f'/{slug}/observatoire/{oid}/envoieJson')
+                drain(run_console, runner, base)
+                state, code, output, auto = last()
+                ok = state == 'failed' and code == '1' and expected in output and auto == 'false'
+                checks[label] = ['conforme'] if ok else [f'état {state}, code {code}, mise à jour {auto}', output[:300]]
+            (THEIA_RECEIVED / 'redirige').touch()
+            failed_send('nouveau seul : envoi redirigé, en échec', 'Réponse inattendue du serveur : 302', console)
+            (THEIA_RECEIVED / 'redirige').unlink(missing_ok=True)
+            # Un port fermé : la console de la file lit l'adresse d'envoi dans l'environnement
+            dead = [x.replace(f'THEIA_SEND_URI={served}/theia-receiver.php/', 'THEIA_SEND_URI=http://172.30.26.10:9/') for x in console]
+            failed_send('nouveau seul : serveur de Theia qui ne répond pas, en échec', 'Message : ', dead)
+            # Sans mot de passe : un message, et aucune tâche
+            jobs = lambda: query(base, "SELECT count(*) FROM jms_jobs WHERE command = 'theia:send:json:data'", NEW_SERVER)[0][0]
+            query(base, f'UPDATE observatoire SET theiapassword = NULL WHERE id = {oid} RETURNING id', NEW_SERVER)
+            before = jobs()
+            status, headers, _ = client.get(f'/{slug}/observatoire/{oid}/envoieJson')
+            ok = status == 302 and headers.get('Location', '').endswith(f'/{slug}/admin/observatoire/{oid}/edit') and jobs() == before
+            checks['nouveau seul : envoi sans mot de passe, un message et aucune tâche'] = (
+                ['conforme'] if ok else [f'statut {status}, {headers.get("Location")}, {before} tâches avant, {jobs()} après'])
         return parts
 
     THEIA_RECEIVED.mkdir(parents=True, exist_ok=True)

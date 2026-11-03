@@ -163,9 +163,8 @@ class ExportController extends Controller
                 ChoiceType::class,
                 [
                     'choices'     => [
-                        'Bdoh'      => 'Bdoh',
-                        'Qtvar'     => 'Qtvar',
-                        'Vigilance' => 'Vigilance',
+                        'Bdoh'  => 'Bdoh',
+                        'Qtvar' => 'Qtvar',
                     ],
                     'constraints' => [new NotBlank()],
                 ]

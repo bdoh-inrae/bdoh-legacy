@@ -12,7 +12,6 @@ parameters:
         # General
         Bdoh      : Irstea\BdohDataBundle\Exporter\Measure\BdohExporter
         Qtvar     : Irstea\BdohDataBundle\Exporter\Measure\QtvarExporter
-        Vigilance : Irstea\BdohDataBundle\Exporter\Measure\VigilanceExporter
 
      # A map of formats for discontinuous chronicles and their specific exporters
     irstea_bdoh_data.measure_discontinuous_export.exporters:

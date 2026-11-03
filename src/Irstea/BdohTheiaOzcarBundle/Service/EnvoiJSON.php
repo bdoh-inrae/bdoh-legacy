@@ -118,10 +118,18 @@ class EnvoiJSON
                                     // Sans délai, un serveur qui ne répond pas gelait la file de tâches
                                     'connect_timeout' => 10,
                                     'timeout'         => 300,
+                                    // Suivre une redirection changeait le PUT en GET sans contenu,
+                                    // pris pour un envoi réussi
+                                    'allow_redirects' => false,
                                 ]
                             );
                             $responseBody = $response->getBody()->getContents();
                             $unix = 0;
+                            if ($response->getStatusCode() >= 300) {
+                                $message = sprintf('Réponse inattendue du serveur : %d %s', $response->getStatusCode(), $response->getReasonPhrase());
+                                $observatoire->setMiseajourAutomatique(false);
+                                $unix = 1;
+                            }
                         } catch (GuzzleException $e) {
                             // si l'envoie ne fonctionne pas
                             $message = $e->getMessage();
