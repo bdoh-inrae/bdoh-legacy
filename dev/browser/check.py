@@ -231,7 +231,7 @@ def manager_steps(s, oid, station, chronique_id, chronique_page, dataset, import
     s.step('historique : onglets', f'/{SLUG}/historique/recent', history)
 
 
-def admin_steps(s, oid):
+def admin_steps(s):
     s.step('couleurs (sélecteurs)', f'/{SLUG}/admin/colors', lambda p: visible(p, 'form'))
 
 
@@ -287,7 +287,7 @@ def main():
         manager_steps(managing, oid, station_id, chronique_id, chronique_page, dataset, str(import_file))
         admin = one("""SELECT email FROM utilisateur WHERE roleadmin = 'FCT'
                         AND (finacces IS NULL OR finacces > now()) ORDER BY id LIMIT 1""")
-        admin_steps(signed_in('administrateur', admin), oid)
+        admin_steps(signed_in('administrateur', admin))
         browser.close()
 
     failed = [r for r in results if r[1]]

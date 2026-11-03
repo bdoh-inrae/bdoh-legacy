@@ -27,7 +27,7 @@ Audit daté : il ne change plus une fois écrit. Ses suites sont dans [ROADMAP.m
 4. **« Identique » ne veut pas dire « juste ».** La comparaison reproduit les erreurs de l'ancien sans les voir. Rien ne vérifie les calculs indépendamment de l'ancien code.
 5. **On ne sait pas ce que la comparaison n'exécute pas.** Le décalage des points de contrôle n'a été vu qu'à la lecture du code : aucun cas ne l'aurait détecté. Le projet n'a pas de mesure de couverture, ni de test hors de la comparaison.
 6. **Aucune installation réelle.** Debian 13 sans Docker, service systemd, Apache en HTTPS, relais de courrier, `/tmp`, redémarrages de l'exécuteur : rien de cela n'a tourné.
-7. **Les tâches planifiées, relevées le même jour : rien ne se perd.** Sur les deux serveurs, en dehors de ce que Debian installe, il n'y a que la sauvegarde quotidienne de la base et, en production, la file de tâches, relancée chaque heure par cron. Ni `bdoh:schedule:recompute`, ni nettoyage des tâches, ni envoi automatique vers Theia. Reste à savoir comment OTHU lance sa file.
+7. **Les tâches planifiées, relevées le même jour : rien ne se perd.** Sur les deux serveurs, en dehors de ce que Debian installe, il n'y a que la sauvegarde quotidienne de la base et, en production, la file de tâches, relancée chaque heure par cron. OTHU la lance par son service systemd. Ni `bdoh:schedule:recompute`, ni nettoyage des tâches, ni envoi automatique vers Theia.
 8. **Aucune mesure de volume.** Temps et mémoire de la plus grosse chronique (2,4 millions de mesures), des plus gros exports et de la page de l'historique, comparés à l'ancien sous PHP 8.
 9. **Pas de répétition de la bascule ni de retour arrière écrit.**
 
@@ -42,8 +42,6 @@ Sans attendre, sur le poste de développement :
 - Vérifier des invariants indépendants de l'ancien : export puis réimport qui redonne les mêmes mesures, contrôles de `inspect.sql` avant et après.
 - Une relecture croisée, code seulement, de tout ce qui écrit des données : l'exécuteur de tâches, écrit pour ce portage, en premier.
 - Mesurer le temps et la mémoire des plus grosses opérations, contre l'ancien.
-
-Sur le serveur d'OTHU (Lou) : relever comment sa file de tâches est lancée.
 
 Sur la VM : répéter l'installation et la bascule sur la base anonymisée complète, avec le retour arrière ; essai du courrier ; essai de charge léger, le site ayant peu de visiteurs à la fois mais de grosses opérations.
 

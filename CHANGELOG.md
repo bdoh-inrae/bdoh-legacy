@@ -9,6 +9,8 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/). Numéros de v
 - Aux imports QJO et Qtvar, une valeur écrite `0` reste un zéro : l'ancien BDOH en faisait une lacune, sans message.
 - À l'import QJO, un trou de plus d'un mois se comble entièrement par des lacunes, et des lignes qui reviennent en arrière n'en ajoutent plus.
 - Une station créée avec ses coordonnées a désormais son point, et apparaît donc sur les cartes.
+- Le choix de la langue tient pour un visiteur sans compte (régression de la 0.1.0).
+- Plus d'erreur JavaScript sur les pages de l'administration (régression de la 0.1.0).
 - Une suppression que la base refuse n'est plus notée dans l'historique.
 - La page de l'historique ne tombe plus en erreur après la suppression d'un milieu, d'un critère, d'une contrainte d'accès ou d'un thème INSPIRE.
 - L'emprise d'un jeu de données envoyée à Theia/OZCAR est la vraie, et non le point d'une de ses stations.
@@ -26,6 +28,7 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/). Numéros de v
 
 - Chaque page publique indique la licence et un lien vers le code source, comme le demande l'AGPL.
 - `CITATION.cff` et `codemeta.json` : qui a fait BDOH, comment le citer.
+- Essais de l'interface dans un vrai navigateur (`make browser-check`), en plus de la comparaison.
 - Migration qui construit le point des stations qui ont des coordonnées sans point, à appliquer à la bascule.
 
 ## 0.1.0 - 2026-11-03

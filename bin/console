@@ -4,9 +4,6 @@
 use App\Kernel;
 use Symfony\Bundle\FrameworkBundle\Console\Application;
 
-// Comme en production, les pages sont en UTC et la ligne de commande à l'heure de Paris
-// (dev/differences.md, « Deux fuseaux horaires »).
-date_default_timezone_set('Europe/Paris');
 
 if (!is_dir(dirname(__DIR__).'/vendor')) {
     throw new LogicException('Dependencies are missing. Try running "composer install".');

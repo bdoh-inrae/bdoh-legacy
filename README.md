@@ -19,6 +19,8 @@ make reference-base    la branche sur une autre base (BASE=bdoh_small)
 make reference-stop    l'arrête
 ```
 
+La comparaison ne lance pas de JavaScript : l'interface s'essaie dans un navigateur (`make browser-check`, `dev/browser/README.md`).
+
 Le nouveau BDOH a son propre serveur de base, PostgreSQL 17 comme Debian 13 (`compose.yaml`) : `SERVER=new` y mène les commandes `db`, `db-small` et `inspect`. Il se lance par `make start` et répond sur http://172.30.26.10/.
 
 Dans la référence, tous les comptes de la base anonymisée ont le mot de passe `bdoh-test`. Le nouveau BDOH n'a pas de mot de passe : il envoie un lien de connexion par courriel. En développement, rien ne part ; le lien s'obtient de deux façons :
