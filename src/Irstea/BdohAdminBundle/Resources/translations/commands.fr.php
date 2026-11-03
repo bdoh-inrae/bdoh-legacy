@@ -1,8 +1,4 @@
 <?php
-/*
- * Copyright (C) 2012-2019 IRSTEA
- * All rights reserved.
- */
 
 $errors = [
     'no_chronique_selected' => "Aucune chronique n'a été sélectionnée !",

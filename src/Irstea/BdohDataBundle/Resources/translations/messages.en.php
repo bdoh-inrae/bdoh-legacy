@@ -1,8 +1,4 @@
 <?php
-/*
- * Copyright (C) 2012-2019 IRSTEA
- * All rights reserved.
- */
 
 $entities = require __DIR__ . '/entitiesSingulars.en.php';
 $fields = require __DIR__ . '/fields.en.php';

@@ -1,8 +1,4 @@
 <?php
-/*
- * Copyright (C) 2012-2019 IRSTEA
- * All rights reserved.
- */
 
 define('IrsteaBdohDataBundle_transDir', __DIR__ . '/../../../BdohDataBundle/Resources/translations/');
 define('IrsteaBdohSecurityBundle_transDir', __DIR__ . '/../../../BdohSecurityBundle/Resources/translations/');

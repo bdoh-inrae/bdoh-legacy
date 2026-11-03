@@ -1,8 +1,4 @@
 <?php
-/*
- * Copyright (C) 2012-2019 IRSTEA
- * All rights reserved.
- */
 
 $errors = [
     'Error.notFile(%file%)'                  => "“\u{a0}%file%\u{a0}”: This path is not that of a valid file",

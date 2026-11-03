@@ -1,8 +1,4 @@
 <?php
-/*
- * Copyright (C) 2012-2019 IRSTEA
- * All rights reserved.
- */
 
 $errors = [
     'Error.notFile(%file%)'                  => "«\u{a0}%file%\u{a0}» : ce chemin n'est pas celui d'un fichier valide",

@@ -1,8 +1,4 @@
 <?php
-/*
- * Copyright (C) 2012-2019 IRSTEA
- * All rights reserved.
- */
 
 $entities = require 'entitiesSingulars.fr.php';
 $fields = require 'fields.fr.php';

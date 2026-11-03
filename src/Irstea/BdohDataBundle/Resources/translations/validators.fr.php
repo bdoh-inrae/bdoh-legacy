@@ -1,8 +1,4 @@
 <?php
-/*
- * Copyright (C) 2012-2019 IRSTEA
- * All rights reserved.
- */
 
 return [
     'Observatoire.slug.alreadyExists'                                                        => "Le nom choisi est identique ou trop proche de celui d'un observatoire existant.",

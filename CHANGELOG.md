@@ -15,6 +15,10 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/). Numéros de v
 - Le format d'export Vigilance, que rien ne savait écrire, n'est plus accepté, et une adresse de l'administration qui répondait toujours par une erreur interne est retirée.
 - Des corrections de sécurité, décrites à la mise en service du nouveau BDOH.
 
+### Modifié
+
+- Les fichiers PHP de `src/` n'ont plus l'entête « Copyright IRSTEA, All rights reserved » de l'ancien : IRSTEA n'existe plus, et le code est sous AGPL (`LICENSE`).
+
 ## 0.1.0 - 2026-11-03
 
 Le portage complet vers Symfony 7.4 et PHP 8.4, comparé module par module à l'ancien BDOH. Pas encore en service : cette version marque l'état à faire essayer aux gestionnaires d'observatoire.

@@ -1,8 +1,4 @@
 <?php
-/*
- * Copyright (C) 2012-2019 IRSTEA
- * All rights reserved.
- */
 
 use Irstea\BdohAdminBundle\Errors\ImportErrors as Errors;
 
