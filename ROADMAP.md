@@ -6,18 +6,22 @@ Code de référence : commit `523cf8e32` de l'ancien dépôt (version 5.0.3, fé
 
 ## En cours
 
-Priorité (Lou, 3 novembre) : stabiliser ce BDOH au plus près de l'ancien et le faire tester vite par les gestionnaires ; les nouvelles fonctions attendent leur validation. La demande de VM : envoyée à l'équipe infra le 3 novembre, réponse attendue ([dev/plans/2026-10-26_deployment.md](dev/plans/2026-10-26_deployment.md)). Les sept modules du portage sont portés et comparés (version 0.1.0, `CHANGELOG.md`, plans dans `dev/plans/`) ; ce qui reste avant la mise en service est ci-dessous. Reprise : consolider le plan de validation par un audit à part (`/kit-audit`), puis apporter les preuves, en commençant par le recalcul complet, avant de remplacer les chroniques cachées dans les dumps (`dev/local/hidden-series.md`).
+Priorité (Lou, 3 novembre) : stabiliser ce BDOH au plus près de l'ancien et le faire tester vite par les gestionnaires ; les nouvelles fonctions attendent leur validation. La demande de VM : envoyée à l'équipe infra le 3 novembre, réponse attendue ([dev/plans/2026-10-26_deployment.md](dev/plans/2026-10-26_deployment.md)). Les sept modules du portage sont portés et comparés (version 0.1.0, `CHANGELOG.md`, plans dans `dev/plans/`) ; ce qui reste avant la mise en service est ci-dessous. Reprise : le plan de validation est consolidé ([dev/audits/2026-11-03_validation-plan.md](dev/audits/2026-11-03_validation-plan.md)) ; ses six décisions attendent Lou, sans bloquer les étapes 1 à 5 ci-dessous. On commence par durcir et éprouver le comparateur.
 
 ## À faire
 
-- **Preuves de solidité à apporter** ([dev/audits/2026-11-03_migration-trust.md](dev/audits/2026-11-03_migration-trust.md)), avant les essais des gestionnaires :
-  - OTHU restaurée sous PostgreSQL 17, et comparée ;
-  - tous les modes de `compare.py` sur la base complète, sur le code final ;
-  - toutes les chroniques calculées et converties recalculées, et les taux de remplissage, comparés aux valeurs en base ;
-  - couverture du code pendant la comparaison (PCOV), et lecture de ce qui n'est jamais exécuté ;
-  - export puis réimport qui redonne les mêmes mesures ;
-  - relecture croisée de ce qui écrit des données, l'exécuteur de tâches en premier ;
-  - temps et mémoire des plus grosses opérations, contre l'ancien.
+- **Preuves de solidité à apporter**, dans cet ordre ; le détail, les raisons et les coûts sont dans [dev/audits/2026-11-03_validation-plan.md](dev/audits/2026-11-03_validation-plan.md), qui reprend [dev/audits/2026-11-03_migration-trust.md](dev/audits/2026-11-03_migration-trust.md). Ce qui doit précéder les essais des gestionnaires reste à décider (décision 3) ; recommandé : les étapes 1 à 5.
+  1. Durcir le comparateur : règle d'arrondi selon la nature du nombre, empreintes sans `concat_ws`, toutes les tables dont `plage`, rapport qui note commit et base lue, registre des écarts admis, code de sortie ;
+  2. l'éprouver : tests de ses fonctions, altérations SQL, passe de l'ancien contre l'ancien, pièges et corrections passés remis un à un ;
+  3. corriger le calcul en échec qui vide la chronique (`dev/differences.md`) ;
+  4. couverture pendant la comparaison, du PHP (PCOV) et du SQL (`plpgsql_check`), et lecture de ce qui n'est jamais exécuté ;
+  5. sur les dumps actuels, tant que les vraies données sont là : recalcul contre la base des chroniques calculées et converties, les plus profondes d'abord, codes de retour comptés ; taux de remplissage ; temps et mémoire contre l'ancien ; OTHU restaurée sous PostgreSQL 17, empreinte et taux ;
+  6. régénérer les dumps (`dev/local/hidden-series.md`, décisions 1 et 2) ;
+  7. élargir les cas d'après la couverture et l'usage réel (`historique`) : « 1 événement », 5 et 15 minutes, fuseaux, plages, sortes de calcul, tirages au hasard ; adapter les modes à la forme d'OTHU ;
+  8. invariants (`E(I(E(x))) = E(x)`, relations sur les calculs) et petit jeu inventé, résultats écrits à la main ;
+  9. pannes provoquées et relecture croisée de ce qui écrit des données, l'exécuteur de tâches en premier ;
+  10. une base de développement sur les paquets de Debian 13, un rôle sans superuser ;
+  11. code gelé, tous les modes sur la base complète et sur OTHU, une fois.
 - **Proxy inverse** (Lou, question à l'équipe infra, dans sa réponse sur la VM) : y en aura-t-il un devant la VM, et quelle est son adresse ? Si oui, le nouveau doit la connaître (`SYMFONY_TRUSTED_PROXIES`), sinon les limites de fréquence valent pour tout le site (`dev/decisions.md`, « Connexion par lien »).
 - **Chroniques cachées citées dans les listes** (Lou, avec sa cheffe) : sans compte, on voit leur code, leur libellé et leur unité, et 9 partent vers Theia (`dev/differences.md`). À décider ici, ou avec « Ouvrir les données » plus bas. Les autres bizarreries de l'ancien sont corrigées ou laissées, avec leur raison, dans le même fichier.
 - **Affiliations des auteurs à confirmer** (Lou, auprès de Flora Branger) : `CITATION.cff` et `codemeta.json` ; les personnes en CDD sont à RiverLy dans le doute, et Degiuli, Gesche, Jamet et Crochemore à la DSI sans source officielle.
