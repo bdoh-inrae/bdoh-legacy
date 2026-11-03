@@ -4,6 +4,10 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/). Numéros de v
 
 ## Non publié
 
+### Corrigé
+
+- Aux imports QJO et Qtvar, une valeur écrite `0` reste un zéro : l'ancien BDOH en faisait une lacune, sans message.
+
 ## 0.1.0 - 2026-11-03
 
 Le portage complet vers Symfony 7.4 et PHP 8.4, comparé module par module à l'ancien BDOH. Pas encore en service : cette version marque l'état à faire essayer aux gestionnaires d'observatoire.

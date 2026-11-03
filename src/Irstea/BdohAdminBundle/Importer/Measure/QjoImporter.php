@@ -166,8 +166,8 @@ class QjoImporter extends Importer implements ImporterInterface
             }
         }
 
-        // Gap line
-        if (empty($value) || empty($quality)) {
+        // Gap line: an absent value, not a zero (empty() would take "0" for a gap)
+        if ('' === $value || empty($quality)) {
             $value = null;
             $quality = static::GAP_QUALITY;
         }

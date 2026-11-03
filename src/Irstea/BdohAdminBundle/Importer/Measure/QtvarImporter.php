@@ -75,8 +75,8 @@ class QtvarImporter extends QjoImporter
             }
         }
 
-        // Gap line ; maybe inexistant in QTVAR
-        if (empty($value) || empty($quality)) {
+        // Gap line ; maybe inexistant in QTVAR. An absent value, not a zero (empty() would take "0" for a gap)
+        if ('' === $value || empty($quality)) {
             $value = null;
             $quality = QjoImporter::GAP_QUALITY;
         }

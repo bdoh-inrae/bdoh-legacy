@@ -1423,6 +1423,15 @@ def run_imports(args):
             sides[name] = state_lines(bases[name], historique)
     for table in sides['ancien']:
         report.add(f'état {table}', sides['ancien'][table], sides['nouveau'][table])
+    # Un zéro écrit « 0 » reste une mesure, le 10 de chaque fichier (dev/differences.md, « Zéro importé »)
+    zeros = {'QJO': ('2025-09-09 12:00', '2025-09-10 12:00', 1), 'Qtvar': ('2025-10-10 00:00', '2025-10-11 00:00', 2)}
+    for case in cases:
+        if case['name'] in zeros:
+            begin, end, expected = zeros[case['name']]
+            found = int(query(bases['nouveau'], f"""SELECT count(*) FROM mesure WHERE chronique_id = {case['cid']}
+                                AND date >= '{begin}' AND date < '{end}' AND valeur = 0""", NEW_SERVER)[0][0])
+            report.add(f"nouveau seul : zéro écrit 0 gardé, {case['name']}", ['conforme'],
+                       ['conforme' if found == expected else f'non conforme : {found} au lieu de {expected}'])
     report.close()
     print(f'Les instances lisent de nouveau {template}. Les deux copies restent pour examen :'
           f' {bases["ancien"]} et {bases["nouveau"]}.')
