@@ -400,6 +400,10 @@ def canonical_query(query, per_page_option=False):
     return urllib.parse.urlencode(sorted(pairs))
 
 
+# Les mentions légales, réécrites pour INRAE, et le lien vers le code source (dev/differences.md)
+LEGAL_NOTICE = re.compile(r"<p style='text-align: center;'>\s*(?:Institut national|INRAE).*?</p>", re.S)
+
+
 def page_lines(site, status, headers, body):
     """Ce que montre une réponse, en lignes ; l'adresse de l'instance devient <site>."""
     lines = [f'statut {status}']
@@ -409,9 +413,10 @@ def page_lines(site, status, headers, body):
     lines.append(f'type {kind}')
     if kind == 'text/html':
         parser = Extract()
-        parser.feed(body.decode('utf-8', 'replace'))
+        parser.feed(LEGAL_NOTICE.sub('', body.decode('utf-8', 'replace')))
         parser.flush()
-        lines += parser.lines
+        # Un script et une feuille que l'administration de l'ancien chargeait pour rien (dev/differences.md)
+        lines += [line for line in parser.lines if not re.match(r'(S|L stylesheet) /assets/(locales/|admin/measure-import\.css)', line)]
     elif kind == 'application/json':
         try:
             lines += json.dumps(json.loads(body), indent=1, sort_keys=True, ensure_ascii=False).splitlines()
@@ -747,7 +752,9 @@ def state_lines(base, historique, tables=STATE_QUERIES):
     recent = [datetime.date.today() - datetime.timedelta(days=n) for n in (0, 1)]
     moment = re.compile('|'.join([*(f'{d}T[\\d:]+' for d in recent),
                                   *(f'{d:%d/%m/%Y} [\\d:]+' for d in recent)]))
-    return {table: [moment.sub('<maintenant>', '\t'.join(row))
+    offset = re.compile(r'(\dT\d\d:\d\d:\d\d|<maintenant>)[+-]\d\d:\d\d')
+    return {table: [offset.sub(r'\1', moment.sub('<maintenant>', '\t'.join(row))) if table == 'jms_jobs'
+                    else moment.sub('<maintenant>', '\t'.join(row))
                     for row in query(base, STATE_QUERIES[table].format(historique=historique), NEW_SERVER)]
             for table in tables}
 
@@ -2417,6 +2424,23 @@ def run_admin(args):
             status, _, _ = client.get(form.url, body, {'Content-Type': kind, 'Referer': client.side.url + path})
             results['nouveau seul : extension d’un fichier téléversé tirée de son contenu'] = (
                 ['conforme'] if status == 302 and logo().endswith('.gif') else [f'statut {status}, chemin : {logo()}'])
+        rows = query(base, f"""SELECT c.id, c.slug, c.station, c.code FROM ({CHRONIQUES}) c
+                                 WHERE NOT c.estvisible ORDER BY c.id LIMIT 1""", NEW_SERVER)
+        if rows:
+            hid, hslug, hstation, hcode = rows[0]
+            guest = Client(client_for(accounts['administrateur'][0], hslug).side, None, hslug)
+            statuses = [guest.get(f'/{hslug}/{hstation}/{hcode}')[0],
+                        guest.get(f'/{hslug}/chronique/{hid}/measures?beginDate=2000-01-01T00:00:00Z&endDate=2030-01-01T00:00:00Z')[0]]
+            results['nouveau seul : chronique cachée, page et mesures refusées sans compte'] = (
+                ['conforme'] if all(s in (401, 403) or s == 302 for s in statuses) else [f'statuts {statuses}'])
+        # Un observatoire entièrement caché : sans compte, aucune chronique n'est annoncée avec des mesures
+        rows = query(base, f"""SELECT c.slug FROM ({CHRONIQUES}) c GROUP BY 1
+                                 HAVING count(*) FILTER (WHERE c.estvisible) = 0 ORDER BY 1 LIMIT 1""", NEW_SERVER)
+        if rows:
+            guest = Client(client_for(accounts['administrateur'][0], rows[0][0]).side, None, rows[0][0])
+            status, _, body = guest.get(f'/{rows[0][0]}/viewer/load?start=2000-01-01T00:00:00Z&end=2030-01-01T00:00:00Z')
+            results['nouveau seul : observatoire caché, aucune chronique annoncée avec des mesures'] = (
+                ['conforme'] if status == 200 and b'"hasMeasures":true' not in body else [f'statut {status}'])
         if 'personnetheia' in admins:
             # La base refuse la suppression (responsable d'un observatoire) : l'historique n'en dit rien
             label = 'nouveau seul : suppression refusée par la base, historique muet'
@@ -2477,6 +2501,15 @@ def run_admin(args):
             results['nouveau seul : nom fait de HTML, échappé dans l’historique'] = (
                 ['conforme'] if '<b id="brut">' not in body and 'id=&quot;brut&quot;' in body
                 else ['écrit tel quel' if '<b id="brut">' in body else 'absent de la page'])
+            home = client_for(email, slug).get(f'/{slug}/')[2].decode('utf-8', 'replace')
+            results['nouveau seul : licence et lien vers le code source'] = (
+                ['conforme'] if 'GNU AGPL' in home and 'github.com/bdoh-inrae/bdoh-legacy' in home else ['absents de la page'])
+            # Le point d'une station créée (dev/differences.md, « Point d'une station créée »)
+            send(f'/{slug}/admin/station/create', '/station/create',
+                 dict(admins['station']['create'], **{'[code]': 'ESSAI2'}), 'btn_create_and_edit')
+            value, = query(base, "SELECT coalesce(ST_AsText(point), '') FROM station WHERE code = 'ESSAI2'", NEW_SERVER)[0]
+            results['nouveau seul : point calculé à la création d’une station'] = (
+                ['conforme'] if value == 'POINT(45.1 4.9)' else [f'point : {value}'])
             send(f'/{slug}/admin/station/{sid}/edit', f'/station/{sid}/edit', {'[latitude]': '45,1234567'},
                  'btn_update_and_edit')
             value, = query(base, f'SELECT latitude FROM station WHERE id = {sid}', NEW_SERVER)[0]

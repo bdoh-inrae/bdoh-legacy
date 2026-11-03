@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: The BDOH authors
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Le champ des fichiers joints (FileType, Form/widgets.html.twig : bdoh_file_widget), sur le jQuery
 // de Sonata. Repris de Resources/assets/lib/file-widget/ de l'ancien BDOH, en un seul fichier.
 (function ($) {

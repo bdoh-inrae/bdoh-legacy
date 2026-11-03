@@ -22,7 +22,7 @@ ENCORE = docker run --rm --network none --user $(HOST_UID):$(HOST_GID) -e HOME=/
 	-v $(CURDIR):/var/www/bdoh bdoh-app node_modules/.bin/encore
 DB_CONTAINER = $(if $(filter new,$(SERVER)),bdoh-db,bdoh-reference-db)
 
-.PHONY: help app-install assets start stop composer phpstan anonymize db db-small inspect reference-app reference-start reference-stop reference-base reference-17-start mail-start worker-start
+.PHONY: help app-install assets start stop composer phpstan browser-check anonymize db db-small inspect reference-app reference-start reference-stop reference-base reference-17-start mail-start worker-start
 
 help: ## Liste les commandes
 	@grep -E '^[a-z0-9-]+:.*## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*## "} {printf "  %-19s %s\n", $$1, $$2}'
@@ -53,6 +53,9 @@ composer: ## Lance Composer pour le nouveau BDOH : make composer ARGS="require u
 
 phpstan: ## Analyse statique du nouveau BDOH
 	docker exec bdoh-app php -d memory_limit=-1 vendor/bin/phpstan analyse --no-progress
+
+browser-check: ## Essaie l'interface dans un navigateur (.python_env, dev/browser/README.md) : make browser-check [ARGS="--only TEXTE"]
+	.python_env/bin/python dev/browser/check.py $(ARGS)
 
 anonymize: ## Anonymise un dump de production : make anonymize SOURCE=chemin/du.dump [OUT=dossier]
 	@test -n "$(SOURCE)" || { echo "Indiquer le dump : make anonymize SOURCE=chemin/du.dump"; exit 1; }

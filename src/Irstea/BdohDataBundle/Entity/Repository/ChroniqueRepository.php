@@ -1,4 +1,6 @@
 <?php
+// SPDX-FileCopyrightText: The BDOH authors
+// SPDX-License-Identifier: AGPL-3.0-or-later
 
 namespace Irstea\BdohDataBundle\Entity\Repository;
 
@@ -762,6 +764,11 @@ SQL;
         $allowedChroniqueIds = [];
         foreach ($allowedChroniques as $allowedChronique) {
             $allowedChroniqueIds[] = $allowedChronique['id'];
+        }
+
+        // Nothing allowed means nothing to return, not all the time series of the station
+        if ([] === $allowedChroniqueIds) {
+            return [];
         }
 
         // Overall SQL query

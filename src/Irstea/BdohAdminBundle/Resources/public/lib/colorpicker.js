@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: The BDOH authors
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Le choix des couleurs (Form/widgets.html.twig : couleur_widget), par jquery-minicolors 2.2.6 chargé
 // à la demande, sur le jQuery de Sonata. Repris de Resources/assets/lib/colorpicker.js de l'ancien BDOH.
 (function ($) {

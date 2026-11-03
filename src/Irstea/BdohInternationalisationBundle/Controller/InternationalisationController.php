@@ -1,4 +1,6 @@
 <?php
+// SPDX-FileCopyrightText: The BDOH authors
+// SPDX-License-Identifier: AGPL-3.0-or-later
 
 namespace Irstea\BdohInternationalisationBundle\Controller;
 
@@ -9,15 +11,14 @@ use Symfony\Component\HttpFoundation\Request;
 class InternationalisationController extends Controller
 {
     /**
-     * La langue choisie est déjà notée en session par le LocaleListener ; l'action renvoie à la page
-     * d'où l'on vient. L'ancien demandait le service « request », retiré, et finissait sur une erreur
-     * interne, après avoir noté la langue (dev/differences.md).
+     * Note la langue choisie en session, qui s'ouvre au besoin, et renvoie à la page d'où l'on vient. Le
+     * LocaleListener ne la note que s'il y a déjà une session : l'ancien en ouvrait une sur toutes les pages,
+     * pas le nouveau pour un visiteur sans compte. L'ancien demandait le service « request », retiré, et
+     * finissait sur une erreur interne, après avoir noté la langue (dev/differences.md).
      */
-    public function selectLangAction(Request $request, $langue = null)
+    public function selectLangAction(Request $request)
     {
-        if ($langue !== null) {
-            $this->get('session')->set('_locale', $langue);
-        }
+        $request->getSession()->set('_locale', $request->attributes->get('_locale'));
 
         $url = $request->headers->get('referer');
         if (empty($url)) {

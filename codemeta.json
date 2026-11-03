@@ -1,0 +1,162 @@
+{
+  "@context": "https://w3id.org/codemeta/3.0",
+  "@type": "SoftwareSourceCode",
+  "name": "BDOH",
+  "description": "Base de Données des Observatoires Hydrologiques : application web de gestion, de consultation et d'export des chroniques de mesures, portée vers Symfony 7.4 et PHP 8.4.",
+  "codeRepository": "https://github.com/bdoh-inrae/bdoh-legacy",
+  "license": "https://spdx.org/licenses/AGPL-3.0-or-later",
+  "programmingLanguage": [
+    "PHP",
+    "JavaScript",
+    "SQL"
+  ],
+  "softwareRequirements": [
+    "PHP 8.4",
+    "Symfony 7.4",
+    "PostgreSQL 17",
+    "PostGIS 3"
+  ],
+  "dateCreated": "2012",
+  "author": [
+    {
+      "@type": "Person",
+      "@id": "https://orcid.org/0000-0003-4273-8938",
+      "givenName": "Flora",
+      "familyName": "Branger",
+      "affiliation": {
+        "@type": "Organization",
+        "name": "INRAE, UR RiverLy"
+      }
+    },
+    {
+      "@type": "Person",
+      "givenName": "Maxime",
+      "familyName": "Crochemore",
+      "affiliation": {
+        "@type": "Organization",
+        "name": "INRAE, DSI"
+      }
+    },
+    {
+      "@type": "Person",
+      "givenName": "Thibault",
+      "familyName": "Degiuli",
+      "affiliation": {
+        "@type": "Organization",
+        "name": "INRAE, DSI"
+      }
+    },
+    {
+      "@type": "Person",
+      "givenName": "Daniel",
+      "familyName": "Gesche",
+      "affiliation": {
+        "@type": "Organization",
+        "name": "INRAE, DSI"
+      }
+    },
+    {
+      "@type": "Person",
+      "givenName": "Cédric",
+      "familyName": "Gil",
+      "affiliation": {
+        "@type": "Organization",
+        "name": "Smile"
+      }
+    },
+    {
+      "@type": "Person",
+      "@id": "https://orcid.org/0009-0006-4372-0923",
+      "givenName": "Louis",
+      "familyName": "Héraut",
+      "affiliation": {
+        "@type": "Organization",
+        "name": "INRAE, UR RiverLy"
+      }
+    },
+    {
+      "@type": "Person",
+      "givenName": "Luc",
+      "familyName": "Jamet",
+      "affiliation": {
+        "@type": "Organization",
+        "name": "INRAE, DSI"
+      }
+    },
+    {
+      "@type": "Person",
+      "givenName": "Guillaume",
+      "familyName": "Perréal",
+      "affiliation": {
+        "@type": "Organization",
+        "name": "INRAE, DSI"
+      }
+    },
+    {
+      "@type": "Person",
+      "givenName": "Mathieu",
+      "familyName": "Poisbeau",
+      "affiliation": {
+        "@type": "Organization",
+        "name": "INRAE, DSI"
+      }
+    },
+    {
+      "@type": "Person",
+      "@id": "https://orcid.org/0009-0000-5227-2938",
+      "givenName": "Nicolas",
+      "familyName": "Raidelet",
+      "affiliation": {
+        "@type": "Organization",
+        "name": "INRAE, DSI"
+      }
+    },
+    {
+      "@type": "Person",
+      "givenName": "Adrien",
+      "familyName": "Tessanne",
+      "affiliation": {
+        "@type": "Organization",
+        "name": "INRAE, UR RiverLy"
+      }
+    },
+    {
+      "@type": "Person",
+      "@id": "https://orcid.org/0000-0003-0660-2363",
+      "givenName": "Fabien",
+      "familyName": "Thollet",
+      "affiliation": {
+        "@type": "Organization",
+        "name": "INRAE, UR RiverLy"
+      }
+    },
+    {
+      "@type": "Person",
+      "givenName": "Benoit",
+      "familyName": "Vila",
+      "affiliation": {
+        "@type": "Organization",
+        "name": "INRAE, UR RiverLy"
+      }
+    },
+    {
+      "@type": "Person",
+      "givenName": "Taquyeddine",
+      "familyName": "Zegaoui",
+      "affiliation": {
+        "@type": "Organization",
+        "name": "Smile"
+      }
+    }
+  ],
+  "maintainer": {
+    "@type": "Person",
+    "@id": "https://orcid.org/0009-0006-4372-0923",
+    "givenName": "Louis",
+    "familyName": "Héraut",
+    "affiliation": {
+      "@type": "Organization",
+      "name": "INRAE, UR RiverLy"
+    }
+  }
+}

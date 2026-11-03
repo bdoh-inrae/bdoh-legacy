@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: The BDOH authors
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Le formulaire d'une chronique : son code se propose d'après la station et le paramètre. Sur le
 // jQuery de Sonata. Repris de Resources/assets/entries/crud/edit-chronique.js de l'ancien BDOH.
 (function ($) {

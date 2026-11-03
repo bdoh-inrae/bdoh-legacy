@@ -1,4 +1,6 @@
 <?php
+// SPDX-FileCopyrightText: The BDOH authors
+// SPDX-License-Identifier: AGPL-3.0-or-later
 
 $errors = [
     'Error.notFile(%file%)'                  => "“\u{a0}%file%\u{a0}”: This path is not that of a valid file",
@@ -189,4 +191,9 @@ $various = [
  * RETURNED MESSAGES
  ************************************************/
 
-return array_merge($errors, $observatoire, $dates, $various);
+$legal = [
+    'legal.freeSoftware' => "BDOH is free software under the GNU AGPL v3 licence, provided without warranty.",
+    'legal.sourceCode'   => "Source code",
+];
+
+return array_merge($errors, $observatoire, $dates, $various, $legal);

@@ -1,4 +1,6 @@
 <?php
+// SPDX-FileCopyrightText: The BDOH authors
+// SPDX-License-Identifier: AGPL-3.0-or-later
 
 $entities = require 'entitiesSingulars.en.php';
 $fields = require 'fields.en.php';

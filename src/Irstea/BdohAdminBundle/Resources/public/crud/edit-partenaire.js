@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: The BDOH authors
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Le formulaire d'un partenaire : les types de financement ne se montrent qu'aux partenaires qui ne
 // sont pas financeurs. Sur le jQuery de Sonata. Repris de Resources/assets/entries/crud/edit-partenaire.js
 // de l'ancien BDOH, sans ses traces de mise au point (console.log).

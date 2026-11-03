@@ -1,4 +1,6 @@
 <?php
+// SPDX-FileCopyrightText: The BDOH authors
+// SPDX-License-Identifier: AGPL-3.0-or-later
 
 define('IrsteaBdohDataBundle_transDir', __DIR__ . '/../../../BdohDataBundle/Resources/translations/');
 define('IrsteaBdohSecurityBundle_transDir', __DIR__ . '/../../../BdohSecurityBundle/Resources/translations/');

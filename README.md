@@ -28,4 +28,8 @@ Dans la référence, tous les comptes de la base anonymisée ont le mot de passe
 
 Une adresse e-mail, à l'inscription comme ailleurs, doit finir en `.invalid` : BDOH refuse un domaine sans serveur de courrier, et le DNS du développement n'en donne qu'à ceux-là (`dev/dns/Corefile`).
 
-Licence : [GNU AGPL v3](LICENSE).
+## Licence et citation
+
+Le code est sous licence [GNU AGPL v3 ou ultérieure](LICENSE). Les bibliothèques copiées (dossiers `vendor` de `src/`) gardent leur propre licence, et les logos restent à leurs titulaires.
+
+Pour citer BDOH et connaître ses auteurs : [CITATION.cff](CITATION.cff) et [codemeta.json](codemeta.json).

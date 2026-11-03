@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: The BDOH authors
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // L'éditeur des textes en HTML (Form/widgets.html.twig : wysiwyg_widget), par Trumbowyg 2.8.1 chargé
 // à la demande, sur le jQuery de Sonata. Repris de Resources/assets/lib/htmleditor.js de l'ancien BDOH.
 (function ($) {

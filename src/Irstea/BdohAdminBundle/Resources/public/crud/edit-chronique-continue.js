@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: The BDOH authors
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Le formulaire d'une chronique continue : les options d'export suivent l'échantillonnage choisi. Sur
 // le jQuery de Sonata. Repris de Resources/assets/entries/crud/edit-chronique-continue.js de l'ancien
 // BDOH.

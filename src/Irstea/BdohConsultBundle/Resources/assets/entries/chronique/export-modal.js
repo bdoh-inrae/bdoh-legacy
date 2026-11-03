@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: The BDOH authors
+// SPDX-License-Identifier: AGPL-3.0-or-later
 /**
  * Javascript definitions for 'chroniques_export' macro in 'IrsteaBdohConsultBundle::macros.html.twig' template.
  */

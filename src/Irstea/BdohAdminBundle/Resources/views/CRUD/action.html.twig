@@ -50,9 +50,3 @@
 {# in order to have the title bar even when there is no action nor filter button #}
 {% block tab_menu %}&nbsp;{% endblock %}
 
-{# Les traductions du JavaScript de BDOH, après les fichiers de Sonata, qui traduit lui-même select2 #}
-{% block javascripts %}
-    {{ parent() }}
-    {% set locale = app.request.locale[:2] %}
-    <script src="{{ asset('assets/locales/'~locale~'.js') }}"></script>
-{% endblock %}

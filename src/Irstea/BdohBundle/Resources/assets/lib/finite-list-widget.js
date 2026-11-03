@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: The BDOH authors
+// SPDX-License-Identifier: AGPL-3.0-or-later
 /**
  * From a list (IN) of distinct elements, allows the user to fill a finite size list (OUT), by dragging and dropping.
  *    => each element of IN can appear only once in OUT ;

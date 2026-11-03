@@ -1,0 +1,56 @@
+cff-version: 1.2.0
+message: "Pour citer ce logiciel, merci d'utiliser ces métadonnées."
+type: software
+title: "BDOH : Base de Données des Observatoires Hydrologiques"
+abstract: >-
+  Application web de gestion, de consultation et d'export des chroniques de mesures
+  des observatoires hydrologiques, portée vers Symfony 7.4 et PHP 8.4.
+license: AGPL-3.0-or-later
+repository-code: "https://github.com/bdoh-inrae/bdoh-legacy"
+authors:
+  - given-names: Flora
+    family-names: Branger
+    affiliation: "INRAE, UR RiverLy"
+    orcid: "https://orcid.org/0000-0003-4273-8938"
+  - given-names: Maxime
+    family-names: Crochemore
+    affiliation: "INRAE, DSI"
+  - given-names: Thibault
+    family-names: Degiuli
+    affiliation: "INRAE, DSI"
+  - given-names: Daniel
+    family-names: Gesche
+    affiliation: "INRAE, DSI"
+  - given-names: Cédric
+    family-names: Gil
+    affiliation: "Smile"
+  - given-names: Louis
+    family-names: Héraut
+    affiliation: "INRAE, UR RiverLy"
+    orcid: "https://orcid.org/0009-0006-4372-0923"
+  - given-names: Luc
+    family-names: Jamet
+    affiliation: "INRAE, DSI"
+  - given-names: Guillaume
+    family-names: Perréal
+    affiliation: "INRAE, DSI"
+  - given-names: Mathieu
+    family-names: Poisbeau
+    affiliation: "INRAE, DSI"
+  - given-names: Nicolas
+    family-names: Raidelet
+    affiliation: "INRAE, DSI"
+    orcid: "https://orcid.org/0009-0000-5227-2938"
+  - given-names: Adrien
+    family-names: Tessanne
+    affiliation: "INRAE, UR RiverLy"
+  - given-names: Fabien
+    family-names: Thollet
+    affiliation: "INRAE, UR RiverLy"
+    orcid: "https://orcid.org/0000-0003-0660-2363"
+  - given-names: Benoit
+    family-names: Vila
+    affiliation: "INRAE, UR RiverLy"
+  - given-names: Taquyeddine
+    family-names: Zegaoui
+    affiliation: "Smile"
