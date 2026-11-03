@@ -2275,10 +2275,84 @@ def run_admin(args):
                 parts[f'taux de remplissage : {label}'] = redirect_lines(client.side.url, status, headers)
         return parts
 
+    def account_rights(send, base, client_for):
+        """Modifier le compte d'un autre est réservé aux administrateurs, et un compte technique à un
+        compte technique ; un gestionnaire garde la liste, la création et la page des droits, sans
+        pouvoir y poser de fin d'accès sur un compte d'administration (dev/differences.md)."""
+        results = {}
+        admin, (slug, *_) = accounts['administrateur']
+        tech = accounts['administrateur technique'][0]
+        manager, (manager_slug,) = accounts['gestionnaire']
+        account = lambda email: query(base, f"SELECT id, coalesce(finacces::date::text, '') FROM utilisateur WHERE email = '{email}'",
+                                      NEW_SERVER)[0]
+        plain, plain_email = query(base, f"""SELECT id, email FROM utilisateur WHERE roleadmin IS NULL AND email <> '{manager}'
+                                              AND (finacces IS NULL OR finacces > now()) ORDER BY id LIMIT 1""", NEW_SERVER)[0]
+        admin_id, tech_id = account(admin)[0], account(tech)[0]
+
+        def edit_status(who, who_slug, target):
+            return client_for(who, who_slug).get(f'/{who_slug}/admin/utilisateur/{target}/edit')[0]
+
+        def rights_end_date(who, who_slug, target_email):
+            """Envoie la page des droits d'un compte avec une fin d'accès, le champ fût-il désactivé, et
+            rend la date enregistrée."""
+            client = client_for(who, who_slug)
+            path = f'/{who_slug}/user/right/{target_email}'
+            form = form_of(client, path)
+            date = {'form[dateFin][day]': '30', 'form[dateFin][month]': '6', 'form[dateFin][year]': '2027'}
+            kept = [(n, v) for n, v in form.fields if n not in date]
+            client.get(path, urllib.parse.urlencode([*kept, *date.items()]).encode(), {'Referer': client.side.url + path})
+            return account(target_email)[1]
+
+        expected = {'gestionnaire sur un administrateur': (edit_status(manager, manager_slug, admin_id), 403),
+                    'gestionnaire sur un compte sans rôle': (edit_status(manager, manager_slug, plain), 403),
+                    'administrateur sur un compte sans rôle': (edit_status(admin, slug, plain), 200),
+                    'administrateur sur un compte technique': (edit_status(admin, slug, tech_id), 403),
+                    'compte technique sur un administrateur': (edit_status(tech, slug, admin_id), 200),
+                    'compte technique sur le sien': (edit_status(tech, slug, tech_id), 200)}
+        results['nouveau seul : modifier le compte d’un autre'] = (
+            [f'{name} : statut {got}, attendu {want}' for name, (got, want) in expected.items() if got != want]
+            or ['conforme'])
+
+        # Un envoi fabriqué, sans passer par la page refusée
+        path = f'/{manager_slug}/admin/utilisateur/{admin_id}/edit'
+        status = client_for(manager, manager_slug).get(path, b'x=1', {'Referer': SIDES['new'].url + path})[0]
+        email_after = query(base, f'SELECT email FROM utilisateur WHERE id = {admin_id}', NEW_SERVER)[0][0]
+        results['nouveau seul : envoi du formulaire d’un compte par un gestionnaire, refusé'] = (
+            ['conforme'] if status == 403 and email_after == admin else [f'statut {status}, adresse changée : {email_after != admin}'])
+
+        # L'administrateur corrige une adresse
+        new_email = 'adresse-corrigee@example.invalid'
+        send(f'/{slug}/admin/utilisateur/{plain}/edit', f'/utilisateur/{plain}/edit', {'[email]': new_email}, 'btn_update_and_edit')
+        got = query(base, f'SELECT email FROM utilisateur WHERE id = {plain}', NEW_SERVER)[0][0]
+        results['nouveau seul : un administrateur corrige une adresse'] = (
+            ['conforme'] if got == new_email else ['adresse inchangée'])
+
+        # Le gestionnaire crée toujours un compte, et revient à la liste
+        lines = send(f'/{manager_slug}/admin/utilisateur/create', '/utilisateur/create',
+                     {'[email]': 'cree-par-gestionnaire@example.invalid', '[prenom]': 'Camille', '[nom]': 'Essai',
+                      '[organisme]': 'INRAE', '[categorie]': FIRST, '[telephone]': '0102030405',
+                      '[adresse]': '1 rue de l’Essai'}, 'btn_create_and_edit', who=manager)
+        created = query(base, "SELECT count(*) FROM utilisateur WHERE email = 'cree-par-gestionnaire@example.invalid'", NEW_SERVER)[0][0]
+        next_status = next((line for line in lines if line.startswith('statut ')), '')
+        results['nouveau seul : un gestionnaire crée un compte'] = (
+            ['conforme'] if created == '1' and lines[0].startswith('statut 302') and '/utilisateur/list' in ' '.join(lines[:3]) and next_status
+            else [f'{created} compte, réponse : {lines[:3]}'])
+
+        # La fin d'accès sur la page des droits
+        results['nouveau seul : fin d’accès d’un compte d’administration, refusée à un gestionnaire'] = (
+            ['conforme'] if rights_end_date(manager, manager_slug, admin) == '' else ['date enregistrée'])
+        results['nouveau seul : fin d’accès d’un compte technique, refusée à un administrateur'] = (
+            ['conforme'] if rights_end_date(admin, slug, tech) == '' else ['date enregistrée'])
+        results['nouveau seul : fin d’accès d’un compte sans rôle, gardée au gestionnaire'] = (
+            ['conforme'] if rights_end_date(manager, manager_slug, got) == '2027-06-30' else ['date non enregistrée'])
+        return results
+
     def new_only(send, base, client_for):
         """Ce que seul le nouveau fait (dev/differences.md, dev/local/security.md) : chaque vérification
         rend « conforme » ou ce qui ne l'est pas. Après l'état des tables : ces écritures n'y comptent pas."""
         results = {}
+        if 'utilisateur' in admins:
+            results.update(account_rights(send, base, client_for))
         if 'partenaire' in admins:
             email, slugs = accounts['administrateur']
             slug, pid = first(base, admins['partenaire'], slugs)

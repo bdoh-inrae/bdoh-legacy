@@ -329,8 +329,15 @@ class BdohRightVoter implements VoterInterface
 
         $current = $this->getCurrentObservatoire();
 
-        if ($object instanceof Partenaire
-            || $object instanceof Utilisateur) {
+        // L'adresse est la clé d'un compte : seuls les administrateurs modifient celui d'un autre, et un
+        // compte technique ne se modifie que par un compte technique (dev/differences.md).
+        if ($object instanceof Utilisateur) {
+            return $user->isGestionnaireDesObservatoires()
+                && ($object->getRoleAdmin() !== Utilisateur::ROLE_ADMIN_TECH
+                    || $user->getRoleAdmin() === Utilisateur::ROLE_ADMIN_TECH);
+        }
+
+        if ($object instanceof Partenaire) {
             return $user->isGestionnaireDesObservatoires()
                 || $user->securedHasRoleObservatoire(Role::GESTIONNAIRE, $current);
         }

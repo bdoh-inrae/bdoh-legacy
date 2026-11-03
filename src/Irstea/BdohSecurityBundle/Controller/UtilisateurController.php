@@ -346,6 +346,8 @@ class UtilisateurController extends Controller
                     // Trois listes (jour, mois, année), comme l'ancien ; Symfony 7 en ferait un seul champ
                     'widget'      => 'choice',
                     'placeholder' => '',
+                    // Un gestionnaire ne bloque pas un compte d'administration
+                    'disabled'    => $user->getRoleAdmin() !== null && !$security->isGranted('EDIT', $user),
                 ]
             );
         }
