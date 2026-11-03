@@ -44,3 +44,7 @@ Bogues de l'ancien BDOH, corrigés dans le nouveau (détail dans `dev/difference
 - L'altitude et les coordonnées d'une station ne sont plus arrondies à trois décimales à chaque enregistrement.
 - Les coordonnées envoyées à Theia/OZCAR sont demandées en WGS 84 : l'ancien, sous PostGIS 2.5, les décalait de 300 à 700 m.
 - Un serveur de Theia qui ne répond pas ne fait plus échouer l'envoi sur une erreur fatale.
+
+### Sécurité
+
+- `symfony/mime` passe à 7.4.22 ([CVE-2026-45070](https://symfony.com/cve-2026-45070)). BDOH n'y était pas exposé : il ne construit aucun nom de paramètre d'en-tête de courriel à partir d'une saisie. `compare.py accounts`, `state`, `admin` et `imports` donnent les mêmes résultats qu'avant.

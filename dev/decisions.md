@@ -60,4 +60,5 @@ Les choix techniques du portage, avec leur raison : ce qu'un prochain Claude dé
   - Les `findOneById` des dépôts de BDOH ne cherchent que dans l'observatoire de la page et lèvent une exception sur une entité absente (`getSingleResult`) : `find()` n'en est pas l'équivalent ; attraper `NoResultException` pour répondre 404.
   - `max()` et `min()` d'un tableau vide lèvent une erreur en PHP 8, quand PHP 7 rendait `false` avec un avertissement (`LoggerController`).
   - Un nom de classe à la mauvaise casse ne se charge que si la classe l'a déjà été : PHP ne tient pas compte de la casse des classes, le chargement automatique et Doctrine, si (`LoggerController`, `HistoriqueAdministrationDataset`). (2026-10-26)
+  - `composer update` laisse Symfony Flex ajouter `@hotwired/stimulus` à `package.json`, sans toucher à `package-lock.json` : `npm ci`, donc `make assets`, échoue alors (« Missing: @hotwired/stimulus@3.2.2 from lock file »). Retirer la ligne avant de commiter (`git checkout package.json`) ; le JavaScript garde les paquets de l'ancien. (2026-11-03)
 
