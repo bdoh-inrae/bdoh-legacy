@@ -9,6 +9,8 @@
     dev/compare/compare.py accounts [--base BASE]
     dev/compare/compare.py admin   [--base BASE] [--only TEXTE]
     dev/compare/compare.py theia   [--base BASE] [--only TEXTE]
+    dev/compare/compare.py selftest [--base BASE] [--only TEXTE]
+    dev/compare/compare.py fingerprints EMPREINTE_A EMPREINTE_B
 
 SIDE nomme une instance (voir SIDES). Les cas sont tirés de la base BASE du serveur de référence,
 par des règles écrites ici : le dépôt ne contient ni données ni codes de chroniques. Le rapport et
@@ -19,14 +21,18 @@ avec l'ancien code sur PostgreSQL 17 et avec le nouveau, chacun sur sa copie de 
 l'état des deux copies. « queue » est l'essai de la file de tâches (audit des risques, constat 3).
 
 Les pages se comparent par ce qu'elles montrent (texte, liens, formulaires, attributs data-*), pas
-par leur balisage ; les nombres, à un arrondi près (règle « Arrondis à la limite » de
-dev/differences.md), compté à part pour être relu. Bibliothèque standard seulement.
+par leur balisage ; les nombres décimaux, à un arrondi près (règle « Arrondis à la limite » de
+dev/differences.md), compté à part pour être relu. Le rapport dit ce qui a été comparé, et le code de
+sortie vaut 1 s'il reste un cas différent. « selftest » éprouve l'outil : des erreurs inventées sur une
+copie de base, qu'il doit toutes voir. « fingerprints » compare, en comptes, deux empreintes écrites par
+make fingerprint. Bibliothèque standard seulement.
 """
 
 import argparse
 import concurrent.futures
 import contextlib
 import datetime
+import decimal
 import difflib
 import hashlib
 import html
@@ -451,35 +457,54 @@ def page_lines(site, status, headers, body):
 
 # --- Comparaison ---------------------------------------------------------------------------------
 
-NUMBER = re.compile(r'-?\d+(?:[.,]\d+)?(?:[eE][-+]?\d+)?')
+# Une date ou une heure, à laisser telle quelle ; sinon un nombre, pris entier, pas au milieu d'un mot
+TOKEN = re.compile(r'(?P<moment>\d{4}-\d\d-\d\d(?:[T ]\d\d:\d\d(?::\d\d(?:\.\d+)?)?)?'
+                   r'|\d\d/\d\d/\d{4}(?: \d\d:\d\d(?::\d\d)?)?|\d\d:\d\d(?::\d\d(?:\.\d+)?)?)'
+                   r'|(?<![\w.])(?P<number>-?\d+(?:[.,]\d+)?(?:[eE][-+]?\d+)?)(?![\w])')
+
+
+def close_numbers(x, y):
+    """Deux nombres écrits qui peuvent être le même, arrondi autrement (règle « Arrondis à la limite » de
+    dev/differences.md). Un entier ne s'arrondit pas : c'est un compteur, un identifiant, un code."""
+    if x == y:
+        return True
+    if ',' in x and ',' in y:  # une virgule ne se tolère que face à un point : l'ancien écrivait 3,34
+        return False
+    a, b = decimal.Decimal(x.replace(',', '.')), decimal.Decimal(y.replace(',', '.'))
+    if a == b:  # 3,34 et 3.34 ; -0.000 et 0.000 ; 1.50 et 1.5
+        return True
+    if ',' in x + y or not any(c in x + y for c in '.eE'):
+        return False
+    exponent_x, exponent_y = a.as_tuple().exponent, b.as_tuple().exponent
+    if exponent_x == exponent_y:  # mêmes décimales : une unité du dernier chiffre
+        return abs(a - b) <= decimal.Decimal(1).scaleb(exponent_x)
+    # Autres décimales : le même nombre, écrit à 15 chiffres par PostgreSQL 11, à 17 par PostgreSQL 17
+    return abs(a - b) <= max(abs(a), abs(b)) * decimal.Decimal('1e-14')
 
 
 def same_but_rounding(a, b):
-    """Deux lignes qui ne diffèrent que par des nombres écrits à une unité près du dernier chiffre,
-    ou par -0 et 0 (règle « Arrondis à la limite »). Un statut de réponse n'est pas un nombre arrondi."""
-    if a.startswith('statut ') or NUMBER.sub('#', a) != NUMBER.sub('#', b):
+    """Deux lignes qui ne diffèrent que par des nombres arrondis autrement. Les dates, les heures et les
+    entiers doivent être identiques."""
+    if TOKEN.sub('#', a) != TOKEN.sub('#', b):
         return False
-    for x, y in zip(NUMBER.findall(a), NUMBER.findall(b)):
-        if x == y:
-            continue
-        if x.lstrip('-') == y.lstrip('-') and float(x.replace(',', '.')) == 0:
-            continue
-        decimals = len(x.split('.')[1]) if '.' in x else 0
-        try:
-            if abs(float(x.replace(',', '.')) - float(y.replace(',', '.'))) > 1.000001 * 10 ** -decimals:
+    for x, y in zip(TOKEN.finditer(a), TOKEN.finditer(b)):
+        if x.group('moment') or y.group('moment'):
+            if x.group(0) != y.group(0):
                 return False
-        except ValueError:
+        elif not close_numbers(x.group('number'), y.group('number')):
             return False
     return True
 
 
-def compare(old, new):
+def compare(old, new, exact=False):
     """Écarts entre deux suites de lignes : (lignes de diff, paires de lignes à un arrondi près,
     ordre seul).
 
     Deux suites de même longueur se comparent ligne à ligne ; le diff complet, coûteux sur une
     longue page, ne sert que s'il reste un écart. « Ordre seul » : les mêmes lignes, ou les mêmes
-    éléments d'une liste, dans un autre ordre (listes que l'ancien ne triait pas)."""
+    éléments d'une liste, dans un autre ordre (listes que l'ancien ne triait pas). exact : sans
+    tolérance d'arrondi, pour ce qu'on lit en base sous un même PostgreSQL."""
+    same_but_rounding = (lambda a, b: False) if exact else globals()['same_but_rounding']
     rounding = []
     original, new = list(new), list(new)
     if len(old) == len(new):
@@ -506,19 +531,67 @@ def compare(old, new):
     return diff, rounding, order_only
 
 
+def classify(old, new, exact=False):
+    """Le verdict sur deux suites de lignes : (catégorie du rapport, lignes de diff, paires arrondies)."""
+    diff, rounding, order_only = compare(old, new, exact)
+    if diff:
+        return ('même contenu, autre ordre' if order_only else 'différents'), diff, rounding
+    return ('à un arrondi près' if rounding else 'identiques'), diff, rounding
+
+
+def run_text(*command):
+    """La sortie d'une commande, ou rien si elle échoue."""
+    r = subprocess.run(command, capture_output=True, text=True)
+    return r.stdout.strip() if r.returncode == 0 else ''
+
+
+def instance_base(side):
+    """La base que lit réellement une instance, d'après sa propre console."""
+    console = SIDES[side].console
+    command = 'dbal:run-sql' if SIDES[side].login_link else 'doctrine:query:sql'
+    found = re.search(r'\bbdoh\w*', run_text(*console, command, 'SELECT current_database() AS base', '--env=prod'))
+    return found.group(0) if found else 'inconnue'
+
+
+def check_instances(args):
+    """Les deux instances comparées lisent-elles la base dont on a tiré les cas ? Pour les copies d'un
+    mode (bdoh_state_old, bdoh_state_new), chacune la sienne."""
+    for side in (args.old, args.new):
+        base = instance_base(side)
+        if base not in (args.base, args.base.replace('_old', '_new')):
+            sys.exit(f"L'instance {side} lit la base {base}, pas {args.base} : dev/compare/use-base.sh {args.base}")
+
+
+def provenance():
+    """Ce qui a été comparé, pour que le rapport le prouve : la commande, le code, les versions."""
+    root = str(HERE.parent.parent)
+    changed = run_text('git', '-C', root, 'status', '--porcelain', '--', 'src', 'config', 'migrations', 'templates',
+                       'dev/compare', 'dev/reference')
+    servers = [f"{name} : {run_text('docker', 'exec', name, 'psql', '-U', 'postgres', '-Atc', 'SHOW server_version') or 'arrêté'}"
+               for name in ('bdoh-reference-db', NEW_SERVER)]
+    return [f"Commande : {' '.join(sys.argv[1:])}",
+            f"Code : {run_text('git', '-C', root, 'rev-parse', '--short', 'HEAD')}"
+            + (' et des fichiers modifiés' if changed else ''),
+            f"PostgreSQL : {', '.join(servers)}",
+            f"Fin : {datetime.datetime.now():%Y-%m-%d %H:%M:%S}"]
+
+
 class Report:
-    def __init__(self, kind):
+    failed = False  # un cas différent dans ce lancement : le code de sortie le dit
+
+    def __init__(self, kind, exact=False):
         self.dir = OUT / f"{datetime.datetime.now():%Y-%m-%d_%H%M%S}_{kind}"
         self.dir.mkdir(parents=True)
         self.counts = {'identiques': 0, 'à un arrondi près': 0, 'même contenu, autre ordre': 0, 'différents': 0}
         self.summary = []
+        self.exact = exact
 
     def add(self, name, old, new):
-        diff, rounding, order_only = compare(old, new)
-        if diff:
-            key = 'même contenu, autre ordre' if order_only else 'différents'
-        else:
-            key = 'à un arrondi près' if rounding else 'identiques'
+        # L'état d'une base se compare sans tolérance : deux copies sous un même PostgreSQL n'ont aucune
+        # raison de différer d'un bit (dev/decisions.md, « Nombres lus en base, réécrits en texte »)
+        exact = self.exact or name.startswith('état ') or name in STATE_QUERIES or name in ACCOUNT_QUERIES \
+            or name == 'autres tables'
+        key, diff, rounding = classify(old, new, exact)
         self.counts[key] += 1
         if diff or rounding:
             slug = re.sub(r'[^\w.-]+', '_', name).strip('_')[:150]
@@ -528,12 +601,16 @@ class Report:
         print('X' if key == 'différents' else '.', end='', flush=True)
 
     def close(self):
-        text = '\n'.join([*(f'{n:>6} {k}' for k, n in self.counts.items()), '', *self.summary, ''])
+        # Les comptes d'abord, puis la provenance : c'est ce qui se lit sans risque de citer une chronique
+        # cachée ; la suite peut en citer (CLAUDE.md).
+        text = '\n'.join([*(f'{n:>6} {k}' for k, n in self.counts.items()), '', *provenance(), '', *self.summary, ''])
         (self.dir / 'rapport.txt').write_text(text)
+        Report.failed = Report.failed or self.counts['différents'] > 0
         print('\n' + text + f'Rapport : {self.dir}')
 
 
 def run_pages(args):
+    check_instances(args)
     old, new = SIDES[args.old], SIDES[args.new]
     slug = query(args.base, "SELECT slug FROM observatoire ORDER BY id LIMIT 1")[0][0]
     paths = [p for p in page_cases(args.base) if args.only in p]
@@ -556,6 +633,7 @@ def run_pages(args):
 
 
 def run_exports(args):
+    check_instances(args)
     old, new = SIDES[args.old], SIDES[args.new]
 
     def run(side, case):
@@ -612,23 +690,19 @@ def state_commands(base):
     ]
 
 
+# L'empreinte au bit près d'une base, table par table : dev/reference/fingerprint.sql
+FINGERPRINTS = {table: sql for sql, table in re.findall(
+    r"^(SELECT '(\w+)', .*?);$", (HERE.parent / 'reference' / 'fingerprint.sql').read_text(), re.M | re.S)}
+
 # Ce que les calculs écrivent, sans les dates du moment (mise à jour, création et exécution des
-# tâches) ni la trace d'erreur des tâches, que BDOH ne lit pas (dev/differences.md) ; les mesures et
-# les taux, en une empreinte par chronique, valeurs écrites au chiffre près.
+# tâches) ni la trace d'erreur des tâches, que BDOH ne lit pas (dev/differences.md) ; les mesures, les
+# plages, les points de contrôle et les taux, en une empreinte par chronique, au bit près.
 STATE_QUERIES = {
+    **FINGERPRINTS,
     'chronique': """
         SELECT ((to_jsonb(c) - 'miseajour')
                 || jsonb_build_object('miseajour récente', c.miseajour > now() - interval '1 hour'))::text
           FROM chronique c ORDER BY c.id""",
-    'mesure': """
-        SELECT chronique_id, count(*), md5(string_agg(
-                   concat_ws(';', date, valeur, qualite_id, minimum, maximum, estcalculee), '|'
-                   ORDER BY date, valeur))
-          FROM mesure GROUP BY 1 ORDER BY 1""",
-    'tauxremplissage': """
-        SELECT chronique_id, count(*), md5(string_agg(concat_ws(';', debut, fin, taux, poids), '|'
-                                                      ORDER BY debut, fin))
-          FROM tauxremplissage GROUP BY 1 ORDER BY 1""",
     'historique': """
         SELECT (to_jsonb(h) - 'id' - 'date' - 'datecreation')::text FROM historique h WHERE h.id > {historique}
          ORDER BY h.id""",
@@ -642,17 +716,35 @@ STATE_QUERIES = {
           FROM jms_jobs j ORDER BY j.id""",
     'jms_job_related_entities': "SELECT * FROM jms_job_related_entities ORDER BY 1, 2, 3",
     'bareme': "SELECT (to_jsonb(b) - 'datecreation')::text FROM bareme b ORDER BY b.id",
-    'station': "SELECT id, code, ST_AsEWKT(point), altitude FROM station ORDER BY id",
+    'station': "SELECT (to_jsonb(s) - 'point')::text, ST_AsEWKT(point) FROM station s ORDER BY id",
     'transformation': "SELECT * FROM transformation ORDER BY id",
     'jeubareme': "SELECT (to_jsonb(j) - 'datecreation')::text FROM jeubareme j ORDER BY j.id",
     'baremejeubareme': "SELECT * FROM baremejeubareme ORDER BY id",
-    'bassin': "SELECT id, observatoire_id, nom, aire, md5(ST_AsEWKT(perimetre)), stationexutoire_id FROM bassin ORDER BY id",
-    'courseau': "SELECT id, observatoire_id, nom, codehydro, classification, md5(ST_AsEWKT(trace)) FROM courseau ORDER BY id",
-    'pointcontrole': """
-        SELECT chronique_id, count(*), md5(string_agg(concat_ws(';', date, valeur, qualite_id, minimum, maximum), '|'
-                                                      ORDER BY date))
-          FROM pointcontrole GROUP BY 1 ORDER BY 1""",
+    'bassin': "SELECT (to_jsonb(b) - 'perimetre')::text, md5(ST_AsEWKT(perimetre)) FROM bassin b ORDER BY id",
+    'courseau': "SELECT (to_jsonb(c) - 'trace')::text, md5(ST_AsEWKT(trace)) FROM courseau c ORDER BY id",
 }
+
+# Ce qu'une empreinte de table laisse de côté, dans toutes les tables : les dates du moment et ce qui
+# est tiré au hasard ; ces colonnes se comparent, quand elles comptent, par les requêtes nommées.
+MOMENT_COLUMNS = ['miseajour', 'datecreation', 'derniereconnection', 'password', 'salt', 'confirmationtoken',
+                  'theiapassword', 'executed_at', 'lastrunat']
+
+
+def other_tables_lines(base, known):
+    """Toutes les tables que les requêtes nommées (known) ne lisent pas, une ligne chacune : son nombre
+    de lignes et son empreinte ; et le nombre de tables du schéma temp, que les imports remplissent. Une
+    écriture dans une table qu'on n'attendait pas se voit ainsi."""
+    tables = [row[0] for row in query(base, """SELECT table_name FROM information_schema.tables
+                                                WHERE table_schema = 'bdoh' AND table_type = 'BASE TABLE'
+                                                ORDER BY 1""", NEW_SERVER) if row[0] not in known]
+    keys = ''.join(f" - '{column}'" for column in MOMENT_COLUMNS)
+    lines = []
+    for table in tables:
+        row = query(base, f"""SELECT count(*), coalesce(md5(string_agg(h, '' ORDER BY h)), '') FROM
+                              (SELECT md5((to_jsonb(t){keys})::text) AS h FROM bdoh.{table} t) x""", NEW_SERVER)[0]
+        lines.append(f'{table}\t' + '\t'.join(row))
+    temp = query(base, "SELECT count(*) FROM information_schema.tables WHERE table_schema = 'temp'", NEW_SERVER)[0][0]
+    return [*lines, f'schéma temp\t{temp} tables']
 
 
 MAILPIT = 'http://172.30.26.25:8025'  # service mailpit de compose.yaml (make mail-start)
@@ -828,13 +920,14 @@ def run_state(args):
     for name, base in [('ancien', 'bdoh_state_old'), ('nouveau', 'bdoh_state_new')]:
         copy_base(template, base)
         urllib.request.urlopen(urllib.request.Request(MAILPIT + '/api/v1/messages', method='DELETE'), timeout=60)
-        if name == 'ancien':
+        if name == 'ancien' or args.same:  # --same : l'ancien deux fois, ce qui mesure le bruit de l'outil
             with old_17_on(base, mailer_transport='smtp', mailer_host='mailpit', mailer_port='1025') as console:
                 log = play(SIDES['reference-17'], console, 'jms-job-queue:run', base)
         else:
             with new_on(base, template, 'MAILER_DSN=smtp://mailpit:1025') as console:
                 log = play(SIDES['new'], console, 'bdoh:jobs:run', base)
-        sides[name] = {'étapes': log, 'courriels': mail_lines(), **state_lines(base, historique)}
+        sides[name] = {'étapes': log, 'courriels': mail_lines(), **state_lines(base, historique),
+                       'autres tables': other_tables_lines(base, STATE_QUERIES)}
 
     report = Report('state')
     for part in sides['ancien']:
@@ -916,7 +1009,7 @@ def run_queue(args):
         print(f'{name} : {len(sides[name]["tâches"])} tâches, {parallel} paires menées en même temps,'
               f' {len(overlaps)} dans une même file {overlaps or ""}')
 
-    report = Report('queue')
+    report = Report('queue', exact=True)  # le nouveau contre lui-même
     for part in sides['une à une']:
         report.add(part, sides['une à une'][part], sides['deux à la fois'][part])
 
@@ -1450,7 +1543,8 @@ def run_imports(args):
                 report.add(f'import {title}', play_shape('ancien', slug, target, filename, content),
                            play_shape('nouveau', slug, target, filename, content))
         for name in sides:
-            sides[name] = state_lines(bases[name], historique)
+            sides[name] = {**state_lines(bases[name], historique),
+                           'autres tables': other_tables_lines(bases[name], STATE_QUERIES)}
     for table in sides['ancien']:
         report.add(f'état {table}', sides['ancien'][table], sides['nouveau'][table])
     # Ce que seul le nouveau fait aux formats QJO et Qtvar (dev/differences.md, « Zéro importé » et
@@ -1715,7 +1809,8 @@ def run_accounts(args):
                  for line in mail_lines(ordered=False)]
         return {'courriels': mails,
                 **{table: ['\t'.join(row) for row in query(base, sql.format(**marks), NEW_SERVER)]
-                   for table, sql in ACCOUNT_QUERIES.items()}}
+                   for table, sql in ACCOUNT_QUERIES.items()},
+                'autres tables': other_tables_lines(base, ACCOUNT_QUERIES)}
 
     def new_only_checks(side, console, base):
         """Ce que seul le nouveau fait, sur sa copie, après la photo comparée à l'ancien : la relecture
@@ -2275,6 +2370,7 @@ def run_admin(args):
             parts[f'état {table}'] = (['\t'.join(row) for row in query(base, OTHER_STATE[table], NEW_SERVER)]
                                       if table in OTHER_STATE else state_lines(base, historique, [table])[table])
         parts['état historique'] = state_lines(base, historique, ['historique'])['historique']
+        parts['état des autres tables'] = other_tables_lines(base, {f[5:] for f in parts if f.startswith('état ')})
         if side.login_link:
             checks.update(new_only(send, base, client_for))
         return parts
@@ -2738,6 +2834,9 @@ def run_theia(args):
              WHERE command = 'theia:send:json:data' ORDER BY id""", NEW_SERVER) for line in theia_lines('\t'.join(row), *sites)]
         parts['mise à jour automatique'] = ['\t'.join(row) for row in query(
             base, 'SELECT slug, miseajourautomatique FROM observatoire ORDER BY id', NEW_SERVER)]
+        # L'observatoire change par la fiche enregistrée ; les tâches, par leurs dates et leur ordre
+        parts['autres tables'] = other_tables_lines(base, {'observatoire', 'jms_jobs', 'jms_job_related_entities',
+                                                           'historique'})
         if side.login_link and len(cases) > 1:
             # Les pages Theia d'un autre observatoire que celui de la page (dev/local/security.md)
             (oid, _, _), (_, slug, email) = cases[0], cases[1]
@@ -2805,11 +2904,125 @@ def run_theia(args):
           f' {bases["ancien"]} et {bases["nouveau"]}.')
 
 
+# --- L'outil éprouvé ---------------------------------------------------------------------------------
+
+# Des erreurs inventées, une par une, sur une copie de la base : (table comparée où elle doit se voir,
+# nom, requête). Le comparateur doit les classer « différents », jamais « à un arrondi près ». Les premières
+# lignes de la copie préparée portent les cas que les données n'ont pas forcément (selftest_rows).
+SELFTEST_FIRST = {
+    'mesure': "(SELECT min(id) FROM mesure WHERE valeur > 1 AND valeur * (1 + 2.3e-16) <> valeur)",
+    'plage': "(SELECT min(id) FROM plage WHERE valeur > 1 AND valeur * (1 + 2.3e-16) <> valeur)",
+    'pointcontrole': "(SELECT min(id) FROM pointcontrole WHERE valeur > 1 AND valeur * (1 + 2.3e-16) <> valeur)",
+    'tauxremplissage': "(SELECT min(id) FROM tauxremplissage WHERE taux > 0.1 AND taux * (1 + 2.3e-16) <> taux)",
+    'chronique': "(SELECT min(id) FROM chronique WHERE nbmesures > 0)",
+    'bareme': "(SELECT min(id) FROM bareme WHERE valeurs[2][2] > 1 AND valeurs[2][2] * (1 + 2.3e-16) <> valeurs[2][2])",
+}
+SELFTEST_ROWS = {
+    'une borne': "(SELECT min(id) FROM mesure WHERE valeur > 1)",
+    'deux bornes': "(SELECT min(id) FROM mesure WHERE valeur > 1 AND id > (SELECT min(id) FROM mesure WHERE valeur > 1))",
+    'lacune': "(SELECT max(id) FROM mesure WHERE valeur > 1)",
+}
+SELFTEST = [
+    ('mesure', "un bit d'une valeur", f"UPDATE mesure SET valeur = valeur * (1 + 2.3e-16) WHERE id = {SELFTEST_FIRST['mesure']}"),
+    ('mesure', 'une ligne en moins', f"DELETE FROM mesure WHERE id = {SELFTEST_FIRST['mesure']}"),
+    ('mesure', 'une ligne en plus', f"""INSERT INTO mesure (id, qualite_id, chronique_id, date, valeur, minimum, maximum, estcalculee)
+        SELECT nextval('mesure_id_seq'), qualite_id, chronique_id, date + interval '1 second', valeur, minimum, maximum, estcalculee
+          FROM mesure WHERE id = {SELFTEST_FIRST['mesure']}"""),
+    ('mesure', "une heure de décalage", """UPDATE mesure SET date = date + interval '1 hour'
+        WHERE id = (SELECT id FROM mesure ORDER BY chronique_id, date DESC LIMIT 1)"""),
+    ('mesure', 'minimum et maximum échangés, un NULL', f"UPDATE mesure SET minimum = maximum, maximum = minimum WHERE id = {SELFTEST_ROWS['une borne']}"),
+    ('mesure', 'minimum et maximum échangés', f"UPDATE mesure SET minimum = maximum, maximum = minimum WHERE id = {SELFTEST_ROWS['deux bornes']}"),
+    ('mesure', 'une autre qualité', f"""UPDATE mesure m SET qualite_id = (SELECT min(q.id) FROM qualite q WHERE q.id <> m.qualite_id)
+        WHERE id = {SELFTEST_FIRST['mesure']}"""),
+    ('mesure', 'marquée calculée', f"UPDATE mesure SET estcalculee = NOT estcalculee WHERE id = {SELFTEST_FIRST['mesure']}"),
+    ('mesure', '-9999 devenu NULL', f"UPDATE mesure SET valeur = NULL WHERE id = {SELFTEST_ROWS['lacune']}"),
+    ('plage', "un bit d'une valeur", f"UPDATE plage SET valeur = valeur * (1 + 2.3e-16) WHERE id = {SELFTEST_FIRST['plage']}"),
+    ('plage', 'une seconde de plus à la fin', f"UPDATE plage SET fin = fin + interval '1 second' WHERE id = {SELFTEST_FIRST['plage']}"),
+    ('plage', 'une ligne en moins', f"DELETE FROM plage WHERE id = {SELFTEST_FIRST['plage']}"),
+    ('pointcontrole', "un bit d'une valeur", f"UPDATE pointcontrole SET valeur = valeur * (1 + 2.3e-16) WHERE id = {SELFTEST_FIRST['pointcontrole']}"),
+    ('tauxremplissage', "un bit d'un taux", f"UPDATE tauxremplissage SET taux = taux * (1 + 2.3e-16) WHERE id = {SELFTEST_FIRST['tauxremplissage']}"),
+    ('chronique', 'nombre de mesures, +1', f"UPDATE chronique SET nbmesures = nbmesures + 1 WHERE id = {SELFTEST_FIRST['chronique']}"),
+    ('chronique', "date de début, une heure", f"UPDATE chronique SET datedebutmesures = datedebutmesures + interval '1 hour' WHERE id = {SELFTEST_FIRST['chronique']}"),
+    ('station', "point déplacé d'un millimètre", "UPDATE station SET point = ST_Translate(point, 0.001, 0) WHERE id = (SELECT min(id) FROM station WHERE point IS NOT NULL)"),
+    ('station', 'latitude', "UPDATE station SET latitude = latitude + 0.001 WHERE id = (SELECT min(id) FROM station WHERE latitude IS NOT NULL)"),
+    ('bareme', "un bit d'un point d'une courbe", f"UPDATE bareme SET valeurs[2][2] = valeurs[2][2] * (1 + 2.3e-16) WHERE id = {SELFTEST_FIRST['bareme']}"),
+    ('transformation', "une autre entrée", """UPDATE transformation t SET entree_id = (SELECT min(c.id) FROM chronique c WHERE c.id <> t.entree_id)
+        WHERE id = (SELECT min(id) FROM transformation)"""),
+    ('jeubareme', 'délai de propagation', "UPDATE jeubareme SET delaipropagation = coalesce(delaipropagation, 0) + 1 WHERE id = (SELECT min(id) FROM jeubareme)"),
+    ('baremejeubareme', 'début de validité, une seconde', "UPDATE baremejeubareme SET debutvalidite = debutvalidite + interval '1 second' WHERE id = (SELECT min(id) FROM baremejeubareme)"),
+    ('bassin', "périmètre déplacé d'un millimètre", "UPDATE bassin SET perimetre = ST_Translate(perimetre, 0.001, 0) WHERE id = (SELECT min(id) FROM bassin)"),
+    ('courseau', "tracé déplacé d'un millimètre", "UPDATE courseau SET trace = ST_Translate(trace, 0.001, 0) WHERE id = (SELECT min(id) FROM courseau)"),
+    ('historique', 'une entrée changée', "UPDATE historique SET description = coalesce(description, '') || ' essai' WHERE id = (SELECT max(id) FROM historique)"),
+    ('jms_jobs', 'une tâche de plus', """INSERT INTO jms_jobs (id, state, queue, priority, createdat, executeafter, command, args, maxruntime, maxretries)
+        VALUES (nextval('jms_jobs_id_seq'), 'pending', 'essai', 0, now(), now(), 'essai', '[]', 0, 0)"""),
+    ('autres tables', 'une unité renommée', "UPDATE unite SET libelle = libelle || ' essai' WHERE id = (SELECT min(id) FROM unite)"),
+    ('autres tables', 'un droit retiré', "DELETE FROM role WHERE id = (SELECT min(id) FROM role)"),
+    ('autres tables', "le téléphone d'un compte", "UPDATE utilisateur SET telephone = '0102030405' WHERE id = (SELECT min(id) FROM utilisateur)"),
+    ('autres tables', 'une table laissée dans temp', "CREATE TABLE temp.tmp_essai (a int)"),
+]
+
+
+def run_selftest(args):
+    """Le comparateur voit-il les erreurs ? Chaque erreur de SELFTEST sur une copie fraîche de BASE, puis
+    la comparaison de cette copie à la copie intacte, par les requêtes et le verdict des autres modes.
+    Le rapport n'écrit que le nom des erreurs : aucune donnée, aucune ligne de la base."""
+    prepared, altered = 'bdoh_selftest_base', 'bdoh_selftest'
+    copy_base(args.base, prepared)
+    # Des lignes qu'une base n'a pas forcément : une seule borne, deux bornes, une lacune à -9999
+    query(prepared, f"UPDATE mesure SET minimum = NULL, maximum = valeur + 1 WHERE id = {SELFTEST_ROWS['une borne']}", NEW_SERVER)
+    query(prepared, f"UPDATE mesure SET minimum = valeur - 1, maximum = valeur + 1 WHERE id = {SELFTEST_ROWS['deux bornes']}", NEW_SERVER)
+    query(prepared, f"UPDATE mesure SET valeur = -9999 WHERE id = {SELFTEST_ROWS['lacune']}", NEW_SERVER)
+    # La dernière entrée de l'historique compte dans ce que lit sa requête
+    historique = int(query(prepared, 'SELECT max(id) FROM historique', NEW_SERVER)[0][0]) - 1
+
+    def lines(base, part):
+        if part == 'autres tables':
+            return other_tables_lines(base, STATE_QUERIES)
+        return state_lines(base, historique, [part])[part]
+
+    report = Report('selftest')
+    for part, name, sql in SELFTEST:
+        if args.only not in name:
+            continue
+        copy_base(prepared, altered)
+        tag = query(altered, sql, NEW_SERVER)
+        if not tag or tag[0][0].split()[-1] == '0':
+            report.add(f'{part} : {name}', ['vue'], ['sans effet : aucune ligne touchée, cas à revoir'])
+            continue
+        verdict = classify(lines(prepared, part), lines(altered, part), exact=True)[0]
+        report.add(f'{part} : {name}', ['vue'], ['vue' if verdict == 'différents' else f'classée « {verdict} »'])
+    report.close()
+    query_postgres = ['docker', 'exec', NEW_SERVER, 'psql', '-U', 'postgres', '-qc']
+    for base in (prepared, altered):
+        subprocess.run([*query_postgres, f'DROP DATABASE IF EXISTS {base}'], check=True, capture_output=True)
+
+
+def run_fingerprints(args):
+    """Deux empreintes de make fingerprint, table par table, en comptes seulement : rien de ce qui nomme
+    une chronique n'est écrit."""
+    def load(path):
+        return {tuple(fields[:2]): tuple(fields[2:]) for fields in (line.strip().split(';') for line in open(path))
+                if len(fields) == 4}
+
+    if len(args.files) != 2:
+        sys.exit('Il faut deux fichiers : compare.py fingerprints A B')
+    a, b = load(args.files[0]), load(args.files[1])
+    for table in sorted({key[0] for key in {*a, *b}}):
+        ka, kb = {k for k in a if k[0] == table}, {k for k in b if k[0] == table}
+        same = sum(a[k] == b[k] for k in ka & kb)
+        counts = sum(a[k][0] != b[k][0] for k in ka & kb)
+        print(f"{table} : {len(ka)} et {len(kb)} chroniques, {same} identiques, {counts} de compte différent,"
+              f" {len(ka & kb) - same - counts} de même compte et d'empreinte différente, {len(ka ^ kb)} d'un seul côté ;"
+              f" {sum(int(a[k][0]) for k in ka)} et {sum(int(b[k][0]) for k in kb)} lignes")
+        Report.failed = Report.failed or same != len(ka) or same != len(kb)
+
+
 def main():
     global CASES_SERVER
     parser = argparse.ArgumentParser(description=__doc__.split('\n')[0])
     parser.add_argument('what', choices=['pages', 'exports', 'state', 'queue', 'imports', 'accounts', 'admin',
-                                         'theia'])
+                                         'theia', 'fingerprints', 'selftest'])
+    parser.add_argument('files', nargs='*', help='pour fingerprints : les deux empreintes à comparer')
     parser.add_argument('--old', default='reference', choices=SIDES)
     parser.add_argument('--new', default='reference', choices=SIDES)
     parser.add_argument('--base', default='bdoh_small', help='base où tirer les cas')
@@ -2817,10 +3030,13 @@ def main():
     parser.add_argument('--only', default='', help='ne garder que les cas qui contiennent ce texte')
     parser.add_argument('--jobs', type=int, default=6, help='requêtes menées en parallèle')
     parser.add_argument('--profile', help='un seul profil (anonyme, utilisateur, gestionnaire, administrateur)')
+    parser.add_argument('--same', action='store_true', help="state : l'ancien contre lui-même, pour mesurer le bruit")
     args = parser.parse_args()
     CASES_SERVER = args.server
-    {'pages': run_pages, 'exports': run_exports, 'state': run_state, 'queue': run_queue,
-     'imports': run_imports, 'accounts': run_accounts, 'admin': run_admin, 'theia': run_theia}[args.what](args)
+    {'pages': run_pages, 'exports': run_exports, 'state': run_state, 'queue': run_queue, 'imports': run_imports,
+     'accounts': run_accounts, 'admin': run_admin, 'theia': run_theia,
+     'fingerprints': run_fingerprints, 'selftest': run_selftest}[args.what](args)
+    return 1 if Report.failed else 0
 
 
 if __name__ == '__main__':

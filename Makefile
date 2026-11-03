@@ -22,7 +22,7 @@ ENCORE = docker run --rm --network none --user $(HOST_UID):$(HOST_GID) -e HOME=/
 	-v $(CURDIR):/var/www/bdoh bdoh-app node_modules/.bin/encore
 DB_CONTAINER = $(if $(filter new,$(SERVER)),bdoh-db,bdoh-reference-db)
 
-.PHONY: help app-install assets start stop composer phpstan browser-check anonymize db db-small inspect reference-app reference-start reference-stop reference-base reference-17-start mail-start worker-start
+.PHONY: help app-install assets start stop composer phpstan browser-check anonymize db db-small inspect fingerprint reference-app reference-start reference-stop reference-base reference-17-start mail-start worker-start
 
 help: ## Liste les commandes
 	@grep -E '^[a-z0-9-]+:.*## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*## "} {printf "  %-19s %s\n", $$1, $$2}'
@@ -69,6 +69,9 @@ db-small: ## Tire de la base bdoh la base de travail réduite bdoh_small (mesure
 
 inspect: ## Contrôles d'intégrité d'une base, en comptes : make inspect [BASE=… SERVER=…]
 	@docker exec -i $(DB_CONTAINER) psql -U postgres -d "$(BASE)" -v ON_ERROR_STOP=1 -At -F '|' -q < dev/reference/inspect.sql | grep '|' | column -t -s '|'
+
+fingerprint: ## Empreinte au bit près d'une base, sans aucune valeur : make fingerprint [BASE=… SERVER=…] > fichier
+	@docker exec -i $(DB_CONTAINER) psql -U postgres -d "$(BASE)" -v ON_ERROR_STOP=1 -At -F ';' -q < dev/reference/fingerprint.sql
 
 reference-app: ## Installe l'ancien BDOH, au commit en production, à côté des dumps (app/)
 	dev/reference/install-app.sh

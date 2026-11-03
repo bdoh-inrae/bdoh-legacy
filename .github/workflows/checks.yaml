@@ -1,5 +1,5 @@
 # Contrôles à chaque envoi : failles connues des dépendances, analyse statique, syntaxe des gabarits et
-# de la configuration, cohérence des services. Aucune base n'y sert. La comparaison avec l'ancien
+# de la configuration, cohérence des services, fonctions de l'outil de comparaison. Aucune base n'y sert. La comparaison avec l'ancien
 # BDOH (dev/compare/) tourne en local : elle demande les bases anonymisées, qui ne quittent pas le poste.
 name: Contrôles
 
@@ -29,3 +29,5 @@ jobs:
       - run: bin/console lint:yaml config
       - run: bin/console lint:twig templates src
       - run: bin/console lint:container
+      # L'outil de comparaison, sur des erreurs inventées (dev/compare/test_compare.py)
+      - run: python3 -m unittest discover -s dev/compare
