@@ -787,7 +787,7 @@ Vous pouvez dès à présent préciser vos besoins d'accès aux données depuis 
     ],
     'export'      => [
         'exportMail' => [
-            'body'               => 'Veuillez trouver en pièce jointe votre export de chronique.',
+            'body(%link%, %days%)' => "Votre export de chronique est prêt : %link%\nCe lien reste valable %days% jours.",
             'footer'             => 'Cet e-mail est généré automatiquement, merci de ne pas y répondre.',
             'title(%chronique%)' => "BDOH : Export de la chronique %chronique%|Export des chroniques «\u{a0}%chronique%\u{a0}»",
         ],

@@ -479,12 +479,8 @@ class BdohRightVoter implements VoterInterface
      */
     public function canConsultCheckpoints($user, $object)
     {
-        return ($object instanceof Chronique)
-            && ($user instanceof Utilisateur)
-            && ($user->isGestionnaireDesObservatoires()
-                    || $user->securedHasRoleObservatoire([Role::GESTIONNAIRE, Role::UTILISATEUR], $object->getObservatoire())
-                    || $user->securedHasRoleSite([Role::GESTIONNAIRE, Role::CONTRIBUTEUR], $object->getObservatoire()->getSites())
-                    || $user->securedHasRoleChronique(Role::UTILISATEUR, $object));
+        // Les points de contrôle n'ont pas de case à eux : ils suivent leur chronique (dev/decisions.md, « Ouverture des données »)
+        return $this->canConsultTimeseries($user, $object);
     }
 
     /**
@@ -498,15 +494,13 @@ class BdohRightVoter implements VoterInterface
      */
     public function canDownload($user, $object)
     {
-        if (!($user instanceof Utilisateur)) {
-            return false;
+        // Une chronique visible se télécharge sans compte, une cachée garde ses droits (dev/decisions.md, « Ouverture des données »)
+        if ($object instanceof Chronique) {
+            return $this->canConsultTimeseries($user, $object);
         }
 
-        if ($object instanceof Chronique) {
-            return $user->isGestionnaireDesObservatoires()
-                || $user->securedHasRoleObservatoire([Role::GESTIONNAIRE, Role::UTILISATEUR], $object->getObservatoire())
-                || $user->securedHasRoleSite([Role::GESTIONNAIRE, Role::CONTRIBUTEUR], $object->getObservatoire()->getSites())
-                || $user->securedHasRoleChronique(Role::UTILISATEUR, $object);
+        if (!($user instanceof Utilisateur)) {
+            return false;
         }
 
         if ($object instanceof Station) {

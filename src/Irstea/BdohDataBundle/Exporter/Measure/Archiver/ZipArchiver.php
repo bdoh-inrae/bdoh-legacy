@@ -57,7 +57,10 @@ class ZipArchiver implements ArchiverInterface
      */
     public function close()
     {
-        $this->archive->close();
+        // L'archive ne s'écrit qu'ici : un disque plein se voit à ce moment-là, et la tâche doit échouer
+        if (true !== $this->archive->close()) {
+            throw new RuntimeException(sprintf('%s: %s', $this->filePath, $this->archive->getStatusString()));
+        }
     }
 
     /**

@@ -783,7 +783,7 @@ You can ask for specific data access form the following link: ',
     ],
     'export'      => [
         'exportMail' => [
-            'body'               => 'Please find your downloaded time series as an attachement.',
+            'body(%link%, %days%)' => "Your time series download is ready: %link%\nThis link remains valid for %days% days.",
             'footer'             => 'This e-mail is automatically generated, thank you for not replying.',
             'title(%chronique%)' => "BDOH: Downloaded time series “\u{a0}%chronique%\u{a0}”",
         ],

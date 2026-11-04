@@ -4,6 +4,8 @@
 
 namespace Irstea\BdohDataBundle\Command;
 
+use Irstea\BdohDataBundle\Entity\Observatoire;
+use Irstea\BdohDataBundle\Exporter\Measure\ExportFiles;
 use Irstea\BdohDataBundle\Entity\Chronique;
 use Irstea\BdohDataBundle\Exporter\Measure\Archiver\ConsoleArchiver;
 use Irstea\BdohDataBundle\Exporter\Measure\Archiver\ZipArchiver;
@@ -21,6 +23,7 @@ use Symfony\Component\OptionsResolver\Options;
 use Symfony\Component\Mailer\MailerInterface;
 use Symfony\Component\Mime\Address;
 use Symfony\Component\Mime\Email;
+use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Twig\Environment;
@@ -64,7 +67,9 @@ abstract class AbstractExportCommand extends Command
         TranslatorInterface $translator,
         Environment $templating,
         MailerInterface $mailer,
-        ManagerRegistry $doctrine
+        ManagerRegistry $doctrine,
+        private ExportFiles $exportFiles,
+        private UrlGeneratorInterface $router
     ) {
         $this->exporterBuilder = $exporterBuilder;
         $this->translator = $translator;
@@ -86,7 +91,7 @@ abstract class AbstractExportCommand extends Command
             ->setDescription('Export de chroniques')
             ->addOption('jms-job-id', null, InputOption::VALUE_REQUIRED, 'Identifiant du job')
             ->addOption('locale', 'l', InputOption::VALUE_REQUIRED, 'Localisation', 'fr')
-            ->addOption('send-to', 'm', InputOption::VALUE_REQUIRED, "E-mail d'un utilisateur à qui envoyer l'archive")
+            ->addOption('send-to', 'm', InputOption::VALUE_REQUIRED, "E-mail d'un utilisateur à qui envoyer le lien de l'archive")
             ->addOption('write-to', 'o', InputOption::VALUE_REQUIRED, 'Chemin du fichier de sortie')
             ->addOption('timezone', 't', InputOption::VALUE_REQUIRED, 'Fuseau horaire cible', 'UTC')
             ->addOption('format', 'f', InputOption::VALUE_REQUIRED, "Format d'export", 'bdoh')
@@ -120,6 +125,14 @@ abstract class AbstractExportCommand extends Command
         unset($parameters['locale']);
 
         $user = $parameters['user'] = $parameters['send-to'] ?? null;
+        $archivePath = $parameters['write-to'];
+        $jobId = $input->getOption('jms-job-id');
+        if ($user !== null && $jobId === null) {
+            throw new \InvalidArgumentException('--send-to demande --write-to et --jms-job-id');
+        }
+
+        // Un export de la file se note dans l'historique, avec ou sans compte ; en console, seulement avec un compte
+        $parameters['logged'] = $user !== null || $jobId !== null;
 
         $archiver = $this->createArchiver($parameters, $output);
         unset($parameters['send-to'], $parameters['write-to']);
@@ -134,7 +147,7 @@ abstract class AbstractExportCommand extends Command
             ->export($chroniques);
 
         if ($user !== null) {
-            return 1 - $this->sendArchive($archiver->getArchivePath(), $user, $chroniques);
+            return 1 - $this->sendLink($archivePath, (int) $jobId, $user, $chroniques, $parameters['observatoire']);
         }
 
         return 0;
@@ -166,20 +179,15 @@ abstract class AbstractExportCommand extends Command
      */
     private function createArchiver(array $parameters, OutputInterface $output)
     {
-        if (isset($parameters['send-to'])) {
-            $archiver = new ZipArchiver();
-            $filePath = $archiver->getArchivePath();
-            register_shutdown_function(
-                function () use ($filePath) {
-                    @unlink($filePath);
-                }
-            );
+        if (isset($parameters['write-to'])) {
+            $this->exportFiles->prepare();
 
-            return $archiver;
+            return new ZipArchiver($parameters['write-to']);
         }
 
-        if (isset($parameters['write-to'])) {
-            return new ZipArchiver($parameters['write-to']);
+        // Le courriel porte un lien vers l'archive, plus l'archive : il lui faut un fichier, et une tâche qui le dit
+        if (isset($parameters['send-to'])) {
+            throw new \InvalidArgumentException('--send-to demande --write-to et --jms-job-id');
         }
 
         return new ConsoleArchiver($output);
@@ -284,15 +292,19 @@ abstract class AbstractExportCommand extends Command
     }
 
     /**
-     * @param string $archivePath
-     *
      * @throws \Twig\Error\Error
      * @throws \Symfony\Component\Mailer\Exception\TransportExceptionInterface
      *
      * @return int le nombre de destinataires, comme Swiftmailer : 1 ; un échec lève une exception
      */
-    private function sendArchive($archivePath, Utilisateur $user, array $chroniques)
+    private function sendLink(string $archivePath, int $jobId, Utilisateur $user, array $chroniques, Observatoire $observatoire)
     {
+        $link = $this->router->generate(
+            'bdoh_data_measure_export_file',
+            ['_observatoire' => $observatoire->getSlug(), 'id' => $jobId, 'token' => basename($archivePath, '.zip')],
+            UrlGeneratorInterface::ABSOLUTE_URL
+        );
+
         $message = (new Email())
             ->subject(
                 $this->translator->trans(
@@ -302,11 +314,10 @@ abstract class AbstractExportCommand extends Command
             )
             ->from('bdoh@inrae.fr')
             ->to(new Address($user->getEmail(), (string) $user))
-            ->attachFromPath($archivePath, 'export.zip', 'application/zip')
             ->text(
                 $this->templating->render(
                     '@IrsteaBdohConsult/Mail/export.txt.twig',
-                    ['user' => (string) $user]
+                    ['user' => (string) $user, 'link' => $link, 'days' => ExportFiles::KEEP_DAYS]
                 )
             );
 

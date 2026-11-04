@@ -414,9 +414,19 @@ def canonical_query(query, per_page_option=False):
 
 # Les mentions légales, réécrites pour INRAE, et le lien vers le code source (dev/differences.md)
 LEGAL_NOTICE = re.compile(r"<p style='text-align: center;'>\s*(?:Institut national|INRAE).*?</p>", re.S)
+# Les boutons et la fenêtre d'export suivent le droit de télécharger, que le nouveau ouvre à qui n'a pas de compte
+# (dev/decisions.md, « Ouverture des données »). Là où l'ancien ne les montrait pas, ils sortent de la comparaison
+# (strip_export) ; là où il les montre, le formulaire se compare, sauf les conditions d'utilisation, qui deviennent
+# la licence pour une chronique visible, et le texte d'aide. open_data_checks vérifie ce que ces masques retirent.
+EXPORT_WIDGETS = re.compile(r'(?:<!-- The modal for Terms Of Uses -->.*?)?<!-- Link which triggers the modal for export -->.*?'
+                            r'<!-- END_The modal for export -->|<button class="graph-export-button.*?</button>', re.S)
+EXPORT_TERMS = re.compile(r'<!-- Link which triggers the modal for Terms of Uses -->.*?<!-- Submit and close buttons -->', re.S)
+EXPORT_HELP = re.compile(r'<div class="export-help-content">.*?</div>', re.S)
+EXPORT_ARCHIVE = re.compile(r'--write-to\s+\S+\.zip\s*')  # le chemin de l'archive, dans les pages de suivi des tâches
+EXPORT_MARK = b'<!-- Link which triggers the modal for export -->'
 
 
-def page_lines(site, status, headers, body):
+def page_lines(site, status, headers, body, strip_export=False):
     """Ce que montre une réponse, en lignes ; l'adresse de l'instance devient <site>."""
     lines = [f'statut {status}']
     if 300 <= status < 400:
@@ -425,7 +435,9 @@ def page_lines(site, status, headers, body):
     lines.append(f'type {kind}')
     if kind == 'text/html':
         parser = Extract()
-        parser.feed(LEGAL_NOTICE.sub('', body.decode('utf-8', 'replace')))
+        text = LEGAL_NOTICE.sub('', body.decode('utf-8', 'replace'))
+        text = EXPORT_WIDGETS.sub('', text) if strip_export else text
+        parser.feed(EXPORT_ARCHIVE.sub('', EXPORT_HELP.sub('', EXPORT_TERMS.sub('', text))))
         parser.flush()
         # Un script et une feuille que l'administration de l'ancien chargeait pour rien (dev/differences.md)
         lines += [line for line in parser.lines if not re.match(r'(S|L stylesheet) /assets/(locales/|admin/measure-import\.css)', line)]
@@ -658,7 +670,11 @@ def run_pages(args):
                 # Le choix de la langue change la session : il passe par une session à lui, sans
                 # quoi les pages demandées en même temps changeraient de langue d'un côté seulement.
                 pair = (Client(old, None, slug), Client(new, None, slug)) if path.startswith('/select_lang/') else clients
-                return [page_lines(client.side.url, *client.get(path)) for client in pair]
+                responses = [client.get(path) for client in pair]
+                strip = EXPORT_MARK not in responses[0][2]
+                lines = [page_lines(client.side.url, *response, strip_export=strip) for client, response in zip(pair, responses)]
+                # Le fichier des conditions dit INRAE et non plus Irstea : son statut et son type seulement
+                return [page[:2] for page in lines] if path.endswith('/conditions') else lines
 
             for path, lines in zip(paths, pool.map(fetch, paths)):
                 report.add(f'{profile} {path}', *lines)
@@ -787,6 +803,30 @@ def other_tables_lines(base, known):
 MAILPIT = 'http://172.30.26.25:8025'  # service mailpit de compose.yaml (make mail-start)
 
 
+EXPORT_LINK = re.compile(r'Votre export de chronique est prêt : \S*/mesure/export/\d+/([0-9a-f]{32})/file\r?\nCe lien reste valable \d+ jours\.')
+OLD_EXPORT_BODY = 'Veuillez trouver en pièce jointe votre export de chronique.'
+EXPORT_FILES = lambda token: (HERE.parent.parent / 'var' / 'exports' / f'{token}.zip').read_bytes()
+
+
+LICENCE_FILE = re.compile(r'ConditionsGeneralesUtilisation|Licence-Ouverte|Open-Licence')
+
+
+def archive_lines(name, kind, body):
+    """Une archive d'export : son nom et son type, puis ses fichiers."""
+    lines = [f'Pièce jointe : {name} ({kind})']
+    with zipfile.ZipFile(io.BytesIO(body)) as z:
+        for inner in z.namelist():
+            # Les fichiers de licence changent selon les chroniques : open_data_checks les vérifie
+            if inner.endswith('.pdf') and LICENCE_FILE.search(inner):
+                continue
+            content = z.read(inner)
+            if inner.endswith('.txt'):
+                lines += [f'== {inner}', *map(export_line, content.decode('utf-8', 'replace').splitlines())]
+            else:
+                lines.append(f'== {inner} {hashlib.sha256(content).hexdigest()[:16]}')
+    return lines
+
+
 def mail_lines(ordered=True):
     """Les courriels retenus par Mailpit, du plus ancien au plus récent (ou rangés par leur texte,
     quand leur ordre ne compte pas), pièces jointes dépliées."""
@@ -799,21 +839,20 @@ def mail_lines(ordered=True):
         address = lambda a: f"{a['Name']} <{a['Address']}>"
         # Les destinataires triés : leur ordre suit celui d'une requête sans tri. Le texte sans ses fins
         # de ligne finales, que Swiftmailer ajoute en l'encodant ; un courriel en HTML, lu comme une page.
+        # L'ancien joint l'archive, le nouveau donne un lien (dev/differences.md, « Ouverture des données ») : l'archive
+        # du lien se lit comme une pièce jointe, et c'est son contenu qui se compare.
+        link = EXPORT_LINK.search(m['Text'])
+        text = EXPORT_LINK.sub(OLD_EXPORT_BODY, m['Text'])
         lines += [f"Sujet : {m['Subject']}", f"De : {address(m['From'])}",
                   'À : ' + ', '.join(sorted(map(address, m['To']))),
                   *(['Cc : ' + ', '.join(sorted(map(address, m['Cc'])))] if m.get('Cc') else []),
-                  *m['Text'].rstrip().splitlines()]
+                  *text.rstrip().splitlines()]
+        if link:
+            lines += archive_lines('export.zip', 'application/zip', EXPORT_FILES(link.group(1)))
         if m['HTML']:
             lines += page_lines(MAILPIT, 200, {'Content-Type': 'text/html'}, m['HTML'].encode())[2:]
         for part in m['Attachments']:
-            lines.append(f"Pièce jointe : {part['FileName']} ({part['ContentType']})")
-            with zipfile.ZipFile(io.BytesIO(get(f"/api/v1/message/{summary['ID']}/part/{part['PartID']}"))) as z:
-                for name in z.namelist():
-                    content = z.read(name)
-                    if name.endswith('.txt'):
-                        lines += [f'== {name}', *map(export_line, content.decode('utf-8', 'replace').splitlines())]
-                    else:
-                        lines.append(f'== {name} {hashlib.sha256(content).hexdigest()[:16]}')
+            lines += archive_lines(part['FileName'], part['ContentType'], get(f"/api/v1/message/{summary['ID']}/part/{part['PartID']}"))
     return [line for lines in (messages if ordered else sorted(messages)) for line in lines]
 
 
@@ -881,7 +920,9 @@ def state_lines(base, historique, tables=STATE_QUERIES):
     26/10/2026 13:18:50 UTC »), que les deux côtés écrivent à une seconde d'écart."""
     moment = moment_mask()
     offset = re.compile(r'(\dT\d\d:\d\d:\d\d|<maintenant>)[+-]\d\d:\d\d')
-    return {table: [offset.sub(r'\1', moment.sub('<maintenant>', '\t'.join(row))) if table == 'jms_jobs'
+    # Le chemin de l'archive, qui n'existe que dans le nouveau (dev/differences.md, « Ouverture des données »)
+    archive = re.compile(r'\\?"--write-to\\?",\s*\\?"[^"\\]*\\?",\s*')
+    return {table: [archive.sub('', offset.sub(r'\1', moment.sub('<maintenant>', '\t'.join(row)))) if table == 'jms_jobs'
                     else moment.sub('<maintenant>', '\t'.join(row))
                     for row in query(base, STATE_QUERIES[table].format(historique=historique), NEW_SERVER)]
             for table in tables}
@@ -953,6 +994,193 @@ def emptied_with_milliseconds_check(side, base, cid, page, manager, slug):
     ok = status == 302 and count() == before and gaps != '0'
     return {'nouveau seul : vider une période, dernière mesure à millisecondes, en lacune':
             ['conforme'] if ok else [f'statut {status}, {before} mesures avant, {count()} après, {gaps} lacunes']}
+
+
+def open_data_checks(side, console, runner, base, checks):
+    """L'ouverture des données (dev/decisions.md, « Ouverture des données ») : ce qui s'ouvre et ce qui reste fermé.
+    Sur une copie à elle, avec Mailpit ; rien ne se lit des valeurs d'une chronique cachée, seulement des statuts.
+    checks se remplit au fil de l'eau, pour qu'un arrêt ne perde pas les résultats précédents."""
+    def check(name, ok, detail=''):
+        checks[f'nouveau seul : ouverture, {name}'] = ['conforme' if ok else f'non conforme : {detail}']
+
+    def chronique(where):
+        return query(base, f"""SELECT c.id, c.slug, c.station, c.code FROM ({CHRONIQUES}) c JOIN chronique ch ON ch.id = c.id
+                                WHERE c.dtype = 'continue' AND ch.nbmesures > 0 AND {where} ORDER BY ch.nbmesures, c.id LIMIT 1""", NEW_SERVER)[0]
+
+    visible, slug, station, code = chronique('c.estvisible')
+    other = query(base, f"""SELECT c.id FROM ({CHRONIQUES}) c WHERE c.slug = '{slug}' AND c.estvisible AND c.id <> {visible}
+                             AND c.dtype = 'continue' ORDER BY c.id LIMIT 1""", NEW_SERVER)[0][0]
+    hidden, hidden_slug, hidden_station, hidden_code = chronique('NOT c.estvisible')
+    role = lambda obs, value: query(base, f"""
+        SELECT u.email FROM utilisateur u JOIN role r ON r.utilisateur_id = u.id JOIN observatoire o ON o.id = r.observatoire_id
+         WHERE r.valeur = '{value}' AND r.dtype = 'observatoire' AND o.slug = '{obs}' AND (u.finacces IS NULL OR u.finacces > now())
+         ORDER BY u.id LIMIT 1""", NEW_SERVER)[0][0]
+    stranger = query(base, """SELECT u.email FROM utilisateur u WHERE u.roleadmin IS NULL AND (u.finacces IS NULL OR u.finacces > now())
+                                AND NOT EXISTS (SELECT 1 FROM role r WHERE r.utilisateur_id = u.id) ORDER BY u.id LIMIT 1""", NEW_SERVER)[0][0]
+    manager = Client(side, role(hidden_slug, 'gestionnaire'), hidden_slug)
+    jobs = lambda: query(base, 'SELECT count(*) FROM jms_jobs', NEW_SERVER)[0][0]
+    form = {'beginDate': '1800-01-01T00:00:00Z', 'endDate': '2030-01-01T00:00:00Z', 'exportFormat': 'Bdoh', 'exportType': 'identical',
+            'instantStep': '60', 'meanCumulStep': '7', 'timezone': '1'}
+
+    def export(client, where, ids, **extra):
+        return client.get(f'/{where}/mesure/export', urllib.parse.urlencode({**form, 'chroniques[]': ids, **extra}, doseq=True).encode(),
+                          {'Referer': f'{side.url}/{where}/'})
+
+    limiter = lambda: subprocess.run([*console, 'cache:pool:clear', 'cache.rate_limiter', '--env=prod'], check=True, capture_output=True)
+    limiter()
+
+    # La fenêtre d'export, ce que EXPORT_WIDGETS retire de la comparaison
+    anonymous = Client(side, None, slug)
+    status, _, body = anonymous.get(f'/{slug}/{station}/{code}')
+    check('fenêtre d’export d’une chronique visible, sans compte, avec la licence',
+          status == 200 and EXPORT_MARK in body and b'export-licence' in body and b'name="termsOfUses"' not in body and b'graph-export-button' in body, f'statut {status}')
+    status, _, body = manager.get(f'/{hidden_slug}/{hidden_station}/{hidden_code}')
+    check('fenêtre d’export d’une chronique cachée, avec le droit, avec ses conditions',
+          status == 200 and b'name="termsOfUses"' in body and b'export-licence' not in body, f'statut {status}')
+    check('page d’une chronique cachée, compte sans droit', Client(side, stranger, hidden_slug).get(f'/{hidden_slug}/{hidden_station}/{hidden_code}')[0] == 403)
+
+    # Sans compte : une chronique visible, par son lien
+    logged = lambda: query(base, "SELECT count(*) FROM historique WHERE auteur_id IS NULL AND dtype ILIKE '%export%'", NEW_SERVER)[0][0]
+    logged_before = logged()
+    status, headers, _ = export(anonymous, slug, visible)
+    found = re.search(r'/mesure/export/(\d+)/([0-9a-f]{32})$', headers.get('Location', ''))
+    check('chronique visible, demandée sans compte', status == 302 and found, f"statut {status}, {headers.get('Location')}")
+    job, token = found.groups()
+    page = f'/{slug}/mesure/export/{job}/{token}'
+    status, headers, body = anonymous.get(page)
+    check('page de suivi, en attente, qui se recharge', status == 200 and headers.get('Refresh'), f'statut {status}')
+    check('archive pas encore prête', anonymous.get(f'{page}/file')[0] == 404)
+    drain(console, runner, base)
+    status, headers, body = anonymous.get(page)
+    check('page de suivi, prête', status == 200 and not headers.get('Refresh') and f'{token}/file'.encode() in body, f'statut {status}')
+    status, headers, archive = anonymous.get(f'{page}/file')
+    check('archive sans compte', status == 200 and archive[:2] == b'PK' and 'export.zip' in headers.get('Content-Disposition', ''), f'statut {status}')
+    names = lambda body: zipfile.ZipFile(io.BytesIO(body)).namelist()
+    has = lambda body, text: any(text in name for name in names(body))
+    check('chronique visible, Licence Ouverte française et anglaise, sans les conditions',
+          has(archive, 'Licence-Ouverte-2.0-fr.pdf') and has(archive, 'Open-Licence-2.0-en.pdf') and not has(archive, 'Conditions'), str(names(archive)))
+    check('export sans compte noté dans l’historique', int(logged()) > int(logged_before), f'{logged_before} puis {logged()}')
+
+    # Le même fichier qu'avec un compte, dont le lien arrive par courriel
+    mails = lambda: json.loads(urllib.request.urlopen(MAILPIT + '/api/v1/messages', timeout=60).read())['messages']
+    last_link = lambda: re.search(r'(/[\w-]+/mesure/export/\d+/[0-9a-f]{32}/file)', json.loads(urllib.request.urlopen(
+        f"{MAILPIT}/api/v1/message/{mails()[0]['ID']}", timeout=60).read())['Text'])
+    owner = Client(side, role(slug, 'gestionnaire'), slug)
+    before = len(mails())
+    export(owner, slug, visible)
+    drain(console, runner, base)
+    check('courriel d’un export avec compte, sans pièce jointe', len(mails()) == before + 1 and not mails()[0]['Attachments'],
+          f'{before} courriels, puis {len(mails())}')
+    link = last_link()
+    same = link and owner.get(link.group(1))[2]
+    check('même archive avec ou sans compte', link and archive_lines('', '', same) == archive_lines('', '', archive))
+    check('lien d’une chronique visible, ouvert à tous', link and Client(side, None, slug).get(link.group(1))[0] == 200)
+
+    # Une chronique cachée reste fermée
+    before = jobs()
+    check('chronique cachée, sans compte', export(Client(side, None, hidden_slug), hidden_slug, hidden, termsOfUses='1')[0] == 403)
+    check('chronique cachée, compte sans droit', export(Client(side, stranger, hidden_slug), hidden_slug, hidden, termsOfUses='1')[0] == 403)
+    mixed = query(base, f"""SELECT c.id FROM ({CHRONIQUES}) c WHERE c.estvisible AND c.slug = '{hidden_slug}' AND c.dtype = 'continue' ORDER BY c.id LIMIT 1""", NEW_SERVER)
+    if mixed:
+        check('demande mêlée, sans compte', export(Client(side, None, hidden_slug), hidden_slug, [mixed[0][0], hidden], termsOfUses='1')[0] == 403)
+    check('aucune tâche pour ces demandes', jobs() == before, f'{before} puis {jobs()}')
+    check('chronique cachée, conditions non cochées', export(manager, hidden_slug, hidden)[0] == 400)
+    check('valeurs d’une chronique cachée, sans compte', Client(side, None, hidden_slug).get(
+        f'/{hidden_slug}/chronique/{hidden}/measures?beginDate=2024-01-01T00:00:00Z&endDate=2024-02-01T00:00:00Z')[0] == 403)
+
+    # L'archive d'une chronique cachée redemande son droit à qui ouvre le lien
+    export(manager, hidden_slug, hidden, termsOfUses='1')
+    drain(console, runner, base)
+    link = last_link()
+    if link:
+        path = link.group(1)
+        status, headers, _ = Client(side, None, hidden_slug).get(path)
+        check('archive d’une chronique cachée, sans compte', status == 302 and 'login' in headers.get('Location', ''), f'statut {status}')
+        check('archive d’une chronique cachée, compte sans droit', Client(side, stranger, hidden_slug).get(path)[0] == 403)
+        status, _, hidden_archive = manager.get(path)
+        check('archive d’une chronique cachée, avec le droit', status == 200, f'statut {status}')
+        check('chronique cachée, les conditions, sans la Licence Ouverte',
+              status == 200 and has(hidden_archive, 'Conditions') and not has(hidden_archive, 'Licence') and not has(hidden_archive, 'Open-Licence'))
+        if mixed:
+            export(manager, hidden_slug, [mixed[0][0], hidden], termsOfUses='1')
+            drain(console, runner, base)
+            status, _, both = manager.get(last_link().group(1))
+            check('archive mêlée, les trois fichiers et la liste', status == 200 and has(both, 'Licence-Ouverte') and has(both, 'Open-Licence')
+                  and has(both, 'Conditions') and has(both, 'Licences.txt'))
+        # Sa chronique a disparu entre-temps : le lien reste fermé
+        hidden_job = re.search(r'/export/(\d+)/', path).group(1)
+        query(base, f"""UPDATE jms_jobs SET args = regexp_replace(args::text, '\\m{hidden}\\M', '999999999')::json WHERE id = {hidden_job} RETURNING id""", NEW_SERVER)
+        status = Client(side, None, hidden_slug).get(path)[0]
+        check('archive d’une chronique supprimée, sans compte', status == 302, f'statut {status}')
+    else:
+        check('lien de l’archive d’une chronique cachée', False, 'pas de lien')
+
+    # Un jeton faux
+    check('jeton inconnu', anonymous.get(f'/{slug}/mesure/export/{job}/{"0" * 32}')[0] == 404
+          and anonymous.get(f'/{slug}/mesure/export/{job}/{"0" * 32}/file')[0] == 404)
+
+    # Les points de contrôle d'une chronique visible, comme avec un droit
+    pointed = query(base, f"""SELECT c.id, c.slug FROM ({CHRONIQUES}) c JOIN chronique ch ON ch.id = c.id
+        WHERE c.estvisible AND EXISTS (SELECT 1 FROM pointcontrole p WHERE p.chronique_id = c.id) ORDER BY ch.nbmesures, c.id LIMIT 1""", NEW_SERVER)[0]
+    measures = f'/{pointed[1]}/chronique/{pointed[0]}/measures?beginDate=1800-01-01T00:00:00Z&endDate=2030-01-01T00:00:00Z'
+    without, with_right = Client(side, None, pointed[1]).get(measures), Client(side, role(pointed[1], 'gestionnaire'), pointed[1]).get(measures)
+    check('points de contrôle d’une chronique visible, comme avec un droit',
+          without[0] == 200 and without[2] == with_right[2] and b'controlPoints' in without[2], f'statut {without[0]}')
+
+    # Un lien échu : le prochain export retire l'archive
+    stale = HERE.parent.parent / 'var' / 'exports' / f'{token}.zip'
+    moment = time.time() - 8 * 86400
+    os.utime(stale, (moment, moment))
+    status, _, body = anonymous.get(page)
+    check('lien échu, avant même le prochain export', status == 200 and 'expiré'.encode() in body and anonymous.get(f'{page}/file')[0] == 404, f'statut {status}')
+    export(anonymous, slug, visible)
+    drain(console, runner, base)
+    check('archive échue retirée par le prochain export', not stale.exists())
+
+    # La place est comptée : au-delà, les plus anciennes partent, même avant leur terme
+    kept = sorted((HERE.parent.parent / 'var' / 'exports').glob('*.zip'))
+    tight = [*console[:2], '-e', 'EXPORTS_MAX_BYTES=1', *console[2:]]
+    export(anonymous, slug, visible)
+    drain(tight, runner, base)
+    check('place dépassée, les archives les plus anciennes retirées', kept and not any(path.exists() for path in kept), f'{len(kept)} archives avant')
+
+    # Une archive qui ne s'écrit pas fait échouer la commande, et --send-to ne va pas sans tâche
+    period = ['2024-01-01T00:00:00+00:00', '2024-02-01T00:00:00+00:00']
+    done = subprocess.run([*console, 'bdoh:export:identical', *period, visible, '--write-to', '/dossier-absent/essai.zip', '--env=prod'], capture_output=True)
+    check('archive impossible à écrire, commande en échec', done.returncode != 0, f'code {done.returncode}')
+    done = subprocess.run([*console, 'bdoh:export:identical', *period, visible, '--write-to', '/tmp/essai.zip', '--send-to', role(slug, 'gestionnaire'), '--env=prod'], capture_output=True)
+    check('--send-to sans tâche, refusé', done.returncode != 0, f'code {done.returncode}')
+
+    # Le seuil : une chronique seule passe toujours, un ensemble lourd demande un compte
+    subprocess.run(['docker', 'exec', '-i', NEW_SERVER, 'psql', '-U', 'bdoh', '-d', base, '-v', 'ON_ERROR_STOP=1', '-q'], check=True, capture_output=True, text=True, input=f"""
+        INSERT INTO mesure (id, chronique_id, qualite_id, date, valeur, estcalculee)
+        SELECT nextval('mesure_id_seq'), {visible}, (SELECT qualite_id FROM mesure WHERE chronique_id = {visible} LIMIT 1),
+               timestamp '1800-01-01' + n * interval '1 minute', 1, false FROM generate_series(1, 5000100) n;
+        UPDATE chronique SET nbmesures = nbmesures + 5000100 WHERE id = {visible};""")
+    limiter()
+    before = jobs()
+    status, headers, _ = export(anonymous, slug, [visible, other])
+    check('ensemble trop lourd, refusé sans compte', status == 302 and jobs() == before and '/mesure/export/' not in headers.get('Location', ''),
+          f"statut {status}, {before} tâches puis {jobs()}")
+    check('la même chronique seule, acceptée', export(anonymous, slug, visible)[0] == 302 and int(jobs()) == int(before) + 1, f'{jobs()} tâches')
+    status = export(owner, slug, [visible, other], termsOfUses='1')[0]
+    check('ensemble trop lourd, accepté avec un compte', status == 302 and int(jobs()) == int(before) + 2, f'statut {status}, {jobs()} tâches')
+
+    # La limite de fréquence, par adresse IP et sans compte
+    limiter()
+    before = jobs()
+    for _ in range(21):
+        export(Client(side, None, slug), slug, visible)
+    check('limite de fréquence sans compte', int(jobs()) == int(before) + 20, f'{before} tâches puis {jobs()}')
+
+    # La file chargée : les 2 demandes du seuil et ces 20-là font 22 tâches en attente, sur 30 admises sans compte
+    limiter()
+    before = jobs()
+    for _ in range(10):
+        export(Client(side, None, slug), slug, visible)
+    waiting = query(base, "SELECT count(*) FROM jms_jobs WHERE queue = 'job_queue_export' AND state IN ('new', 'pending')", NEW_SERVER)[0][0]
+    check('file chargée, refusé sans compte', waiting == '30', f'{waiting} en attente')
+    limiter()
 
 
 def run_state(args):
@@ -1042,6 +1270,20 @@ def run_state(args):
             with new_on(base, template) as console:
                 checks.update(failed_computation_checks(console, base, *commands[0][1:3]))
                 checks.update(emptied_with_milliseconds_check(SIDES['new'], base, cid, f'/{slug}/{station}/{code}', manager, slug))
+            # Sur une copie à elle : elle ajoute des tâches et des millions de mesures, que les pages de suivi comparées
+            # plus bas ne doivent pas voir
+            copy_base(template, 'bdoh_open_data')
+            exports = HERE.parent.parent / 'var' / 'exports'
+            try:
+                with new_on('bdoh_open_data', template, 'MAILER_DSN=smtp://mailpit:1025') as console:
+                    open_data_checks(SIDES['new'], console, 'bdoh:jobs:run', 'bdoh_open_data', checks)
+            except Exception as e:  # un arrêt ne doit pas perdre le rapport : il se lit comme un écart
+                checks['nouveau seul : ouverture, arrêt du cas'] = [f'{type(e).__name__} : {str(e)[:200]}']
+            finally:
+                # Rien ne reste d'une archive, dont une de chronique cachée
+                for path in exports.glob('*.zip*'):
+                    path.unlink()
+                subprocess.run(['docker', 'exec', NEW_SERVER, 'psql', '-U', 'postgres', '-qc', 'DROP DATABASE IF EXISTS bdoh_open_data WITH (FORCE)'], capture_output=True)
 
     report = Report('state')
     for part in sides['ancien']:
@@ -1521,6 +1763,32 @@ def shape_cases(base, slug):
     return cases
 
 
+def real_import_cases(base):
+    """De vrais fichiers d'import, tels que les gestionnaires les écrivent (hors du dépôt, ../bdoh_reference/data-test-import,
+    déposés par Lou) : (nom, sorte, cas). Ils peuvent porter des valeurs de chroniques cachées : on n'en lit que l'en-tête, et
+    leurs rapports se lisent en comptes. Un barème de ce nom existe déjà en base : il s'importe sous un autre nom."""
+    cases = []
+    folder = OUT.parent / 'data-test-import'
+    for path in sorted(folder.glob('*')) if folder.is_dir() else []:
+        content = path.read_bytes()
+        head = [re.split(r'\s*;\s*', line.strip()) for line in content.decode('utf-8-sig', 'replace').splitlines()[:3]]
+        if head[0][0].lower() == 'nom':
+            cases.append((path.name, 'barème', {'content': content.replace(head[1][0].encode(), f'{head[1][0]}_essai'.encode(), 1)}))
+            continue
+        codes = head[1][2::2]
+        rows = query(base, f"""SELECT c.id, c.slug, c.code FROM ({CHRONIQUES}) c
+                                WHERE c.station = '{head[1][0]}' AND c.code IN ({','.join(f"'{code}'" for code in codes)})""", NEW_SERVER)
+        ids = [row[0] for row in rows]
+        if path.name.lower().startswith('controle'):
+            cases.append((path.name, 'contrôle', {'content': content, 'cid': ids[0], 'slug': rows[0][1]}))
+        else:
+            cases.append((path.name, 'mesures', {
+                'name': path.name, 'format': 'BdohPlage' if head[2][0].lower() == 'debut' else 'Bdoh', 'content': content,
+                'filename': 'import.txt', 'cid': ids[0], 'slug': rows[0][1], 'type': 'overwriteExisting',
+                'types': {cid: 'overwriteExisting' for cid in ids}}))
+    return cases
+
+
 @contextlib.contextmanager
 def small_tmp():
     """Un /tmp minuscule pour le nouveau, le temps du bloc : une panne que les imports doivent dire. Le conteneur
@@ -1812,11 +2080,38 @@ def run_imports(args):
             for title, target, filename, content in shape_cases(template, slug):
                 report.add(f'import {title}', play_shape('ancien', slug, target, filename, content),
                            play_shape('nouveau', slug, target, filename, content))
+        # De vrais fichiers : l'ancien et le nouveau, puis où chacun est arrivé, sans rien lire de leurs valeurs
+        real_cases = real_import_cases(template) if args.only in 'fichiers réels' else []
+        reached, touched = [], set()
+        for title, kind, case in real_cases:
+            where = case.get('slug') or real_cases[-1][2]['slug']
+            logs = []
+            for name in ('ancien', 'nouveau'):
+                if kind == 'barème':
+                    logs.append(play_bareme(name, where, case['content']))
+                elif kind == 'contrôle':
+                    logs.append(play_controle(name, case['cid'], where, case['content']))
+                else:
+                    logs.append(play(name, case))
+            report.add(f'import fichier réel {title}', *logs)
+            actions = [line for line in logs[1] if line.startswith('action : ')]
+            reached.append((title, actions[-1] if actions else 'aucune étape'))
+            if kind == 'mesures':
+                touched |= set(case['types'])
         for name in sides:
             sides[name] = {**state_lines(bases[name], historique),
                            'autres tables': other_tables_lines(bases[name], STATE_QUERIES)}
     for table in sides['ancien']:
         report.add(f'état {table}', sides['ancien'][table], sides['nouveau'][table])
+    for title, action in reached:
+        report.add(f'nouveau seul : fichier réel {title}, importé jusqu’au bout', ['conforme'],
+                   ['conforme' if action == 'action : "step4"' else f'non conforme : {action}'])
+    for table in ('mesure', 'plage'):
+        if touched:
+            prints = [query(bases[name], FINGERPRINTS[table].replace('GROUP BY', f"WHERE chronique_id IN ({','.join(touched)}) GROUP BY"), NEW_SERVER)
+                      for name in ('ancien', 'nouveau')]
+            report.add(f'nouveau seul : fichiers réels, {table} écrites identiques à l’ancien', ['conforme'],
+                       ['conforme' if prints[0] == prints[1] else f'non conforme : {len(prints[0])} et {len(prints[1])} chroniques'])
     # Ce que seul le nouveau fait aux formats QJO et Qtvar (dev/differences.md, « Zéro importé » et
     # « Jours manquants ») : chaque cas, les mesures attendues, et combien de mesures diffèrent de l'ancien
     hydro = {'QJO': (1, 'zéro écrit 0 gardé', "date >= '2025-09-09 12:00' AND date < '2025-09-10 12:00' AND valeur = 0", 1),

@@ -48,7 +48,7 @@ $export = [
         <ul>
             <li>the original time step of the time series is conserved (it is potentially variable)</li>
             <li>several time series belonging to a same station can be downloaded at the same time</li>
-            <li>the file is directly downloaded from BDOH without any size restriction.</li>
+            <li>the file is retrieved through a link, without any size restriction.</li>
         </ul>
     </li>
     <li>Some time series can be downloaded with an option for fixed time step calculation (using linear interpolation, mean calculation or sum calculation):</li>
@@ -56,7 +56,7 @@ $export = [
         <li>only one time series can be downloaded at a time</li>
         <li>in order not to block the server, each download is limited to a maximum span of 2 years per minute of time step, i.e. 1051200 values (~ 10<sup>6</sup> lines)</li>
         <li>if a calculation is needed on a longer span, the download must be performed onto a series of smaller spans</li>
-        <li>data are sent by e-mail as attached file</li>
+        <li>data are downloaded through a link, valid for 7 days; with an account, this link also arrives by e-mail</li>
         <li>the options for fiexed time step calculation are: (i) for linear interpolation, a time step between 1 and 1440 minutes; (ii) for mean and sum calculations, one of the time steps available in the drop-down list. The interpolated values start at a round time. Option “\u{a0}event\u{a0}” calculates the mean or sum of the values in the time range of the event (1 output value).</li>
     </ul>
     <li>One separate file is downloaded for each time series.</li>
@@ -65,7 +65,20 @@ $export = [
 </ul>
 HELP
         ,
-        'underway'     => 'The download of the time series is underway. You will shortly receive the result by e-mail.',
+        'underway'     => 'The download of the time series is underway. You will shortly receive a link by e-mail.',
+        'licence'      => 'These data are under the <a href="https://www.etalab.gouv.fr/licence-ouverte-open-licence/" target="_blank" rel="noopener">Etalab Open Licence</a>: they may be reused freely, citing their source (INRAE, BDOH, and the DOI of the dataset when there is one) and the date of their last update.',
+        'tooHeavy'     => 'Without an account, a set of time series cannot exceed %max% measures: sign in, or download them one by one.',
+        'tooMany'      => 'Too many downloads requested from your address: try again in an hour, or sign in.',
+        'busy'         => 'The download queue is busy: try again later, or sign in.',
+        'status'       => [
+            'title'             => 'Time series download',
+            'waiting'           => 'Your download is waiting for its turn. This page updates itself; you can also keep it and come back later.',
+            'running'           => 'Your download is underway. This page updates itself; you can also keep it and come back later.',
+            'finished(%days%)'  => 'Your download is ready. This link remains valid for %days% days.',
+            'download'          => 'Download',
+            'failed'            => 'This download could not be done. You can try again, or write to the managers of the observatory.',
+            'expired'           => 'This link has expired: the file has been removed. Request this download again.',
+        ],
         'error'        => [
             'abort'                               => "For technical reasons the download couldn't be achieved.",
             'badExportType'                       => 'Download of the time series: incorrect time step for extraction.',
@@ -85,7 +98,7 @@ HELP
             'timeStepNotSpecified'                => 'Time step not specified.',
             'noStartingTime'                      => 'Please specify at which type of instant the extracted data must start.',
         ],
-        'job_queued(%job_id%)' => 'The download of the time series is underway. You will shortly receive the result by e-mail. (Job #%job_id%)',
+        'job_queued(%job_id%)' => 'The download of the time series is underway. You will shortly receive a link by e-mail. (Job #%job_id%)',
         'report'               => [
             'headline' => [
                 '1(%format%, %date%)' => "Download from %date% UTC in the format “\u{a0}%format%\u{a0}”",

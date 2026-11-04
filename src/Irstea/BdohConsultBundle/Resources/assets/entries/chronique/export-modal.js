@@ -211,7 +211,8 @@ $.widget(
         },
 
         _getTermsOfUsesError() {
-            if (!this._termsOfUses.prop('checked')) {
+            // La case n'existe que pour une chronique cachée ; le reste est sous Licence Ouverte
+            if (this._termsOfUses.length && !this._termsOfUses.prop('checked')) {
                 return 'check-term-of-uses';
             }
             return false;

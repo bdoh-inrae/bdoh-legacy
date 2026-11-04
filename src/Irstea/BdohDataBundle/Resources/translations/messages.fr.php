@@ -48,7 +48,7 @@ $export = [
         <ul>
             <li>pas de modification du pas de temps par rapport à la chronique stockée (le pas de temps est potentiellement variable)</li>
             <li>on peut exporter plusieurs chroniques d'une même station</li>
-            <li>il n'y a pas de limitation de longueur des chroniques et l'export se fait par téléchargement direct.</li>
+            <li>il n'y a pas de limitation de longueur des chroniques, et le fichier se récupère par un lien.</li>
         </ul>
     </li>
     <li>Un export à pas de temps fixe (avec interpolation linéaire ou calcul de moyenne ou de cumul) est possible pour certaines chroniques :</li>
@@ -56,7 +56,7 @@ $export = [
         <li>on ne peut exporter qu'une chronique à la fois</li>
         <li>de façon à limiter l'encombrement du serveur qui réalise les calculs, la longueur maximale d'un export est de 2 ans par minute de pas de temps, soit 1051200 valeurs (~ 10<sup>6</sup> lignes)</li>
         <li>en cas de besoin d'export de chronique plus long, il faudra réaliser l'export en plusieurs fois</li>
-        <li>le fichier est envoyé par e-mail en pièce jointe</li>
+        <li>le fichier se télécharge par un lien, valable 7 jours ; avec un compte, ce lien arrive aussi par e-mail</li>
         <li>Les options pour l'export à pas de temps fixe sont : (i) pour l'export avec interpolation linéaire, un pas de temps compris entre 1 et 1440 minutes ; (ii) pour l'export avec calcul de moyenne ou cumul, un des pas de temps proposés dans la liste déroulante. L'export commence à une heure ronde. L'option «\u{a0}événement\u{a0}» calcule la moyenne ou le cumul sur toute la durée de l'événement (1 seule valeur résultat).</li>
     </ul>
     <li>On exporte un fichier par chronique.</li>
@@ -65,7 +65,20 @@ $export = [
 </ul>
 HELP
         ,
-        'underway'     => "L'export de chronique est en cours. Vous recevrez prochainement le fichier par e-mail.",
+        'underway'     => "L'export de chronique est en cours. Vous recevrez prochainement un lien par e-mail.",
+        'licence'      => 'Ces données sont sous <a href="https://www.etalab.gouv.fr/licence-ouverte-open-licence/" target="_blank" rel="noopener">Licence Ouverte Etalab</a> : leur réutilisation est libre, en citant leur source (INRAE, BDOH, et le DOI du jeu de données quand il y en a un) et la date de leur dernière mise à jour.',
+        'tooHeavy'     => 'Sans compte, un ensemble de chroniques ne peut pas dépasser %max% mesures : connectez-vous, ou exportez-les une par une.',
+        'tooMany'      => "Trop d'exports demandés depuis votre adresse : réessayez dans une heure, ou connectez-vous.",
+        'busy'         => "La file des exports est chargée : réessayez plus tard, ou connectez-vous.",
+        'status'       => [
+            'title'             => 'Export de chroniques',
+            'waiting'           => "Votre export attend son tour. Cette page se met à jour d'elle-même ; vous pouvez aussi la garder et revenir plus tard.",
+            'running'           => "Votre export est en cours. Cette page se met à jour d'elle-même ; vous pouvez aussi la garder et revenir plus tard.",
+            'finished(%days%)'  => 'Votre export est prêt. Ce lien reste valable %days% jours.',
+            'download'          => 'Télécharger',
+            'failed'            => "Cet export n'a pas pu se faire. Vous pouvez réessayer, ou écrire aux gestionnaires de l'observatoire.",
+            'expired'           => 'Ce lien a expiré : le fichier a été retiré. Demandez de nouveau cet export.',
+        ],
         'error'        => [
             'abort'                               => "Pour des raisons techniques l'export de mesures n'a pas pu se faire.",
             'badExportType'                       => "Export de chronique(s) : échantillonnage à l'export incorrect.",
@@ -85,7 +98,7 @@ HELP
             'timeStepNotSpecified'                => 'Pas de temps non spécifié.',
             'noStartingTime'                      => "Veuillez préciser à quel type d'instant les mesures exportées doivent commencer.",
         ],
-        'job_queued(%job_id%)' => "L'export de chronique est en cours. Vous recevrez prochainement le fichier par e-mail. (Job #%job_id%)",
+        'job_queued(%job_id%)' => "L'export de chronique est en cours. Vous recevrez prochainement un lien par e-mail. (Job #%job_id%)",
         'report'               => [
             'headline' => [
                 '1(%format%, %date%)' => "Export du %date% UTC au format «\u{a0}%format%\u{a0}»",

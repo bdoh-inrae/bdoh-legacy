@@ -4,6 +4,11 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/). Numéros de v
 
 ## Non publié
 
+### Modifié
+
+- Les données ouvertes s'ouvrent : une chronique visible se télécharge sans compte, sous Licence Ouverte Etalab, et ses points de contrôle se voient avec elle. Une chronique cachée reste fermée, sur demande de droit, comme avant.
+- Un export se récupère par un lien, valable 7 jours, sur une page de suivi sans compte, par courriel avec un compte ; il n'y a plus de pièce jointe.
+
 ## 0.2.0 - 2026-11-04
 
 Le portage corrigé et éprouvé, avant l'ouverture des données : le comparateur a vu toutes les fautes remises dans le code, le recalcul de la base complète retrouve les mesures, et tous les modes passent sur les paquets de Debian 13 avec un rôle sans superuser.

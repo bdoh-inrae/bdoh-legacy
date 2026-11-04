@@ -21,3 +21,8 @@ framework:
             policy: sliding_window
             limit: 10
             interval: '1 hour'
+        # Un export sans compte occupe la file : de quoi en demander plusieurs, pas de la saturer
+        export_ip:
+            policy: sliding_window
+            limit: 20
+            interval: '1 hour'

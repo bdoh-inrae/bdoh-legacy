@@ -16,7 +16,7 @@ $user = [
             'submit'      => 'Register',
             'isCompleted' => 'Your BDOH account has been created. An e-mail has just been sent to you: follow its link to confirm your address and sign in.',
             'info'        => [
-                'isTheFirstStep' => 'The account you are creating will be valid for the whole BDOH application. To download data, once signed in, you will have to make <b>specific access requests</b> on observatories you are interested in by using the data access request form or by contacting a manager.',
+                'isTheFirstStep' => 'The account you are creating will be valid for the whole BDOH application. Open data can be downloaded without an account. To access closed data, once signed in, you will have to make <b>specific access requests</b> on observatories you are interested in by using the data access request form or by contacting a manager.',
                 'yourIdentifier' => 'The <b>e-mail address</b> will be your <u>login</u>: you will sign in with a link sent to this address, without a password.',
             ],
         ],
@@ -75,7 +75,7 @@ You can assign him/her a role in your observatory from the following page:',
                 'step1'        => 'You have created an account on BDOH. It is valid for the whole application.',
                 'confirm'      => 'To confirm your address and sign in, follow this link, valid for 15 minutes and once only:',
                 'confirmLater' => 'After that, ask for a new link from the BDOH sign-in page.',
-                'step2'        => 'To download data, once signed in, you will have to make specific access requests on observatories you are interested in by using the data access request form or by contacting a manager:',
+                'step2'        => 'Open data can be downloaded without an account. To access closed data, once signed in, you will have to make specific access requests on observatories you are interested in by using the data access request form or by contacting a manager:',
                 'step3'        => "Accordance with Articles 39 and 40 of the law “\u{a0}Informatique et Libertés\u{a0}” amended by Law No. 2004-801 of 6 August 2004 on the protection of individuals with regard to the processing of personal data, you have a right to access and rectify data concerning you.",
                 'step4'        => 'To request a correction please contact: <a href="mailto:bdoh.support@lists.irstea.fr">bdoh.support@lists.irstea.fr</a>.',
             ],
@@ -111,7 +111,7 @@ This e-mail is automatically generated, thank you for not replying.',
 $besoin = [
     'security.besoin' => [
         'create'                => [
-            'title'       => 'Request for data access',
+            'title'       => 'Request for access to closed data',
             'submit'      => 'Send the request',
             'isCompleted' => 'Your request for data access has been registered, an administrator will respond.',
             'info'        => [

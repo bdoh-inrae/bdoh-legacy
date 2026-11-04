@@ -10,6 +10,7 @@ use Irstea\BdohBundle\Controller\Controller;
 use Irstea\BdohBundle\Manager\JobManagerInterface;
 use Irstea\BdohDataBundle\Entity\Chronique;
 use Irstea\BdohDataBundle\Entity\PasEchantillonnage;
+use Irstea\BdohDataBundle\Exporter\Measure\ExportFiles;
 use Irstea\BdohBundle\Job\Job;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
@@ -20,11 +21,15 @@ use Symfony\Component\Form\Extension\Core\Type\IntegerType;
 use Symfony\Component\Form\FormError;
 use Symfony\Component\Form\FormFactoryInterface;
 use Symfony\Component\Form\FormInterface;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\Session\Session;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use Symfony\Component\RateLimiter\RateLimiterFactoryInterface;
 use Symfony\Component\Security\Core\Authorization\AuthorizationCheckerInterface;
 use Symfony\Component\Validator\Constraints\Count;
 use Symfony\Component\Validator\Constraints\GreaterThan;
@@ -38,6 +43,17 @@ use Symfony\Component\Validator\Constraints\NotBlank;
  */
 class ExportController extends Controller
 {
+    /**
+     * Sans compte, ce qu'un ensemble de chroniques peut demander à la file ; une chronique seule passe toujours
+     * (dev/plans/2026-11-04_open-data.md).
+     */
+    private const MAX_MEASURES_WITHOUT_ACCOUNT = 5000000;
+
+    /**
+     * Sans compte, ce qui peut attendre dans la file des exports : un seul visiteur ne doit pas la saturer pour tous.
+     */
+    private const MAX_WAITING_WITHOUT_ACCOUNT = 30;
+
     /**
      * @var JobManagerInterface
      */
@@ -56,7 +72,9 @@ class ExportController extends Controller
     public function __construct(
         JobManagerInterface $jobManager,
         FormFactoryInterface $formFactory,
-        AuthorizationCheckerInterface $authChecker
+        AuthorizationCheckerInterface $authChecker,
+        private ExportFiles $exportFiles,
+        private RateLimiterFactoryInterface $exportIpLimiter
     ) {
         $this->jobManager = $jobManager;
         $this->formFactory = $formFactory;
@@ -95,6 +113,14 @@ class ExportController extends Controller
             if (!$this->authChecker->isGranted('DOWNLOAD', $chronique)) {
                 throw new AccessDeniedHttpException();
             }
+            // Une chronique cachée garde ses conditions d'utilisation ; le reste est sous Licence Ouverte
+            if (!$chronique->getEstVisible() && !$params['termsOfUses']) {
+                $form->get('termsOfUses')->addError(new FormError(
+                    $this->getTranslator()->trans('This value should not be blank.', [], 'validators')
+                ));
+
+                return $this->reportFormErrors($form);
+            }
         }
 
         /** @var \DateTime $beginDate */
@@ -102,6 +128,19 @@ class ExportController extends Controller
 
         /** @var \DateTime $endDate */
         $endDate = $params['endDate'];
+
+        $user = $this->getUser();
+        if ($user === null) {
+            if (!$this->exportIpLimiter->create($request->getClientIp())->consume()->isAccepted()) {
+                return $this->refuse($request, 'measure.export.tooMany');
+            }
+            if ($this->isTooHeavyWithoutAccount($chroniques->toArray(), $beginDate, $endDate)) {
+                return $this->refuse($request, 'measure.export.tooHeavy');
+            }
+            if ($this->getEm()->getRepository(Job::class)->countWaiting('job_queue_export') >= self::MAX_WAITING_WITHOUT_ACCOUNT) {
+                return $this->refuse($request, 'measure.export.busy');
+            }
+        }
 
         $timezone = new \DateTimeZone(sprintf('%+03d00', $params['timezone']));
 
@@ -117,21 +156,153 @@ class ExportController extends Controller
                 $timestep = null;
         }
 
+        $token = $this->exportFiles->newToken();
         $job = $this->jobManager->enqueueExport(
-            $this->getUser(),
+            $user,
             $params['exportType'],
             $params['exportFormat'],
             $beginDate,
             $endDate,
             $chroniques->toArray(),
+            $this->exportFiles->path($token),
             $timestep,
             $timezone,
             $this->isLocaleEn() ? 'en' : 'fr'
         );
 
+        // Un visiteur sans compte n'a ni courriel ni page des tâches : il suit son export par ce lien
+        if ($user === null) {
+            return $this->redirectToRoute('bdoh_data_measure_export_status', ['id' => $job->getId(), 'token' => $token]);
+        }
+
         $this->reportJobToUser($request, $job);
 
-        return $this->redirectToReferer();
+        return $this->back($request);
+    }
+
+    /**
+     * L'état d'un export, par son lien.
+     */
+    #[Route('/mesure/export/{id}/{token}', name: 'bdoh_data_measure_export_status', requirements: ['id' => '\\d{1,18}', 'token' => '[0-9a-f]{32}'], methods: ['GET'])]
+    public function statusAction(int $id, string $token): Response
+    {
+        $job = $this->findExportJob($id, $token);
+
+        if ($job->isFinished()) {
+            $state = $this->exportFiles->isAvailable($token) ? 'finished' : 'expired';
+        } elseif ($job->isRunning()) {
+            $state = 'running';
+        } elseif ($job->isPending() || $job->isNew()) {
+            $state = 'waiting';
+        } else {
+            $state = 'failed';
+        }
+
+        $response = $this->render('@IrsteaBdohConsult/Export/status.html.twig', [
+            'id'       => $id,
+            'token'    => $token,
+            'state'    => $state,
+            'keepDays' => ExportFiles::KEEP_DAYS,
+        ]);
+        if ($state === 'running' || $state === 'waiting') {
+            $response->headers->set('Refresh', '10');
+        }
+
+        return $response;
+    }
+
+    /**
+     * L'archive d'un export. Le lien peut circuler : une chronique cachée redemande son droit à qui l'ouvre.
+     */
+    #[Route('/mesure/export/{id}/{token}/file', name: 'bdoh_data_measure_export_file', requirements: ['id' => '\\d{1,18}', 'token' => '[0-9a-f]{32}'], methods: ['GET'])]
+    public function fileAction(int $id, string $token): Response
+    {
+        $job = $this->findExportJob($id, $token);
+
+        // D'après les arguments de la tâche : une chronique supprimée depuis ne se retrouve plus parmi ses entités liées
+        foreach ($this->chroniqueIdsOf($job) as $chroniqueId) {
+            $chronique = $this->getEm()->find(Chronique::class, $chroniqueId);
+            if ($chronique === null || !$this->authChecker->isGranted('DOWNLOAD', $chronique)) {
+                throw $this->createAccessDeniedException();
+            }
+        }
+
+        if (!$job->isFinished() || !$this->exportFiles->isAvailable($token)) {
+            throw new NotFoundHttpException();
+        }
+
+        return (new BinaryFileResponse($this->exportFiles->path($token)))->setContentDisposition('attachment', 'export.zip');
+    }
+
+    /**
+     * Les chroniques d'une tâche d'export : ses arguments valent [pas de temps,] début, fin, chroniques…, options.
+     *
+     * @return int[]
+     */
+    private function chroniqueIdsOf(Job $job): array
+    {
+        $ids = [];
+        $dates = 0;
+        foreach ($job->getArgs() as $argument) {
+            $argument = (string) $argument;
+            if (str_starts_with($argument, '--')) {
+                break;
+            }
+            if ($dates === 2) {
+                $ids[] = (int) $argument;
+            } elseif (!ctype_digit($argument)) {
+                ++$dates;
+            }
+        }
+
+        return $ids;
+    }
+
+    /**
+     * La tâche d'un export, si le jeton est bien le sien.
+     */
+    private function findExportJob(int $id, string $token): Job
+    {
+        $job = $this->getEm()->find(Job::class, $id);
+        if ($job === null || !\in_array($this->exportFiles->path($token), $job->getArgs(), true)) {
+            throw new NotFoundHttpException();
+        }
+
+        return $job;
+    }
+
+    /**
+     * @param Chronique[] $chroniques
+     */
+    private function isTooHeavyWithoutAccount(array $chroniques, \DateTime $beginDate, \DateTime $endDate): bool
+    {
+        if (\count($chroniques) < 2) {
+            return false;
+        }
+        $total = 0;
+        foreach ($chroniques as $chronique) {
+            $total += (int) $chronique->getNbMesures();
+        }
+
+        return $total > self::MAX_MEASURES_WITHOUT_ACCOUNT
+            && $this->getBdohRepo('Chronique')->countMeasuresBetween($chroniques, $beginDate, $endDate) > self::MAX_MEASURES_WITHOUT_ACCOUNT;
+    }
+
+    private function refuse(Request $request, string $message): RedirectResponse
+    {
+        /** @var Session $session */
+        $session = $request->getSession();
+        $session->getFlashBag()->add(
+            'error',
+            $this->getTranslator()->trans($message, ['%max%' => number_format(self::MAX_MEASURES_WITHOUT_ACCOUNT, 0, ',', ' ')])
+        );
+
+        return $this->back($request);
+    }
+
+    private function back(Request $request): RedirectResponse
+    {
+        return new RedirectResponse($request->headers->get('referer') ?: $this->generateUrl('bdoh_home'));
     }
 
     /**
@@ -216,11 +387,7 @@ class ExportController extends Controller
                     'constraints' => [new Count(['min' => 1])],
                 ]
             )
-            ->add(
-                'termsOfUses',
-                CheckboxType::class,
-                ['constraints' => [new NotBlank()]]
-            )
+            ->add('termsOfUses', CheckboxType::class, ['required' => false])
             ->getForm();
     }
 

@@ -972,6 +972,17 @@ SQL;
      *
      * @return array
      */
+    public function countMeasuresBetween(array $chroniques, \DateTime $begin, \DateTime $end): int
+    {
+        $ids = implode(',', array_map(fn (Chronique $chronique) => (int) $chronique->getId(), $chroniques));
+
+        return (int) $this->getEntityManager()->getConnection()->fetchOne(
+            "SELECT (SELECT count(*) FROM mesure WHERE chronique_id IN ($ids) AND date BETWEEN :begin AND :end)
+                  + (SELECT count(*) FROM plage WHERE chronique_id IN ($ids) AND debut <= :end AND fin >= :begin)",
+            ['begin' => $begin->format('Y-m-d H:i:s'), 'end' => $end->format('Y-m-d H:i:s')]
+        );
+    }
+
     public function updateMeasuresMetadata(Chronique $chronique)
     {
         $stmt = $this

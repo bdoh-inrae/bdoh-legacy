@@ -5,8 +5,10 @@
 {% set nbChroniques = chroniques|length %}
 {% set hasWithValueLimits = false %}
 {% set hasDiscontChronique = false %}
+{% set hasHiddenChronique = false %}
 {% for chronique in chroniques %}
     {% set hasDiscontChronique = hasDiscontChronique or not chronique.continue %}
+    {% set hasHiddenChronique = hasHiddenChronique or not chronique.estVisible %}
     {% set hasWithValueLimits = hasWithValueLimits or chronique.allowValueLimits %}
 {% endfor %}
 
@@ -194,6 +196,7 @@
                 <div class="modal-footer">
                     <!-- Link which triggers the modal for Terms of Uses -->
                     <div class="pull-left form-group" style="text-align:left;">
+                        {% if hasHiddenChronique %}
                         <div>
                             <input id="{{ modalId }}_termsofuseid" type="checkbox" name="termsOfUses" value="agreed" required="required"
                                 {%- if is_granted('ROLE_ADMIN') %} checked="checked"{% endif %}
@@ -202,6 +205,9 @@
                                 <a href="{{ path('bdoh_data_observatoire_conditions_export') }}">{{ 'TermsOfUses(the)'|trans }}</a>.
                             </label>
                         </div>
+                        {% else %}
+                        <div class="export-licence">{{ 'measure.export.licence'|trans|raw }}</div>
+                        {% endif %}
                         <div class="error-report help-block" style="margin-top:0;margin-bottom:0;">
                             <div class="errors"></div>
                         </div>

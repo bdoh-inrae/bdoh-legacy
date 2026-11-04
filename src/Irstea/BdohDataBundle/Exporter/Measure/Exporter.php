@@ -40,6 +40,11 @@ class Exporter implements ExporterInterface
     private $defaultTosPath;
 
     /**
+     * @var string[]
+     */
+    private $openLicenceFiles = [];
+
+    /**
      * @var string
      */
     private $formatDocPath;
@@ -92,6 +97,18 @@ class Exporter implements ExporterInterface
         return $this;
     }
 
+    /**
+     * @param string[] $openLicenceFiles
+     *
+     * @return $this
+     */
+    public function setOpenLicenceFiles(array $openLicenceFiles)
+    {
+        $this->openLicenceFiles = $openLicenceFiles;
+
+        return $this;
+    }
+
     /** Set defaultTosPath.
      * @param string $defaultTosPath
      *
@@ -131,7 +148,7 @@ class Exporter implements ExporterInterface
         /** @var Observatoire $observatoire */
         $observatoire = $chroniques[0]->getObservatoire();
 
-        $this->addTermsOfUse($observatoire);
+        $this->addLicences($chroniques, $observatoire);
 
         $this->addExportDoc();
 
@@ -145,13 +162,44 @@ class Exporter implements ExporterInterface
     }
 
     /**
-     * @param Observatoire $observatoire
+     * La licence suit les chroniques de l'archive : Licence Ouverte pour une visible, conditions d'utilisation pour
+     * une cachée, les deux, et la liste de ce qui relève de chacune, pour une archive mêlée (dev/decisions.md,
+     * « Ouverture des données »).
+     *
+     * @param Chronique[] $chroniques
+     */
+    private function addLicences(array $chroniques, Observatoire $observatoire)
+    {
+        $visible = array_filter($chroniques, fn (Chronique $chronique) => $chronique->getEstVisible());
+        $hidden = array_filter($chroniques, fn (Chronique $chronique) => !$chronique->getEstVisible());
+
+        if ($visible) {
+            foreach ($this->openLicenceFiles as $file) {
+                $this->archiver->addFile($this->documentBasePath . DIRECTORY_SEPARATOR . $file);
+            }
+        }
+        if ($hidden) {
+            $this->addTermsOfUse($observatoire);
+        }
+        if ($visible && $hidden) {
+            $names = fn (array $list) => implode("\n", array_map(fn (Chronique $chronique) => '- ' . $chronique, $list));
+            $this->generateFile('Licences.txt', function ($output) use ($names, $visible, $hidden) {
+                return false !== fwrite($output, "Licence Ouverte 2.0 (Licence-Ouverte-2.0-fr.pdf, Open-Licence-2.0-en.pdf) :\n" . $names($visible)
+                    . "\n\nConditions générales d'utilisation (" . basename($this->defaultTosPath) . ") :\n" . $names($hidden) . "\n");
+            });
+        }
+    }
+
+    /**
+     * Les conditions propres à l'observatoire, si leur fichier est là, sinon celles de BDOH : un fichier déposé
+     * ne vit que sur le serveur, jamais dans le dépôt.
      */
     private function addTermsOfUse(Observatoire $observatoire)
     {
-        $observtoryTosPath = $observatoire->getConditionsUtilisation();
+        $observatoryTos = $observatoire->getConditionsUtilisation();
+        $path = $this->documentBasePath . DIRECTORY_SEPARATOR . $observatoryTos;
         $this->archiver->addFile(
-            $this->documentBasePath . DIRECTORY_SEPARATOR . ($observtoryTosPath ?: $this->defaultTosPath)
+            $observatoryTos && is_file($path) ? $path : $this->documentBasePath . DIRECTORY_SEPARATOR . $this->defaultTosPath
         );
     }
 

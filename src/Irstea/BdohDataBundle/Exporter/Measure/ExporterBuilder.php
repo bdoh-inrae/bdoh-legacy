@@ -69,7 +69,8 @@ class ExporterBuilder
         ManagerRegistry $doctrine,
         #[Autowire('%irstea_bdoh_data.measure_export.document_base_path%')] string $documentBasePath,
         #[Autowire('%irstea_bdoh_data.measure_export.formats_export_file%')] string $formatDocPath,
-        #[Autowire('%irstea_bdoh_data.measure_export.default_termofuses_file%')] string $defaultTosPath
+        #[Autowire('%irstea_bdoh_data.measure_export.default_termofuses_file%')] string $defaultTosPath,
+        #[Autowire('%irstea_bdoh_data.measure_export.open_licence_files%')] private array $openLicenceFiles
     ) {
         $this->formatterFactory = $formatterFactory;
         $this->extractorFactory = $extractorFactory;
@@ -144,7 +145,7 @@ class ExporterBuilder
     private function createReporter(array $parameters)
     {
         $reporter = new Twig($this->twigEngine);
-        if (isset($parameters['user'])) {
+        if (!empty($parameters['logged'])) {
             $reporter = new LoggerDecorator($this->bdohLogger, $reporter);
         }
         $reporter->addParameters($parameters);
@@ -172,6 +173,7 @@ class ExporterBuilder
             ->setArchiver($archiver)
             ->setFormatDocPath($this->formatDocPath)
             ->setDocumentBasePath($this->documentBasePath)
-            ->setDefaultTosPath($this->defaultTosPath);
+            ->setDefaultTosPath($this->defaultTosPath)
+            ->setOpenLicenceFiles($this->openLicenceFiles);
     }
 }
