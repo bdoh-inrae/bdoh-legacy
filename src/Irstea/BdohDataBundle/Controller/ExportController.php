@@ -137,8 +137,7 @@ class ExportController extends Controller
             if ($this->isTooHeavyWithoutAccount($chroniques->toArray(), $beginDate, $endDate)) {
                 return $this->refuse($request, 'measure.export.tooHeavy');
             }
-            if (!$this->exportFiles->hasRoom()
-                || $this->getEm()->getRepository(Job::class)->countWaiting('job_queue_export') >= self::MAX_WAITING_WITHOUT_ACCOUNT) {
+            if ($this->getEm()->getRepository(Job::class)->countWaiting('job_queue_export') >= self::MAX_WAITING_WITHOUT_ACCOUNT) {
                 return $this->refuse($request, 'measure.export.busy');
             }
         }

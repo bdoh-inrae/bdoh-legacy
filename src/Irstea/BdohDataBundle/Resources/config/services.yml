@@ -7,6 +7,14 @@ parameters:
     # The description file of measures export formats (relative to the web dir)
     irstea_bdoh_data.measure_export.default_termofuses_file: documents/ConditionsGeneralesUtilisation.pdf
 
+    # La licence des chroniques visibles, ses textes officiels, français et anglais (dev/decisions.md)
+    irstea_bdoh_data.measure_export.open_licence_files:
+        - documents/Licence-Ouverte-2.0-fr.pdf
+        - documents/Open-Licence-2.0-en.pdf
+
+    # La place des archives d'export en attente d'être téléchargées : 20 Go par défaut (ExportFiles)
+    env(EXPORTS_MAX_BYTES): '21474836480'
+
     # A map of formats and their specific exporters
     irstea_bdoh_data.measure_export.exporters:
         # General

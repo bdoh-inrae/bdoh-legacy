@@ -66,7 +66,7 @@ $export = [
 HELP
         ,
         'underway'     => "L'export de chronique est en cours. Vous recevrez prochainement un lien par e-mail.",
-        'licence'      => 'Ces données sont sous <a href="https://www.etalab.gouv.fr/licence-ouverte-open-licence/" target="_blank" rel="noopener">Licence Ouverte Etalab</a> : leur réutilisation est libre, en citant leur source (BDOH, et le DOI du jeu de données quand il y en a un).',
+        'licence'      => 'Ces données sont sous <a href="https://www.etalab.gouv.fr/licence-ouverte-open-licence/" target="_blank" rel="noopener">Licence Ouverte Etalab</a> : leur réutilisation est libre, en citant leur source (INRAE, BDOH, et le DOI du jeu de données quand il y en a un) et la date de leur dernière mise à jour.',
         'tooHeavy'     => 'Sans compte, un ensemble de chroniques ne peut pas dépasser %max% mesures : connectez-vous, ou exportez-les une par une.',
         'tooMany'      => "Trop d'exports demandés depuis votre adresse : réessayez dans une heure, ou connectez-vous.",
         'busy'         => "La file des exports est chargée : réessayez plus tard, ou connectez-vous.",

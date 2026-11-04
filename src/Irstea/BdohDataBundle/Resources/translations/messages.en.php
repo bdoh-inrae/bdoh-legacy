@@ -66,7 +66,7 @@ $export = [
 HELP
         ,
         'underway'     => 'The download of the time series is underway. You will shortly receive a link by e-mail.',
-        'licence'      => 'These data are under the <a href="https://www.etalab.gouv.fr/licence-ouverte-open-licence/" target="_blank" rel="noopener">Etalab Open Licence</a>: they may be reused freely, citing their source (BDOH, and the DOI of the dataset when there is one).',
+        'licence'      => 'These data are under the <a href="https://www.etalab.gouv.fr/licence-ouverte-open-licence/" target="_blank" rel="noopener">Etalab Open Licence</a>: they may be reused freely, citing their source (INRAE, BDOH, and the DOI of the dataset when there is one) and the date of their last update.',
         'tooHeavy'     => 'Without an account, a set of time series cannot exceed %max% measures: sign in, or download them one by one.',
         'tooMany'      => 'Too many downloads requested from your address: try again in an hour, or sign in.',
         'busy'         => 'The download queue is busy: try again later, or sign in.',

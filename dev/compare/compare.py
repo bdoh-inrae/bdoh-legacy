@@ -672,7 +672,9 @@ def run_pages(args):
                 pair = (Client(old, None, slug), Client(new, None, slug)) if path.startswith('/select_lang/') else clients
                 responses = [client.get(path) for client in pair]
                 strip = EXPORT_MARK not in responses[0][2]
-                return [page_lines(client.side.url, *response, strip_export=strip) for client, response in zip(pair, responses)]
+                lines = [page_lines(client.side.url, *response, strip_export=strip) for client, response in zip(pair, responses)]
+                # Le fichier des conditions dit INRAE et non plus Irstea : son statut et son type seulement
+                return [page[:2] for page in lines] if path.endswith('/conditions') else lines
 
             for path, lines in zip(paths, pool.map(fetch, paths)):
                 report.add(f'{profile} {path}', *lines)
@@ -806,11 +808,17 @@ OLD_EXPORT_BODY = 'Veuillez trouver en pièce jointe votre export de chronique.'
 EXPORT_FILES = lambda token: (HERE.parent.parent / 'var' / 'exports' / f'{token}.zip').read_bytes()
 
 
+LICENCE_FILE = re.compile(r'ConditionsGeneralesUtilisation|Licence-Ouverte|Open-Licence')
+
+
 def archive_lines(name, kind, body):
     """Une archive d'export : son nom et son type, puis ses fichiers."""
     lines = [f'Pièce jointe : {name} ({kind})']
     with zipfile.ZipFile(io.BytesIO(body)) as z:
         for inner in z.namelist():
+            # Les fichiers de licence changent selon les chroniques : open_data_checks les vérifie
+            if inner.endswith('.pdf') and LICENCE_FILE.search(inner):
+                continue
             content = z.read(inner)
             if inner.endswith('.txt'):
                 lines += [f'== {inner}', *map(export_line, content.decode('utf-8', 'replace').splitlines())]
@@ -1047,6 +1055,10 @@ def open_data_checks(side, console, runner, base, checks):
     check('page de suivi, prête', status == 200 and not headers.get('Refresh') and f'{token}/file'.encode() in body, f'statut {status}')
     status, headers, archive = anonymous.get(f'{page}/file')
     check('archive sans compte', status == 200 and archive[:2] == b'PK' and 'export.zip' in headers.get('Content-Disposition', ''), f'statut {status}')
+    names = lambda body: zipfile.ZipFile(io.BytesIO(body)).namelist()
+    has = lambda body, text: any(text in name for name in names(body))
+    check('chronique visible, Licence Ouverte française et anglaise, sans les conditions',
+          has(archive, 'Licence-Ouverte-2.0-fr.pdf') and has(archive, 'Open-Licence-2.0-en.pdf') and not has(archive, 'Conditions'), str(names(archive)))
     check('export sans compte noté dans l’historique', int(logged()) > int(logged_before), f'{logged_before} puis {logged()}')
 
     # Le même fichier qu'avec un compte, dont le lien arrive par courriel
@@ -1085,7 +1097,16 @@ def open_data_checks(side, console, runner, base, checks):
         status, headers, _ = Client(side, None, hidden_slug).get(path)
         check('archive d’une chronique cachée, sans compte', status == 302 and 'login' in headers.get('Location', ''), f'statut {status}')
         check('archive d’une chronique cachée, compte sans droit', Client(side, stranger, hidden_slug).get(path)[0] == 403)
-        check('archive d’une chronique cachée, avec le droit', manager.get(path)[0] == 200)
+        status, _, hidden_archive = manager.get(path)
+        check('archive d’une chronique cachée, avec le droit', status == 200, f'statut {status}')
+        check('chronique cachée, les conditions, sans la Licence Ouverte',
+              status == 200 and has(hidden_archive, 'Conditions') and not has(hidden_archive, 'Licence') and not has(hidden_archive, 'Open-Licence'))
+        if mixed:
+            export(manager, hidden_slug, [mixed[0][0], hidden], termsOfUses='1')
+            drain(console, runner, base)
+            status, _, both = manager.get(last_link().group(1))
+            check('archive mêlée, les trois fichiers et la liste', status == 200 and has(both, 'Licence-Ouverte') and has(both, 'Open-Licence')
+                  and has(both, 'Conditions') and has(both, 'Licences.txt'))
         # Sa chronique a disparu entre-temps : le lien reste fermé
         hidden_job = re.search(r'/export/(\d+)/', path).group(1)
         query(base, f"""UPDATE jms_jobs SET args = regexp_replace(args::text, '\\m{hidden}\\M', '999999999')::json WHERE id = {hidden_job} RETURNING id""", NEW_SERVER)
@@ -1115,6 +1136,13 @@ def open_data_checks(side, console, runner, base, checks):
     export(anonymous, slug, visible)
     drain(console, runner, base)
     check('archive échue retirée par le prochain export', not stale.exists())
+
+    # La place est comptée : au-delà, les plus anciennes partent, même avant leur terme
+    kept = sorted((HERE.parent.parent / 'var' / 'exports').glob('*.zip'))
+    tight = [*console[:2], '-e', 'EXPORTS_MAX_BYTES=1', *console[2:]]
+    export(anonymous, slug, visible)
+    drain(tight, runner, base)
+    check('place dépassée, les archives les plus anciennes retirées', kept and not any(path.exists() for path in kept), f'{len(kept)} archives avant')
 
     # Une archive qui ne s'écrit pas fait échouer la commande, et --send-to ne va pas sans tâche
     period = ['2024-01-01T00:00:00+00:00', '2024-02-01T00:00:00+00:00']
