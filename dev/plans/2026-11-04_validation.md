@@ -43,7 +43,7 @@ L'ordre de l'audit, resserré autour de la barrière : ce qui demande de lire de
 ## Ce qui reste à Lou
 
 - Lancer `make anonymize` (B2), au signal de Claude, une fois la phase A finie.
-- Les questions de fait de l'audit : fichiers d'imports restés sur l'ancien serveur, collation et rôle de la base de production, tâches à code 16 ou 32 sur le dump brut.
+- Des fichiers d'import réels, si les gestionnaires peuvent en donner quelques-uns, sans urgence : ils restent hors du dépôt, et se rejouent par `compare.py imports`. Les tâches à code 16 ou 32 sont comptées par le rapport de `make anonymize`, et la collation est fixée de notre côté.
 
 ## Pour reprendre
 

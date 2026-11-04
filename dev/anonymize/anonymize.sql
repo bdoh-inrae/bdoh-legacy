@@ -18,6 +18,11 @@ SET client_min_messages = warning;
 
 CREATE SCHEMA anon;
 
+-- Ce que l'ancien BDOH a fait de ses calculs en échec (dev/differences.md, « Calcul en échec qui vide la
+-- chronique ») ne se voit que dans ses tâches, vidées plus bas : le rapport n'en garde que ces comptes.
+CREATE TABLE anon.job_codes AS
+SELECT exitcode, count(*) AS n FROM bdoh.jms_jobs WHERE exitcode IN (16, 32) GROUP BY 1;
+
 -- Les tables laissées par des imports abandonnés (schéma temp) portent des valeurs telles qu'importées,
 -- chroniques cachées comprises, avec l'identifiant de leur chronique. Elles partent toutes, avant la
 -- classification des colonnes ; l'importeur crée les siennes.
@@ -385,6 +390,12 @@ BEGIN
     RETURN NEXT;
     item := 'contrôle tables restantes dans le schéma temp';
     SELECT count(*) INTO n FROM pg_tables WHERE schemaname = 'temp';
+    RETURN NEXT;
+    item := 'tâches de l''ancien sorties sur le code 16 (calcul en échec, insertion refusée)';
+    SELECT coalesce(sum(j.n), 0) INTO n FROM anon.job_codes j WHERE j.exitcode = 16;
+    RETURN NEXT;
+    item := 'tâches de l''ancien sorties sur le code 32 (calcul en échec, effacement refusé)';
+    SELECT coalesce(sum(j.n), 0) INTO n FROM anon.job_codes j WHERE j.exitcode = 32;
     RETURN NEXT;
     item := 'Mo base entière';
     n := pg_database_size(current_database()) / 1048576;
