@@ -892,6 +892,21 @@ def inject_sql(base, path):
                    input=Path(path).read_text(), text=True, check=True, capture_output=True)
 
 
+@contextlib.contextmanager
+def refusing(base, operation, table, chronique):
+    """Une écriture sur une chronique que la base refuse, le temps du bloc : la panne la plus simple à provoquer."""
+    row = 'NEW' if operation == 'INSERT' else 'OLD'
+    query(base, """CREATE FUNCTION essai_refus() RETURNS trigger LANGUAGE plpgsql AS
+                   $$ BEGIN RAISE EXCEPTION 'refus de cet essai'; END $$""", NEW_SERVER)
+    query(base, f"""CREATE TRIGGER essai_refus BEFORE {operation} ON {table} FOR EACH ROW
+                    WHEN ({row}.chronique_id = {chronique}) EXECUTE FUNCTION essai_refus()""", NEW_SERVER)
+    try:
+        yield
+    finally:
+        query(base, f'DROP TRIGGER essai_refus ON {table}', NEW_SERVER)
+        query(base, 'DROP FUNCTION essai_refus()', NEW_SERVER)
+
+
 def failed_computation_checks(console, base, chronique, user):
     """Un calcul en échec laisse la chronique telle quelle, et sort sur son code (dev/differences.md, « Calcul
     en échec qui vide la chronique ») : une insertion refusée donne le code 16, un effacement refusé le 32.
@@ -904,22 +919,39 @@ def failed_computation_checks(console, base, chronique, user):
     def computed():
         return subprocess.run([*console, 'bdoh:compute:chronique', chronique, user, '--env=prod'], capture_output=True).returncode
 
-    query(base, """CREATE FUNCTION essai_refus() RETURNS trigger LANGUAGE plpgsql AS
-                   $$ BEGIN RAISE EXCEPTION 'refus de cet essai'; END $$""", NEW_SERVER)
     before, checks = state(), {}
-    for name, operation, row, expected in [('insertion refusée', 'INSERT', 'NEW', 16), ('effacement refusé', 'DELETE', 'OLD', 32)]:
-        query(base, f"""CREATE TRIGGER essai_refus BEFORE {operation} ON mesure FOR EACH ROW
-                        WHEN ({row}.chronique_id = {chronique}) EXECUTE FUNCTION essai_refus()""", NEW_SERVER)
-        code = computed()
-        query(base, 'DROP TRIGGER essai_refus ON mesure', NEW_SERVER)
+    for name, operation, expected in [('insertion refusée', 'INSERT', 16), ('effacement refusé', 'DELETE', 32)]:
+        with refusing(base, operation, 'mesure', chronique):
+            code = computed()
         checks[f'nouveau seul : calcul en échec, {name}, chronique gardée'] = (
             ['conforme'] if code == expected and state() == before and before[0]
             else [f'code {code}, attendu {expected} ; chronique {"gardée" if state() == before else "changée"}'])
-    query(base, 'DROP FUNCTION essai_refus()', NEW_SERVER)
     code = computed()
     checks['nouveau seul : calcul refait après un échec, mêmes mesures'] = (
         ['conforme'] if code == 0 and state()[0] == before[0] else [f'code {code}'])
     return checks
+
+
+def emptied_with_milliseconds_check(side, base, cid, page, manager, slug):
+    """Vider l'intérieur d'une chronique met en lacune, même si sa dernière mesure a des millisecondes
+    (dev/differences.md, « Vider une période, dernière mesure à millisecondes »)."""
+    query(base, f"""UPDATE mesure SET date = date + interval '500 milliseconds' WHERE id =
+                    (SELECT id FROM mesure WHERE chronique_id = {cid} ORDER BY date DESC LIMIT 1) RETURNING id""", NEW_SERVER)
+    iso = """'YYYY-MM-DD"T"HH24:MI:SS"Z"'"""
+    begin, end = query(base, f"""
+        SELECT to_char(min(date), {iso}), to_char(max(date), {iso}) FROM (
+            SELECT date FROM mesure WHERE chronique_id = {cid} ORDER BY date
+            OFFSET (SELECT count(*) / 2 FROM mesure WHERE chronique_id = {cid}) LIMIT 5) t""", NEW_SERVER)[0]
+    count = lambda: query(base, f'SELECT count(*) FROM mesure WHERE chronique_id = {cid}', NEW_SERVER)[0][0]
+    before = count()
+    status = Client(side, manager, slug).get(f'{page}/empty', urllib.parse.urlencode(
+        {'beginDate': begin, 'endDate': end}).encode(), {'Referer': side.url + page})[0]
+    gaps = query(base, f"""SELECT count(*) FROM mesure m JOIN qualite q ON q.id = m.qualite_id
+                            WHERE m.chronique_id = {cid} AND q.type = 'gap'
+                              AND m.date >= '{begin}' AND m.date <= '{end}'""", NEW_SERVER)[0][0]
+    ok = status == 302 and count() == before and gaps != '0'
+    return {'nouveau seul : vider une période, dernière mesure à millisecondes, en lacune':
+            ['conforme'] if ok else [f'statut {status}, {before} mesures avant, {count()} après, {gaps} lacunes']}
 
 
 def run_state(args):
@@ -1008,6 +1040,7 @@ def run_state(args):
         if name == 'nouveau' and not args.same:
             with new_on(base, template) as console:
                 checks.update(failed_computation_checks(console, base, *commands[0][1:3]))
+                checks.update(emptied_with_milliseconds_check(SIDES['new'], base, cid, f'/{slug}/{station}/{code}', manager, slug))
 
     report = Report('state')
     for part in sides['ancien']:
@@ -1198,8 +1231,9 @@ def step_lines(site, status, headers, body):
     return [line.replace(site, '<site>') for line in lines]
 
 
-def import_steps(client, site, case):
-    """Un import de mesures par ses étapes, comme le JavaScript les envoie ; rend les réponses."""
+def import_steps(client, site, case, after_upload=None):
+    """Un import de mesures par ses étapes, comme le JavaScript les envoie ; rend les réponses. after_upload se
+    joue entre le téléversement et la lecture du fichier."""
     slug = case['slug']
     ajax = {'X-Requested-With': 'XMLHttpRequest'}
     post = lambda step, fields: client.get(f'/{slug}/admin/mesure/import/{step}',
@@ -1211,6 +1245,8 @@ def import_steps(client, site, case):
     response = client.get(f'/{slug}/admin/mesure/import/step2', body, {**ajax, 'Content-Type': kind})
     log += ['== étape 2', *step_lines(site, *response)]
     data = read(response)
+    if after_upload:
+        after_upload()
     if data.get('action') == 'step2.askStation':
         response = post('step2/next', {'station': case['station']})
         log += ['== station', *step_lines(site, *response)]
@@ -1224,7 +1260,8 @@ def import_steps(client, site, case):
         log += ['== étape 3', *step_lines(site, *response)]
         data = read(response)
     if data.get('action') == 'step3':
-        response = post('step4', {f"importTypes[{case['cid']}]": case['type'], 'propagate': 'propagate'})
+        types = case.get('types') or {case['cid']: case['type']}
+        response = post('step4', {**{f'importTypes[{c}]': kind for c, kind in types.items()}, 'propagate': 'propagate'})
         log += ['== étape 4', *step_lines(site, *response)]
     return log
 
@@ -1483,6 +1520,134 @@ def shape_cases(base, slug):
     return cases
 
 
+@contextlib.contextmanager
+def small_tmp(size='256k'):
+    """Un /tmp minuscule dans le conteneur du nouveau, le temps du bloc : une panne que les imports doivent dire."""
+    subprocess.run(['docker', 'exec', '--privileged', 'bdoh-app', 'mount', '-t', 'tmpfs', '-o', f'size={size},mode=1777',
+                    'tmpfs', '/tmp'], check=True, capture_output=True)
+    try:
+        yield
+    finally:
+        subprocess.run(['docker', 'exec', '--privileged', 'bdoh-app', 'umount', '-l', '/tmp'], check=True, capture_output=True)
+
+
+def import_failure_checks(template, base):
+    """Ce que seul le nouveau garantit d'un import, sur sa copie, une fois le reste comparé : tout ou rien quand la
+    base refuse une écriture, deux archives de même nom qui ne se mêlent pas, /tmp plein dit, et le contrôle des
+    points de contrôle (dev/differences.md, « Import qui échoue en route », « Archives de même nom », « Points de
+    contrôle »). Chaque panne est provoquée ; rien ne se lit des mesures que des comptes et des empreintes."""
+    cid, slug, controles = controle_cases(template)
+    station, code, unite = query(template, f"""
+        SELECT c.station, c.code, u.libelle FROM ({CHRONIQUES}) c JOIN chronique ch ON ch.id = c.id
+          JOIN unite u ON u.id = ch.unite_id WHERE c.id = {cid}""", NEW_SERVER)[0]
+    other, other_code, other_unite = query(template, f"""
+        SELECT c.id, c.code, u.libelle FROM ({CHRONIQUES}) c JOIN chronique ch ON ch.id = c.id
+          JOIN unite u ON u.id = ch.unite_id
+         WHERE c.dtype = 'continue' AND c.station = '{station}' AND c.slug = '{slug}' AND c.id <> {cid}
+         ORDER BY c.id LIMIT 1""", NEW_SERVER)[0]
+    manager = query(template, f"""
+        SELECT u.email FROM utilisateur u JOIN role r ON r.utilisateur_id = u.id
+          JOIN observatoire o ON o.id = r.observatoire_id
+         WHERE r.valeur = 'gestionnaire' AND o.slug = '{slug}' AND (u.finacces IS NULL OR u.finacces > now())
+         ORDER BY u.id LIMIT 1""", NEW_SERVER)[0][0]
+    site, client = SIDES['new'].url, Client(SIDES['new'], manager, slug)
+    ajax = {'X-Requested-With': 'XMLHttpRequest'}
+    prints = lambda table, *ids: query(base, FINGERPRINTS[table].replace(
+        'GROUP BY', f"WHERE chronique_id IN ({','.join(ids)}) GROUP BY"), NEW_SERVER)
+    jobs = lambda: query(base, 'SELECT count(*) FROM jms_jobs', NEW_SERVER)[0][0]
+    rows = query(base, f"""
+        SELECT to_char(m.date + interval '1 hour', 'DD/MM/YYYY HH24:MI:SS'), coalesce(m.valeur::text, '-9999'), q.code
+          FROM mesure m JOIN qualite q ON q.id = m.qualite_id
+         WHERE m.chronique_id = {cid} AND m.date >= '2024-01-01' AND m.date < '2024-01-15'
+         ORDER BY m.date LIMIT 50""", NEW_SERVER)
+    moved = lambda v: v if v == '-9999' else f'{float(v) + 0.5:g}'
+    measures = lambda lines, **extra: {'format': 'Bdoh', 'content': ('\n'.join(lines) + '\n').encode(),
+                                       'type': 'overwriteExisting', 'cid': cid, 'slug': slug, **extra}
+    one = ['Station;Fuseau;Chronique;Unite', f'{station};UTC+01;{code};{unite}', 'DateHeure;Valeur;Qualite',
+           *[f'{d};{moved(v)};{q}' for d, v, q in rows]]
+    two = ['Station;Fuseau;Chronique;Unite;Chronique;Unite', f'{station};UTC+01;{code};{unite};{other_code};{other_unite}',
+           'DateHeure;Valeur;Qualite;Valeur;Qualite', *[f'{d};{moved(v)};{q};{moved(v)};{q}' for d, v, q in rows]]
+
+    def controle_import(content):
+        body, kind = multipart({}, {'file': ('controle.txt', content)})
+        response = client.get(f'/{slug}/admin/controle/import/step2', body, {**ajax, 'Content-Type': kind})
+        lines = ['== étape 2', *step_lines(site, *response)]
+        if response[0] == 200 and json.loads(response[2]).get('action') == 'step3':
+            response = client.get(f'/{slug}/admin/controle/import/step3',
+                                  urllib.parse.urlencode({'importType': 'import'}).encode(), ajax)
+            lines += ['== étape 3', *step_lines(site, *response)]
+        return lines
+
+    checks = {}
+
+    def refused(label, run, table, refused_id, *watched):
+        """La base refuse d'écrire sur une chronique : rien ne change, et l'import ne se dit pas réussi."""
+        before = prints(table, *watched), jobs()
+        with refusing(base, 'INSERT', table, refused_id):
+            log = run()
+        kept = (prints(table, *watched), jobs()) == before
+        told = not any(line.endswith('"step4"') for line in log)
+        checks[label] = (['conforme'] if kept and told and before[0]
+                         else [f'{len(before[0])} chroniques vues ; données {"gardées" if kept else "changées"}, réussite {"tue" if told else "annoncée"}'])
+
+    refused('nouveau seul : écraser, insertion refusée, période gardée',
+            lambda: import_steps(client, site, measures(one)), 'mesure', cid, cid)
+    refused('nouveau seul : deux chroniques, la seconde refusée, la première gardée',
+            lambda: import_steps(client, site, measures(two, types={cid: 'overwriteExisting', other: 'overwriteExisting'})),
+            'mesure', other, cid, other)
+    controle_import(controles[0][1])
+    refused('nouveau seul : points de contrôle, insertion refusée, points gardés',
+            lambda: controle_import(controles[1][1]), 'pointcontrole', cid, cid)
+
+    # Deux archives dont le fichier intérieur porte le même nom : la seconde arrive entre deux étapes de la première
+    def archive(content):
+        buffer = io.BytesIO()
+        with zipfile.ZipFile(buffer, 'w', zipfile.ZIP_DEFLATED) as z:
+            z.writestr('mesures.txt', content)
+        return buffer.getvalue()
+
+    first, second = bdoh_import(base, cid, 1, 'overwriteExisting'), bdoh_import(base, cid, 2, 'overwriteExisting')
+    period = lambda months: query(base, f"""
+        SELECT date, valeur FROM mesure WHERE chronique_id = {cid}
+           AND date >= timestamp '2024-01-01' + interval '{months} month' AND date < timestamp '2024-01-16' + interval '{months} month'
+         ORDER BY date""", NEW_SERVER)
+    expected = len(second['content'].decode().splitlines()) - 3
+    other_period = period(2)
+
+    def second_upload():
+        body, kind = multipart({'file-format': 'Bdoh'}, {'file': ('mesures.zip', archive(second['content']))})
+        Client(SIDES['new'], manager, slug).get(f'/{slug}/admin/mesure/import/step2', body, {**ajax, 'Content-Type': kind})
+
+    import_steps(client, site, {**first, 'content': archive(first['content']), 'filename': 'mesures.zip'}, second_upload)
+    written = len(period(1))
+    checks['nouveau seul : deux archives de même nom, chacune garde son fichier'] = (
+        ['conforme'] if written >= expected > 0 and period(2) == other_period
+        else [f"{written} mesures écrites pour {expected} lues ; l'autre période {'gardée' if period(2) == other_period else 'changée'}"])
+
+    # /tmp plein pendant la lecture : une erreur, et rien d'écrit. Le fichier se comprime assez pour passer l'envoi.
+    lines = [one[0], one[1], one[2], *[f'{day:02}/01/1990 {hour:02}:{minute:02}:00;1.5;{rows[0][2]}'
+                                       for day in range(1, 29) for hour in range(24) for minute in range(60)]]
+    count = lambda: query(base, f"SELECT count(*) FROM mesure WHERE chronique_id = {cid} AND date < '1991-01-01' AND date >= '1990-01-01'", NEW_SERVER)[0][0]
+    before = count()
+    with small_tmp():
+        log = import_steps(client, site, {**measures(lines), 'content': archive(('\n'.join(lines) + '\n').encode()),
+                                          'filename': 'mesures.zip'})
+    told = not any(line.endswith('"step4"') for line in log)
+    checks['nouveau seul : /tmp plein, une erreur et rien d’écrit'] = (
+        ['conforme'] if told and count() == before else [f'{before} mesures avant, {count()} après ; réussite {"tue" if told else "annoncée"}'])
+
+    # Points de contrôle : une date future refusée, une valeur écrite 0 acceptée
+    head = controles[0][1].decode().splitlines()[:3]
+    sample = controles[0][1].decode().splitlines()[3].split(';')
+    controle_import(('\n'.join([*head, f'01/01/2042 00:00:00;1;{sample[2]}']) + '\n').encode())
+    future = query(base, f'SELECT count(*) FROM pointcontrole WHERE chronique_id = {cid} AND date > now()', NEW_SERVER)[0][0]
+    checks['nouveau seul : point de contrôle daté dans le futur, refusé'] = ['conforme'] if future == '0' else [f'{future} points dans le futur']
+    controle_import(('\n'.join([*head, f'{sample[0]};0;{sample[2]}']) + '\n').encode())
+    zero = query(base, f'SELECT count(*) FROM pointcontrole WHERE chronique_id = {cid} AND valeur = 0', NEW_SERVER)[0][0]
+    checks['nouveau seul : point de contrôle de valeur 0, accepté'] = ['conforme'] if zero == '1' else [f'{zero} points à zéro']
+    return checks
+
+
 def run_imports(args):
     """Chaque import, étape par étape, par l'ancien code sur PostgreSQL 17 et par le nouveau, chacun
     sur sa copie de BASE, au nom d'un gestionnaire de l'observatoire visé ; puis la file de tâches,
@@ -1662,6 +1827,10 @@ def run_imports(args):
         expected = sum(hydro[c['name']][0] for c in played)
         report.add('nouveau seul : seules ces mesures diffèrent de l’ancien', ['conforme'],
                    ['conforme' if changed == expected else f'non conforme : {changed} au lieu de {expected}'])
+    if not args.only:
+        with new_on(bases['nouveau'], template):
+            for label, lines in import_failure_checks(template, bases['nouveau']).items():
+                report.add(label, ['conforme'], lines)
     report.close()
     print(f'Les instances lisent de nouveau {template}. Les deux copies restent pour examen :'
           f' {bases["ancien"]} et {bases["nouveau"]}.')
@@ -2963,6 +3132,10 @@ def run_theia(args):
             (THEIA_RECEIVED / 'redirige').touch()
             failed_send('nouveau seul : envoi redirigé, en échec', 'Réponse inattendue du serveur : 302', console)
             (THEIA_RECEIVED / 'redirige').unlink(missing_ok=True)
+            # La sortie d'une tâche va en base : une réponse qui n'est pas en UTF-8 ne doit pas faire tomber l'exécuteur
+            (THEIA_RECEIVED / 'latin1').touch()
+            failed_send('nouveau seul : réponse en Latin-1, en échec, exécuteur debout', 'Body response : ', console)
+            (THEIA_RECEIVED / 'latin1').unlink(missing_ok=True)
             # Un port fermé : la console de la file lit l'adresse d'envoi dans l'environnement
             dead = [x.replace(f'THEIA_SEND_URI={served}/theia-receiver.php/', 'THEIA_SEND_URI=http://172.30.26.10:9/') for x in console]
             failed_send('nouveau seul : serveur de Theia qui ne répond pas, en échec', 'Message : ', dead)

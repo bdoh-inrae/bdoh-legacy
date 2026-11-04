@@ -44,11 +44,20 @@ L'ordre de l'audit, resserré autour de la barrière : ce qui demande de lire de
 
 ## Pour reprendre
 
-Dans l'ordre :
+État à la coupure du 4 novembre, en fin de matinée : tout est commité et poussé, et aucune correction de `src/` n'est commencée. A1, A2, A3 sont faits. Il reste de la phase A : les taux du recalcul, les corrections de la relecture, temps et mémoire. Dans l'ordre :
 
-1. A4 : `dev/compare/recompute.py --base bdoh` (3 à 5 h), puis temps et mémoire (`dev/compare/volumes.py`, pas encore lancé).
+1. **Les taux du recalcul sur la base complète.** La passe `2026-11-04_075855_recompute` a fini ses calculs (Suivi ci-dessous) ; ses taux tournaient à la coupure. Lire la fin de son `rapport.txt`, en comptes. S'il n'y a pas de ligne « Taux : », relancer `dev/compare/recompute.py --base bdoh --only-taux`, qui reprend sur la copie `bdoh_recompute`.
+2. **Les corrections de la relecture** (constats dans le Suivi). Les cas sont écrits dans `compare.py` et n'ont **jamais été joués** : ils peuvent avoir leurs propres défauts. Les jouer d'abord sans correction, pour voir chacun échouer : `compare.py imports --base bdoh_small`, `state --base bdoh_small`, `theia --base bdoh` (puis `use-base.sh bdoh_small`). Corriger, rejouer, puis écrire chaque écart dans `dev/differences.md` sous le nom que citent les cas, et dans `CHANGELOG.md` (Corrigé). Ce qui est prévu :
+   - **Import tout ou rien (constats 1 et 2).** Dans `Importer::importData` (`BdohAdminBundle/Importer/Measure/Importer.php`), la boucle sur les chroniques passe dans `$this->em->getConnection()->transactional(...)` ; de même l'appel `controleRepo->import` de `Importer/Controle/Manager.php`. Pas `wrapInTransaction` de l'ORM, qui ferme l'EntityManager sur une exception alors que la page doit encore dire l'erreur. Les tâches créées par les écouteurs entrent dans la transaction, et n'apparaissent donc qu'avec les mesures. À vérifier : aucun écouteur de `EventListener/` ne valide lui-même. Noms dans `dev/differences.md` : « Import qui échoue en route ».
+   - **Sortie de tâche (4).** `Job::setOutput` et `setErrorOutput` (`BdohBundle/Job/Job.php`) : `str_replace("\0", '', mb_scrub($text, 'UTF-8'))`. `mb_scrub` existe dans `bdoh-app` (essayé). Nom : « Sortie de tâche illisible ».
+   - **Archives de même nom (5).** `IrsteaBdohAdminBundle::unzipFirst` copie le fichier par `$zip->getStream($name)` vers `tempnam($destDir, 'unzip_')`, sans plus l'extraire sous le nom qu'il a dans l'archive. Pas regardé : `unzipAll`, celui des shapefiles, a-t-il le même défaut ?
+   - **CSV (6).** `fputcsv` rend `false` sur un disque plein (essayé sur `/dev/full` dans `bdoh-app`). Contrôler ce retour aux trois appels (`Importer.php`, deux fois, `Manager.php`) et lever une exception. Une écriture partielle rend un compte sans erreur : avant le `COPY`, vérifier aussi que le fichier finit par un saut de ligne, ce qui couvre une dernière ligne coupée. Le cas `small_tmp` demande `docker exec --privileged`, pas encore essayé.
+   - **Millisecondes (8).** `MesureRepository::parseExtractedDate` : essayer `Y-m-d H:i:s.u T`, puis le format actuel. Nom : « Vider une période, dernière mesure à millisecondes ».
+   - **Points de contrôle (9).** `Manager.php`, `$tmpDate > $this->nowAsString` comme aux mesures ; et ne plus changer `'0'` en `''`. Nom : « Points de contrôle ».
+3. **Temps et mémoire** : `dev/compare/volumes.py`, jamais lancé, relu et vérifié contre `compare.py`. A4 sera alors clos.
+4. **Rapport court à Lou pour la phase B**, puisque B2 lui revient : le résultat de la phase A, ce qu'elle doit lancer, ce que `dev/local/hidden-series.md` dit rester après régénération, et les questions de fait ci-dessus.
 
-Pour rejouer les fautes : `dev/compare/mutants.py` (environ 2 h 30 pour toutes, `--only` pour quelques-unes ; modifie `src/`, rien d'autre en parallèle, dépôt propre). Une faute non vue appelle un cas, un arrêt se lit.
+Pour rejouer les fautes : `dev/compare/mutants.py` (environ 2 h 30 pour toutes, `--only` pour quelques-unes ; modifie `src/`, rien d'autre en parallèle, dépôt propre). Une faute non vue appelle un cas, un arrêt se lit. Une fois les corrections faites, y ajouter une faute par correction serait utile.
 
 Pour jouer tous les modes, l'un après l'autre (environ 1 h 10) :
 
@@ -65,6 +74,10 @@ Avant de détruire les rapports (B2) : noter les comptes utiles ici.
 
 ## Suivi
 
+- 2026-11-04, recalcul de la base complète, calculs finis en 21 min (et non 3 à 5 h, l'estimation venait de l'audit), commit 98fcd2e, copie en 147 s :
+  - Codes : 422 calculées au code 0, 151 converties au code 0. Les 28 calculées au code 255 et la convertie au code 1 sont exactement les 28 chroniques calculées sans première transformation et la convertie sans conversion, configurations déjà connues et refusées proprement.
+  - Aucune chronique ne garde de mesure calculée d'avant le recalcul : toutes ont vraiment été recalculées.
+  - Mesures : 2 019 chroniques, **19 qui diffèrent, toutes « histoire »** : les fonctions sous PostgreSQL 11 rendent, au bit près, le même résultat que le nouveau sous PostgreSQL 17. Aucune « à examiner ». Ce sont donc des chroniques que l'ancien BDOH n'avait pas recalculées depuis un changement de leurs mères, et le portage n'y est pour rien. Lignes de ces 19 : 97 343 seulement après, 129 seulement avant, 3 356 valeurs, 7 qualités, 1 843 marques « calculée ». Le détail des visibles est dans `visibles.txt` du rapport ; à regarder de près si l'on veut dire aux gestionnaires ce qu'un recalcul changerait chez eux.
 - 2026-11-04, relecture de ce qui écrit (C5, second Claude en lecture seule, constats revérifiés dans le code) : **aucune régression du portage sur les mesures**, les défauts sont ceux de l'ancien. À corriger une fois le recalcul fini, chacun avec son cas :
   1. L'import « écraser » efface puis insère sans transaction : une panne entre les deux laisse la période vide (mesures, plages, points de contrôle).
   2. Un import de plusieurs chroniques qui échoue sur l'une garde les précédentes, sans historique ni message.
