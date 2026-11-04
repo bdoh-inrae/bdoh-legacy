@@ -24,8 +24,8 @@ L'ordre de l'audit, resserré autour de la barrière : ce qui demande de lire de
 **Phase B, la régénération (Lou lance)**
 
 - [x] B1. `dev/anonymize/anonymize.sql` : chroniques cachées traitées, rapport qui s'arrête s'il en reste ; essayé sur des lignes inventées.
-- [ ] B2. Dumps régénérés par Lou le 4 novembre ; reste à détruire ce qui vient des anciens (accord de Lou, « Pour reprendre »).
-- [ ] B3. Base de développement sur les paquets de Debian 13, rôle sans superuser : en place et éprouvée sur les anciens dumps ; reste la restauration des nouveaux.
+- [x] B2. Dumps régénérés par Lou le 4 novembre ; ce qui venait des anciens est détruit, et la barrière levée.
+- [x] B3. Base de développement sur les paquets de Debian 13, rôle sans superuser, sur les nouveaux dumps : identique au bit près à la référence.
 
 **Phase C, barrière tombée**
 
@@ -46,25 +46,32 @@ L'ordre de l'audit, resserré autour de la barrière : ce qui demande de lire de
 
 ## Pour reprendre
 
-État à la coupure du 4 novembre, fin d'après-midi. Les phases A et B1 sont finies, et les dumps sont régénérés par Lou (`bdoh_reference/*-anon.dump`, écrits à 15 h 10 et 15 h 35). L'ouverture des données est écrite et fusionnée dans `main` (`dev/plans/2026-11-04_open-data.md`). Le serveur du nouveau BDOH tourne déjà sur les paquets de Debian 13 avec un rôle sans superuser, mais encore sur les bases des anciens dumps. Rien ne tourne. Dans l'ordre :
+État au 4 novembre, soir : les phases A et B sont finies. Les deux dumps régénérés sont restaurés sur les deux serveurs, et la barrière sur les valeurs cachées est levée (`CLAUDE.md`). L'ouverture des données est écrite et fusionnée dans `main` (`dev/plans/2026-11-04_open-data.md`). Dans l'ordre :
 
-1. **Détruire ce qui vient des anciens dumps, puis restaurer les nouveaux.** Lou a donné son accord le 4 novembre. Arrêter les trois serveurs (`make stop`, `make reference-stop`), puis retirer dans `../bdoh_reference/` : `postgres/`, `postgres-17/`, `postgres-17-debian/`, `compare/`. Les dumps bruts de `../incident-2026-10-21/` ne bougent pas. Lire d'abord le rapport de chaque dump (`*-anon.txt`) : contrôles à 0. Restaurer ensuite, dans cet ordre :
-   ```
-   make db
-   make db DUMP=../bdoh_reference/bdoh-othu-2026-10-21-anon.dump BASE=bdoh_othu
-   make db-small
-   make db SERVER=new
-   make migrate BASE=bdoh
-   make db SERVER=new DUMP=../bdoh_reference/bdoh-othu-2026-10-21-anon.dump BASE=bdoh_othu
-   make migrate BASE=bdoh_othu
-   make db-small SERVER=new
-   dev/compare/use-base.sh bdoh_small
-   ```
-   La barrière sur les valeurs cachées tombe alors : retirer sa ligne de `CLAUDE.md`, et la section qui en parle dans `dev/local/hidden-series.md`.
-2. **Rejouer tous les modes sur ces dumps** (commandes plus bas), ouverture comprise, et lire leurs écarts, maintenant permis. Nouveau : `state` joue l'ouverture, `imports` les six vrais fichiers de `../bdoh_reference/data-test-import/`.
-3. **Les fautes de l'ouverture** : `mutants.py --only "ouverture :"`, puis toutes une fois, leurs textes ayant changé.
-4. **C1, C2**, puis essayer l'ouverture dans un navigateur (`make browser-check`, à étendre : export sans compte, fenêtre d'une chronique cachée).
-5. **La VM**, selon la réponse de l'équipe infra. Les fichiers déposés de la production (logos, images) sont dans `../bdoh_reference/uploads/bdoh-uploads-prod.tar.gz`, à reprendre dans `public/uploads/` sur la VM ; OTHU n'en a pas.
+1. **Rejouer tous les modes sur ces dumps** (commandes plus bas), ouverture comprise, et lire leurs écarts, maintenant permis. Nouveau : `state` joue l'ouverture, `imports` les six vrais fichiers de `../bdoh_reference/data-test-import/`. `make mail-start` d'abord : `state`, `accounts` et `admin` lisent les courriels dans Mailpit.
+2. **Les fautes de l'ouverture** : `mutants.py --only "ouverture :"`, puis toutes une fois, leurs textes ayant changé.
+3. **C1, C2**, puis essayer l'ouverture dans un navigateur (`make browser-check`, à étendre : export sans compte, fenêtre d'une chronique cachée).
+4. **La VM**, selon la réponse de l'équipe infra. Les fichiers déposés de la production (logos, images) sont dans `../bdoh_reference/uploads/bdoh-uploads-prod.tar.gz`, à reprendre dans `public/uploads/` sur la VM ; OTHU n'en a pas.
+
+Pour repartir de zéro depuis les dumps, en 35 min (mesure du 4 novembre) :
+
+```
+make stop && make reference-stop
+docker rm bdoh-app bdoh-db bdoh-dns bdoh-reference-app bdoh-reference-worker bdoh-reference-db bdoh-reference-dns bdoh-reference-app-17
+rm -rf ../bdoh_reference/postgres ../bdoh_reference/postgres-17-debian
+make db
+make db DUMP=../bdoh_reference/bdoh-othu-2026-10-21-anon.dump BASE=bdoh_othu
+make db-small
+make db SERVER=new
+make start
+make migrate BASE=bdoh
+make db SERVER=new DUMP=../bdoh_reference/bdoh-othu-2026-10-21-anon.dump BASE=bdoh_othu
+make migrate BASE=bdoh_othu
+make db-small SERVER=new
+make reference-start
+make reference-17-start
+dev/compare/use-base.sh bdoh_small
+```
 
 Pour rejouer les fautes : `dev/compare/mutants.py` (environ 2 h 30 pour toutes, `--only` pour quelques-unes ; modifie `src/`, rien d'autre en parallèle, dépôt propre). Une faute non vue appelle un cas, un arrêt se lit. Chaque correction de la relecture y a sa faute (« ancien comportement »).
 
@@ -83,6 +90,8 @@ Les comptes utiles des rapports sont notés dans le Suivi, et le détail du reca
 
 ## Suivi
 
+- 2026-11-04, soir, restauration des nouveaux dumps. Détruits : `postgres/`, `postgres-17/` (ancien serveur, que plus rien n'emploie), `postgres-17-debian/`, `compare/`, et aussi les conteneurs, leur `/tmp`, les journaux et les fichiers d'import des applications, qui pouvaient citer d'anciennes valeurs (`var/log`, `var/imports`, `app/app/logs`, `app/app/imports`, de même dans `app-17`). Empreintes des deux dumps conformes à leurs rapports, contrôles à 0. Restauration de 35 min en tout : production 11 min 49 et 11 min 23, OTHU 5 min 14 et 4 min 29 (PostgreSQL 11 puis 17). Empreintes au bit près entre les deux serveurs, tout identique : `bdoh` (`mesure` 2 019 chroniques sur 2 019, `plage` 880, `pointcontrole` 135, `tauxremplissage` 2 019), `bdoh_othu` (57 et 57), `bdoh_small` (710, 880, 135, 711). `inspect.sql` : seules diffèrent les 7 séquences en retard, que les migrations recalent. 345 Go détruits, 103 Go écrits.
+- 2026-11-04, soir, défaut de l'outil trouvé par cette empreinte : la base réduite de la référence avait perdu des bits, 373 chroniques sur 710. `small-db.sh` copie les mesures par un `COPY` en texte, où PostgreSQL 11 n'écrit que 15 chiffres par défaut, là où `pg_dump` en demande 17. Corrigé (`extra_float_digits=3`). Sans effet sur ce qui a été prouvé : `state`, `queue`, `imports`, `accounts`, `admin` et `pages` comparent deux copies sur le serveur PostgreSQL 17, et `exports`, seul à lire cette base de la référence, ramène ses nombres à 15 chiffres.
 - 2026-11-04, avant la coupure : `state` 81/0/0/0 au commit 7624351, cas d'ouverture compris, et analyse statique sans erreur. `imports` a tourné avant la dernière correction (72/0/0/11, voir plus bas), les autres modes avant l'ouverture : à rejouer sur les nouveaux dumps. Les fautes de l'ouverture n'ont pas encore tourné.
 - 2026-11-04, les six vrais fichiers d'import donnés par Lou (`../bdoh_reference/data-test-import/`), joués par `imports`, ancien contre nouveau : mêmes réponses à chaque étape, 72/0/0/11, dont les 10 écarts admis. Cinq vont au bout. `mercure_discontinu.txt` a deux plages qui se chevauchent, et les deux BDOH le refusent : c'est juste. Le BOM, les en-têtes en minuscules, les espaces et `UTC+1` passent. Le onzième écart venait de la vérification, qui attendait aussi ce fichier-là au bout : corrigée, pas rejouée.
 - 2026-11-04, fichiers déposés de la production (`../bdoh_reference/uploads/`, empreintes vérifiées) : 104 fichiers, logos et images. OTHU n'en a aucun. Les conditions d'Oracle ont le même texte que celles de BDOH : à la mise en service, vider `observatoire.conditionsutilisation`, pour qu'il prenne le texte actualisé.

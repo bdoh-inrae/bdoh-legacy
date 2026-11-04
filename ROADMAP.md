@@ -11,7 +11,7 @@ Priorité (Lou, 3 novembre) : stabiliser ce BDOH au plus près de l'ancien et le
 ## À faire
 
 - **Preuves de solidité** : la phase A est faite (`CHANGELOG.md`, 0.2.0). Reste, dans cet ordre ; l'avancée et le point de reprise sont dans [dev/plans/2026-11-04_validation.md](dev/plans/2026-11-04_validation.md), les raisons dans [dev/audits/2026-11-03_validation-plan.md](dev/audits/2026-11-03_validation-plan.md) :
-  1. détruire ce qui vient des anciens dumps, restaurer les nouveaux, rejouer tous les modes ;
+  1. rejouer tous les modes sur les nouveaux dumps, restaurés le 4 novembre ;
   2. registre des écarts admis, puis couverture du PHP (PCOV) et du SQL (`plpgsql_check`) ;
   3. élargir les cas d'après la couverture et l'usage réel : « 1 événement », 5 et 15 minutes, fuseaux, plages, sortes de calcul ; adapter les modes à la forme d'OTHU ;
   4. invariants (`E(I(E(x))) = E(x)`, relations sur les calculs) ;
@@ -35,7 +35,7 @@ Ce qui améliore nettement l'expérience, la sécurité ou la maintenance pour p
 
 ## Ouvrir les données, avant les essais
 
-Objectif minimum fixé par Lou le 3 novembre. À faire une fois l'identité avec l'ancien prouvée, comparé à part, pour que les testeurs voient l'ouverture elle-même et donnent leur aval (Lou, 4 novembre). Ce qui est décidé et pourquoi : `dev/decisions.md`, « Ouverture des données ». Comment, et où ça en est : [dev/plans/2026-11-04_open-data.md](dev/plans/2026-11-04_open-data.md) ; écrit et fusionné, à passer au complet sur les nouveaux dumps.
+Objectif minimum fixé par Lou le 3 novembre. À faire une fois l'identité avec l'ancien prouvée, comparé à part, pour que les testeurs voient l'ouverture elle-même et donnent leur aval (Lou, 4 novembre). Ce qui est décidé et pourquoi : `dev/decisions.md`, « Ouverture des données ». Comment, et où ça en est : [dev/plans/2026-11-04_open-data.md](dev/plans/2026-11-04_open-data.md) ; écrit et fusionné, à passer au complet sur les nouveaux dumps, restaurés le 4 novembre.
 
 - **Données ouvertes** : les chroniques visibles, dérivées comprises. Visibles et téléchargeables sans compte, comme sur Recherche Data Gouv, sous Licence Ouverte Etalab.
 - **Données fermées** : les valeurs des chroniques cachées (`estvisible = false`), et elles seules. Ni visibles ni exportables sans les droits, y compris quand elles font partie d'un jeu de données. Leurs métadonnées et la position de leurs stations restent visibles, comme aujourd'hui.

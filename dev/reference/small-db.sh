@@ -39,7 +39,9 @@ docker exec "$container" pg_restore -U postgres -d "$target" --no-owner --no-pri
     --section=pre-data --section=data /tmp/small.dump
 
 echo "Mesures du $begin au $end, et d'avant 1900…"
-docker exec "$container" sh -c "psql -U postgres -d $source -v ON_ERROR_STOP=1 -c \"
+# Les nombres à tous leurs chiffres, comme le fait pg_dump : PostgreSQL 11 n'en écrit sinon que 15, et ses
+# mesures ne seraient plus celles de la base complète (essai du 4 novembre 2026, par l'empreinte).
+docker exec "$container" sh -c "PGOPTIONS='-c extra_float_digits=3' psql -U postgres -d $source -v ON_ERROR_STOP=1 -c \"
     COPY (SELECT * FROM bdoh.mesure
            WHERE (date >= '$begin' AND date < '$end') OR date < '1900-01-01') TO STDOUT\" \
   | psql -U postgres -d $target -v ON_ERROR_STOP=1 -c 'COPY bdoh.mesure FROM STDIN'"

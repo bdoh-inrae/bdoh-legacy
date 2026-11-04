@@ -646,9 +646,8 @@ class Report:
         print('X' if key == 'différents' else '.', end='', flush=True)
 
     def close(self):
-        # Les comptes d'abord, puis la provenance : c'est ce qui se lit sans risque de citer une chronique
-        # cachée ; la suite peut en citer (CLAUDE.md).
-        text = '\n'.join([*(f'{n:>6} {k}' for k, n in self.counts.items()), '', *provenance(), '', *self.summary, ''])
+        # Les comptes d'abord, puis la provenance, puis les cas qui diffèrent.
+        text ='\n'.join([*(f'{n:>6} {k}' for k, n in self.counts.items()), '', *provenance(), '', *self.summary, ''])
         (self.dir / 'rapport.txt').write_text(text)
         Report.failed = Report.failed or self.counts['différents'] > 0
         print('\n' + text + f'Rapport : {self.dir}')

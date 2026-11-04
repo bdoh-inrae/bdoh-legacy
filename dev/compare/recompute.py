@@ -14,9 +14,9 @@ doivent avoir changé. Une chronique qui diffère est recalculée par les foncti
 une transaction annulée, pour séparer l'histoire de la chronique (l'ancien y donne comme le nouveau) d'un
 effet de PostgreSQL 17 ou du portage (dev/audits/2026-11-03_validation-plan.md, constat 3).
 
-Les chroniques cachées ne sortent qu'en comptes, y compris dans les fichiers (CLAUDE.md). Le rapport va
-dans ../bdoh_reference/compare/, hors du dépôt : rapport.txt pour tout, visibles.txt pour le détail des
-chroniques visibles.
+Les chroniques cachées ne sortent qu'en comptes, y compris dans les fichiers : l'outil a tourné sur leurs
+vraies valeurs, et pourra y retourner sur la VM. Le rapport va dans ../bdoh_reference/compare/, hors du
+dépôt : rapport.txt pour tout, visibles.txt pour le détail des chroniques visibles.
 """
 
 import argparse
