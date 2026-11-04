@@ -19,7 +19,7 @@ L'ordre de l'audit, resserré autour de la barrière : ce qui demande de lire de
 - [x] A1. Durcir le comparateur : règle d'arrondi selon la nature du nombre, empreintes sans `concat_ws` et en binaire (`dev/reference/fingerprint.sql`), `plage`, toutes les autres tables, provenance du rapport, code de sortie, tests de ses fonctions (dans les contrôles de GitHub).
 - [x] A2. L'éprouver : altérations SQL (`compare.py selftest`), passe de l'ancien contre l'ancien, fautes remises dans le code (`dev/compare/mutants.py`), toutes les 29 vues.
 - [x] A3. Corriger le calcul en échec qui vide la chronique, avec son cas dans `state`.
-- [ ] A4. Recalcul contre la base : chroniques calculées et converties, les plus profondes d'abord, codes comptés, identifiants vérifiés, tri par l'ancien sur PostgreSQL 11 ; taux de remplissage ; temps et mémoire ; OTHU restaurée, empreinte et taux.
+- [x] A4. Recalcul contre la base : chroniques calculées et converties, les plus profondes d'abord, codes comptés, identifiants vérifiés, tri par l'ancien sur PostgreSQL 11 ; taux de remplissage ; temps et mémoire ; OTHU restaurée, empreinte et taux.
 
 **Phase B, la régénération (Lou lance)**
 
@@ -47,10 +47,7 @@ L'ordre de l'audit, resserré autour de la barrière : ce qui demande de lire de
 
 ## Pour reprendre
 
-État du 4 novembre, en début d'après-midi : A1, A2, A3 et le recalcul de A4 sont faits, et les corrections de la relecture aussi (Suivi). Il reste, dans l'ordre :
-
-1. **Temps et mémoire** : `dev/compare/volumes.py`, jamais lancé, relu et vérifié contre `compare.py`, seul sur la machine. A4 sera alors clos.
-2. **Le signal à Lou pour la phase B**, dans `dev/local/notes-for-lou.md`. Lou peut déjà lancer `make anonymize`, qui ne touche pas aux bases restaurées ; seule la destruction de `postgres/`, `postgres-17/` et `compare/` attend la fin de la phase A.
+État du 4 novembre, après-midi : la phase A est finie. Lou peut lancer `make anonymize` et détruire ce qui vient des anciens dumps (B2). En attendant, ce qui n'en dépend pas : B3 essayé sur la base réduite, puis la couverture (C2), qui ne lit que du code.
 
 Pour rejouer les fautes : `dev/compare/mutants.py` (environ 2 h 30 pour toutes, `--only` pour quelques-unes ; modifie `src/`, rien d'autre en parallèle, dépôt propre). Une faute non vue appelle un cas, un arrêt se lit. Chaque correction de la relecture y a sa faute (« ancien comportement »).
 
@@ -69,6 +66,26 @@ Avant de détruire les rapports (B2) : noter les comptes utiles ici.
 
 ## Suivi
 
+- 2026-11-04, temps et mémoire (`volumes.py`, base complète, plus grosse chronique, 2 397 581 mesures ; une seule passe, ordres de grandeur). Le nouveau n'est plus lent nulle part, et sa mémoire reste voisine :
+
+  ```
+  Export                 ancien             nouveau
+  à l'identique           59 s  328 Mo       43 s  336 Mo
+  instantané, 1 heure     60 s  208 Mo       47 s  193 Mo
+  moyenne, 1 heure       429 s   80 Mo      422 s   88 Mo
+  cumul, 1 jour           48 s   51 Mo       37 s   58 Mo
+
+  Calcul annulé          PostgreSQL 11      PostgreSQL 17
+  calcul                 171 s              150 s
+  taux de remplissage    108 s               89 s
+
+  Page, administrateur   ancien             nouveau
+  nos données            0,7 s  2,4 Mo      0,6 s  2,4 Mo
+  mesures, toute période 11,2 s 1,0 Mo     10,5 s  1,0 Mo
+  historique             0,9 s  2,1 Mo      0,9 s  2,1 Mo
+  ```
+
+  Import d'une archive de 0,8 Mo, 203 748 lignes, en écrasant : 7 s des deux côtés.
 - 2026-11-04, corrections de la relecture (constats 1, 2, 4, 5, 6, 8, 9 ; écarts dans `dev/differences.md`) :
   - Joués sans correction, 6 des 7 cas de `imports` ont échoué comme prévu, avec par exemple 355 mesures écrites pour 99 lues sur les archives de même nom. Avec les corrections, les 7 passent.
   - `/tmp` plein passait sans correction : une ligne coupée au bord du disque fait échouer le `COPY`, sans dire la cause. Le cas exige désormais le message, que seul le nouveau code écrit.
