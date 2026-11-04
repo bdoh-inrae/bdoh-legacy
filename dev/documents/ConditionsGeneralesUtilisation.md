@@ -10,7 +10,7 @@ These conditions apply to the restricted-access time series of BDOH only; all ot
 
 *© INRAE, [add names of additional data producers], [date of download].*
 
-For more detail refer to the French licence agreement below or contact bdoh.support@lists.irstea.fr.
+For more detail refer to the French licence agreement below or contact bdoh.support@listes.inrae.fr.
 
 ## Conditions générales d'utilisation
 
@@ -145,6 +145,6 @@ En cas de désaccord persistant, il est fait attribution de compétence aux juri
 
 ### Article 10 – Contact et conditions spécifiques
 
-Toute autre utilisation de la Base de Données BDOH que celle définie dans les présentes doit être adressée à INRAE à l'adresse bdoh.support@lists.irstea.fr.
+Toute autre utilisation de la Base de Données BDOH que celle définie dans les présentes doit être adressée à INRAE à l'adresse bdoh.support@listes.inrae.fr.
 
 Si INRAE ne répond pas expressément à la demande dans un délai de trente (30) jours, alors la demande est considérée comme refusée.

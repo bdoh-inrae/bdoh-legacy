@@ -77,7 +77,7 @@ Vous pouvez lui attribuer un rôle sur votre observatoire deppuis la page suivan
                 'confirmLater' => 'Passé ce délai, demandez un nouveau lien depuis la page de connexion de BDOH.',
                 'step2'        => "Les données ouvertes se téléchargent sans compte. Pour accéder aux données fermées, il faudra, une fois connecté, faire des demandes d'accès spécifiques sur les observatoires qui vous intéressent via le formulaire de demande d'accès aux données ou contacter un gestionnaire :",
                 'step3'        => "Conformément aux articles 39 et 40 de la loi Informatique et Libertés modifiée par la loi n° 2004-801 du 6 août 2004 relative à la protection des personnes physiques à l'égard des traitements de données à caractère personnel, vous disposez d'un droit d'accès et de rectification des données vous concernant.",
-                'step4'        => 'Pour toute demande de rectification veuillez vous adresser à : bdoh.support@lists.irstea.fr.',
+                'step4'        => 'Pour toute demande de rectification veuillez vous adresser à : bdoh.support@listes.inrae.fr.',
             ],
             'title' => 'Bienvenue sur BDOH',
         ],
@@ -128,7 +128,7 @@ $besoin = [
 $various = [
     'contactGestionnaire'       => 'Pour contacter un gestionnaire de cet observatoire adressez-vous à :',
     'userManual(%link%)'        => "Pour plus d'informations sur l'utilisation de BDOH vous pouvez consulter <a href=\"%link%\">la documentation de BDOH</a>.",
-    'technicalContact'          => "Pour les demandes techniques concernant l'utilisation de BDOH veuillez contacter <a href=\"mailto:bdoh.support@lists.irstea.fr\">bdoh.support@lists.irstea.fr</a>.",
+    'technicalContact'          => "Pour les demandes techniques concernant l'utilisation de BDOH veuillez contacter <a href=\"mailto:bdoh.support@listes.inrae.fr\">bdoh.support@listes.inrae.fr</a>.",
 
     'security' => [
         'login_form'      => [

@@ -47,7 +47,25 @@ L'ordre de l'audit, resserré autour de la barrière : ce qui demande de lire de
 
 ## Pour reprendre
 
-État du 4 novembre, après-midi : la phase A est finie. Lou peut lancer `make anonymize` et détruire ce qui vient des anciens dumps (B2). En attendant, ce qui n'en dépend pas : B3 essayé sur la base réduite, puis la couverture (C2), qui ne lit que du code.
+État à la coupure du 4 novembre, fin d'après-midi. Les phases A et B1 sont finies, et les dumps sont régénérés par Lou (`bdoh_reference/*-anon.dump`, écrits à 15 h 10 et 15 h 35). L'ouverture des données est écrite et fusionnée dans `main` (`dev/plans/2026-11-04_open-data.md`). Le serveur du nouveau BDOH tourne déjà sur les paquets de Debian 13 avec un rôle sans superuser, mais encore sur les bases des anciens dumps. Rien ne tourne. Dans l'ordre :
+
+1. **Détruire ce qui vient des anciens dumps, puis restaurer les nouveaux.** Lou a donné son accord le 4 novembre. Arrêter les trois serveurs (`make stop`, `make reference-stop`), puis retirer dans `../bdoh_reference/` : `postgres/`, `postgres-17/`, `postgres-17-debian/`, `compare/`. Les dumps bruts de `../incident-2026-10-21/` ne bougent pas. Lire d'abord le rapport de chaque dump (`*-anon.txt`) : contrôles à 0. Restaurer ensuite, dans cet ordre :
+   ```
+   make db
+   make db DUMP=../bdoh_reference/bdoh-othu-2026-10-21-anon.dump BASE=bdoh_othu
+   make db-small
+   make db SERVER=new
+   make migrate BASE=bdoh
+   make db SERVER=new DUMP=../bdoh_reference/bdoh-othu-2026-10-21-anon.dump BASE=bdoh_othu
+   make migrate BASE=bdoh_othu
+   make db-small SERVER=new
+   dev/compare/use-base.sh bdoh_small
+   ```
+   La barrière sur les valeurs cachées tombe alors : retirer sa ligne de `CLAUDE.md`, et la section qui en parle dans `dev/local/hidden-series.md`.
+2. **Rejouer tous les modes sur ces dumps** (commandes plus bas), ouverture comprise, et lire leurs écarts, maintenant permis. Nouveau : `state` joue l'ouverture, `imports` les six vrais fichiers de `../bdoh_reference/data-test-import/`.
+3. **Les fautes de l'ouverture** : `mutants.py --only "ouverture :"`, puis toutes une fois, leurs textes ayant changé.
+4. **C1, C2**, puis essayer l'ouverture dans un navigateur (`make browser-check`, à étendre : export sans compte, fenêtre d'une chronique cachée).
+5. **La VM**, selon la réponse de l'équipe infra. Les fichiers déposés de la production (logos, images) sont dans `../bdoh_reference/uploads/bdoh-uploads-prod.tar.gz`, à reprendre dans `public/uploads/` sur la VM ; OTHU n'en a pas.
 
 Pour rejouer les fautes : `dev/compare/mutants.py` (environ 2 h 30 pour toutes, `--only` pour quelques-unes ; modifie `src/`, rien d'autre en parallèle, dépôt propre). Une faute non vue appelle un cas, un arrêt se lit. Chaque correction de la relecture y a sa faute (« ancien comportement »).
 
@@ -66,6 +84,8 @@ Avant de détruire les rapports (B2) : noter les comptes utiles ici.
 
 ## Suivi
 
+- 2026-11-04, les six vrais fichiers d'import donnés par Lou (`../bdoh_reference/data-test-import/`), joués par `imports`, ancien contre nouveau : mêmes réponses à chaque étape, 72/0/0/11, dont les 10 écarts admis. Cinq vont au bout. `mercure_discontinu.txt` a deux plages qui se chevauchent, et les deux BDOH le refusent : c'est juste. Le BOM, les en-têtes en minuscules, les espaces et `UTC+1` passent. Le onzième écart venait de la vérification, qui attendait aussi ce fichier-là au bout : corrigée, pas rejouée.
+- 2026-11-04, fichiers déposés de la production (`../bdoh_reference/uploads/`, empreintes vérifiées) : 104 fichiers, logos et images. OTHU n'en a aucun. Les conditions d'Oracle ont le même texte que celles de BDOH : à la mise en service, vider `observatoire.conditionsutilisation`, pour qu'il prenne le texte actualisé.
 - 2026-11-04, tous les modes sur la base Debian sans superuser, commit 227ba6f, sur les dumps actuels : `state` 44/0/0/0, `imports` 59/0/0/10, `queue` 11/0/0/0, `accounts` 28/0/0/10, `admin` 649/0/0/9, `pages` 1108/0/44/60, `exports` 135/6/0/0, `theia` 38/0/0/0. Aucun écart nouveau, et le rôle sans superuser n'a rien cassé. Rapport de `make anonymize` de la production : 1 tâche de l'ancien sortie sur le code 16, aucune sur le 32. Version 0.2.0 posée là, avant l'ouverture.
 - 2026-11-04, B3 essayé sur les dumps actuels (à refaire sur les dumps régénérés) : serveur sur les paquets de Debian 13 (PostgreSQL 17.11, PostGIS 3.5.2, GEOS 3.13.1, PROJ 9.6.0), rôle `bdoh` sans superuser, propriétaire de ses bases et de ses objets. Production, OTHU et base réduite restaurées en 19 min, les 4 migrations appliquées par ce rôle. Empreintes au bit près contre l'ancien serveur de PostgreSQL 17 : tout identique, `mesure` 2 019 chroniques sur 2 019, `plage` 880, `pointcontrole` 135, `tauxremplissage` 2 019 ; OTHU `mesure` et `tauxremplissage` 57 sur 57.
 - 2026-11-04, temps et mémoire (`volumes.py`, base complète, plus grosse chronique, 2 397 581 mesures ; une seule passe, ordres de grandeur). Le nouveau n'est plus lent nulle part, et sa mémoire reste voisine :

@@ -77,7 +77,7 @@ You can assign him/her a role in your observatory from the following page:',
                 'confirmLater' => 'After that, ask for a new link from the BDOH sign-in page.',
                 'step2'        => 'Open data can be downloaded without an account. To access closed data, once signed in, you will have to make specific access requests on observatories you are interested in by using the data access request form or by contacting a manager:',
                 'step3'        => "Accordance with Articles 39 and 40 of the law “\u{a0}Informatique et Libertés\u{a0}” amended by Law No. 2004-801 of 6 August 2004 on the protection of individuals with regard to the processing of personal data, you have a right to access and rectify data concerning you.",
-                'step4'        => 'To request a correction please contact: <a href="mailto:bdoh.support@lists.irstea.fr">bdoh.support@lists.irstea.fr</a>.',
+                'step4'        => 'To request a correction please contact: <a href="mailto:bdoh.support@listes.inrae.fr">bdoh.support@listes.inrae.fr</a>.',
             ],
             'title' => 'Welcome to BDOH',
         ],
@@ -128,7 +128,7 @@ $besoin = [
 $various = [
     'contactGestionnaire'       => 'To contact a manager of this observatory please contact:',
     'userManual(%link%)'        => 'For more information about using BDOH you may read <a href="%link%">the BDOH documentaion</a>.',
-    'technicalContact'          => 'For technical questions about using BDOH please contact <a href="mailto:bdoh.support@lists.irstea.fr">bdoh.support@lists.irstea.fr</a>.',
+    'technicalContact'          => 'For technical questions about using BDOH please contact <a href="mailto:bdoh.support@listes.inrae.fr">bdoh.support@listes.inrae.fr</a>.',
 
     'security' => [
         'login_form'      => [

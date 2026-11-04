@@ -142,9 +142,15 @@ abstract class AbstractExportCommand extends Command
 
         $parameters['observatoire']->defineAsCurrent();
 
-        $this->exporterBuilder
-            ->getExporter($parameters, $archiver)
-            ->export($chroniques);
+        // Une erreur de PHP (une moyenne demandée sur une chronique discontinue, que l'interface ne propose pas) sort
+        // sur le code 1, comme dans l'ancien, et non sur le 255 d'une erreur fatale
+        try {
+            $this->exporterBuilder
+                ->getExporter($parameters, $archiver)
+                ->export($chroniques);
+        } catch (\Error $e) {
+            throw new \RuntimeException($e->getMessage(), 0, $e);
+        }
 
         if ($user !== null) {
             return 1 - $this->sendLink($archivePath, (int) $jobId, $user, $chroniques, $parameters['observatoire']);

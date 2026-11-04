@@ -2103,9 +2103,12 @@ def run_imports(args):
                            'autres tables': other_tables_lines(bases[name], STATE_QUERIES)}
     for table in sides['ancien']:
         report.add(f'état {table}', sides['ancien'][table], sides['nouveau'][table])
+    # Ce fichier a deux plages qui se chevauchent (lignes 4 et 5) : BDOH doit le refuser, des deux côtés
+    refused = {'mercure_discontinu.txt'}
     for title, action in reached:
-        report.add(f'nouveau seul : fichier réel {title}, importé jusqu’au bout', ['conforme'],
-                   ['conforme' if action == 'action : "step4"' else f'non conforme : {action}'])
+        wanted = 'action : "errors"' if title in refused else 'action : "step4"'
+        report.add(f'nouveau seul : fichier réel {title}, {"refusé" if title in refused else "importé jusqu’au bout"}', ['conforme'],
+                   ['conforme' if action == wanted else f'non conforme : {action}'])
     for table in ('mesure', 'plage'):
         if touched:
             prints = [query(bases[name], FINGERPRINTS[table].replace('GROUP BY', f"WHERE chronique_id IN ({','.join(touched)}) GROUP BY"), NEW_SERVER)
