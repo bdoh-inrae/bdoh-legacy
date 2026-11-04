@@ -6,6 +6,12 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/). Numéros de v
 
 ### Corrigé
 
+- Un import qui échoue en route ne laisse rien : l'ancien BDOH pouvait laisser une période vide, ou une partie de ses chroniques importée sans historique. De même pour les points de contrôle.
+- Un disque plein pendant un import est dit, et rien n'est importé.
+- Deux imports en archive zip menés en même temps ne se mêlent plus quand leur fichier intérieur porte le même nom.
+- À l'import de points de contrôle, une date future est refusée et une valeur écrite `0` acceptée.
+- Vider l'intérieur d'une chronique met bien ses mesures en lacune, même si sa première ou sa dernière mesure a des millisecondes.
+- Une réponse illisible d'un serveur distant n'arrête plus la file de tâches.
 - Un calcul de chronique qui échoue à l'insertion laisse ses mesures en place : l'ancien BDOH la laissait vide, avec des métadonnées qui en annonçaient toujours.
 - Aux imports QJO et Qtvar, une valeur écrite `0` reste un zéro : l'ancien BDOH en faisait une lacune, sans message.
 - À l'import QJO, un trou de plus d'un mois se comble entièrement par des lacunes, et des lignes qui reviennent en arrière n'en ajoutent plus.

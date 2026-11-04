@@ -577,10 +577,10 @@ class MesureRepository extends EntityRepository implements MesureRepositoryInter
      */
     private function parseExtractedDate($extractedDate)
     {
-        return \DateTime::createFromFormat(
-            self::EXTRACTED_DATE_FORMAT,
-            $extractedDate,
-            new \DateTimeZone('UTC')
-        );
+        $utc = new \DateTimeZone('UTC');
+
+        // PostgreSQL n'écrit les millisecondes d'une date que si elle en a
+        return \DateTime::createFromFormat('Y-m-d H:i:s.u T', $extractedDate, $utc)
+            ?: \DateTime::createFromFormat(self::EXTRACTED_DATE_FORMAT, $extractedDate, $utc);
     }
 }

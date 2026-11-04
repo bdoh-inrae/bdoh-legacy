@@ -7,6 +7,7 @@ $errors = [
     'Error.zip.cantCreate'                   => 'Unable to create the ZIP archive',
     'Error.file.cantRead(%file%)'            => "Unable to read file “\u{a0}%file%\u{a0}”",
     'Error.file.cantCreate(%file%)'          => "Unable to create file “\u{a0}%file%\u{a0}”",
+    'Error.file.cantWrite(%file%)'           => "Unable to write to file “\u{a0}%file%\u{a0}”: the disk may be full. Nothing was imported.",
     'Error.file.chmodFailed(%file%,%mode%)'  => "Unable to assign permissions “\u{a0}%mode%\u{a0}” to file “\u{a0}%file%\u{a0}”",
     'Error.baseLessFile.cantCompile(%file%)' => "Unable to compile the LESS base file: “\u{a0}%file%\u{a0}”",
 ];

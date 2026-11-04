@@ -197,7 +197,7 @@ class Job
 
     public function setOutput($output)
     {
-        $this->output = $output;
+        $this->output = self::storable($output);
     }
 
     public function getErrorOutput()
@@ -207,7 +207,16 @@ class Job
 
     public function setErrorOutput($output)
     {
-        $this->errorOutput = $output;
+        $this->errorOutput = self::storable($output);
+    }
+
+    /**
+     * Une sortie peut citer n'importe quoi, comme la réponse d'un serveur distant ; PostgreSQL refuse ce qui
+     * n'est pas de l'UTF-8 ou contient un octet nul, et l'exécuteur tomberait avec ses autres tâches.
+     */
+    private static function storable($text)
+    {
+        return $text === null ? null : str_replace("\0", '', mb_scrub($text, 'UTF-8'));
     }
 
     public function getExitCode()

@@ -1,0 +1,7 @@
+# Un /tmp minuscule pour le nouveau BDOH, le temps d'un essai de compare.py imports : un disque plein, que
+# les imports doivent dire. Se superpose à compose.yaml. L'archive de l'essai, 95 Ko, passe l'envoi ; le CSV
+# qu'en tire l'import, 2 Mo, ne tient pas.
+services:
+  app:
+    tmpfs:
+      - /tmp:size=256k,mode=1777

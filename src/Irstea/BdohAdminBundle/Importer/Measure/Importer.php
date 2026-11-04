@@ -6,6 +6,7 @@ namespace Irstea\BdohAdminBundle\Importer\Measure;
 
 use Doctrine\ORM\EntityManagerInterface;
 use Irstea\BdohAdminBundle\Errors\ImportErrors;
+use Irstea\BdohAdminBundle\Importer\CsvFileTrait;
 use Irstea\BdohAdminBundle\Importer\Measure\Exception\StopImportException;
 use Irstea\BdohBundle\DataTransformer\ToDateTimeMsTransformer;
 use Irstea\BdohBundle\DataTransformer\ToUtcDiffTransformer;
@@ -21,6 +22,8 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 
 abstract class Importer implements ImporterInterface
 {
+    use CsvFileTrait;
+
     const MAX_ERRORS_IN_LOAD_DATA = 10;
 
     /***************************************************************************
@@ -376,6 +379,8 @@ abstract class Importer implements ImporterInterface
             $this->read();
 
             if ($this->errors->isClean()) {
+                $this->checkCsvIsComplete();
+
                 // Gets the correct measures repository
                 /** @var MesureRepositoryInterface $measureRepo */
                 $measureRepo = $this->getBdohRepo($this->typeOfMeasure);
@@ -505,68 +510,73 @@ abstract class Importer implements ImporterInterface
             $numInsertDelete = [];
 
             // For each 'chronique' and depending on its "import type", imports its measures
-            foreach ($importTypes as $chroniqueId => $importType) {
-                if (false === array_key_exists($chroniqueId, $chroniques)) {
-                    continue;
-                }
+            // Tout ou rien : les mesures de toutes les chroniques, leurs métadonnées et les tâches que créent
+            // les écouteurs (dev/differences.md, « Import qui échoue en route »). Par la connexion : le
+            // wrapInTransaction de l'ORM fermerait l'EntityManager, alors que la page doit encore dire l'erreur.
+            $this->em->getConnection()->transactional(function () use ($importTypes, $chroniques, $measureRepo, $user, $dispatcher, &$numInsertDelete) {
+                foreach ($importTypes as $chroniqueId => $importType) {
+                    if (false === array_key_exists($chroniqueId, $chroniques)) {
+                        continue;
+                    }
 
-                $delete = 0;
-                $insert = 0;
-                $effectiveBeginDate = $this->firstDate;
-                $effectiveEndDate = $this->lastDate;
+                    $delete = 0;
+                    $insert = 0;
+                    $effectiveBeginDate = $this->firstDate;
+                    $effectiveEndDate = $this->lastDate;
 
-                if ('keepExisting' === $importType) {
-                    // Dates of first and last existing measures (for Historique purpose)
-                    list($firstExistingDate, $lastExistingDate) = $measureRepo->getFirstLastDates($chroniqueId);
+                    if ('keepExisting' === $importType) {
+                        // Dates of first and last existing measures (for Historique purpose)
+                        list($firstExistingDate, $lastExistingDate) = $measureRepo->getFirstLastDates($chroniqueId);
 
-                    $insert = $measureRepo->keepExistingImport($this->tmpSqlTable, $chroniqueId);
+                        $insert = $measureRepo->keepExistingImport($this->tmpSqlTable, $chroniqueId);
 
-                    if ($firstExistingDate && $lastExistingDate) {
-                        if (($this->lastDate < $firstExistingDate || $this->firstDate > $lastExistingDate) ||
-                            ($this->firstDate < $firstExistingDate && $this->lastDate > $lastExistingDate)) {
-                            //entirely before or after, or both before and after : no change
-                        } elseif ($this->firstDate >= $firstExistingDate && $this->lastDate <= $lastExistingDate) {
-                            //entirely in : we do not import anything
-                            $effectiveBeginDate = null;
-                            $effectiveEndDate = null;
-                        } else { //two cases : we cross the begin or the end of existing measures
-                            if ($this->firstDate < $firstExistingDate) {
-                                //we are crossig the begin
-                                $effectiveEndDate = $firstExistingDate;
-                            } elseif ($this->lastDate > $lastExistingDate) {
-                                //we cross the end
-                                $effectiveBeginDate = $lastExistingDate;
+                        if ($firstExistingDate && $lastExistingDate) {
+                            if (($this->lastDate < $firstExistingDate || $this->firstDate > $lastExistingDate) ||
+                                ($this->firstDate < $firstExistingDate && $this->lastDate > $lastExistingDate)) {
+                                //entirely before or after, or both before and after : no change
+                            } elseif ($this->firstDate >= $firstExistingDate && $this->lastDate <= $lastExistingDate) {
+                                //entirely in : we do not import anything
+                                $effectiveBeginDate = null;
+                                $effectiveEndDate = null;
+                            } else { //two cases : we cross the begin or the end of existing measures
+                                if ($this->firstDate < $firstExistingDate) {
+                                    //we are crossig the begin
+                                    $effectiveEndDate = $firstExistingDate;
+                                } elseif ($this->lastDate > $lastExistingDate) {
+                                    //we cross the end
+                                    $effectiveBeginDate = $lastExistingDate;
+                                }
                             }
                         }
+                    } elseif ('overwriteExisting' === $importType) {
+                        list($delete, $insert) = $measureRepo->overwriteExistingImport(
+                            $this->tmpSqlTable,
+                            $chroniqueId,
+                            $this->firstDate,
+                            $this->lastDate
+                        );
                     }
-                } elseif ('overwriteExisting' === $importType) {
-                    list($delete, $insert) = $measureRepo->overwriteExistingImport(
-                        $this->tmpSqlTable,
-                        $chroniqueId,
-                        $this->firstDate,
-                        $this->lastDate
-                    );
-                }
 
-                $numInsertDelete[(string) $chroniques[$chroniqueId]] = [
-                    'entity'    => $chroniques[$chroniqueId],
-                    'delete'    => $delete,
-                    'insert'    => $insert,
-                    'beginDate' => $effectiveBeginDate,
-                    'endDate'   => $effectiveEndDate,
-                ];
+                    $numInsertDelete[(string) $chroniques[$chroniqueId]] = [
+                        'entity'    => $chroniques[$chroniqueId],
+                        'delete'    => $delete,
+                        'insert'    => $insert,
+                        'beginDate' => $effectiveBeginDate,
+                        'endDate'   => $effectiveEndDate,
+                    ];
 
-                if ($chroniques[$chroniqueId] && $delete + $insert > 0) {
-                    $event = new MeasuresUpdateEvent(
-                        $chroniques[$chroniqueId],
-                        $user,
-                        null,
-                        null,
-                        $this->propagate
-                    );
-                    $dispatcher->dispatch($event, Events::MEASURES_UPDATE);
+                    if ($chroniques[$chroniqueId] && $delete + $insert > 0) {
+                        $event = new MeasuresUpdateEvent(
+                            $chroniques[$chroniqueId],
+                            $user,
+                            null,
+                            null,
+                            $this->propagate
+                        );
+                        $dispatcher->dispatch($event, Events::MEASURES_UPDATE);
+                    }
                 }
-            }
+            });
 
             // Measures import is now finished ! So, cleans the importer.
             $this->clean();
@@ -829,7 +839,7 @@ abstract class Importer implements ImporterInterface
             is_numeric($minimum) ? $minimum : '\\N',
             is_numeric($maximum) ? $maximum : '\\N',
         ];
-        fputcsv($this->csv, $fields, ';', '"', '\\');
+        $this->writeCsvLine($fields);
     }
 
     /**
@@ -887,7 +897,7 @@ abstract class Importer implements ImporterInterface
             is_numeric($minimum) ? $minimum : '\\N',
             is_numeric($maximum) ? $maximum : '\\N',
         ];
-        fputcsv($this->csv, $fields, ';', '"', '\\');
+        $this->writeCsvLine($fields);
     }
 
     /**

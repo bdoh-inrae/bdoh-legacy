@@ -37,12 +37,13 @@ MEASURES = SRC + 'BdohDataBundle/Entity/Repository/MesureRepository.php'
 EXTRACTOR = SRC + 'BdohDataBundle/Exporter/Measure/Extractor/AbstractExtractor.php'
 RUNNER = SRC + 'BdohBundle/Job/RunJobsCommand.php'
 STATIONS = SRC + 'BdohDataBundle/Entity/Repository/StationRepository.php'
+CONTROLES = SRC + 'BdohAdminBundle/Importer/Controle/Manager.php'
 
 # (nom, mode, --only, fichier, texte, remplacement) ; le texte doit se trouver, et tous ses exemplaires changent
 PHP = [
     ('import : minimum et maximum échangés', 'imports', 'minimum au-dessus', IMPORTER,
-     "            is_numeric($minimum) ? $minimum : '\\\\N',\n            is_numeric($maximum) ? $maximum : '\\\\N',\n        ];\n        fputcsv($this->csv, $fields, ';', '\"', '\\\\');\n    }\n\n    /**\n     * Process of a 'Plage'",
-     "            is_numeric($maximum) ? $maximum : '\\\\N',\n            is_numeric($minimum) ? $minimum : '\\\\N',\n        ];\n        fputcsv($this->csv, $fields, ';', '\"', '\\\\');\n    }\n\n    /**\n     * Process of a 'Plage'"),
+     "            is_numeric($minimum) ? $minimum : '\\\\N',\n            is_numeric($maximum) ? $maximum : '\\\\N',\n        ];\n        $this->writeCsvLine($fields);\n    }\n\n    /**\n     * Process of a 'Plage'",
+     "            is_numeric($maximum) ? $maximum : '\\\\N',\n            is_numeric($minimum) ? $minimum : '\\\\N',\n        ];\n        $this->writeCsvLine($fields);\n    }\n\n    /**\n     * Process of a 'Plage'"),
     ("import : décalage horaire du fichier oublié", 'imports', 'fuseau UTC-05', IMPORTER,
      '$measureRepo->adjustDates($tmpTz, $this->tmpSqlTable);', '// $measureRepo->adjustDates($tmpTz, $this->tmpSqlTable);'),
     ('import, écraser : la dernière date gardée', 'imports', 'écraser', MEASURES,
@@ -53,13 +54,32 @@ PHP = [
     ('import de plages : valeur changée', 'imports', 'plages', SRC + 'BdohAdminBundle/Importer/Measure/BdohPlageImporter.php',
      '$this->processPlage($iChronique, $debut, $fin, $value, $quality, $min, $max, $numLine);',
      '$this->processPlage($iChronique, $debut, $fin, is_numeric($value) ? $value + 1 : $value, $quality, $min, $max, $numLine);'),
-    ('points de contrôle : minimum et maximum échangés', 'imports', 'contrôle', SRC + 'BdohAdminBundle/Importer/Controle/Manager.php',
+    ('points de contrôle : minimum et maximum échangés', 'imports', 'contrôle', CONTROLES,
      "            is_numeric($minimum) ? $minimum : '\\\\N',\n            is_numeric($maximum) ? $maximum : '\\\\N',\n        ];",
      "            is_numeric($maximum) ? $maximum : '\\\\N',\n            is_numeric($minimum) ? $minimum : '\\\\N',\n        ];"),
     ('import QJO : trou compté par ->d (piège de PHP)', 'imports', 'QJO', SRC + 'BdohAdminBundle/Importer/Measure/QjoImporter.php',
      '$days = $interval->invert ? 0 : $interval->days;', '$days = $interval->invert ? 0 : $interval->d;'),
     ('shapefile : latitude et longitude échangées', 'imports', 'shapefile', STATIONS,
      'latitude=ST_X(ST_GeometryN(t.geom, 1))', 'latitude=ST_Y(ST_GeometryN(t.geom, 1))'),
+    # Les corrections de la relecture de ce qui écrit (dev/differences.md) : chacune retirée, son cas doit la voir
+    ('import : sans transaction (ancien comportement)', 'imports', 'pannes', IMPORTER,
+     '$this->em->getConnection()->transactional(function', '\\call_user_func(function'),
+    ('points de contrôle : sans transaction (ancien comportement)', 'imports', 'pannes', CONTROLES,
+     '$this->em->getConnection()->transactional(\n                    fn () => $this->controleRepo->import($this->tmpSqlTable, $chroniqueId)\n                );',
+     '$this->controleRepo->import($this->tmpSqlTable, $chroniqueId);'),
+    ('archive : extraite sous son nom (ancien comportement)', 'imports', 'pannes', SRC + 'BdohAdminBundle/IrsteaBdohAdminBundle.php',
+     '$firstFile = self::copyEntry($zip, 0, $destDir);',
+     '$firstFile = $zip->extractTo($destDir, $name) ? $destDir . DIRECTORY_SEPARATOR . $name : null;'),
+    ('CSV : disque plein tu (ancien comportement)', 'imports', 'pannes', SRC + 'BdohAdminBundle/Importer/CsvFileTrait.php',
+     'throw new \\RuntimeException($this->cantWriteCsvMessage());', 'return;'),
+    ('points de contrôle : date future acceptée (ancien comportement)', 'imports', 'pannes', CONTROLES,
+     '$tmpDate > $this->nowAsString', '$tmpDate > $this->now'),
+    ('points de contrôle : valeur 0 refusée (ancien comportement)', 'imports', 'pannes', CONTROLES,
+     "// Check value\n        if (!\\is_numeric($valeur)) {", "// Check value\n        if (!$valeur) {\n            $valeur = '';\n        }\n        if (!\\is_numeric($valeur)) {"),
+    ('vider une période : millisecondes non lues (ancien comportement)', 'state', '', MEASURES,
+     "\\DateTime::createFromFormat('Y-m-d H:i:s.u T', $extractedDate, $utc)\n            ?: ", ''),
+    ('tâche : sortie écrite telle quelle (ancien comportement)', 'theia', '', SRC + 'BdohBundle/Job/Job.php',
+     "str_replace(\"\\0\", '', mb_scrub($text, 'UTF-8'))", '$text'),
     ('calcul en échec : la chronique vidée (ancien comportement)', 'state', '', SRC + 'BdohDataBundle/Command/ComputeChroniqueCommand.php',
      "throw new \\RuntimeException(sprintf('Le calcul de la chronique", "if (false) throw new \\RuntimeException(sprintf('Le calcul de la chronique"),
     ('calcul : pas de propagation aux filles', 'state', '', SRC + 'BdohDataBundle/EventListener/ChronicleListener.php',
@@ -128,6 +148,8 @@ def play(mode, only, base, inject=None):
     """Le mode, sa sortie dans un journal qu'on ne lit pas : ses comptes, l'empreinte de chaque fichier
     d'écarts (sans le lire ici pour le montrer), et sa durée. Sans rapport écrit, le mode s'est arrêté :
     les comptes valent alors None, et les écarts laissent place à sa dernière ligne d'erreur."""
+    # Les envois de theia ne vont au bout que sur la base complète
+    base = 'bdoh' if mode == 'theia' else base
     command = [sys.executable, '-B', str(ROOT / 'dev/compare/compare.py'), mode, '--base', base]
     if mode in ('pages', 'exports'):
         command += ['--old', 'reference', '--new', 'new']
@@ -139,6 +161,8 @@ def play(mode, only, base, inject=None):
     start = time.monotonic()
     done = subprocess.run(command, capture_output=True, text=True)
     seconds = time.monotonic() - start
+    if mode == 'theia':
+        subprocess.run([str(ROOT / 'dev/compare/use-base.sh'), 'bdoh_small'], capture_output=True)
     written = sorted(path for path in set(compare.OUT.glob(f'*_{mode}')) - before if (path / 'rapport.txt').exists())
     if not written:
         return None, (done.stderr.strip().splitlines() or ['sans message'])[-1][:200], seconds

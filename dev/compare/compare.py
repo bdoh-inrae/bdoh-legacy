@@ -40,6 +40,7 @@ import html.parser
 import http.cookiejar
 import io
 import json
+import os
 import re
 import subprocess
 import sys
@@ -1521,21 +1522,35 @@ def shape_cases(base, slug):
 
 
 @contextlib.contextmanager
-def small_tmp(size='256k'):
-    """Un /tmp minuscule dans le conteneur du nouveau, le temps du bloc : une panne que les imports doivent dire."""
-    subprocess.run(['docker', 'exec', '--privileged', 'bdoh-app', 'mount', '-t', 'tmpfs', '-o', f'size={size},mode=1777',
-                    'tmpfs', '/tmp'], check=True, capture_output=True)
+def small_tmp():
+    """Un /tmp minuscule pour le nouveau, le temps du bloc : une panne que les imports doivent dire. Le conteneur
+    d'une image sans droit de monter quoi que ce soit se recrée, et ses sessions partent avec lui : se connecter
+    dans le bloc."""
+    def app(*files):
+        env = {**os.environ, 'HOST_UID': str(os.getuid()), 'HOST_GID': str(os.getgid()), 'REFERENCE_DIR': str(OUT.parent)}
+        subprocess.run(['docker', 'compose', '-f', str(HERE.parent.parent / 'compose.yaml'), *files, 'up', '-d', '--no-deps', 'app'],
+                       check=True, capture_output=True, env=env)
+        for _ in range(120):
+            try:
+                Client(SIDES['new'], None, '').get('/')
+                return
+            except OSError:
+                time.sleep(0.5)
+        raise RuntimeError('le nouveau BDOH ne répond plus')
+
+    app('-f', str(HERE / 'small-tmp.yaml'))
     try:
         yield
     finally:
-        subprocess.run(['docker', 'exec', '--privileged', 'bdoh-app', 'umount', '-l', '/tmp'], check=True, capture_output=True)
+        app()
 
 
-def import_failure_checks(template, base):
+def import_failure_checks(template, base, check):
     """Ce que seul le nouveau garantit d'un import, sur sa copie, une fois le reste comparé : tout ou rien quand la
-    base refuse une écriture, deux archives de même nom qui ne se mêlent pas, /tmp plein dit, et le contrôle des
-    points de contrôle (dev/differences.md, « Import qui échoue en route », « Archives de même nom », « Points de
-    contrôle »). Chaque panne est provoquée ; rien ne se lit des mesures que des comptes et des empreintes."""
+    base refuse une écriture, deux archives de même nom qui ne se mêlent pas, le contrôle des points de contrôle,
+    /tmp plein dit (dev/differences.md, « Import qui échoue en route », « Archives de même nom », « Points de
+    contrôle »). Chaque panne est provoquée ; rien ne se lit des mesures que des comptes et des empreintes.
+    check(nom, lignes) note chaque résultat dès qu'il est connu, pour qu'un arrêt ne perde pas les précédents."""
     cid, slug, controles = controle_cases(template)
     station, code, unite = query(template, f"""
         SELECT c.station, c.code, u.libelle FROM ({CHRONIQUES}) c JOIN chronique ch ON ch.id = c.id
@@ -1578,8 +1593,6 @@ def import_failure_checks(template, base):
             lines += ['== étape 3', *step_lines(site, *response)]
         return lines
 
-    checks = {}
-
     def refused(label, run, table, refused_id, *watched):
         """La base refuse d'écrire sur une chronique : rien ne change, et l'import ne se dit pas réussi."""
         before = prints(table, *watched), jobs()
@@ -1587,8 +1600,8 @@ def import_failure_checks(template, base):
             log = run()
         kept = (prints(table, *watched), jobs()) == before
         told = not any(line.endswith('"step4"') for line in log)
-        checks[label] = (['conforme'] if kept and told and before[0]
-                         else [f'{len(before[0])} chroniques vues ; données {"gardées" if kept else "changées"}, réussite {"tue" if told else "annoncée"}'])
+        check(label, ['conforme'] if kept and told and before[0]
+              else [f'{len(before[0])} chroniques vues ; données {"gardées" if kept else "changées"}, réussite {"tue" if told else "annoncée"}'])
 
     refused('nouveau seul : écraser, insertion refusée, période gardée',
             lambda: import_steps(client, site, measures(one)), 'mesure', cid, cid)
@@ -1620,9 +1633,19 @@ def import_failure_checks(template, base):
 
     import_steps(client, site, {**first, 'content': archive(first['content']), 'filename': 'mesures.zip'}, second_upload)
     written = len(period(1))
-    checks['nouveau seul : deux archives de même nom, chacune garde son fichier'] = (
-        ['conforme'] if written >= expected > 0 and period(2) == other_period
-        else [f"{written} mesures écrites pour {expected} lues ; l'autre période {'gardée' if period(2) == other_period else 'changée'}"])
+    check('nouveau seul : deux archives de même nom, chacune garde son fichier',
+          ['conforme'] if written >= expected > 0 and period(2) == other_period
+          else [f"{written} mesures écrites pour {expected} lues ; l'autre période {'gardée' if period(2) == other_period else 'changée'}"])
+
+    # Points de contrôle : une date future refusée, une valeur écrite 0 acceptée
+    head = controles[0][1].decode().splitlines()[:3]
+    sample = controles[0][1].decode().splitlines()[3].split(';')
+    controle_import(('\n'.join([*head, f'01/01/2042 00:00:00;1;{sample[2]}']) + '\n').encode())
+    future = query(base, f'SELECT count(*) FROM pointcontrole WHERE chronique_id = {cid} AND date > now()', NEW_SERVER)[0][0]
+    check('nouveau seul : point de contrôle daté dans le futur, refusé', ['conforme'] if future == '0' else [f'{future} points dans le futur'])
+    controle_import(('\n'.join([*head, f'{sample[0]};0;{sample[2]}']) + '\n').encode())
+    zero = query(base, f'SELECT count(*) FROM pointcontrole WHERE chronique_id = {cid} AND valeur = 0', NEW_SERVER)[0][0]
+    check('nouveau seul : point de contrôle de valeur 0, accepté', ['conforme'] if zero == '1' else [f'{zero} points à zéro'])
 
     # /tmp plein pendant la lecture : une erreur, et rien d'écrit. Le fichier se comprime assez pour passer l'envoi.
     lines = [one[0], one[1], one[2], *[f'{day:02}/01/1990 {hour:02}:{minute:02}:00;1.5;{rows[0][2]}'
@@ -1630,22 +1653,11 @@ def import_failure_checks(template, base):
     count = lambda: query(base, f"SELECT count(*) FROM mesure WHERE chronique_id = {cid} AND date < '1991-01-01' AND date >= '1990-01-01'", NEW_SERVER)[0][0]
     before = count()
     with small_tmp():
-        log = import_steps(client, site, {**measures(lines), 'content': archive(('\n'.join(lines) + '\n').encode()),
-                                          'filename': 'mesures.zip'})
-    told = not any(line.endswith('"step4"') for line in log)
-    checks['nouveau seul : /tmp plein, une erreur et rien d’écrit'] = (
-        ['conforme'] if told and count() == before else [f'{before} mesures avant, {count()} après ; réussite {"tue" if told else "annoncée"}'])
-
-    # Points de contrôle : une date future refusée, une valeur écrite 0 acceptée
-    head = controles[0][1].decode().splitlines()[:3]
-    sample = controles[0][1].decode().splitlines()[3].split(';')
-    controle_import(('\n'.join([*head, f'01/01/2042 00:00:00;1;{sample[2]}']) + '\n').encode())
-    future = query(base, f'SELECT count(*) FROM pointcontrole WHERE chronique_id = {cid} AND date > now()', NEW_SERVER)[0][0]
-    checks['nouveau seul : point de contrôle daté dans le futur, refusé'] = ['conforme'] if future == '0' else [f'{future} points dans le futur']
-    controle_import(('\n'.join([*head, f'{sample[0]};0;{sample[2]}']) + '\n').encode())
-    zero = query(base, f'SELECT count(*) FROM pointcontrole WHERE chronique_id = {cid} AND valeur = 0', NEW_SERVER)[0][0]
-    checks['nouveau seul : point de contrôle de valeur 0, accepté'] = ['conforme'] if zero == '1' else [f'{zero} points à zéro']
-    return checks
+        log = import_steps(Client(SIDES['new'], manager, slug), site,
+                           {**measures(lines), 'content': archive(('\n'.join(lines) + '\n').encode()), 'filename': 'mesures.zip'})
+    told = any('crire dans le fichier' in line for line in log)
+    check('nouveau seul : /tmp plein, dit, et rien d’écrit',
+          ['conforme'] if told and count() == before else [f'{before} mesures avant, {count()} après ; disque plein {"dit" if told else "tu"}', *log[-4:]])
 
 
 def run_imports(args):
@@ -1827,11 +1839,13 @@ def run_imports(args):
         expected = sum(hydro[c['name']][0] for c in played)
         report.add('nouveau seul : seules ces mesures diffèrent de l’ancien', ['conforme'],
                    ['conforme' if changed == expected else f'non conforme : {changed} au lieu de {expected}'])
-    if not args.only:
-        with new_on(bases['nouveau'], template):
-            for label, lines in import_failure_checks(template, bases['nouveau']).items():
-                report.add(label, ['conforme'], lines)
-    report.close()
+    try:
+        # --only pannes : ces vérifications seules, sur des copies neuves
+        if not args.only or args.only == 'pannes':
+            with new_on(bases['nouveau'], template):
+                import_failure_checks(template, bases['nouveau'], lambda label, lines: report.add(label, ['conforme'], lines))
+    finally:
+        report.close()
     print(f'Les instances lisent de nouveau {template}. Les deux copies restent pour examen :'
           f' {bases["ancien"]} et {bases["nouveau"]}.')
 

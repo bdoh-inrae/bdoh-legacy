@@ -47,19 +47,13 @@ L'ordre de l'audit, resserré autour de la barrière : ce qui demande de lire de
 
 ## Pour reprendre
 
-État à la coupure du 4 novembre, en fin de matinée : tout est commité et poussé, rien ne tourne, et aucune correction de `src/` n'est commencée. A1, A2, A3 sont faits, et le recalcul de A4 aussi (Suivi ci-dessous). Il reste de la phase A : les corrections de la relecture, temps et mémoire. Dans l'ordre :
+État du 4 novembre, en début d'après-midi : A1, A2, A3 et le recalcul de A4 sont faits, et les corrections de la relecture aussi (Suivi). Il reste, dans l'ordre :
 
-1. **Les corrections de la relecture** (constats dans le Suivi). Les cas sont écrits dans `compare.py` et n'ont **jamais été joués** : ils peuvent avoir leurs propres défauts. Les jouer d'abord sans correction, pour voir chacun échouer : `compare.py imports --base bdoh_small`, `state --base bdoh_small`, `theia --base bdoh` (puis `use-base.sh bdoh_small`). Corriger, rejouer, puis écrire chaque écart dans `dev/differences.md` sous le nom que citent les cas, et dans `CHANGELOG.md` (Corrigé). Ce qui est prévu :
-   - **Import tout ou rien (constats 1 et 2).** Dans `Importer::importData` (`BdohAdminBundle/Importer/Measure/Importer.php`), la boucle sur les chroniques passe dans `$this->em->getConnection()->transactional(...)` ; de même l'appel `controleRepo->import` de `Importer/Controle/Manager.php`. Pas `wrapInTransaction` de l'ORM, qui ferme l'EntityManager sur une exception alors que la page doit encore dire l'erreur. Les tâches créées par les écouteurs entrent dans la transaction, et n'apparaissent donc qu'avec les mesures. À vérifier : aucun écouteur de `EventListener/` ne valide lui-même. Noms dans `dev/differences.md` : « Import qui échoue en route ».
-   - **Sortie de tâche (4).** `Job::setOutput` et `setErrorOutput` (`BdohBundle/Job/Job.php`) : `str_replace("\0", '', mb_scrub($text, 'UTF-8'))`. `mb_scrub` existe dans `bdoh-app` (essayé). Nom : « Sortie de tâche illisible ».
-   - **Archives de même nom (5).** `IrsteaBdohAdminBundle::unzipFirst` copie le fichier par `$zip->getStream($name)` vers `tempnam($destDir, 'unzip_')`, sans plus l'extraire sous le nom qu'il a dans l'archive. Pas regardé : `unzipAll`, celui des shapefiles, a-t-il le même défaut ?
-   - **CSV (6).** `fputcsv` rend `false` sur un disque plein (essayé sur `/dev/full` dans `bdoh-app`). Contrôler ce retour aux trois appels (`Importer.php`, deux fois, `Manager.php`) et lever une exception. Une écriture partielle rend un compte sans erreur : avant le `COPY`, vérifier aussi que le fichier finit par un saut de ligne, ce qui couvre une dernière ligne coupée. Le cas `small_tmp` demande `docker exec --privileged`, pas encore essayé.
-   - **Millisecondes (8).** `MesureRepository::parseExtractedDate` : essayer `Y-m-d H:i:s.u T`, puis le format actuel. Nom : « Vider une période, dernière mesure à millisecondes ».
-   - **Points de contrôle (9).** `Manager.php`, `$tmpDate > $this->nowAsString` comme aux mesures ; et ne plus changer `'0'` en `''`. Nom : « Points de contrôle ».
-2. **Temps et mémoire** : `dev/compare/volumes.py`, jamais lancé, relu et vérifié contre `compare.py`. A4 sera alors clos.
-3. **Rapport court à Lou pour la phase B**, puisque B2 lui revient : le résultat de la phase A, ce qu'elle doit lancer, ce que `dev/local/hidden-series.md` dit rester après régénération, et les questions de fait ci-dessus.
+1. **Vérifier que les cas voient leur correction** : `mutants.py --only "ancien comportement"`, 9 fautes, environ 1 h. Une faute non vue appelle un cas.
+2. **Temps et mémoire** : `dev/compare/volumes.py`, jamais lancé, relu et vérifié contre `compare.py`, seul sur la machine. A4 sera alors clos.
+3. **Le signal à Lou pour la phase B**, dans `dev/local/notes-for-lou.md`. Lou peut déjà lancer `make anonymize`, qui ne touche pas aux bases restaurées ; seule la destruction de `postgres/`, `postgres-17/` et `compare/` attend la fin de la phase A.
 
-Pour rejouer les fautes : `dev/compare/mutants.py` (environ 2 h 30 pour toutes, `--only` pour quelques-unes ; modifie `src/`, rien d'autre en parallèle, dépôt propre). Une faute non vue appelle un cas, un arrêt se lit. Une fois les corrections faites, y ajouter une faute par correction serait utile.
+Pour rejouer les fautes : `dev/compare/mutants.py` (environ 2 h 30 pour toutes, `--only` pour quelques-unes ; modifie `src/`, rien d'autre en parallèle, dépôt propre). Une faute non vue appelle un cas, un arrêt se lit. Chaque correction de la relecture y a sa faute (« ancien comportement »).
 
 Pour jouer tous les modes, l'un après l'autre (environ 1 h 10) :
 
@@ -76,6 +70,12 @@ Avant de détruire les rapports (B2) : noter les comptes utiles ici.
 
 ## Suivi
 
+- 2026-11-04, corrections de la relecture (constats 1, 2, 4, 5, 6, 8, 9 ; écarts dans `dev/differences.md`) :
+  - Joués sans correction, 6 des 7 cas de `imports` ont échoué comme prévu, avec par exemple 355 mesures écrites pour 99 lues sur les archives de même nom. Avec les corrections, les 7 passent.
+  - `/tmp` plein passait sans correction : une ligne coupée au bord du disque fait échouer le `COPY`, sans dire la cause. Le cas exige désormais le message, que seul le nouveau code écrit.
+  - Le montage d'un `/tmp` minuscule est refusé même en root avec `docker exec --privileged`. `small_tmp` recrée le conteneur avec `dev/compare/small-tmp.yaml`, ce qui perd ses sessions : on se connecte dans le bloc.
+  - Un arrêt du mode perdait le rapport entier. Les vérifications de panne s'y écrivent au fil de l'eau, et `imports --only pannes` les joue seules, en 75 s.
+  - Passes avec les corrections : `imports` 59/0/0/10, les 10 mêmes écarts admis qu'avant ; `state` 44/0/0/0 ; `theia` sur `bdoh` 38/0/0/0, en 15 min.
 - 2026-11-04, ce qui est privé (décision 2, plus haut) : `dev/anonymize/anonymize.sql` ne traite plus que les valeurs, et plus les codes, les libellés, les stations, les sites, l'historique ni les barèmes. Rejoué sur une copie jetable de la base réduite, sous PostgreSQL 11, en 54 s : contrôles à 0 ; au bit près, toutes les chroniques visibles restent identiques (467 mesures, 746 plages, 98 points) et tous les taux de remplissage aussi ; toutes les cachées changent, sauf une qui n'a que des lacunes. Cet essai a montré un défaut, corrigé : une chronique cachée à valeur unique gardait sa vraie valeur (bornes égales), ce que le contrôle du rapport ne voyait pas ; 8 cas dans la base complète, d'après les comptes.
 - 2026-11-04, recalcul de la base complète, 67 min en tout (et non 3 à 5 h, l'estimation venait de l'audit), commit 98fcd2e, rapport `2026-11-04_075855_recompute` :
   - Codes : 422 calculées au code 0, 151 converties au code 0. Les 28 calculées au code 255 et la convertie au code 1 sont exactement les 28 chroniques calculées sans première transformation et la convertie sans conversion, configurations déjà connues et refusées proprement.

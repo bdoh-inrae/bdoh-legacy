@@ -6,6 +6,7 @@ namespace Irstea\BdohAdminBundle\Importer\Controle;
 
 use Doctrine\ORM\EntityManagerInterface;
 use Irstea\BdohAdminBundle\Errors\ImportErrors;
+use Irstea\BdohAdminBundle\Importer\CsvFileTrait;
 use Irstea\BdohAdminBundle\Importer\Measure\Exception\StopImportException;
 use Irstea\BdohBundle\DataTransformer\FromDateTimeMsTransformer;
 use Irstea\BdohDataBundle\Entity\Chronique;
@@ -21,6 +22,8 @@ use Symfony\Contracts\Translation\TranslatorInterface;
  */
 class Manager
 {
+    use CsvFileTrait;
+
     const GAP_VALUE = '-9999';
 
     const TMP_DIR = '/tmp/';
@@ -463,6 +466,8 @@ class Manager
             $this->read();
 
             if ($this->errors->isClean()) {
+                $this->checkCsvIsComplete();
+
                 // Creates a temporary SQL table
                 $this->tmpSqlTable = $this->controleRepo->createTemporaryTable();
                 // And inserts controles in it (from the CSV file)
@@ -538,7 +543,10 @@ class Manager
             $effectiveEndDate = $this->lastDate;
 
             if ('import' === $importType) {
-                list($delete, $insert) = $this->controleRepo->import($this->tmpSqlTable, $chroniqueId);
+                // Tout ou rien : les anciens points ne partent qu'avec l'arrivée des nouveaux
+                list($delete, $insert) = $this->em->getConnection()->transactional(
+                    fn () => $this->controleRepo->import($this->tmpSqlTable, $chroniqueId)
+                );
             }
 
             $numInsertDelete[(string) $chronique] = [
@@ -714,16 +722,13 @@ class Manager
         // Validates/transforms 'date' with the validateDateTimeMs() function, and checks the result
         if (!($tmpDate = $this->validateDateTimeMs($date))) {
             $this->errors->dateInvalidFormat($numLine, $date, $valeur);
-        } elseif ($tmpDate > $this->now) {
+        } elseif ($tmpDate > $this->nowAsString) {
             $this->errors->dateAfterNow($numLine, $date, $valeur);
         } else {
             $date = $tmpDate;
         }
 
         // Check value
-        if (!$valeur) {
-            $valeur = '';
-        }
         if (!\is_numeric($valeur)) {
             $this->errors->valeurNotNumeric($numLine, $date, $valeur);
         }
@@ -762,7 +767,7 @@ class Manager
             is_numeric($minimum) ? $minimum : '\\N',
             is_numeric($maximum) ? $maximum : '\\N',
         ];
-        fputcsv($this->csv, $fields, ';', '"', '\\');
+        $this->writeCsvLine($fields);
     }
 
     /**
