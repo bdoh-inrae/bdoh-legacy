@@ -24,8 +24,8 @@ L'ordre de l'audit, resserré autour de la barrière : ce qui demande de lire de
 **Phase B, la régénération (Lou lance)**
 
 - [x] B1. `dev/anonymize/anonymize.sql` : chroniques cachées traitées, rapport qui s'arrête s'il en reste ; essayé sur des lignes inventées.
-- [ ] B2. Lou lance `make anonymize` sur les deux dumps bruts, détruit ce qui vient des anciens dumps.
-- [ ] B3. Base de développement sur les paquets de Debian 13, rôle sans superuser ; restauration.
+- [ ] B2. Dumps régénérés par Lou le 4 novembre ; reste à détruire ce qui vient des anciens (accord de Lou, « Pour reprendre »).
+- [ ] B3. Base de développement sur les paquets de Debian 13, rôle sans superuser : en place et éprouvée sur les anciens dumps ; reste la restauration des nouveaux.
 
 **Phase C, barrière tombée**
 
@@ -42,7 +42,6 @@ L'ordre de l'audit, resserré autour de la barrière : ce qui demande de lire de
 
 ## Ce qui reste à Lou
 
-- Lancer `make anonymize` (B2), au signal de Claude, une fois la phase A finie.
 - Des fichiers d'import réels, si les gestionnaires peuvent en donner quelques-uns, sans urgence : ils restent hors du dépôt, et se rejouent par `compare.py imports`. Les tâches à code 16 ou 32 sont comptées par le rapport de `make anonymize`, et la collation est fixée de notre côté.
 
 ## Pour reprendre
@@ -84,6 +83,7 @@ Avant de détruire les rapports (B2) : noter les comptes utiles ici.
 
 ## Suivi
 
+- 2026-11-04, avant la coupure : `state` 81/0/0/0 au commit 7624351, cas d'ouverture compris, et analyse statique sans erreur. `imports` a tourné avant la dernière correction (72/0/0/11, voir plus bas), les autres modes avant l'ouverture : à rejouer sur les nouveaux dumps. Les fautes de l'ouverture n'ont pas encore tourné.
 - 2026-11-04, les six vrais fichiers d'import donnés par Lou (`../bdoh_reference/data-test-import/`), joués par `imports`, ancien contre nouveau : mêmes réponses à chaque étape, 72/0/0/11, dont les 10 écarts admis. Cinq vont au bout. `mercure_discontinu.txt` a deux plages qui se chevauchent, et les deux BDOH le refusent : c'est juste. Le BOM, les en-têtes en minuscules, les espaces et `UTC+1` passent. Le onzième écart venait de la vérification, qui attendait aussi ce fichier-là au bout : corrigée, pas rejouée.
 - 2026-11-04, fichiers déposés de la production (`../bdoh_reference/uploads/`, empreintes vérifiées) : 104 fichiers, logos et images. OTHU n'en a aucun. Les conditions d'Oracle ont le même texte que celles de BDOH : à la mise en service, vider `observatoire.conditionsutilisation`, pour qu'il prenne le texte actualisé.
 - 2026-11-04, tous les modes sur la base Debian sans superuser, commit 227ba6f, sur les dumps actuels : `state` 44/0/0/0, `imports` 59/0/0/10, `queue` 11/0/0/0, `accounts` 28/0/0/10, `admin` 649/0/0/9, `pages` 1108/0/44/60, `exports` 135/6/0/0, `theia` 38/0/0/0. Aucun écart nouveau, et le rôle sans superuser n'a rien cassé. Rapport de `make anonymize` de la production : 1 tâche de l'ancien sortie sur le code 16, aucune sur le 32. Version 0.2.0 posée là, avant l'ouverture.

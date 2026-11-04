@@ -38,7 +38,7 @@ Ce qui améliore nettement l'expérience, la sécurité ou la maintenance pour p
 
 ## Ouvrir les données, avant les essais
 
-Objectif minimum fixé par Lou le 3 novembre. À faire une fois l'identité avec l'ancien prouvée, comparé à part, pour que les testeurs voient l'ouverture elle-même et donnent leur aval (Lou, 4 novembre). Ce qui est décidé et pourquoi : `dev/decisions.md`, « Ouverture des données ». Comment : [dev/plans/2026-11-04_open-data.md](dev/plans/2026-11-04_open-data.md), proposition à valider.
+Objectif minimum fixé par Lou le 3 novembre. À faire une fois l'identité avec l'ancien prouvée, comparé à part, pour que les testeurs voient l'ouverture elle-même et donnent leur aval (Lou, 4 novembre). Ce qui est décidé et pourquoi : `dev/decisions.md`, « Ouverture des données ». Comment, et où ça en est : [dev/plans/2026-11-04_open-data.md](dev/plans/2026-11-04_open-data.md) ; écrit et fusionné, à passer au complet sur les nouveaux dumps.
 
 - **Données ouvertes** : les chroniques visibles, dérivées comprises. Visibles et téléchargeables sans compte, comme sur Recherche Data Gouv, sous Licence Ouverte Etalab.
 - **Données fermées** : les valeurs des chroniques cachées (`estvisible = false`), et elles seules. Ni visibles ni exportables sans les droits, y compris quand elles font partie d'un jeu de données. Leurs métadonnées et la position de leurs stations restent visibles, comme aujourd'hui.
