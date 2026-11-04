@@ -180,6 +180,14 @@ class JobManager implements JobManagerInterface
             $newJob->addRelatedEntity($entity);
         }
 
+        // Un export relancé a sa propre archive : écrire la même retirerait celle d'une relance déjà finie
+        $args = $newJob->getArgs();
+        $archive = array_search('--write-to', $args, true);
+        if ($archive !== false) {
+            $args[$archive + 1] = \dirname($args[$archive + 1]) . '/' . bin2hex(random_bytes(16)) . '.zip';
+            $newJob->setArgs($args);
+        }
+
         $this->submit($newJob);
 
         return $newJob;

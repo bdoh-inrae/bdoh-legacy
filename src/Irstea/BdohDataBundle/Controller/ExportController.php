@@ -50,6 +50,11 @@ class ExportController extends Controller
     private const MAX_MEASURES_WITHOUT_ACCOUNT = 5000000;
 
     /**
+     * Sans compte, ce qui peut attendre dans la file des exports : un seul visiteur ne doit pas la saturer pour tous.
+     */
+    private const MAX_WAITING_WITHOUT_ACCOUNT = 30;
+
+    /**
      * @var JobManagerInterface
      */
     public $jobManager;
@@ -132,6 +137,10 @@ class ExportController extends Controller
             if ($this->isTooHeavyWithoutAccount($chroniques->toArray(), $beginDate, $endDate)) {
                 return $this->refuse($request, 'measure.export.tooHeavy');
             }
+            if (!$this->exportFiles->hasRoom()
+                || $this->getEm()->getRepository(Job::class)->countWaiting('job_queue_export') >= self::MAX_WAITING_WITHOUT_ACCOUNT) {
+                return $this->refuse($request, 'measure.export.busy');
+            }
         }
 
         $timezone = new \DateTimeZone(sprintf('%+03d00', $params['timezone']));
@@ -169,19 +178,19 @@ class ExportController extends Controller
 
         $this->reportJobToUser($request, $job);
 
-        return $this->redirectToReferer();
+        return $this->back($request);
     }
 
     /**
      * L'état d'un export, par son lien.
      */
-    #[Route('/mesure/export/{id}/{token}', name: 'bdoh_data_measure_export_status', requirements: ['id' => '\\d+', 'token' => '[0-9a-f]{32}'], methods: ['GET'])]
+    #[Route('/mesure/export/{id}/{token}', name: 'bdoh_data_measure_export_status', requirements: ['id' => '\\d{1,18}', 'token' => '[0-9a-f]{32}'], methods: ['GET'])]
     public function statusAction(int $id, string $token): Response
     {
         $job = $this->findExportJob($id, $token);
 
         if ($job->isFinished()) {
-            $state = is_file($this->exportFiles->path($token)) ? 'finished' : 'expired';
+            $state = $this->exportFiles->isAvailable($token) ? 'finished' : 'expired';
         } elseif ($job->isRunning()) {
             $state = 'running';
         } elseif ($job->isPending() || $job->isNew()) {
@@ -206,23 +215,48 @@ class ExportController extends Controller
     /**
      * L'archive d'un export. Le lien peut circuler : une chronique cachée redemande son droit à qui l'ouvre.
      */
-    #[Route('/mesure/export/{id}/{token}/file', name: 'bdoh_data_measure_export_file', requirements: ['id' => '\\d+', 'token' => '[0-9a-f]{32}'], methods: ['GET'])]
+    #[Route('/mesure/export/{id}/{token}/file', name: 'bdoh_data_measure_export_file', requirements: ['id' => '\\d{1,18}', 'token' => '[0-9a-f]{32}'], methods: ['GET'])]
     public function fileAction(int $id, string $token): Response
     {
         $job = $this->findExportJob($id, $token);
 
-        foreach ($job->getRelatedEntities() as $entity) {
-            if ($entity instanceof Chronique && !$this->authChecker->isGranted('DOWNLOAD', $entity)) {
+        // D'après les arguments de la tâche : une chronique supprimée depuis ne se retrouve plus parmi ses entités liées
+        foreach ($this->chroniqueIdsOf($job) as $chroniqueId) {
+            $chronique = $this->getEm()->find(Chronique::class, $chroniqueId);
+            if ($chronique === null || !$this->authChecker->isGranted('DOWNLOAD', $chronique)) {
                 throw $this->createAccessDeniedException();
             }
         }
 
-        $path = $this->exportFiles->path($token);
-        if (!$job->isFinished() || !is_file($path)) {
+        if (!$job->isFinished() || !$this->exportFiles->isAvailable($token)) {
             throw new NotFoundHttpException();
         }
 
-        return (new BinaryFileResponse($path))->setContentDisposition('attachment', 'export.zip');
+        return (new BinaryFileResponse($this->exportFiles->path($token)))->setContentDisposition('attachment', 'export.zip');
+    }
+
+    /**
+     * Les chroniques d'une tâche d'export : ses arguments valent [pas de temps,] début, fin, chroniques…, options.
+     *
+     * @return int[]
+     */
+    private function chroniqueIdsOf(Job $job): array
+    {
+        $ids = [];
+        $dates = 0;
+        foreach ($job->getArgs() as $argument) {
+            $argument = (string) $argument;
+            if (str_starts_with($argument, '--')) {
+                break;
+            }
+            if ($dates === 2) {
+                $ids[] = (int) $argument;
+            } elseif (!ctype_digit($argument)) {
+                ++$dates;
+            }
+        }
+
+        return $ids;
     }
 
     /**
@@ -264,6 +298,11 @@ class ExportController extends Controller
             $this->getTranslator()->trans($message, ['%max%' => number_format(self::MAX_MEASURES_WITHOUT_ACCOUNT, 0, ',', ' ')])
         );
 
+        return $this->back($request);
+    }
+
+    private function back(Request $request): RedirectResponse
+    {
         return new RedirectResponse($request->headers->get('referer') ?: $this->generateUrl('bdoh_home'));
     }
 

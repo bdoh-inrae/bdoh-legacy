@@ -50,6 +50,17 @@ class JobRepository extends EntityRepository
      * La prochaine tâche à lancer : en attente, sans exécuteur, à son heure, hors des files
      * occupées ; par priorité, puis dans l'ordre d'arrivée.
      */
+    /**
+     * Les tâches d'une file qui n'ont pas encore commencé.
+     */
+    public function countWaiting(string $queue): int
+    {
+        return (int) $this->getEntityManager()->getConnection()->fetchOne(
+            'SELECT count(*) FROM jms_jobs WHERE queue = :queue AND state IN (:new, :pending)',
+            ['queue' => $queue, 'new' => Job::STATE_NEW, 'pending' => Job::STATE_PENDING]
+        );
+    }
+
     public function findStartableJob(array $excludedQueues)
     {
         $builder = $this->createQueryBuilder('j')

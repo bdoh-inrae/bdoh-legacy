@@ -48,7 +48,7 @@ $export = [
         <ul>
             <li>pas de modification du pas de temps par rapport à la chronique stockée (le pas de temps est potentiellement variable)</li>
             <li>on peut exporter plusieurs chroniques d'une même station</li>
-            <li>il n'y a pas de limitation de longueur des chroniques et l'export se fait par téléchargement direct.</li>
+            <li>il n'y a pas de limitation de longueur des chroniques, et le fichier se récupère par un lien.</li>
         </ul>
     </li>
     <li>Un export à pas de temps fixe (avec interpolation linéaire ou calcul de moyenne ou de cumul) est possible pour certaines chroniques :</li>
@@ -69,6 +69,7 @@ HELP
         'licence'      => 'Ces données sont sous <a href="https://www.etalab.gouv.fr/licence-ouverte-open-licence/" target="_blank" rel="noopener">Licence Ouverte Etalab</a> : leur réutilisation est libre, en citant leur source (BDOH, et le DOI du jeu de données quand il y en a un).',
         'tooHeavy'     => 'Sans compte, un ensemble de chroniques ne peut pas dépasser %max% mesures : connectez-vous, ou exportez-les une par une.',
         'tooMany'      => "Trop d'exports demandés depuis votre adresse : réessayez dans une heure, ou connectez-vous.",
+        'busy'         => "La file des exports est chargée : réessayez plus tard, ou connectez-vous.",
         'status'       => [
             'title'             => 'Export de chroniques',
             'waiting'           => "Votre export attend son tour. Cette page se met à jour d'elle-même ; vous pouvez aussi la garder et revenir plus tard.",

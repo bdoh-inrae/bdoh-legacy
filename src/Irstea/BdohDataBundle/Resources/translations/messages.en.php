@@ -48,7 +48,7 @@ $export = [
         <ul>
             <li>the original time step of the time series is conserved (it is potentially variable)</li>
             <li>several time series belonging to a same station can be downloaded at the same time</li>
-            <li>the file is directly downloaded from BDOH without any size restriction.</li>
+            <li>the file is retrieved through a link, without any size restriction.</li>
         </ul>
     </li>
     <li>Some time series can be downloaded with an option for fixed time step calculation (using linear interpolation, mean calculation or sum calculation):</li>
@@ -69,6 +69,7 @@ HELP
         'licence'      => 'These data are under the <a href="https://www.etalab.gouv.fr/licence-ouverte-open-licence/" target="_blank" rel="noopener">Etalab Open Licence</a>: they may be reused freely, citing their source (BDOH, and the DOI of the dataset when there is one).',
         'tooHeavy'     => 'Without an account, a set of time series cannot exceed %max% measures: sign in, or download them one by one.',
         'tooMany'      => 'Too many downloads requested from your address: try again in an hour, or sign in.',
+        'busy'         => 'The download queue is busy: try again later, or sign in.',
         'status'       => [
             'title'             => 'Time series download',
             'waiting'           => 'Your download is waiting for its turn. This page updates itself; you can also keep it and come back later.',

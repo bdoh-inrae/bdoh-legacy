@@ -16,7 +16,7 @@ $user = [
             'submit'      => 'Register',
             'isCompleted' => 'Your BDOH account has been created. An e-mail has just been sent to you: follow its link to confirm your address and sign in.',
             'info'        => [
-                'isTheFirstStep' => 'The account you are creating will be valid for the whole BDOH application. To download data, once signed in, you will have to make <b>specific access requests</b> on observatories you are interested in by using the data access request form or by contacting a manager.',
+                'isTheFirstStep' => 'The account you are creating will be valid for the whole BDOH application. Open data can be downloaded without an account. To access closed data, once signed in, you will have to make <b>specific access requests</b> on observatories you are interested in by using the data access request form or by contacting a manager.',
                 'yourIdentifier' => 'The <b>e-mail address</b> will be your <u>login</u>: you will sign in with a link sent to this address, without a password.',
             ],
         ],
@@ -111,7 +111,7 @@ This e-mail is automatically generated, thank you for not replying.',
 $besoin = [
     'security.besoin' => [
         'create'                => [
-            'title'       => 'Request for data access',
+            'title'       => 'Request for access to closed data',
             'submit'      => 'Send the request',
             'isCompleted' => 'Your request for data access has been registered, an administrator will respond.',
             'info'        => [

@@ -91,7 +91,7 @@ abstract class AbstractExportCommand extends Command
             ->setDescription('Export de chroniques')
             ->addOption('jms-job-id', null, InputOption::VALUE_REQUIRED, 'Identifiant du job')
             ->addOption('locale', 'l', InputOption::VALUE_REQUIRED, 'Localisation', 'fr')
-            ->addOption('send-to', 'm', InputOption::VALUE_REQUIRED, "E-mail d'un utilisateur à qui envoyer l'archive")
+            ->addOption('send-to', 'm', InputOption::VALUE_REQUIRED, "E-mail d'un utilisateur à qui envoyer le lien de l'archive")
             ->addOption('write-to', 'o', InputOption::VALUE_REQUIRED, 'Chemin du fichier de sortie')
             ->addOption('timezone', 't', InputOption::VALUE_REQUIRED, 'Fuseau horaire cible', 'UTC')
             ->addOption('format', 'f', InputOption::VALUE_REQUIRED, "Format d'export", 'bdoh')
@@ -127,6 +127,9 @@ abstract class AbstractExportCommand extends Command
         $user = $parameters['user'] = $parameters['send-to'] ?? null;
         $archivePath = $parameters['write-to'];
         $jobId = $input->getOption('jms-job-id');
+        if ($user !== null && $jobId === null) {
+            throw new \InvalidArgumentException('--send-to demande --write-to et --jms-job-id');
+        }
 
         // Un export de la file se note dans l'historique, avec ou sans compte ; en console, seulement avec un compte
         $parameters['logged'] = $user !== null || $jobId !== null;

@@ -415,12 +415,18 @@ def canonical_query(query, per_page_option=False):
 # Les mentions légales, réécrites pour INRAE, et le lien vers le code source (dev/differences.md)
 LEGAL_NOTICE = re.compile(r"<p style='text-align: center;'>\s*(?:Institut national|INRAE).*?</p>", re.S)
 # Les boutons et la fenêtre d'export suivent le droit de télécharger, que le nouveau ouvre à qui n'a pas de compte
-# (dev/decisions.md, « Ouverture des données ») : hors de la comparaison, et vérifiés par open_data_checks.
+# (dev/decisions.md, « Ouverture des données »). Là où l'ancien ne les montrait pas, ils sortent de la comparaison
+# (strip_export) ; là où il les montre, le formulaire se compare, sauf les conditions d'utilisation, qui deviennent
+# la licence pour une chronique visible, et le texte d'aide. open_data_checks vérifie ce que ces masques retirent.
 EXPORT_WIDGETS = re.compile(r'(?:<!-- The modal for Terms Of Uses -->.*?)?<!-- Link which triggers the modal for export -->.*?'
                             r'<!-- END_The modal for export -->|<button class="graph-export-button.*?</button>', re.S)
+EXPORT_TERMS = re.compile(r'<!-- Link which triggers the modal for Terms of Uses -->.*?<!-- Submit and close buttons -->', re.S)
+EXPORT_HELP = re.compile(r'<div class="export-help-content">.*?</div>', re.S)
+EXPORT_ARCHIVE = re.compile(r'--write-to\s+\S+\.zip\s*')  # le chemin de l'archive, dans les pages de suivi des tâches
+EXPORT_MARK = b'<!-- Link which triggers the modal for export -->'
 
 
-def page_lines(site, status, headers, body):
+def page_lines(site, status, headers, body, strip_export=False):
     """Ce que montre une réponse, en lignes ; l'adresse de l'instance devient <site>."""
     lines = [f'statut {status}']
     if 300 <= status < 400:
@@ -429,7 +435,9 @@ def page_lines(site, status, headers, body):
     lines.append(f'type {kind}')
     if kind == 'text/html':
         parser = Extract()
-        parser.feed(EXPORT_WIDGETS.sub('', LEGAL_NOTICE.sub('', body.decode('utf-8', 'replace'))))
+        text = LEGAL_NOTICE.sub('', body.decode('utf-8', 'replace'))
+        text = EXPORT_WIDGETS.sub('', text) if strip_export else text
+        parser.feed(EXPORT_ARCHIVE.sub('', EXPORT_HELP.sub('', EXPORT_TERMS.sub('', text))))
         parser.flush()
         # Un script et une feuille que l'administration de l'ancien chargeait pour rien (dev/differences.md)
         lines += [line for line in parser.lines if not re.match(r'(S|L stylesheet) /assets/(locales/|admin/measure-import\.css)', line)]
@@ -662,7 +670,9 @@ def run_pages(args):
                 # Le choix de la langue change la session : il passe par une session à lui, sans
                 # quoi les pages demandées en même temps changeraient de langue d'un côté seulement.
                 pair = (Client(old, None, slug), Client(new, None, slug)) if path.startswith('/select_lang/') else clients
-                return [page_lines(client.side.url, *client.get(path)) for client in pair]
+                responses = [client.get(path) for client in pair]
+                strip = EXPORT_MARK not in responses[0][2]
+                return [page_lines(client.side.url, *response, strip_export=strip) for client, response in zip(pair, responses)]
 
             for path, lines in zip(paths, pool.map(fetch, paths)):
                 report.add(f'{profile} {path}', *lines)
@@ -791,7 +801,7 @@ def other_tables_lines(base, known):
 MAILPIT = 'http://172.30.26.25:8025'  # service mailpit de compose.yaml (make mail-start)
 
 
-EXPORT_LINK = re.compile(r'Votre export de chronique est prêt : \S*/mesure/export/\d+/([0-9a-f]{32})/file\nCe lien reste valable \d+ jours\.')
+EXPORT_LINK = re.compile(r'Votre export de chronique est prêt : \S*/mesure/export/\d+/([0-9a-f]{32})/file\r?\nCe lien reste valable \d+ jours\.')
 OLD_EXPORT_BODY = 'Veuillez trouver en pièce jointe votre export de chronique.'
 EXPORT_FILES = lambda token: (HERE.parent.parent / 'var' / 'exports' / f'{token}.zip').read_bytes()
 
@@ -978,22 +988,21 @@ def emptied_with_milliseconds_check(side, base, cid, page, manager, slug):
             ['conforme'] if ok else [f'statut {status}, {before} mesures avant, {count()} après, {gaps} lacunes']}
 
 
-def open_data_checks(side, console, runner, base):
+def open_data_checks(side, console, runner, base, checks):
     """L'ouverture des données (dev/decisions.md, « Ouverture des données ») : ce qui s'ouvre et ce qui reste fermé.
-    Sur la copie du nouveau, avec Mailpit ; rien ne se lit des valeurs d'une chronique cachée, seulement des statuts."""
-    checks = {}
-
+    Sur une copie à elle, avec Mailpit ; rien ne se lit des valeurs d'une chronique cachée, seulement des statuts.
+    checks se remplit au fil de l'eau, pour qu'un arrêt ne perde pas les résultats précédents."""
     def check(name, ok, detail=''):
         checks[f'nouveau seul : ouverture, {name}'] = ['conforme' if ok else f'non conforme : {detail}']
 
     def chronique(where):
-        return query(base, f"""SELECT c.id, c.slug FROM ({CHRONIQUES}) c JOIN chronique ch ON ch.id = c.id
+        return query(base, f"""SELECT c.id, c.slug, c.station, c.code FROM ({CHRONIQUES}) c JOIN chronique ch ON ch.id = c.id
                                 WHERE c.dtype = 'continue' AND ch.nbmesures > 0 AND {where} ORDER BY ch.nbmesures, c.id LIMIT 1""", NEW_SERVER)[0]
 
-    visible, slug = chronique('c.estvisible')
+    visible, slug, station, code = chronique('c.estvisible')
     other = query(base, f"""SELECT c.id FROM ({CHRONIQUES}) c WHERE c.slug = '{slug}' AND c.estvisible AND c.id <> {visible}
                              AND c.dtype = 'continue' ORDER BY c.id LIMIT 1""", NEW_SERVER)[0][0]
-    hidden, hidden_slug = chronique(f'NOT c.estvisible')
+    hidden, hidden_slug, hidden_station, hidden_code = chronique('NOT c.estvisible')
     role = lambda obs, value: query(base, f"""
         SELECT u.email FROM utilisateur u JOIN role r ON r.utilisateur_id = u.id JOIN observatoire o ON o.id = r.observatoire_id
          WHERE r.valeur = '{value}' AND r.dtype = 'observatoire' AND o.slug = '{obs}' AND (u.finacces IS NULL OR u.finacces > now())
@@ -1012,8 +1021,17 @@ def open_data_checks(side, console, runner, base):
     limiter = lambda: subprocess.run([*console, 'cache:pool:clear', 'cache.rate_limiter', '--env=prod'], check=True, capture_output=True)
     limiter()
 
-    # Sans compte : une chronique visible, par son lien
+    # La fenêtre d'export, ce que EXPORT_WIDGETS retire de la comparaison
     anonymous = Client(side, None, slug)
+    status, _, body = anonymous.get(f'/{slug}/{station}/{code}')
+    check('fenêtre d’export d’une chronique visible, sans compte, avec la licence',
+          status == 200 and EXPORT_MARK in body and b'export-licence' in body and b'name="termsOfUses"' not in body and b'graph-export-button' in body, f'statut {status}')
+    status, _, body = manager.get(f'/{hidden_slug}/{hidden_station}/{hidden_code}')
+    check('fenêtre d’export d’une chronique cachée, avec le droit, avec ses conditions',
+          status == 200 and b'name="termsOfUses"' in body and b'export-licence' not in body, f'statut {status}')
+    check('page d’une chronique cachée, compte sans droit', Client(side, stranger, hidden_slug).get(f'/{hidden_slug}/{hidden_station}/{hidden_code}')[0] == 403)
+
+    # Sans compte : une chronique visible, par son lien
     logged = lambda: query(base, "SELECT count(*) FROM historique WHERE auteur_id IS NULL AND dtype ILIKE '%export%'", NEW_SERVER)[0][0]
     logged_before = logged()
     status, headers, _ = export(anonymous, slug, visible)
@@ -1068,6 +1086,11 @@ def open_data_checks(side, console, runner, base):
         check('archive d’une chronique cachée, sans compte', status == 302 and 'login' in headers.get('Location', ''), f'statut {status}')
         check('archive d’une chronique cachée, compte sans droit', Client(side, stranger, hidden_slug).get(path)[0] == 403)
         check('archive d’une chronique cachée, avec le droit', manager.get(path)[0] == 200)
+        # Sa chronique a disparu entre-temps : le lien reste fermé
+        hidden_job = re.search(r'/export/(\d+)/', path).group(1)
+        query(base, f"""UPDATE jms_jobs SET args = regexp_replace(args::text, '\\m{hidden}\\M', '999999999')::json WHERE id = {hidden_job} RETURNING id""", NEW_SERVER)
+        status = Client(side, None, hidden_slug).get(path)[0]
+        check('archive d’une chronique supprimée, sans compte', status == 302, f'statut {status}')
     else:
         check('lien de l’archive d’une chronique cachée', False, 'pas de lien')
 
@@ -1079,17 +1102,26 @@ def open_data_checks(side, console, runner, base):
     pointed = query(base, f"""SELECT c.id, c.slug FROM ({CHRONIQUES}) c JOIN chronique ch ON ch.id = c.id
         WHERE c.estvisible AND EXISTS (SELECT 1 FROM pointcontrole p WHERE p.chronique_id = c.id) ORDER BY ch.nbmesures, c.id LIMIT 1""", NEW_SERVER)[0]
     measures = f'/{pointed[1]}/chronique/{pointed[0]}/measures?beginDate=1800-01-01T00:00:00Z&endDate=2030-01-01T00:00:00Z'
+    without, with_right = Client(side, None, pointed[1]).get(measures), Client(side, role(pointed[1], 'gestionnaire'), pointed[1]).get(measures)
     check('points de contrôle d’une chronique visible, comme avec un droit',
-          Client(side, None, pointed[1]).get(measures)[2] == Client(side, role(pointed[1], 'gestionnaire'), pointed[1]).get(measures)[2])
+          without[0] == 200 and without[2] == with_right[2] and b'controlPoints' in without[2], f'statut {without[0]}')
 
     # Un lien échu : le prochain export retire l'archive
     stale = HERE.parent.parent / 'var' / 'exports' / f'{token}.zip'
     moment = time.time() - 8 * 86400
     os.utime(stale, (moment, moment))
+    status, _, body = anonymous.get(page)
+    check('lien échu, avant même le prochain export', status == 200 and 'expiré'.encode() in body and anonymous.get(f'{page}/file')[0] == 404, f'statut {status}')
     export(anonymous, slug, visible)
     drain(console, runner, base)
-    status, headers, body = anonymous.get(page)
-    check('lien échu, dit, et archive retirée', status == 200 and not stale.exists() and anonymous.get(f'{page}/file')[0] == 404, f'statut {status}')
+    check('archive échue retirée par le prochain export', not stale.exists())
+
+    # Une archive qui ne s'écrit pas fait échouer la commande, et --send-to ne va pas sans tâche
+    period = ['2024-01-01T00:00:00+00:00', '2024-02-01T00:00:00+00:00']
+    done = subprocess.run([*console, 'bdoh:export:identical', *period, visible, '--write-to', '/dossier-absent/essai.zip', '--env=prod'], capture_output=True)
+    check('archive impossible à écrire, commande en échec', done.returncode != 0, f'code {done.returncode}')
+    done = subprocess.run([*console, 'bdoh:export:identical', *period, visible, '--write-to', '/tmp/essai.zip', '--send-to', role(slug, 'gestionnaire'), '--env=prod'], capture_output=True)
+    check('--send-to sans tâche, refusé', done.returncode != 0, f'code {done.returncode}')
 
     # Le seuil : une chronique seule passe toujours, un ensemble lourd demande un compte
     subprocess.run(['docker', 'exec', '-i', NEW_SERVER, 'psql', '-U', 'bdoh', '-d', base, '-v', 'ON_ERROR_STOP=1', '-q'], check=True, capture_output=True, text=True, input=f"""
@@ -1112,8 +1144,15 @@ def open_data_checks(side, console, runner, base):
     for _ in range(21):
         export(Client(side, None, slug), slug, visible)
     check('limite de fréquence sans compte', int(jobs()) == int(before) + 20, f'{before} tâches puis {jobs()}')
+
+    # La file chargée : les 2 demandes du seuil et ces 20-là font 22 tâches en attente, sur 30 admises sans compte
     limiter()
-    return checks
+    before = jobs()
+    for _ in range(10):
+        export(Client(side, None, slug), slug, visible)
+    waiting = query(base, "SELECT count(*) FROM jms_jobs WHERE queue = 'job_queue_export' AND state IN ('new', 'pending')", NEW_SERVER)[0][0]
+    check('file chargée, refusé sans compte', waiting == '30', f'{waiting} en attente')
+    limiter()
 
 
 def run_state(args):
@@ -1203,8 +1242,20 @@ def run_state(args):
             with new_on(base, template) as console:
                 checks.update(failed_computation_checks(console, base, *commands[0][1:3]))
                 checks.update(emptied_with_milliseconds_check(SIDES['new'], base, cid, f'/{slug}/{station}/{code}', manager, slug))
-            with new_on(base, template, 'MAILER_DSN=smtp://mailpit:1025') as console:
-                checks.update(open_data_checks(SIDES['new'], console, 'bdoh:jobs:run', base))
+            # Sur une copie à elle : elle ajoute des tâches et des millions de mesures, que les pages de suivi comparées
+            # plus bas ne doivent pas voir
+            copy_base(template, 'bdoh_open_data')
+            exports = HERE.parent.parent / 'var' / 'exports'
+            try:
+                with new_on('bdoh_open_data', template, 'MAILER_DSN=smtp://mailpit:1025') as console:
+                    open_data_checks(SIDES['new'], console, 'bdoh:jobs:run', 'bdoh_open_data', checks)
+            except Exception as e:  # un arrêt ne doit pas perdre le rapport : il se lit comme un écart
+                checks['nouveau seul : ouverture, arrêt du cas'] = [f'{type(e).__name__} : {str(e)[:200]}']
+            finally:
+                # Rien ne reste d'une archive, dont une de chronique cachée
+                for path in exports.glob('*.zip*'):
+                    path.unlink()
+                subprocess.run(['docker', 'exec', NEW_SERVER, 'psql', '-U', 'postgres', '-qc', 'DROP DATABASE IF EXISTS bdoh_open_data WITH (FORCE)'], capture_output=True)
 
     report = Report('state')
     for part in sides['ancien']:

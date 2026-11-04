@@ -16,7 +16,7 @@ $user = [
             'submit'      => 'Créer le compte',
             'isCompleted' => "Votre compte BDOH a bien été créé. Un e-mail vient de vous être envoyé : suivez le lien qu'il contient pour confirmer votre adresse et vous connecter.",
             'info'        => [
-                'isTheFirstStep' => "Le compte que vous allez créer sera valable sur toute l'application BDOH. Pour pouvoir télécharger des données il faudra, une fois connecté, faire <b>des demandes d'accès spécifiques</b> sur les observatoires qui vous intéressent via le formulaire de demande d'accès aux données ou contacter un gestionnaire.",
+                'isTheFirstStep' => "Le compte que vous allez créer sera valable sur toute l'application BDOH. Les données ouvertes se téléchargent sans compte. Pour accéder aux données fermées, il faudra, une fois connecté, faire <b>des demandes d'accès spécifiques</b> sur les observatoires qui vous intéressent via le formulaire de demande d'accès aux données ou contacter un gestionnaire.",
                 'yourIdentifier' => "L'<b>adresse e-mail</b> sera votre <u>identifiant de connexion</u> : vous vous connecterez par un lien envoyé à cette adresse, sans mot de passe.",
             ],
         ],
@@ -111,7 +111,7 @@ Cet e-mail est généré automatiquement, merci de ne pas y répondre.',
 $besoin = [
     'security.besoin' => [
         'create'                => [
-            'title'       => "Demande d'accès aux données",
+            'title'       => "Demande d'accès aux données fermées",
             'submit'      => 'Envoyer la demande',
             'isCompleted' => "Votre demande d'accès a bien été enregistrée, un administrateur va y répondre.",
             'info'        => [

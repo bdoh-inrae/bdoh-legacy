@@ -190,6 +190,11 @@ class Job
         return $this->executeAfter;
     }
 
+    public function setArgs(array $args)
+    {
+        $this->args = $args;
+    }
+
     public function getOutput()
     {
         return $this->output;
