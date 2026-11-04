@@ -5,9 +5,10 @@
 ## Décisions de Lou (2026-11-04)
 
 - Quand régénérer les dumps : confié à Claude, soit juste après le recalcul et les volumes (décision 1 de l'audit).
-- Par quoi remplacer les chroniques cachées (décision 2, précisée par Lou le même jour, Claude d'accord) : seules les valeurs sont privées. Elles sont remplacées dans les dumps ; dates, qualités, métadonnées et positions restent, puisque le site les montre et que rien de cela n'est sensible. Les chroniques calculées visibles gardent leurs valeurs : le site les publie aujourd'hui, et leur sort est une question à part (`dev/local/hidden-series.md`), qui ne change rien aux essais.
+- Par quoi remplacer les chroniques cachées (décision 2, précisée par Lou le même jour, Claude d'accord) : seules les valeurs sont privées. Elles sont remplacées dans les dumps ; dates, qualités, métadonnées et positions restent, puisque le site les montre et que rien de cela n'est sensible. Les chroniques calculées visibles gardent leurs valeurs : elles sont publiques (`dev/decisions.md`, « Ouverture des données »).
 - Les dumps bruts du 21 octobre sont là, hors du dépôt : c'est Lou qui lance `make anonymize` dessus.
 - Décisions 3 à 6 : les recommandations de l'audit s'appliquent tant que Lou ne dit pas autre chose.
+- L'ouverture des données passe avant les essais (`dev/plans/2026-11-04_open-data.md`). Deux instances sur une VM, pour l'instant ; site derrière le VPN et un mot de passe pour les essais.
 
 ## Ordre retenu
 
@@ -34,6 +35,8 @@ L'ordre de l'audit, resserré autour de la barrière : ce qui demande de lire de
 - [ ] C4. Invariants (`E(I(E(x))) = E(x)`, relations sur les calculs). Le petit jeu inventé, résultats écrits à la main, est fait pour les calculs (`dev/compare/invented.py`, joué par `state`).
 - [ ] C5. Pannes provoquées (exécuteur tué, PostgreSQL redémarré, `/tmp` plein) et relecture ciblée de ce qui écrit.
 - [ ] C6. Code gelé (tag), tous les modes sur la base complète et sur OTHU, une fois.
+
+**Ouverture des données**, après C1 et C2, comparée à part : `dev/plans/2026-11-04_open-data.md`. C3 à C5 peuvent se poursuivre en parallèle des essais (décision 3) ; C6 vient après leurs retours, et porte sur le code ouvert.
 
 **Phase D, sur la VM** (selon la réponse de l'équipe infra) : `dev/plans/2026-10-26_deployment.md`.
 
