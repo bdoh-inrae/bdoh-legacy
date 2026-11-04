@@ -66,6 +66,7 @@ Avant de détruire les rapports (B2) : noter les comptes utiles ici.
 
 ## Suivi
 
+- 2026-11-04, B3 essayé sur les dumps actuels (à refaire sur les dumps régénérés) : serveur sur les paquets de Debian 13 (PostgreSQL 17.11, PostGIS 3.5.2, GEOS 3.13.1, PROJ 9.6.0), rôle `bdoh` sans superuser, propriétaire de ses bases et de ses objets. Production, OTHU et base réduite restaurées en 19 min, les 4 migrations appliquées par ce rôle. Empreintes au bit près contre l'ancien serveur de PostgreSQL 17 : tout identique, `mesure` 2 019 chroniques sur 2 019, `plage` 880, `pointcontrole` 135, `tauxremplissage` 2 019 ; OTHU `mesure` et `tauxremplissage` 57 sur 57.
 - 2026-11-04, temps et mémoire (`volumes.py`, base complète, plus grosse chronique, 2 397 581 mesures ; une seule passe, ordres de grandeur). Le nouveau n'est plus lent nulle part, et sa mémoire reste voisine :
 
   ```
