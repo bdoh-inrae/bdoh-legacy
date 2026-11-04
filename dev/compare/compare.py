@@ -51,6 +51,9 @@ import zipfile
 from dataclasses import dataclass
 from pathlib import Path
 
+sys.dont_write_bytecode = True
+import invented  # noqa: E402  (dev/compare/invented.py)
+
 HERE = Path(__file__).resolve().parent
 OUT = HERE.parent.parent.parent / 'bdoh_reference' / 'compare'
 PASSWORD = 'bdoh-test'  # mot de passe de tous les comptes des bases anonymisées
@@ -825,10 +828,13 @@ def copy_base(template, base):
 
 
 def configure_old_17(text):
-    """Écrit les paramètres de l'ancien code sur PostgreSQL 17, et vide son cache."""
+    """Écrit les paramètres de l'ancien code sur PostgreSQL 17, vide son cache et recharge Apache. Sans ce
+    rechargement, le cache d'opcodes de PHP 7.1 garde les fichiers de tous les caches vidés, et Apache finit par
+    planter à chaque requête ou presque (une cinquantaine de vidages, en jouant toutes les fautes de mutants.py)."""
     OLD_17_PARAMETERS.write_text(text)
     for command in [['cache:clear', '--no-warmup'], ['cache:warmup']]:
         subprocess.run([*SIDES['reference-17'].console, *command, '--env=prod'], check=True, capture_output=True)
+    subprocess.run(['docker', 'exec', 'bdoh-reference-app-17', 'apache2ctl', '-k', 'graceful'], check=True, capture_output=True)
 
 
 @contextlib.contextmanager
@@ -935,10 +941,11 @@ def run_state(args):
         SELECT c.id, c.slug FROM ({CHRONIQUES}) c JOIN chronique ch ON ch.id = c.id
          WHERE c.dtype = 'discontinue' AND ch.nbmesures > 0 ORDER BY c.id LIMIT 1""", NEW_SERVER)[0]
     checks = {}
+    lab = invented.choose(lambda sql: query(template, sql, NEW_SERVER))
     def play(side, console, runner, base):
         """Les calculs, les exports demandés par le formulaire, une tâche annulée, une semaine de
-        mesures vidée avec propagation, une tâche relancée, la file jusqu'au bout ; rend ce que
-        chaque étape a répondu."""
+        mesures vidée avec propagation, une tâche relancée, la file jusqu'au bout, le jeu de calcul
+        inventé ; rend ce que chaque étape a répondu, et ce que le jeu inventé a écrit."""
         log = []
         for command in commands:
             r = subprocess.run([*console, *command, '--env=prod'], capture_output=True, text=True)
@@ -979,22 +986,25 @@ def run_state(args):
         status, headers, _ = post(f'/{slug}/jobs/{failed}', {'action': 'retry'})
         log.append(f"relance : {status} {headers.get('Location', '').replace(side.url, '')}")
         drain(console, runner, base)
-        return log
+        computed = invented.play(console, NEW_SERVER, base, lab, commands[0][2])
+        drain(console, runner, base)  # les taux de remplissage que ces calculs demandent
+        return log, computed
 
-    sides = {}
+    sides, computed = {}, {}
     for name, base in [('ancien', 'bdoh_state_old'), ('nouveau', 'bdoh_state_new')]:
         copy_base(template, base)
         urllib.request.urlopen(urllib.request.Request(MAILPIT + '/api/v1/messages', method='DELETE'), timeout=60)
         if name == 'ancien' or args.same:  # --same : l'ancien deux fois, ce qui mesure le bruit de l'outil
             with old_17_on(base, mailer_transport='smtp', mailer_host='mailpit', mailer_port='1025') as console:
-                log = play(SIDES['reference-17'], console, 'jms-job-queue:run', base)
+                log, computed[name] = play(SIDES['reference-17'], console, 'jms-job-queue:run', base)
         else:
             if args.inject_sql:
                 inject_sql(base, args.inject_sql)
             with new_on(base, template, 'MAILER_DSN=smtp://mailpit:1025') as console:
-                log = play(SIDES['new'], console, 'bdoh:jobs:run', base)
+                log, computed[name] = play(SIDES['new'], console, 'bdoh:jobs:run', base)
         sides[name] = {'étapes': log, 'courriels': mail_lines(), **state_lines(base, historique),
-                       'autres tables': other_tables_lines(base, STATE_QUERIES)}
+                       'autres tables': other_tables_lines(base, STATE_QUERIES),
+                       **{f'état après le calcul inventé, {step}': lines for step, lines in computed[name].items()}}
         if name == 'nouveau' and not args.same:
             with new_on(base, template) as console:
                 checks.update(failed_computation_checks(console, base, *commands[0][1:3]))
@@ -1004,6 +1014,12 @@ def run_state(args):
         report.add(part, sides['ancien'][part], sides['nouveau'][part])
     for part, lines in checks.items():
         report.add(part, ['conforme'], lines)
+    # Le jeu inventé contre ses résultats écrits à la main, et contre PostgreSQL 11 (sans la ligne des dates,
+    # que le PHP écrit) : au bit près, ces fonctions ne font passer aucun nombre par du texte
+    for step, lines in invented.expected().items():
+        report.add(f'état écrit à la main, {step}', lines, computed['nouveau'][step])
+    for step, lines in invented.under_postgresql_11(CASES_SERVER, template, lab).items():
+        report.add(f'état sous PostgreSQL 11 et 17, {step}', lines, [computed['nouveau'][step][0], *computed['nouveau'][step][2:]])
     report.close()
 
     # Les mêmes dates dans les deux copies, pour en comparer les pages de suivi des tâches

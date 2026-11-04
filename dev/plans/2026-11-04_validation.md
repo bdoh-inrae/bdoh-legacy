@@ -31,7 +31,7 @@ L'ordre de l'audit, resserré autour de la barrière : ce qui demande de lire de
 - [ ] C1. Registre des écarts admis (`dev/compare/expected.*`) ; « autre ordre » limité aux listes nommées ; un écart inattendu fait échouer le mode.
 - [ ] C2. Couverture PHP (PCOV) et SQL (`plpgsql_check`), lecture de ce qui n'est jamais exécuté, ce qui écrit d'abord.
 - [ ] C3. Élargir les cas : « 1 événement », 5 et 15 minutes, fuseaux employés, plages, sortes de calcul rares, tirages au hasard ; adapter les modes à la forme d'OTHU.
-- [ ] C4. Invariants (`E(I(E(x))) = E(x)`, relations sur les calculs) et petit jeu inventé, résultats écrits à la main.
+- [ ] C4. Invariants (`E(I(E(x))) = E(x)`, relations sur les calculs). Le petit jeu inventé, résultats écrits à la main, est fait pour les calculs (`dev/compare/invented.py`, joué par `state`).
 - [ ] C5. Pannes provoquées (exécuteur tué, PostgreSQL redémarré, `/tmp` plein) et relecture ciblée de ce qui écrit.
 - [ ] C6. Code gelé (tag), tous les modes sur la base complète et sur OTHU, une fois.
 
@@ -46,7 +46,7 @@ L'ordre de l'audit, resserré autour de la barrière : ce qui demande de lire de
 
 Dans l'ordre :
 
-1. `dev/compare/mutants.py` (environ 1 h 30, modifie `src/`, rien d'autre en parallèle, dépôt propre) : une faute non vue appelle un cas.
+1. `dev/compare/mutants.py` (environ 2 h pour toutes, `--only` pour quelques-unes ; modifie `src/`, rien d'autre en parallèle, dépôt propre) : une faute non vue appelle un cas, un arrêt se lit.
 2. A4 : `dev/compare/recompute.py --base bdoh` (3 à 5 h), puis temps et mémoire (`dev/compare/volumes.py`, pas encore lancé).
 
 Pour jouer tous les modes, l'un après l'autre (environ 1 h 10) :
@@ -64,6 +64,13 @@ Avant de détruire les rapports (B2) : noter les comptes utiles ici.
 
 ## Suivi
 
+- 2026-11-04, journée :
+  - Fautes remises dans le code, première passe complète : 21 vues sur 29, 7 non vues, 1 arrêt. Le rapport en annonçait 22 parce qu'il comptait l'arrêt comme une faute vue. Or cet arrêt n'avait rien à voir avec la faute : l'Apache de `reference-17` plantait à presque chaque requête après une cinquantaine de vidages de cache (cache d'opcodes de PHP 7.1). `compare.py` recharge désormais Apache après chaque vidage, et `mutants.py` donne la dernière ligne d'erreur d'un arrêt sans le compter.
+  - Les 7 non vues (6 dans les fonctions SQL, 1 sur les dates de la chronique) : les données ne passent pas par ces chemins. Dans la base réduite, aucune mesure limite sur une mère, aucune mesure pile sur un début de validité, aucune sous un barème lacune ; sur les 430 chroniques calculées visibles, aucune ne prend la moitié d'une limite ni ne la change en lacune, même dans la base complète. `dev/compare/invented.py` y passe : un petit jeu inventé, résultats écrits à la main, joué par `state` contre l'ancien, contre la main et sous PostgreSQL 11. `state` : 43/0/0/0, soit 21 cas de plus. Aucune différence au bit près entre PostgreSQL 11 et 17, dont les politiques de limites que rien d'autre n'emploie.
+  - Un piège, pris en écrivant ce jeu : `../bdoh/app/sql/` est plus ancien que les fonctions en base (`dev/decisions.md`). Mes premiers résultats à la main, tirés de ces fichiers, étaient faux ; les deux serveurs les contredisaient d'accord.
+  - Les 8 fonctions qui diffèrent entre les deux serveurs : les seuls `::double precision` de la migration déjà connue (`dev/differences.md`, « EXTRACT sous PostgreSQL 14 et plus »).
+  - OTHU (A4, en partie) : restaurée sous PostgreSQL 17 en 7 min 22. Empreintes contre PostgreSQL 11 identiques, `mesure` 57 chroniques sur 57 (106 006 788 lignes), `tauxremplissage` 57 sur 57. Les 4 migrations appliquées ne changent pas l'empreinte. `recompute.py --base bdoh_othu` : taux de 57 chroniques en 668 s, tous au code 0, aucun qui diffère. Aucune chronique à recalculer : elles sont toutes continues.
+  - Anonymisation relue avant que Lou la lance : les tables de travail du schéma `temp`, certaines lignes de l'historique et les sites sans station visible échappaient au traitement. Corrigé, avec un contrôle au rapport pour chacun (détail dans `dev/local/hidden-series.md`). Essayé cette fois sur une copie jetable de la base réduite, sous PostgreSQL 11 : 55 s, tous les contrôles à 0. C'est l'essai du SQL, pas de toute la chaîne de `make anonymize`.
 - 2026-11-04, matin : les trois défauts de la passe de minuit corrigés (jour de la ligne `DEB`, masque de `queue`, noms de fichiers d'écarts qui s'écrasaient). `exports` retrouve 135/6/0/0 ; `queue` 11/0/0/0, dont trois parties nouvelles au rapport : aucun recouvrement dans une même file, et 53 et 64 paires de tâches menées de front, sans quoi l'essai ne prouverait rien. `pages` et `theia` expliqués, sans régression :
   - `pages` : la passe de cette nuit opposait `reference`, les précédentes `reference-17`, ce que leurs rapports ne disaient pas encore. Rejouée contre `reference-17` : 1108/0/44/60, les mêmes cas dans les mêmes catégories. L'écart vient donc de PostgreSQL 11 (10 pages de mesures à 15 chiffres contre 17, 28 pages de plus dans un autre ordre, toutes de jeux de données), plus 6 listes de comptes : un compte d'essai de Lou dans `bdoh_small` du serveur PostgreSQL 17, seule différence de contenu entre les deux copies (comptes des tables, à la table de suivi des migrations près). Laissé : la régénération le retirera.
   - `theia` : les 3 vérifications d'envoi ne se jouent que sur la base complète, où se trouve une fiche qui passe le contrôle du schéma. 34/0/0/0 sur `bdoh_small`, 37/0/0/0 sur `bdoh` (rejoué) : aucun cas perdu.

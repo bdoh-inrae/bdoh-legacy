@@ -18,6 +18,23 @@ SET client_min_messages = warning;
 
 CREATE SCHEMA anon;
 
+-- Les tables laissées par des imports abandonnés (schéma temp) portent des valeurs telles qu'importées,
+-- chroniques cachées comprises, avec l'identifiant de leur chronique. Elles partent toutes, avant la
+-- classification des colonnes ; l'importeur crée les siennes.
+CREATE TABLE anon.temp_removed AS
+SELECT count(*) AS tables,
+       coalesce(sum(pg_total_relation_size(format('temp.%I', tablename)::regclass)), 0)::bigint / 1048576 AS mo
+  FROM pg_tables WHERE schemaname = 'temp';
+
+DO $$
+DECLARE
+    t text;
+BEGIN
+    FOR t IN SELECT tablename FROM pg_tables WHERE schemaname = 'temp' LOOP
+        EXECUTE format('DROP TABLE temp.%I', t);
+    END LOOP;
+END $$;
+
 CREATE TABLE anon.rules (
     schema_name text NOT NULL,
     table_name  text NOT NULL,  -- '*' : toutes les tables du schéma
@@ -356,12 +373,24 @@ UPDATE bdoh.station s
        commentaireen = NULL, altitude = NULL, latitude = NULL, longitude = NULL, point = NULL, commune_id = NULL
   FROM anon.stations_cachees c WHERE c.id = s.id;
 
+-- Les sites sans station visible : leur nom peut dire le lieu.
+CREATE TABLE anon.sites_caches AS
+SELECT site_id AS id FROM bdoh.stations_sites
+ GROUP BY 1 HAVING bool_and(station_id IN (SELECT id FROM anon.stations_cachees));
+
+UPDATE bdoh.siteexperimental se
+   SET nom = 'Site caché ' || se.id, slug = 'site-cache-' || se.id, description = NULL, descriptionen = NULL
+  FROM anon.sites_caches c WHERE c.id = se.id;
+
 -- Tout ce qui les cite : l'historique (les textes, déjà brouillés, gardent leurs chiffres), et les noms
 -- de barèmes en courbe de leurs transformations, qui peuvent nommer une station.
 UPDATE bdoh.historique h
    SET description = '', name = NULL, lien = NULL
  WHERE h.chronique_id IN (SELECT id FROM bdoh.chronique WHERE NOT estvisible)
-    OR h.station_id IN (SELECT id FROM anon.stations_cachees);
+    OR h.chroniqueconvertie_id IN (SELECT id FROM bdoh.chronique WHERE NOT estvisible)
+    OR h.chroniquemere_id IN (SELECT id FROM bdoh.chronique WHERE NOT estvisible)
+    OR h.station_id IN (SELECT id FROM anon.stations_cachees)
+    OR h.siteexperimental_id IN (SELECT id FROM anon.sites_caches);
 
 UPDATE bdoh.bareme b
    SET nom = 'BAREME-' || b.id, commentaire = NULL
@@ -390,9 +419,14 @@ BEGIN
         n := pg_total_relation_size(format('bdoh.%I', c.table_name)::regclass) / 1048576;
         RETURN NEXT;
     END LOOP;
-    item := 'Mo schéma temp (tables laissées par des imports)';
-    SELECT coalesce(sum(pg_total_relation_size(format('temp.%I', table_name)::regclass)), 0)::bigint / 1048576
-      INTO n FROM information_schema.tables WHERE table_schema = 'temp';
+    item := 'tables retirées du schéma temp (laissées par des imports)';
+    SELECT tables INTO n FROM anon.temp_removed;
+    RETURN NEXT;
+    item := 'Mo retirés du schéma temp';
+    SELECT mo INTO n FROM anon.temp_removed;
+    RETURN NEXT;
+    item := 'contrôle tables restantes dans le schéma temp';
+    SELECT count(*) INTO n FROM pg_tables WHERE schemaname = 'temp';
     RETURN NEXT;
     item := 'Mo base entière';
     n := pg_database_size(current_database()) / 1048576;
@@ -449,11 +483,21 @@ BEGIN
      WHERE s.code <> 'CACHEE-' || s.id OR s.point IS NOT NULL OR s.latitude IS NOT NULL OR s.longitude IS NOT NULL
         OR s.altitude IS NOT NULL OR s.commune_id IS NOT NULL OR s.commentaire IS NOT NULL;
     RETURN NEXT;
+    item := 'sites sans station visible';
+    SELECT count(*) INTO n FROM anon.sites_caches;
+    RETURN NEXT;
+    item := 'contrôle sites cachés encore nommés';
+    SELECT count(*) INTO n FROM bdoh.siteexperimental se JOIN anon.sites_caches sc ON sc.id = se.id
+     WHERE se.nom <> 'Site caché ' || se.id OR se.description IS NOT NULL OR se.descriptionen IS NOT NULL;
+    RETURN NEXT;
     item := 'contrôle historique qui décrit encore une chronique cachée';
     SELECT count(*) INTO n FROM bdoh.historique h
      WHERE (h.description <> '' OR h.name IS NOT NULL OR h.lien IS NOT NULL)
        AND (h.chronique_id IN (SELECT id FROM bdoh.chronique WHERE NOT estvisible)
-            OR h.station_id IN (SELECT id FROM anon.stations_cachees));
+            OR h.chroniqueconvertie_id IN (SELECT id FROM bdoh.chronique WHERE NOT estvisible)
+            OR h.chroniquemere_id IN (SELECT id FROM bdoh.chronique WHERE NOT estvisible)
+            OR h.station_id IN (SELECT id FROM anon.stations_cachees)
+            OR h.siteexperimental_id IN (SELECT id FROM anon.sites_caches));
     RETURN NEXT;
     -- Chaque valeur d'une chronique cachée doit être son tirage, ou une lacune
     FOR c IN SELECT unnest(ARRAY['mesure', 'plage', 'pointcontrole']) AS table_name LOOP

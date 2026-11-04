@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Remet des fautes dans le nouveau BDOH, une à la fois : la comparaison les voit-elle ?
 
-    dev/compare/mutants.py [--base bdoh_small] [--only TEXTE] [--list]
+    dev/compare/mutants.py [--base bdoh_small] [--only TEXTE ...] [--list]
 
 Chaque faute est une erreur plausible d'un portage sur ce qui écrit ou sort des données : un piège de
 dev/decisions.md, ou une ligne qui se recopie mal. Le lanceur modifie le fichier, ou une fonction SQL de la
@@ -9,8 +9,8 @@ copie du nouveau, joue le mode qui devrait la voir, compare son rapport à celui
 puis remet tout en place. Une faute non vue n'est pas un échec à masquer : elle dit qu'il manque un cas.
 
 Le verdict lit les fichiers d'écarts sans les montrer : un cas de plus en écart, ou un écart qui change. Un
-mode qui s'arrête en route avec la faute, et pas sans elle, l'a vue aussi, d'une autre façon, et le rapport
-le dit à part.
+mode qui s'arrête en route ne prouve rien tant qu'on n'a pas lu pourquoi (un Apache de l'ancien tombé a déjà
+passé pour une faute vue) : il ne compte pas parmi les fautes vues, et le rapport donne sa dernière ligne d'erreur.
 
 Un seul lancement à la fois, sur un dépôt propre : il travaille sur les fichiers de src/. Le rapport, qui
 ne contient que le nom des fautes et des comptes, va dans ../bdoh_reference/compare/.
@@ -127,7 +127,7 @@ def literal(text):
 def play(mode, only, base, inject=None):
     """Le mode, sa sortie dans un journal qu'on ne lit pas : ses comptes, l'empreinte de chaque fichier
     d'écarts (sans le lire ici pour le montrer), et sa durée. Sans rapport écrit, le mode s'est arrêté :
-    les comptes valent alors None."""
+    les comptes valent alors None, et les écarts laissent place à sa dernière ligne d'erreur."""
     command = [sys.executable, '-B', str(ROOT / 'dev/compare/compare.py'), mode, '--base', base]
     if mode in ('pages', 'exports'):
         command += ['--old', 'reference', '--new', 'new']
@@ -137,11 +137,11 @@ def play(mode, only, base, inject=None):
         command += ['--inject-sql', inject]
     before = set(compare.OUT.glob(f'*_{mode}'))
     start = time.monotonic()
-    subprocess.run(command, capture_output=True, text=True)
+    done = subprocess.run(command, capture_output=True, text=True)
     seconds = time.monotonic() - start
     written = sorted(path for path in set(compare.OUT.glob(f'*_{mode}')) - before if (path / 'rapport.txt').exists())
     if not written:
-        return None, {}, seconds
+        return None, (done.stderr.strip().splitlines() or ['sans message'])[-1][:200], seconds
     text = (written[-1] / 'rapport.txt').read_text()
     counts = {key: int(n) for n, key in re.findall(r'^\s*(\d+) (.+)$', text, re.M)
               if key in ('identiques', 'à un arrondi près', 'même contenu, autre ordre', 'différents')}
@@ -152,10 +152,10 @@ def play(mode, only, base, inject=None):
 def main():
     parser = argparse.ArgumentParser(description=__doc__.split('\n')[0])
     parser.add_argument('--base', default='bdoh_small')
-    parser.add_argument('--only', default='')
+    parser.add_argument('--only', nargs='*', default=[], help='les fautes dont le nom contient l\'un de ces textes')
     parser.add_argument('--list', action='store_true')
     args = parser.parse_args()
-    faults = [f for f in [*PHP, *SQL] if args.only in f[0]]
+    faults = [f for f in [*PHP, *SQL] if not args.only or any(text in f[0] for text in args.only)]
     if args.list:
         print('\n'.join(f[0] for f in faults))
         return 0
@@ -189,7 +189,7 @@ def main():
         reference, reference_gaps, _ = baseline(mode, only)
         counts, gaps, seconds = play(mode, only, args.base, inject)
         if counts is None:
-            line = f'arrêt   | {name} | {mode} | le mode ne va pas au bout avec la faute | {seconds:.0f} s'
+            line = f'ARRÊT   | {name} | {mode} | à lire : {gaps} | {seconds:.0f} s'
         else:
             appeared = len(gaps.keys() - reference_gaps.keys())
             changed = sum(gaps[key] != reference_gaps[key] for key in gaps.keys() & reference_gaps.keys())
@@ -220,7 +220,7 @@ def main():
                 sql.write(sql_fault(function, old, new))
             verdict(name, mode, '', sql.name)
             Path(sql.name).unlink()
-    seen = sum(line.startswith(('vue', 'arrêt')) for line in lines)
+    seen = sum(line.startswith('vue') for line in lines)
     lines.append(f'{seen} fautes vues sur {len(faults)}')
     (out / 'rapport.txt').write_text('\n'.join(lines) + '\n')
     print(lines[-1])
