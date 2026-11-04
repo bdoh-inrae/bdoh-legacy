@@ -48,6 +48,7 @@ L'ordre de l'audit, resserré autour de la barrière : ce qui demande de lire de
 
 État au 5 novembre, nuit : les phases A et B sont finies, tous les modes rejoués sur les nouveaux dumps, et les 10 fautes de l'ouverture vues. Le registre (C1) est dans le dépôt : ses tests passent et il explique tous les écarts de la dernière passe, relus depuis ses fichiers d'écarts, mais aucun mode n'a encore tourné avec lui. Dans l'ordre :
 
+0. **Mettre Symfony à jour en 7.4.23.** Les contrôles de GitHub échouent depuis `1df7b1c`, sans rapport avec ces commits : `composer audit` refuse 16 avis publiés le 4 novembre, tous corrigés par cette version (installée : 7.4.21, `symfony/config` 7.4.17), et `composer.json` suit déjà `7.4.*`. Certains touchent ce que BDOH emploie (connexions par programme, `access_control`, adresses générées, proxys de confiance) : à lire en mettant à jour, et ce qui concerne BDOH va dans `dev/local/security.md`. `make composer ARGS="update 'symfony/*'"`, relire le `composer.lock`, `make phpstan`, vérifier que les contrôles repassent. Avant le point 1, pour que son rejeu porte sur ce code-là. Aucune version ne se publie tant qu'ils sont en échec.
 1. **Finir C1.** Ajouter à `imports` le contrôle ligne à ligne de la chronique calculée 936, fille de la 9, comme « seules ces mesures diffèrent de l'ancien » pour sa mère : hors des périodes des imports QJO et Qtvar, rien ne doit y différer. Sans lui, le registre pourrait y cacher une faute. Puis rejouer `pages`, `exports`, `imports`, `accounts` et `admin` (`make mail-start` d'abord) : on attend 0 « différents », et aucune « Règle sans écart ». Écrire alors la règle dans `CLAUDE.md`, ligne de la comparaison : un écart admis s'inscrit dans `dev/compare/expected.py`.
 2. **Toutes les fautes, une fois**, avec le registre : `mutants.py` écrit désormais « ADMISE » pour une faute qu'une règle cacherait (règle trop large ou cas manquant). Elles ont été laissées pour ici plutôt que jouées avant C1 : la même passe éprouve les deux. `mutants.py` s'arrête si un mode a déjà un écart inattendu sans faute : d'où le point 1 d'abord.
 3. **C2**, voir plus bas.
@@ -82,7 +83,7 @@ dev/compare/use-base.sh bdoh_small
 
 Pour rejouer les fautes : `dev/compare/mutants.py` (environ 2 h 30 pour toutes, `--only` pour quelques-unes ; modifie `src/`, rien d'autre en parallèle, dépôt propre). Une faute non vue appelle un cas, un arrêt se lit. Chaque correction de la relecture y a sa faute (« ancien comportement »).
 
-Pour jouer tous les modes, l'un après l'autre (environ 1 h 10) :
+Pour jouer tous les modes, l'un après l'autre (environ 1 h 10 ; `make mail-start` d'abord : `state`, `accounts` et `admin` lisent les courriels dans Mailpit) :
 
 ```
 dev/compare/compare.py pages   --old reference-17 --new new --base bdoh_small --server bdoh-db

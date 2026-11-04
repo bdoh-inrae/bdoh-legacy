@@ -10,6 +10,7 @@ Priorité (Lou, 3 novembre) : stabiliser ce BDOH au plus près de l'ancien et le
 
 ## À faire
 
+- **Mettre Symfony à jour en 7.4.23** : 16 avis de sécurité publiés le 4 novembre, dont `composer audit` fait échouer les contrôles de GitHub depuis le commit `1df7b1c`. À faire en premier, avant de rejouer les modes (`dev/plans/2026-11-04_validation.md`, « Pour reprendre »).
 - **Preuves de solidité** : la phase A est faite (`CHANGELOG.md`, 0.2.0). Reste, dans cet ordre ; l'avancée et le point de reprise sont dans [dev/plans/2026-11-04_validation.md](dev/plans/2026-11-04_validation.md), les raisons dans [dev/audits/2026-11-03_validation-plan.md](dev/audits/2026-11-03_validation-plan.md) :
   1. finir le registre des écarts admis, écrit mais pas encore rejoué sur les modes, puis jouer toutes les fautes avec lui ;
   2. couverture du PHP (PCOV) et du SQL (`plpgsql_check`) ;
