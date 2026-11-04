@@ -8,10 +8,10 @@
 # (un volume Docker) est détruite à la fin, même en cas d'échec ; les anciennes valeurs, qui
 # restent dans ses fichiers jusqu'à leur nettoyage, partent avec elle.
 #
-# Ne sortent que le dump anonymisé et un rapport fait de comptes, les chroniques cachées réduites à
-# leurs dates et à leurs qualités (anonymize.sql). Si le rapport signale une fuite possible, aucun
+# Ne sortent que le dump anonymisé, où les valeurs des chroniques cachées sont remplacées
+# (anonymize.sql), et un rapport fait de comptes. Si le rapport signale une fuite possible, aucun
 # dump n'est produit. Le dossier de sortie (par défaut ../bdoh_reference, à côté du
-# dépôt) reste hors de git : certaines séries ne sont pas publiques.
+# dépôt) reste hors de git.
 set -euo pipefail
 
 if [[ $# -lt 1 ]]; then

@@ -5,7 +5,7 @@
 ## Décisions de Lou (2026-11-04)
 
 - Quand régénérer les dumps : confié à Claude, soit juste après le recalcul et les volumes (décision 1 de l'audit).
-- Par quoi remplacer les chroniques cachées : dates et qualités gardées, valeurs remplacées, codes, libellés et positions retirés (décision 2) ; accord provisoire, à confirmer avant de lancer la régénération.
+- Par quoi remplacer les chroniques cachées (décision 2, précisée par Lou le même jour, Claude d'accord) : seules les valeurs sont privées. Elles sont remplacées dans les dumps ; dates, qualités, métadonnées et positions restent, puisque le site les montre et que rien de cela n'est sensible. Les chroniques calculées visibles gardent leurs valeurs : le site les publie aujourd'hui, et leur sort est une question à part (`dev/local/hidden-series.md`), qui ne change rien aux essais.
 - Les dumps bruts du 21 octobre sont là, hors du dépôt : c'est Lou qui lance `make anonymize` dessus.
 - Décisions 3 à 6 : les recommandations de l'audit s'appliquent tant que Lou ne dit pas autre chose.
 
@@ -23,7 +23,7 @@ L'ordre de l'audit, resserré autour de la barrière : ce qui demande de lire de
 **Phase B, la régénération (Lou lance)**
 
 - [x] B1. `dev/anonymize/anonymize.sql` : chroniques cachées traitées, rapport qui s'arrête s'il en reste ; essayé sur des lignes inventées.
-- [ ] B2. Lou confirme la décision 2, lance `make anonymize` sur les deux dumps bruts, détruit ce qui vient des anciens dumps.
+- [ ] B2. Lou lance `make anonymize` sur les deux dumps bruts, détruit ce qui vient des anciens dumps.
 - [ ] B3. Base de développement sur les paquets de Debian 13, rôle sans superuser ; restauration.
 
 **Phase C, barrière tombée**
@@ -39,7 +39,7 @@ L'ordre de l'audit, resserré autour de la barrière : ce qui demande de lire de
 
 ## Ce qui reste à Lou
 
-- Confirmer la décision 2, puis lancer `make anonymize` (B2).
+- Lancer `make anonymize` (B2), au signal de Claude, une fois la phase A finie.
 - Les questions de fait de l'audit : fichiers d'imports restés sur l'ancien serveur, collation et rôle de la base de production, tâches à code 16 ou 32 sur le dump brut.
 
 ## Pour reprendre
@@ -73,6 +73,7 @@ Avant de détruire les rapports (B2) : noter les comptes utiles ici.
 
 ## Suivi
 
+- 2026-11-04, ce qui est privé (décision 2, plus haut) : `dev/anonymize/anonymize.sql` ne traite plus que les valeurs, et plus les codes, les libellés, les stations, les sites, l'historique ni les barèmes. Rejoué sur une copie jetable de la base réduite, sous PostgreSQL 11, en 54 s : contrôles à 0 ; au bit près, toutes les chroniques visibles restent identiques (467 mesures, 746 plages, 98 points) et tous les taux de remplissage aussi ; toutes les cachées changent, sauf une qui n'a que des lacunes. Cet essai a montré un défaut, corrigé : une chronique cachée à valeur unique gardait sa vraie valeur (bornes égales), ce que le contrôle du rapport ne voyait pas ; 8 cas dans la base complète, d'après les comptes.
 - 2026-11-04, recalcul de la base complète, 67 min en tout (et non 3 à 5 h, l'estimation venait de l'audit), commit 98fcd2e, rapport `2026-11-04_075855_recompute` :
   - Codes : 422 calculées au code 0, 151 converties au code 0. Les 28 calculées au code 255 et la convertie au code 1 sont exactement les 28 chroniques calculées sans première transformation et la convertie sans conversion, configurations déjà connues et refusées proprement.
   - Aucune chronique ne garde de mesure calculée d'avant le recalcul : toutes ont vraiment été recalculées.

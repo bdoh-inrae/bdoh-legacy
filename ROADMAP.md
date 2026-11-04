@@ -6,7 +6,7 @@ Code de référence : commit `523cf8e32` de l'ancien dépôt (version 5.0.3, fé
 
 ## En cours
 
-Priorité (Lou, 3 novembre) : stabiliser ce BDOH au plus près de l'ancien et le faire tester vite par les gestionnaires ; les nouvelles fonctions attendent leur validation. La demande de VM : envoyée à l'équipe infra le 3 novembre, réponse attendue ([dev/plans/2026-10-26_deployment.md](dev/plans/2026-10-26_deployment.md)). Les sept modules du portage sont portés et comparés (version 0.1.0, `CHANGELOG.md`, plans dans `dev/plans/`) ; ce qui reste avant la mise en service est ci-dessous. Reprise : le plan de validation est consolidé ([dev/audits/2026-11-03_validation-plan.md](dev/audits/2026-11-03_validation-plan.md)) ; ses six décisions attendent Lou, sans bloquer les étapes 1 à 4 ci-dessous. Le comparateur est durci, on est en train de l'éprouver.
+Priorité (Lou, 3 novembre) : stabiliser ce BDOH au plus près de l'ancien et le faire tester vite par les gestionnaires ; les nouvelles fonctions attendent leur validation. La demande de VM : envoyée à l'équipe infra le 3 novembre, réponse attendue ([dev/plans/2026-10-26_deployment.md](dev/plans/2026-10-26_deployment.md)). Les sept modules du portage sont portés et comparés (version 0.1.0, `CHANGELOG.md`, plans dans `dev/plans/`) ; ce qui reste avant la mise en service est ci-dessous. La validation est en cours : l'avancée et le point de reprise sont dans [dev/plans/2026-11-04_validation.md](dev/plans/2026-11-04_validation.md).
 
 ## À faire
 
@@ -21,7 +21,6 @@ Priorité (Lou, 3 novembre) : stabiliser ce BDOH au plus près de l'ancien et le
   8. une base de développement sur les paquets de Debian 13, un rôle sans superuser ;
   9. code gelé, tous les modes sur la base complète et sur OTHU, une fois.
 - **Proxy inverse** (Lou, question à l'équipe infra, dans sa réponse sur la VM) : y en aura-t-il un devant la VM, et quelle est son adresse ? Si oui, le nouveau doit la connaître (`SYMFONY_TRUSTED_PROXIES`), sinon les limites de fréquence valent pour tout le site (`dev/decisions.md`, « Connexion par lien »).
-- **Chroniques cachées citées dans les listes** (Lou, avec sa cheffe) : sans compte, on voit leur code, leur libellé et leur unité, et 9 partent vers Theia (`dev/differences.md`). À décider ici, ou avec « Ouvrir les données » plus bas. Les autres bizarreries de l'ancien sont corrigées ou laissées, avec leur raison, dans le même fichier.
 - **Affiliations des auteurs à confirmer** (Lou, auprès de Flora Branger) : `CITATION.cff` et `codemeta.json` ; les personnes en CDD sont à RiverLy dans le doute, et Degiuli, Gesche, Jamet et Crochemore à la DSI sans source officielle.
 - **Question aux gestionnaires pendant les essais** : gardent-ils le courriel « nouvel utilisateur » (`dev/differences.md`) ?
 - **Prévenir les gestionnaires** que les fiches publiées sur Theia/OZCAR par l'ancien BDOH ont des coordonnées décalées de 300 à 700 m, corrigées au prochain envoi par le nouveau (`dev/differences.md`, « Coordonnées envoyées à Theia/OZCAR ») ; à joindre au message sur la connexion par lien (`dev/plans/2026-10-26_deployment.md`). Leur signaler aussi ce qu'ils ont à corriger : l'inventaire est dans `dev/local/data-issues.md` (ignoré par Git) : une chronique qui bloque la fiche Theia de REAL-COLLOBRIER, 11 stations placées hors de France, 135 stations sans coordonnées.
@@ -41,17 +40,21 @@ Ce qui améliore nettement l'expérience, la sécurité ou la maintenance pour p
 
 **Ouvrir les données.** Objectif minimum fixé par Lou le 3 novembre, à commencer une fois ce BDOH stabilisé et validé par les testeurs.
 
-- **Données ouvertes** : le cas par défaut. Visibles et téléchargeables sans compte, comme sur Recherche Data Gouv, sous licence ouverte.
-- **Données fermées** : ni visibles ni exportables sans les droits, y compris quand elles font partie d'un jeu de données.
+- **Données ouvertes** : les chroniques visibles, que Lou tient pour publiques (4 novembre). Visibles et téléchargeables sans compte, comme sur Recherche Data Gouv, sous licence ouverte.
+- **Données fermées** : les valeurs des chroniques cachées (`estvisible = false`), et elles seules. Ni visibles ni exportables sans les droits, y compris quand elles font partie d'un jeu de données. Leurs métadonnées et la position de leurs stations restent visibles, comme aujourd'hui.
+- **Droits sur les données fermées** : ceux d'aujourd'hui, à garder. Un compte en fait la demande (`BesoinController`, un courriel aux gestionnaires) et un gestionnaire lui donne un droit sur la chronique, ou le rôle « utilisateur » sur l'observatoire, qui en fait un utilisateur de confiance (`isATrustedUserOfCurrentObservatory`).
 - **Comptes** : ils ne servent plus qu'à ce qui demande des droits (accéder à une chronique fermée, gérer un observatoire). Un panier de stations et de chroniques favorites peut s'y ajouter, si c'est simple.
 - **Téléchargement** : un lien temporaire, ou un export dans le navigateur. Au-dessus d'un certain poids, un compte est nécessaire et le lien arrive par courriel ; plus de pièce jointe de plusieurs Go.
-- **À établir d'abord** (Lou) : quelles chroniques sont ouvertes ou fermées, ce qui reste ambigu aujourd'hui.
+- **À établir avant d'ouvrir** (Lou) :
+  - Les chroniques calculées visibles dont une entrée est cachée : `dev/local/hidden-series.md`.
+  - La licence des données (plus bas), et ce qu'elle permet pour les données de partenaires.
+  - Les droits déjà donnés. Le rôle « utilisateur » sur un observatoire sert aujourd'hui à télécharger des données visibles et ouvre aussi toutes ses chroniques cachées ; une fois le téléchargement libre, il ne servira plus qu'à ces dernières. 172 comptes actifs l'ont sur un observatoire concerné : à revoir avec les gestionnaires.
 
 Constats du 3 novembre, sur les copies anonymisées :
 
 - La base n'a ni catégorie « public » ou « privé », ni part de financement. `estvisible` est le seul interrupteur, et ne dit pas pourquoi une chronique est cachée : 356 chroniques calculées visibles ont une entrée cachée (donnée brute non montrée, résultat publié), et un observatoire entier est caché. Le producteur n'est renseigné que pour 1 502 chroniques sur 3 012, et un partenaire n'a qu'un type et une case « financeur », sans montant.
 - Répartition de la production : 790 chroniques visibles dans un jeu avec DOI (74 millions de mesures), 286 dans un jeu sans DOI, 1 168 hors jeu, 759 cachées hors jeu (108 millions) et 9 cachées dans un jeu avec DOI. Une dizaine de chroniques visibles viennent d'un partenaire de type « Other » ou d'un nom de partenaire privé (CNR, EDF…), à revoir. Sur OTHU, les 119 chroniques sont visibles.
-- Sans compte, une chronique cachée ne se visualise pas : sa page et ses valeurs répondent 403 (essai sur le nouveau, `canConsultTimeseries`, même règle dans l'ancien). Ses métadonnées, elles, se voient (`dev/differences.md`, « Chroniques cachées citées dans les listes »).
+- Sans compte, une chronique cachée ne se visualise pas : sa page et ses valeurs répondent 403 (essai sur le nouveau, `canConsultTimeseries`, même règle dans l'ancien). Ses métadonnées, elles, se voient, et c'est voulu (`dev/differences.md`, « Chroniques cachées citées dans les listes »).
 - Tout téléchargement demande aujourd'hui un compte et un droit explicite (`BdohRightVoter::canDownload`), et part en pièce jointe d'un courriel (`AbstractExportCommand`). Le visualiseur sert sans compte les valeurs d'une chronique visible, jusqu'à 50 000 points par fenêtre.
 - Seul un observatoire de la production a un PDF de conditions, alors que les 28 jeux y renvoient : la licence des données reste à décider.
 - Cadre légal : l'[article L533-4 du code de la recherche](https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000033205794) rend libre la réutilisation des données publiées d'une recherche financée au moins pour moitié par des fonds publics, sauf droit ou réglementation particulière ; il ne dit pas lui-même ce qui doit être publié, à voir avec le service juridique et données d'INRAE.
