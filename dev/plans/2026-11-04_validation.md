@@ -42,7 +42,7 @@ L'ordre de l'audit, resserré autour de la barrière : ce qui demande de lire de
 
 ## Ce qui reste à Lou
 
-- Des fichiers d'import réels, si les gestionnaires peuvent en donner quelques-uns, sans urgence : ils restent hors du dépôt, et se rejouent par `compare.py imports`. Les tâches à code 16 ou 32 sont comptées par le rapport de `make anonymize`, et la collation est fixée de notre côté.
+- Rien pour la validation : dumps régénérés, fichiers d'import et fichiers déposés rapatriés. La VM dépend de la réponse de l'équipe infra.
 
 ## Pour reprendre
 
@@ -79,7 +79,7 @@ dev/compare/compare.py theia   --base bdoh              # ses envois ne vont au 
 
 `pages` contre `reference` mesure en plus l'effet de PostgreSQL (`dev/decisions.md`, « Deux références pour comparer »). Après une passe sur `bdoh` : `dev/compare/use-base.sh bdoh_small`.
 
-Avant de détruire les rapports (B2) : noter les comptes utiles ici.
+Les comptes utiles des rapports sont notés dans le Suivi, et le détail du recalcul dans `dev/local/data-issues.md` : les rapports peuvent partir.
 
 ## Suivi
 
