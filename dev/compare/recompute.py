@@ -81,21 +81,24 @@ def row_differences(base, other, cid):
     """Une chronique ligne à ligne, dans les deux bases, en comptes seulement : aucune valeur ne sort d'ici."""
     def rows(where):
         return {r[0]: r[1:] for r in query(where, f"""
-            SELECT date, encode(float8send(valeur), 'hex'), qualite_id, estcalculee FROM mesure WHERE chronique_id = {cid}""")}
+            SELECT date, encode(float8send(valeur), 'hex'), encode(float8send(minimum), 'hex'),
+                   encode(float8send(maximum), 'hex'), qualite_id, estcalculee
+              FROM mesure WHERE chronique_id = {cid}""")}
 
     a, b = rows(base), rows(other)
     common = a.keys() & b.keys()
+    differ = lambda *fields: sum(any(a[d][k] != b[d][k] for k in fields) for d in common)
     return {'seulement avant': len(a.keys() - b.keys()), 'seulement après': len(b.keys() - a.keys()),
-            'valeurs': sum(a[d][0] != b[d][0] for d in common), 'qualités': sum(a[d][1] != b[d][1] for d in common)}
+            'valeurs': differ(0), 'bornes': differ(1, 2), 'qualités': differ(3), 'marque calculée': differ(4)}
 
 
-def under_postgresql_11(cid, dtype):
+def under_postgresql_11(base, cid, dtype):
     """L'empreinte d'une chronique calculée, recalculée par les fonctions de PostgreSQL 11 dans une
     transaction annulée : (code, lignes, empreinte). Les conversions passent par le PHP : pas ici."""
     if dtype != 'calculee':
         return None
     sql = compare.FINGERPRINTS['mesure'].replace('GROUP BY', f'WHERE chronique_id = {cid} GROUP BY')
-    out = subprocess.run(['docker', 'exec', '-i', compare.CASES_SERVER, 'psql', '-U', 'bdoh', '-d', 'bdoh', '-At', '-F', '\t',
+    out = subprocess.run(['docker', 'exec', '-i', compare.CASES_SERVER, 'psql', '-U', 'bdoh', '-d', base, '-At', '-F', '\t',
                           '-v', 'ON_ERROR_STOP=1'],
                          input=f"BEGIN;\nSELECT bdoh_compute_chronique({cid});\n{sql};\nROLLBACK;\n", capture_output=True, text=True)
     lines = [line for line in out.stdout.splitlines() if line not in ('BEGIN', 'ROLLBACK')]
@@ -116,7 +119,12 @@ def main():
     out = compare.OUT / f"{datetime.datetime.now():%Y-%m-%d_%H%M%S}_recompute"
     out.mkdir(parents=True)
     report = [f"Base : {args.base}", *compare.provenance(), '']
-    say = lambda line: (report.append(line), print(line, flush=True))
+
+    def say(line):
+        """Une ligne du rapport, écrite tout de suite : une passe dure des heures, et peut s'arrêter."""
+        report.append(line)
+        print(line, flush=True)
+        (out / 'rapport.txt').write_text('\n'.join(report) + '\n')
 
     results = {}
     if not args.only_taux:
@@ -124,8 +132,8 @@ def main():
         compare.copy_base(args.base, COPY)
         say(f'Copie de {args.base} : {time.monotonic() - start:.0f} s')
         mark = int(query(COPY, 'SELECT max(id) FROM mesure')[0][0])
-        user = query(COPY, "SELECT id FROM utilisateur WHERE roleadmin = 'FCT' ORDER BY id LIMIT 1")[0][0]
-        items = plan(COPY)
+        items = plan(COPY)  # aucune sur OTHU, dont toutes les chroniques sont continues
+        user = query(COPY, "SELECT id FROM utilisateur WHERE roleadmin = 'FCT' ORDER BY id LIMIT 1")[0][0] if items else None
         start = time.monotonic()
         for depth in sorted({i[0] for i in items}, reverse=True):
             run_level([i for i in items if i[0] == depth], user, args.jobs, results)
@@ -144,7 +152,7 @@ def main():
         before, after = fingerprint_of(args.base), fingerprint_of(COPY)
         differing = {key for key in before.keys() | after.keys() if key[0] == 'mesure' and before.get(key) != after.get(key)}
         say(f"Mesures : {len({k for k in before if k[0] == 'mesure'})} chroniques, {len(differing)} qui diffèrent.")
-        kinds = collections.Counter()
+        kinds, rows = collections.Counter(), collections.Counter()
         with open(out / 'visibles.txt', 'w') as detail:
             for _, cid in sorted(differing):
                 r = results.get(cid)
@@ -153,15 +161,18 @@ def main():
                     continue
                 _, _, dtype, visible = r['item']
                 counts = row_differences(args.base, COPY, cid)
-                old_side = under_postgresql_11(cid, dtype)
+                rows.update(counts)
+                old_side = under_postgresql_11(args.base, cid, dtype)
                 same_as_11 = old_side is not None and (old_side[1], old_side[2]) == after.get(('mesure', cid))
                 verdict = ('conversion, sans ancien' if old_side is None else
                            'histoire : PostgreSQL 11 donne pareil' if same_as_11 else 'À EXAMINER : PostgreSQL 11 donne autrement')
-                kinds[(dtype, verdict)] += 1
+                kinds[(dtype, 'visible' if visible else 'cachée', r['code'], verdict)] += 1
                 if visible:
-                    detail.write(f"{cid}\t{dtype}\t{verdict}\t{counts}\n")
+                    detail.write(f"{cid}\t{dtype}\t{r['code']}\t{verdict}\t{counts}\n")
+                    detail.flush()
         for kind, n in sorted(kinds.items(), key=str):
             say(f'  {kind} : {n}')
+        say(f'  Lignes de ces chroniques : {dict(rows)}')
 
     if not args.only_calculs:
         ids = [int(r[0]) for r in query(COPY, "SELECT id FROM chronique WHERE dtype <> 'discontinue' AND nbmesures > 0 ORDER BY id")]
@@ -179,7 +190,6 @@ def main():
             for cid in sorted((rates - measures_changed) & visible):
                 detail.write(f'{cid}\ttaux différents, mesures identiques\n')
 
-    (out / 'rapport.txt').write_text('\n'.join(report) + '\n')
     print(f'Rapport : {out}')
 
 

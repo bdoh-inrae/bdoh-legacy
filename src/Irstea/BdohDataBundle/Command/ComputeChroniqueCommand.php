@@ -122,6 +122,10 @@ class ComputeChroniqueCommand extends AbstractJobCommand
                             $propagate
                         );
                         $this->dispatcher->dispatch($event, Events::MEASURES_UPDATE);
+                    } else {
+                        // Une insertion en échec (code 16) laisse la purge faite : sans cette exception, la
+                        // transaction validerait une chronique vidée. La console sort sur le même code.
+                        throw new \RuntimeException(sprintf('Le calcul de la chronique %d a échoué (code %d) : ses mesures restent telles quelles.', $chronique->getId(), $result), $result);
                     }
 
                     return $result;

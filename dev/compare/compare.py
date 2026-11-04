@@ -3,7 +3,7 @@
 
     dev/compare/compare.py pages   [--old SIDE] [--new SIDE] [--base BASE] [--only TEXTE]
     dev/compare/compare.py exports [--old SIDE] [--new SIDE] [--base BASE] [--only TEXTE]
-    dev/compare/compare.py state   [--base BASE]
+    dev/compare/compare.py state   [--base BASE] [--inject-sql FICHIER]
     dev/compare/compare.py queue   [--base BASE]
     dev/compare/compare.py imports [--base BASE] [--only TEXTE]
     dev/compare/compare.py accounts [--base BASE]
@@ -83,11 +83,13 @@ CASES_SERVER = 'bdoh-reference-db'  # serveur où tirer les cas (option --server
 
 def query(base, sql, server=None):
     """Lignes d'une requête sur une base du serveur des cas (ou d'un autre), en listes de champs."""
-    out = subprocess.run(
+    done = subprocess.run(
         ['docker', 'exec', '-i', server or CASES_SERVER, 'psql', '-U', 'bdoh', '-d', base,
-         '-v', 'ON_ERROR_STOP=1', '-At', '-F', '\t', '-c', sql],
-        check=True, capture_output=True, text=True).stdout
-    return [line.split('\t') for line in out.splitlines()]
+         '-v', 'ON_ERROR_STOP=1', '-At', '-F', '\t', '-c', sql], capture_output=True, text=True)
+    if done.returncode:
+        # La première ligne de l'erreur seulement : la suite (DETAIL) peut citer une ligne de la base.
+        raise RuntimeError(f"psql sur {base} : {(done.stderr.splitlines() or ['sans message'])[0]}\n{sql[:300]}")
+    return [line.split('\t') for line in done.stdout.splitlines()]
 
 
 # Observatoire de chaque chronique, par sa station et le premier site de la station.
@@ -457,6 +459,30 @@ def page_lines(site, status, headers, body):
 
 # --- Comparaison ---------------------------------------------------------------------------------
 
+def recent_days():
+    """Le jour où l'on est et la veille. Les dates du moment s'écrivent en UTC ou à l'heure de Paris selon
+    le côté (dev/differences.md, « Deux fuseaux horaires »), et une passe peut franchir minuit. Aucune date
+    d'une base anonymisée n'est aussi récente."""
+    today = datetime.date.today()
+    return [today, today - datetime.timedelta(days=1)]
+
+
+def moment_mask():
+    """Les dates du moment, en ISO (arguments d'une tâche) et en français (descriptions de l'historique)."""
+    return re.compile('|'.join([*(f'{d}T[\\d:]+' for d in recent_days()),
+                                *(f'{d:%d/%m/%Y} [\\d:]+' for d in recent_days())]))
+
+
+def export_line(line):
+    """Une ligne d'un fichier d'export, sans ce qui dit quand il a été fait : la date de son entête, et le
+    jour de la ligne DEB du format Qtvar (date('Ymd')). Un autre jour que les derniers reste un écart."""
+    line = re.sub(r'^(Export du|Export of) .*? (au format|in format)', r'\1 <date> \2', line)
+    if line.startswith('DEB;'):
+        for day in recent_days():
+            line = line.replace(f'{day:%Y%m%d}', '<jour>')
+    return line
+
+
 # Une date ou une heure, à laisser telle quelle ; sinon un nombre, pris entier, pas au milieu d'un mot
 TOKEN = re.compile(r'(?P<moment>\d{4}-\d\d-\d\d(?:[T ]\d\d:\d\d(?::\d\d(?:\.\d+)?)?)?'
                    r'|\d\d/\d\d/\d{4}(?: \d\d:\d\d(?::\d\d)?)?|\d\d:\d\d(?::\d\d(?:\.\d+)?)?)'
@@ -594,9 +620,12 @@ class Report:
         key, diff, rounding = classify(old, new, exact)
         self.counts[key] += 1
         if diff or rounding:
-            slug = re.sub(r'[^\w.-]+', '_', name).strip('_')[:150]
+            # Écrits pour un système de fichiers, deux noms de cas peuvent se confondre (« +01:00 » et
+            # « -01:00 ») : leur empreinte les sépare, et reste la même d'une passe à l'autre.
+            slug = re.sub(r'[^\w.-]+', '_', name).strip('_')[:140]
+            unique = hashlib.sha1(name.encode()).hexdigest()[:8]
             shown = [f'~ {a}\n~ {b}' for a, b in rounding[:20]]
-            (self.dir / f'{slug}.diff').write_text('\n'.join([name, *diff, *shown, '']))
+            (self.dir / f'{slug}.{unique}.diff').write_text('\n'.join([name, *diff, *shown, '']))
             self.summary.append(f"{key:<26} {name}" + (f'  ({len(rounding)} arrondis)' if rounding else ''))
         print('X' if key == 'différents' else '.', end='', flush=True)
 
@@ -639,9 +668,8 @@ def run_exports(args):
     def run(side, case):
         r = subprocess.run([*side.console, *case, '--env=prod'], capture_output=True, text=True)
         lines = [f'code de sortie {r.returncode}', *r.stdout.splitlines(), *r.stderr.splitlines()]
-        # Date de l'export et dossier temporaire changent à chaque fois.
-        return [re.sub(r'^(Export du|Export of) .*? (au format|in format)', r'\1 <date> \2', line)
-                for line in lines if not line.startswith('# Printing ')]
+        # Le moment de l'export et le dossier temporaire changent à chaque fois.
+        return [export_line(line) for line in lines if not line.startswith('# Printing ')]
 
     cases = [c for c in export_cases(args.base) if args.only in ' '.join(c)]
     report = Report('exports')
@@ -733,15 +761,20 @@ MOMENT_COLUMNS = ['miseajour', 'datecreation', 'derniereconnection', 'password',
 def other_tables_lines(base, known):
     """Toutes les tables que les requêtes nommées (known) ne lisent pas, une ligne chacune : son nombre
     de lignes et son empreinte ; et le nombre de tables du schéma temp, que les imports remplissent. Une
-    écriture dans une table qu'on n'attendait pas se voit ainsi."""
+    écriture dans une table qu'on n'attendait pas se voit ainsi. L'empreinte est une somme, sans tri ni texte
+    assemblé : assembler celle de 257 millions de mesures dépasse la mémoire de PostgreSQL."""
     tables = [row[0] for row in query(base, """SELECT table_name FROM information_schema.tables
                                                 WHERE table_schema = 'bdoh' AND table_type = 'BASE TABLE'
                                                 ORDER BY 1""", NEW_SERVER) if row[0] not in known]
     keys = ''.join(f" - '{column}'" for column in MOMENT_COLUMNS)
     lines = []
     for table in tables:
-        row = query(base, f"""SELECT count(*), coalesce(md5(string_agg(h, '' ORDER BY h)), '') FROM
-                              (SELECT md5((to_jsonb(t){keys})::text) AS h FROM bdoh.{table} t) x""", NEW_SERVER)[0]
+        if table in FINGERPRINTS:  # les mesures et leurs voisines : plus vite en binaire, et au bit près
+            rows = query(base, FINGERPRINTS[table], NEW_SERVER)
+            lines.append(f'{table}\t{sum(int(r[2]) for r in rows)}\t{sum(int(r[3]) for r in rows)}')
+            continue
+        row = query(base, f"""SELECT count(*), coalesce(sum(('x' || substr(md5((to_jsonb(t){keys})::text), 1, 15))::bit(60)::bigint), 0)
+                                FROM bdoh.{table} t""", NEW_SERVER)[0]
         lines.append(f'{table}\t' + '\t'.join(row))
     temp = query(base, "SELECT count(*) FROM information_schema.tables WHERE table_schema = 'temp'", NEW_SERVER)[0][0]
     return [*lines, f'schéma temp\t{temp} tables']
@@ -774,9 +807,7 @@ def mail_lines(ordered=True):
                 for name in z.namelist():
                     content = z.read(name)
                     if name.endswith('.txt'):
-                        lines += [f'== {name}', *(re.sub(r'^(Export du|Export of) .*? (au format|in format)',
-                                                         r'\1 <date> \2', line)
-                                                  for line in content.decode('utf-8', 'replace').splitlines())]
+                        lines += [f'== {name}', *map(export_line, content.decode('utf-8', 'replace').splitlines())]
                     else:
                         lines.append(f'== {name} {hashlib.sha256(content).hexdigest()[:16]}')
     return [line for lines in (messages if ordered else sorted(messages)) for line in lines]
@@ -841,14 +872,48 @@ def state_lines(base, historique, tables=STATE_QUERIES):
     """L'état d'une copie, table par table ; les dates du moment sont normalisées : dans les arguments
     des taux de remplissage d'une chronique vide, et dans les descriptions de l'historique (« Créé le
     26/10/2026 13:18:50 UTC »), que les deux côtés écrivent à une seconde d'écart."""
-    recent = [datetime.date.today() - datetime.timedelta(days=n) for n in (0, 1)]
-    moment = re.compile('|'.join([*(f'{d}T[\\d:]+' for d in recent),
-                                  *(f'{d:%d/%m/%Y} [\\d:]+' for d in recent)]))
+    moment = moment_mask()
     offset = re.compile(r'(\dT\d\d:\d\d:\d\d|<maintenant>)[+-]\d\d:\d\d')
     return {table: [offset.sub(r'\1', moment.sub('<maintenant>', '\t'.join(row))) if table == 'jms_jobs'
                     else moment.sub('<maintenant>', '\t'.join(row))
                     for row in query(base, STATE_QUERIES[table].format(historique=historique), NEW_SERVER)]
             for table in tables}
+
+
+def inject_sql(base, path):
+    """Une faute écrite en SQL, dans une copie : comme le ferait une migration fautive (mutants.py)."""
+    subprocess.run(['docker', 'exec', '-i', NEW_SERVER, 'psql', '-U', 'bdoh', '-d', base, '-v', 'ON_ERROR_STOP=1', '-q'],
+                   input=Path(path).read_text(), text=True, check=True, capture_output=True)
+
+
+def failed_computation_checks(console, base, chronique, user):
+    """Un calcul en échec laisse la chronique telle quelle, et sort sur son code (dev/differences.md, « Calcul
+    en échec qui vide la chronique ») : une insertion refusée donne le code 16, un effacement refusé le 32.
+    Un déclencheur fait échouer le calcul ; sans lui, le calcul rend de nouveau les mêmes mesures. Rien ne se
+    lit des mesures qu'une empreinte."""
+    def state():
+        return [query(base, FINGERPRINTS['mesure'].replace('GROUP BY', f'WHERE chronique_id = {chronique} GROUP BY'), NEW_SERVER),
+                query(base, f'SELECT nbmesures, datedebutmesures, datefinmesures FROM chronique WHERE id = {chronique}', NEW_SERVER)]
+
+    def computed():
+        return subprocess.run([*console, 'bdoh:compute:chronique', chronique, user, '--env=prod'], capture_output=True).returncode
+
+    query(base, """CREATE FUNCTION essai_refus() RETURNS trigger LANGUAGE plpgsql AS
+                   $$ BEGIN RAISE EXCEPTION 'refus de cet essai'; END $$""", NEW_SERVER)
+    before, checks = state(), {}
+    for name, operation, row, expected in [('insertion refusée', 'INSERT', 'NEW', 16), ('effacement refusé', 'DELETE', 'OLD', 32)]:
+        query(base, f"""CREATE TRIGGER essai_refus BEFORE {operation} ON mesure FOR EACH ROW
+                        WHEN ({row}.chronique_id = {chronique}) EXECUTE FUNCTION essai_refus()""", NEW_SERVER)
+        code = computed()
+        query(base, 'DROP TRIGGER essai_refus ON mesure', NEW_SERVER)
+        checks[f'nouveau seul : calcul en échec, {name}, chronique gardée'] = (
+            ['conforme'] if code == expected and state() == before and before[0]
+            else [f'code {code}, attendu {expected} ; chronique {"gardée" if state() == before else "changée"}'])
+    query(base, 'DROP FUNCTION essai_refus()', NEW_SERVER)
+    code = computed()
+    checks['nouveau seul : calcul refait après un échec, mêmes mesures'] = (
+        ['conforme'] if code == 0 and state()[0] == before[0] else [f'code {code}'])
+    return checks
 
 
 def run_state(args):
@@ -924,10 +989,15 @@ def run_state(args):
             with old_17_on(base, mailer_transport='smtp', mailer_host='mailpit', mailer_port='1025') as console:
                 log = play(SIDES['reference-17'], console, 'jms-job-queue:run', base)
         else:
+            if args.inject_sql:
+                inject_sql(base, args.inject_sql)
             with new_on(base, template, 'MAILER_DSN=smtp://mailpit:1025') as console:
                 log = play(SIDES['new'], console, 'bdoh:jobs:run', base)
         sides[name] = {'étapes': log, 'courriels': mail_lines(), **state_lines(base, historique),
                        'autres tables': other_tables_lines(base, STATE_QUERIES)}
+        if name == 'nouveau' and not args.same:
+            with new_on(base, template) as console:
+                checks.update(failed_computation_checks(console, base, *commands[0][1:3]))
 
     report = Report('state')
     for part in sides['ancien']:
@@ -950,6 +1020,19 @@ def run_state(args):
           ' reference-17 et new, puis :\n'
           '  dev/compare/compare.py pages --old reference-17 --new new --base bdoh_state_old'
           ' --server bdoh-db --only /jobs')
+
+def queue_overlaps(base):
+    """Les tâches d'une même file menées en même temps, ce qui ne doit jamais arriver, en lignes ; et le
+    nombre de paires de tâches menées de front, sans quoi l'essai ne prouve rien."""
+    overlaps = query(base, """
+        SELECT a.queue, a.id, b.id FROM jms_jobs a JOIN jms_jobs b
+          ON b.queue = a.queue AND b.id > a.id
+         AND b.startedat < a.closedat AND a.startedat < b.closedat""", NEW_SERVER)
+    parallel = query(base, """
+        SELECT count(*) FROM jms_jobs a JOIN jms_jobs b ON b.id > a.id
+         AND b.startedat < a.closedat AND a.startedat < b.closedat""", NEW_SERVER)[0][0]
+    return [' '.join(row) for row in overlaps], int(parallel)
+
 
 def run_queue(args):
     """L'essai de l'audit (constat 3) : trois recalculs rapprochés avec propagation, sur une
@@ -986,32 +1069,27 @@ def run_queue(args):
                       JOIN siteexperimental se ON se.id = ss.site_id WHERE c.id = {chronique} LIMIT 1))
             ) AS x(class, id)""", NEW_SERVER)
 
-    sides = {}
+    sides, overlaps, parallel = {}, {}, {}
     for name, base, jobs in [('deux à la fois', 'bdoh_queue_parallel', 2), ('une à une', 'bdoh_queue_serial', 1)]:
         copy_base(template, base)
         for chronique in [parent, child, parent]:
             enqueue(base, chronique)
         console = ['docker', 'exec', '-e', f'DATABASE_URL={NEW_URL.format(base)}', 'bdoh-app', 'php', 'bin/console']
         drain(console, 'bdoh:jobs:run', base, jobs=jobs, rounds=60)
-        today = datetime.date.today().isoformat()
         sides[name] = state_lines(base, 0, ['chronique', 'mesure', 'tauxremplissage'])
         # Les tâches, sans leur ordre, qui dépend de celui où elles finissent
-        sides[name]['tâches'] = sorted(' '.join(row) for row in query(base, """
+        mask = moment_mask()
+        sides[name]['tâches'] = sorted(mask.sub('<maintenant>', ' '.join(row)) for row in query(base, """
             SELECT command, args::text, state, exitcode FROM jms_jobs""", NEW_SERVER))
-        sides[name]['tâches'] = [re.sub(today + r'T[\d:]+', '<maintenant>', line) for line in sides[name]['tâches']]
-        overlaps = query(base, """
-            SELECT a.queue, a.id, b.id FROM jms_jobs a JOIN jms_jobs b
-              ON b.queue = a.queue AND b.id > a.id
-             AND b.startedat < a.closedat AND a.startedat < b.closedat""", NEW_SERVER)
-        parallel = query(base, """
-            SELECT count(*) FROM jms_jobs a JOIN jms_jobs b ON b.id > a.id
-             AND b.startedat < a.closedat AND a.startedat < b.closedat""", NEW_SERVER)[0][0]
-        print(f'{name} : {len(sides[name]["tâches"])} tâches, {parallel} paires menées en même temps,'
-              f' {len(overlaps)} dans une même file {overlaps or ""}')
+        overlaps[name], parallel[name] = queue_overlaps(base)
+        print(f'{name} : {len(sides[name]["tâches"])} tâches, {parallel[name]} paires menées en même temps,'
+              f' {len(overlaps[name])} dans une même file')
 
     report = Report('queue', exact=True)  # le nouveau contre lui-même
     for part in sides['une à une']:
         report.add(part, sides['une à une'][part], sides['deux à la fois'][part])
+    report.add('même file en même temps, deux à la fois', [], overlaps['deux à la fois'])
+    report.add('tâches menées de front, deux à la fois', ['oui'], ['oui' if parallel['deux à la fois'] else 'non'])
 
     # Deux imports rapprochés, sur les deux chroniques mères d'une chronique calculée : chacun en
     # lance le recalcul par propagation. La file les mène deux à la fois après les deux imports, ou
@@ -1046,13 +1124,12 @@ def run_queue(args):
             sides[name]['tâches'] = sorted(
                 re.sub(r'\d{4}-\d\d-\d\dT[\d:]+', '<date>', ' '.join(row)) for row in query(base, """
                     SELECT command, args::text, state, exitcode FROM jms_jobs""", NEW_SERVER))
-            overlaps = query(base, """
-                SELECT a.queue, a.id, b.id FROM jms_jobs a JOIN jms_jobs b
-                  ON b.queue = a.queue AND b.id > a.id
-                 AND b.startedat < a.closedat AND a.startedat < b.closedat""", NEW_SERVER)
-            print(f'{name} : {len(sides[name]["tâches"])} tâches, {len(overlaps)} dans une même file {overlaps or ""}')
+            overlaps[name], parallel[name] = queue_overlaps(base)
+            print(f'{name} : {len(sides[name]["tâches"])} tâches, {parallel[name]} paires menées en même temps,'
+                  f' {len(overlaps[name])} dans une même file')
         for part in sides['imports, une à une']:
             report.add(f'imports, {part}', sides['imports, une à une'][part], sides['imports, deux à la fois'][part])
+        report.add('même file en même temps, imports, deux à la fois', [], overlaps['imports, deux à la fois'])
     report.close()
 
 
@@ -3031,7 +3108,10 @@ def main():
     parser.add_argument('--jobs', type=int, default=6, help='requêtes menées en parallèle')
     parser.add_argument('--profile', help='un seul profil (anonyme, utilisateur, gestionnaire, administrateur)')
     parser.add_argument('--same', action='store_true', help="state : l'ancien contre lui-même, pour mesurer le bruit")
+    parser.add_argument('--inject-sql', metavar='FICHIER', help='state : du SQL à jouer sur la copie du nouveau (mutants.py)')
     args = parser.parse_args()
+    if args.inject_sql and args.what != 'state':
+        parser.error('--inject-sql ne vaut que pour state')
     CASES_SERVER = args.server
     {'pages': run_pages, 'exports': run_exports, 'state': run_state, 'queue': run_queue, 'imports': run_imports,
      'accounts': run_accounts, 'admin': run_admin, 'theia': run_theia,

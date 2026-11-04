@@ -15,9 +15,9 @@ L'ordre de l'audit, resserré autour de la barrière : ce qui demande de lire de
 
 **Phase A, sur les dumps actuels (barrière en place, rapports lus en comptes)**
 
-- [ ] A1. Durcir le comparateur : règle d'arrondi selon la nature du nombre, empreintes sans `concat_ws` et en binaire (`dev/reference/fingerprint.sql`), `plage`, toutes les autres tables, provenance du rapport, code de sortie, tests de ses fonctions (dans les contrôles de GitHub).
-- [ ] A2. L'éprouver : altérations SQL (`compare.py selftest`), passe de l'ancien contre l'ancien, fautes remises dans le code (`dev/compare/mutants.py`).
-- [ ] A3. Corriger le calcul en échec qui vide la chronique, avec son cas dans `state`.
+- [x] A1. Durcir le comparateur : règle d'arrondi selon la nature du nombre, empreintes sans `concat_ws` et en binaire (`dev/reference/fingerprint.sql`), `plage`, toutes les autres tables, provenance du rapport, code de sortie, tests de ses fonctions (dans les contrôles de GitHub).
+- [ ] A2. L'éprouver : altérations SQL (`compare.py selftest`, fait), passe de l'ancien contre l'ancien (faite), fautes remises dans le code (`dev/compare/mutants.py`, reste à jouer).
+- [x] A3. Corriger le calcul en échec qui vide la chronique, avec son cas dans `state`.
 - [ ] A4. Recalcul contre la base : chroniques calculées et converties, les plus profondes d'abord, codes comptés, identifiants vérifiés, tri par l'ancien sur PostgreSQL 11 ; taux de remplissage ; temps et mémoire ; OTHU restaurée, empreinte et taux.
 
 **Phase B, la régénération (Lou lance)**
@@ -44,23 +44,32 @@ L'ordre de l'audit, resserré autour de la barrière : ce qui demande de lire de
 
 ## Pour reprendre
 
-Rien ne tourne ; les deux instances sont sur `bdoh_small`. Dans l'ordre :
+Dans l'ordre :
 
-1. Trois défauts du comparateur, révélés par une passe qui a franchi minuit :
-   - `run_exports` : masquer le jour de la ligne `DEB;EXP-HYDRO` (`date('Ymd')`, `Qtvar.php:71`), Paris pour l'ancien en ligne de commande, UTC pour le nouveau ;
-   - `run_queue` (`compare.py:1001`) : le masque ne connaît que la date locale du jour, alors que le nouveau écrit en UTC ; prendre aussi la veille, comme `state_lines` ;
-   - `Report.add` : deux noms de cas qui donnent le même nom de fichier s'écrasent (27 cas, 24 fichiers d'écart) ; rendre le nom unique.
-2. Ce qui manque à `compare.py` pour la suite : `--inject-sql FICHIER` (appliqué à la copie du nouveau juste après `copy_base`, au moins dans `run_state`), attendu par `mutants.py` ; les recouvrements de `queue` dans le rapport (aujourd'hui seulement imprimés).
-3. Rejouer `exports` et `queue` : on attend les comptes d'hier (135/6/0/0 et 8/0/0/0). Les 3 cas d'exports sans fichier d'écart ne sont vérifiés qu'à ce moment-là.
-4. Tirer au clair ce qui a bougé depuis hier, en comptes et en forme masquée seulement : `pages` (ci-dessous) et `theia` (2 cas de moins alors qu'un cas s'est ajouté : un cas perdu sans bruit serait grave).
-5. A3, puis `mutants.py` (environ 1 h 30, modifie `src/`, rien d'autre en parallèle), puis A4 : `recompute.py --base bdoh` (3 à 5 h). `mutants.py` et `recompute.py` n'ont encore jamais tourné.
+1. `dev/compare/mutants.py` (environ 1 h 30, modifie `src/`, rien d'autre en parallèle, dépôt propre) : une faute non vue appelle un cas.
+2. A4 : `dev/compare/recompute.py --base bdoh` (3 à 5 h), puis temps et mémoire (`dev/compare/volumes.py`, pas encore lancé).
 
-Pour jouer tous les modes : `dev/compare/compare.py MODE --old reference --new new --base bdoh_small`, l'un après l'autre, avec `pages`, `exports`, `queue`, `imports`, `accounts`, `admin`, `theia`. Environ 1 h 10.
+Pour jouer tous les modes, l'un après l'autre (environ 1 h 10) :
+
+```
+dev/compare/compare.py pages   --old reference-17 --new new --base bdoh_small --server bdoh-db
+dev/compare/compare.py exports --old reference --new new --base bdoh_small
+dev/compare/compare.py MODE    --base bdoh_small        # state, queue, imports, accounts, admin
+dev/compare/compare.py theia   --base bdoh              # ses envois ne vont au bout que sur la base complète
+```
+
+`pages` contre `reference` mesure en plus l'effet de PostgreSQL (`dev/decisions.md`, « Deux références pour comparer »). Après une passe sur `bdoh` : `dev/compare/use-base.sh bdoh_small`.
 
 Avant de détruire les rapports (B2) : noter les comptes utiles ici.
 
 ## Suivi
 
+- 2026-11-04, matin : les trois défauts de la passe de minuit corrigés (jour de la ligne `DEB`, masque de `queue`, noms de fichiers d'écarts qui s'écrasaient). `exports` retrouve 135/6/0/0 ; `queue` 11/0/0/0, dont trois parties nouvelles au rapport : aucun recouvrement dans une même file, et 53 et 64 paires de tâches menées de front, sans quoi l'essai ne prouverait rien. `pages` et `theia` expliqués, sans régression :
+  - `pages` : la passe de cette nuit opposait `reference`, les précédentes `reference-17`, ce que leurs rapports ne disaient pas encore. Rejouée contre `reference-17` : 1108/0/44/60, les mêmes cas dans les mêmes catégories. L'écart vient donc de PostgreSQL 11 (10 pages de mesures à 15 chiffres contre 17, 28 pages de plus dans un autre ordre, toutes de jeux de données), plus 6 listes de comptes : un compte d'essai de Lou dans `bdoh_small` du serveur PostgreSQL 17, seule différence de contenu entre les deux copies (comptes des tables, à la table de suivi des migrations près). Laissé : la régénération le retirera.
+  - `theia` : les 3 vérifications d'envoi ne se jouent que sur la base complète, où se trouve une fiche qui passe le contrôle du schéma. 34/0/0/0 sur `bdoh_small`, 37/0/0/0 sur `bdoh` (rejoué) : aucun cas perdu.
+  - Trouvé en chemin : l'empreinte de « toutes les autres tables » assemblait un texte pour toutes les mesures, et dépassait la mémoire de PostgreSQL sur la base complète (`theia --base bdoh`). C'est une somme désormais, et les tables de mesures passent par leur empreinte binaire. La passe finale (C6) aurait échoué là.
+  - `mutants.py` distingue un mode qui s'arrête, vérifie que ses textes existent, et lit les fichiers d'écarts (sans les montrer) : un cas de plus en écart, ou un écart qui change. `recompute.py` écrit son rapport au fil de l'eau et compte aussi les bornes.
+  - A3 fait : le calcul en échec lève une exception, et la console sort sur le même code. `state` : 22/0/0/0, dont l'insertion refusée (16), l'effacement refusé (32), et le calcul refait, qui rend les mêmes mesures.
 - 2026-11-04, nuit : tous les modes avec le comparateur durci, sur `bdoh_small` (commit 1a1920c). En identiques / à un arrondi près / autre ordre / différents :
 
   ```

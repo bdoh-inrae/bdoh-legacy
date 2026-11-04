@@ -6,6 +6,7 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/). Numéros de v
 
 ### Corrigé
 
+- Un calcul de chronique qui échoue à l'insertion laisse ses mesures en place : l'ancien BDOH la laissait vide, avec des métadonnées qui en annonçaient toujours.
 - Aux imports QJO et Qtvar, une valeur écrite `0` reste un zéro : l'ancien BDOH en faisait une lacune, sans message.
 - À l'import QJO, un trou de plus d'un mois se comble entièrement par des lacunes, et des lignes qui reviennent en arrière n'en ajoutent plus.
 - Une station créée avec ses coordonnées a désormais son point, et apparaît donc sur les cartes.

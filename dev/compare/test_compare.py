@@ -7,9 +7,13 @@ arrondi ni effacée par une normalisation. Les erreurs sur les données elles-m�
 copie de base : compare.py selftest.
 """
 
+import datetime
 import importlib.util
+import io
 import sys
+import tempfile
 import unittest
+from contextlib import redirect_stdout
 from pathlib import Path
 
 sys.dont_write_bytecode = True
@@ -141,6 +145,65 @@ class Pages(unittest.TestCase):
         self.assertNotEqual(self.lines('{"a": 1}', kind='application/json'), self.lines('{"a": 2}', kind='application/json'))
         self.assertEqual(self.lines('{"a": 1, "b": 2}', kind='application/json'),
                          self.lines('{"b": 2, "a": 1}', kind='application/json'))
+
+
+class Moments(unittest.TestCase):
+    """Les masques du moment : ce qui change d'une exécution à l'autre, et rien d'autre."""
+
+    def test_the_day_of_a_qtvar_header(self):
+        today, yesterday = compare.recent_days()
+        line = 'DEB;EXP-HYDRO;"EXPORT DE DONNEES A PARTIR DE BDOH";{};IRSTEA;1997-1;;;'
+        self.assertEqual(compare.export_line(line.format(f'{today:%Y%m%d}')),
+                         compare.export_line(line.format(f'{yesterday:%Y%m%d}')))
+        self.assertNotEqual(compare.export_line(line.format(f'{today:%Y%m%d}')), compare.export_line(line.format('20240105')))
+
+    def test_a_measure_of_the_same_day_stays(self):
+        today = compare.recent_days()[0]
+        line = f'01;X;{today:%Y%m%d};1200;3.500;;'
+        self.assertEqual(compare.export_line(line), line)
+
+    def test_the_head_of_an_export(self):
+        self.assertEqual(compare.export_line('Export du 05/01/2024 12:00 au format Bdoh'),
+                         compare.export_line('Export du 06/01/2024 13:00 au format Bdoh'))
+
+    def test_moments_of_a_job(self):
+        mask = compare.moment_mask()
+        today, yesterday = compare.recent_days()
+        a = f'bdoh:compute:filling_rates ["12", "{today}T00:01:02+00:00"]'
+        b = f'bdoh:compute:filling_rates ["12", "{yesterday}T23:59:02+00:00"]'
+        self.assertEqual(mask.sub('<m>', a), mask.sub('<m>', b))
+        for kept in ['["12", "2024-01-05T00:01:02+00:00"]',
+                     f'["13", "{today}T00:01:02+00:00"]']:
+            with self.subTest(kept):
+                self.assertNotEqual(mask.sub('<m>', a), mask.sub('<m>', kept))
+
+    def test_two_days_only(self):
+        old = datetime.date.today() - datetime.timedelta(days=2)
+        self.assertEqual(compare.moment_mask().sub('<m>', f'{old}T00:00:00'), f'{old}T00:00:00')
+
+
+class Reports(unittest.TestCase):
+    """Report : un fichier d'écarts par cas, même quand leurs noms se confondent."""
+
+    def test_two_names_that_look_alike(self):
+        with tempfile.TemporaryDirectory() as out:
+            compare.OUT = Path(out)
+            report = compare.Report('essai')
+            with redirect_stdout(io.StringIO()):
+                report.add("export 12 '+01:00'", ['a'], ['b'])
+                report.add("export 12 '-01:00'", ['a'], ['c'])
+            self.assertEqual(len(list(report.dir.glob('*.diff'))), 2)
+
+    def test_the_same_name_keeps_its_file(self):
+        with tempfile.TemporaryDirectory() as out:
+            compare.OUT = Path(out)
+            names = []
+            for kind in ('un', 'deux'):
+                report = compare.Report(kind)
+                with redirect_stdout(io.StringIO()):
+                    report.add('un cas', ['a'], ['b'])
+                names.append(next(report.dir.glob('*.diff')).name)
+            self.assertEqual(*names)
 
 
 class Fingerprints(unittest.TestCase):

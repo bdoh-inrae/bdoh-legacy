@@ -5,8 +5,12 @@
 
 Chaque faute est une erreur plausible d'un portage sur ce qui écrit ou sort des données : un piège de
 dev/decisions.md, ou une ligne qui se recopie mal. Le lanceur modifie le fichier, ou une fonction SQL de la
-copie du nouveau, joue le mode qui devrait la voir, compare ses comptes à ceux de la même passe sans faute,
+copie du nouveau, joue le mode qui devrait la voir, compare son rapport à celui de la même passe sans faute,
 puis remet tout en place. Une faute non vue n'est pas un échec à masquer : elle dit qu'il manque un cas.
+
+Le verdict lit les fichiers d'écarts sans les montrer : un cas de plus en écart, ou un écart qui change. Un
+mode qui s'arrête en route avec la faute, et pas sans elle, l'a vue aussi, d'une autre façon, et le rapport
+le dit à part.
 
 Un seul lancement à la fois, sur un dépôt propre : il travaille sur les fichiers de src/. Le rapport, qui
 ne contient que le nom des fautes et des comptes, va dans ../bdoh_reference/compare/.
@@ -14,6 +18,7 @@ ne contient que le nom des fautes et des comptes, va dans ../bdoh_reference/comp
 
 import argparse
 import datetime
+import hashlib
 import re
 import subprocess
 import sys
@@ -55,6 +60,8 @@ PHP = [
      '$days = $interval->invert ? 0 : $interval->days;', '$days = $interval->invert ? 0 : $interval->d;'),
     ('shapefile : latitude et longitude échangées', 'imports', 'shapefile', STATIONS,
      'latitude=ST_X(ST_GeometryN(t.geom, 1))', 'latitude=ST_Y(ST_GeometryN(t.geom, 1))'),
+    ('calcul en échec : la chronique vidée (ancien comportement)', 'state', '', SRC + 'BdohDataBundle/Command/ComputeChroniqueCommand.php',
+     "throw new \\RuntimeException(sprintf('Le calcul de la chronique", "if (false) throw new \\RuntimeException(sprintf('Le calcul de la chronique"),
     ('calcul : pas de propagation aux filles', 'state', '', SRC + 'BdohDataBundle/EventListener/ChronicleListener.php',
      '$this->jobManager->enqueueChronicleComputation($transfo->getSortie(), $event->getUser(), true);',
      '$this->jobManager->enqueueChronicleComputation($transfo->getSortie(), $event->getUser(), false);'),
@@ -118,7 +125,9 @@ def literal(text):
 
 
 def play(mode, only, base, inject=None):
-    """Le mode, sa sortie dans un journal qu'on ne lit pas : les comptes de son rapport, et sa durée."""
+    """Le mode, sa sortie dans un journal qu'on ne lit pas : ses comptes, l'empreinte de chaque fichier
+    d'écarts (sans le lire ici pour le montrer), et sa durée. Sans rapport écrit, le mode s'est arrêté :
+    les comptes valent alors None."""
     command = [sys.executable, '-B', str(ROOT / 'dev/compare/compare.py'), mode, '--base', base]
     if mode in ('pages', 'exports'):
         command += ['--old', 'reference', '--new', 'new']
@@ -126,13 +135,18 @@ def play(mode, only, base, inject=None):
         command += ['--only', only]
     if inject:
         command += ['--inject-sql', inject]
+    before = set(compare.OUT.glob(f'*_{mode}'))
     start = time.monotonic()
-    done = subprocess.run(command, capture_output=True, text=True)
-    reports = sorted(compare.OUT.glob(f'*_{mode}'))
-    text = (reports[-1] / 'rapport.txt').read_text()
+    subprocess.run(command, capture_output=True, text=True)
+    seconds = time.monotonic() - start
+    written = sorted(path for path in set(compare.OUT.glob(f'*_{mode}')) - before if (path / 'rapport.txt').exists())
+    if not written:
+        return None, {}, seconds
+    text = (written[-1] / 'rapport.txt').read_text()
     counts = {key: int(n) for n, key in re.findall(r'^\s*(\d+) (.+)$', text, re.M)
               if key in ('identiques', 'à un arrondi près', 'même contenu, autre ordre', 'différents')}
-    return counts, time.monotonic() - start, done.returncode
+    gaps = {path.name: hashlib.sha1(path.read_bytes()).hexdigest() for path in written[-1].glob('*.diff')}
+    return counts, gaps, seconds
 
 
 def main():
@@ -150,6 +164,12 @@ def main():
     for name, mode, only, file, old, new in [f for f in faults if len(f) == 6]:
         if old not in (ROOT / file).read_text():
             sys.exit(f'Texte introuvable pour « {name} » dans {file}')
+    for name, mode, function, old, new in [f for f in faults if len(f) == 5]:
+        found = compare.query(args.base, f"""SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+            WHERE n.nspname = 'bdoh' AND p.proname = {literal(function)} AND p.prokind = 'f'
+              AND position({literal(old)} in pg_get_functiondef(p.oid)) > 0""", compare.NEW_SERVER)
+        if found[0][0] == '0':
+            sys.exit(f'Texte introuvable pour « {name} » dans la fonction {function}')
     if subprocess.run(['git', '-C', str(ROOT), 'status', '--porcelain', '--', 'src'], capture_output=True, text=True).stdout:
         sys.exit('Des fichiers de src/ sont modifiés : ce lanceur a besoin de pouvoir les rétablir.')
 
@@ -157,20 +177,25 @@ def main():
     out.mkdir(parents=True)
     lines, baselines = [*compare.provenance(), ''], {}
 
-    def base_counts(mode, only):
+    def baseline(mode, only):
+        """La passe sans faute d'un mode : ce à quoi se comparent ses fautes, une seule fois chacune."""
         if (mode, only) not in baselines:
-            baselines[mode, only] = play(mode, only, args.base)[0]
+            baselines[mode, only] = play(mode, only, args.base)
+            if baselines[mode, only][0] is None or not sum(baselines[mode, only][0].values()):
+                sys.exit(f'Sans faute, {mode} {only!r} ne joue aucun cas, ou ne va pas au bout : à revoir.')
         return baselines[mode, only]
 
     def verdict(name, mode, only, inject=None):
-        reference = base_counts(mode, only)
-        counts, seconds, _ = play(mode, only, args.base, inject)
-        seen = (counts.get('différents', 0) > reference.get('différents', 0)
-                or counts.get('à un arrondi près', 0) > reference.get('à un arrondi près', 0)
-                or counts.get('identiques', 0) < reference.get('identiques', 0))
-        how = f"{reference.get('différents', 0)} → {counts.get('différents', 0)} différents, "\
-              f"{reference.get('à un arrondi près', 0)} → {counts.get('à un arrondi près', 0)} arrondis"
-        line = f"{'vue    ' if seen else 'NON VUE'} | {name} | {mode} | {how} | {seconds:.0f} s"
+        reference, reference_gaps, _ = baseline(mode, only)
+        counts, gaps, seconds = play(mode, only, args.base, inject)
+        if counts is None:
+            line = f'arrêt   | {name} | {mode} | le mode ne va pas au bout avec la faute | {seconds:.0f} s'
+        else:
+            appeared = len(gaps.keys() - reference_gaps.keys())
+            changed = sum(gaps[key] != reference_gaps[key] for key in gaps.keys() & reference_gaps.keys())
+            state = 'vue    ' if appeared or changed else 'NON VUE'
+            line = (f"{state} | {name} | {mode} | {appeared} cas en écart de plus, {changed} écarts changés,"
+                    f" {reference.get('différents', 0)} → {counts.get('différents', 0)} différents | {seconds:.0f} s")
         lines.append(line)
         print(line, flush=True)
         (out / 'rapport.txt').write_text('\n'.join(lines) + '\n')
@@ -193,7 +218,7 @@ def main():
                 sql.write(sql_fault(function, old, new))
             verdict(name, mode, '', sql.name)
             Path(sql.name).unlink()
-    seen = sum(line.startswith('vue') for line in lines)
+    seen = sum(line.startswith(('vue', 'arrêt')) for line in lines)
     lines.append(f'{seen} fautes vues sur {len(faults)}')
     (out / 'rapport.txt').write_text('\n'.join(lines) + '\n')
     print(lines[-1])
