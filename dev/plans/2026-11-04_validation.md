@@ -29,7 +29,7 @@ L'ordre de l'audit, resserré autour de la barrière : ce qui demande de lire de
 
 **Phase C, barrière tombée**
 
-- [ ] C1. Registre des écarts admis (`dev/compare/expected.*`) ; « autre ordre » limité aux listes nommées ; un écart inattendu fait échouer le mode.
+- [ ] C1. Registre des écarts admis (`dev/compare/expected.py`) ; « autre ordre » limité aux listes nommées ; un écart inattendu fait échouer le mode. Écrit et testé à part, pas encore rejoué sur les modes (« Pour reprendre »).
 - [ ] C2. Couverture PHP (PCOV) et SQL (`plpgsql_check`), lecture de ce qui n'est jamais exécuté, ce qui écrit d'abord.
 - [ ] C3. Élargir les cas : « 1 événement », 5 et 15 minutes, fuseaux employés, plages, sortes de calcul rares, tirages au hasard ; adapter les modes à la forme d'OTHU.
 - [ ] C4. Invariants (`E(I(E(x))) = E(x)`, relations sur les calculs). Le petit jeu inventé, résultats écrits à la main, est fait pour les calculs (`dev/compare/invented.py`, joué par `state`).
@@ -46,12 +46,19 @@ L'ordre de l'audit, resserré autour de la barrière : ce qui demande de lire de
 
 ## Pour reprendre
 
-État au 4 novembre, soir : les phases A et B sont finies. Les deux dumps régénérés sont restaurés sur les deux serveurs, et la barrière sur les valeurs cachées est levée (`CLAUDE.md`). L'ouverture des données est écrite et fusionnée dans `main` (`dev/plans/2026-11-04_open-data.md`). Dans l'ordre :
+État au 5 novembre, nuit : les phases A et B sont finies, tous les modes rejoués sur les nouveaux dumps, et les 10 fautes de l'ouverture vues. Le registre (C1) est dans le dépôt : ses tests passent et il explique tous les écarts de la dernière passe, relus depuis ses fichiers d'écarts, mais aucun mode n'a encore tourné avec lui. Dans l'ordre :
 
-1. **Rejouer tous les modes sur ces dumps** (commandes plus bas), ouverture comprise, et lire leurs écarts, maintenant permis. Nouveau : `state` joue l'ouverture, `imports` les six vrais fichiers de `../bdoh_reference/data-test-import/`. `make mail-start` d'abord : `state`, `accounts` et `admin` lisent les courriels dans Mailpit.
-2. **Les fautes de l'ouverture** : `mutants.py --only "ouverture :"`, puis toutes une fois, leurs textes ayant changé.
-3. **C1, C2**, puis essayer l'ouverture dans un navigateur (`make browser-check`, à étendre : export sans compte, fenêtre d'une chronique cachée).
-4. **La VM**, selon la réponse de l'équipe infra. Les fichiers déposés de la production (logos, images) sont dans `../bdoh_reference/uploads/bdoh-uploads-prod.tar.gz`, à reprendre dans `public/uploads/` sur la VM ; OTHU n'en a pas.
+1. **Finir C1.** Ajouter à `imports` le contrôle ligne à ligne de la chronique calculée 936, fille de la 9, comme « seules ces mesures diffèrent de l'ancien » pour sa mère : hors des périodes des imports QJO et Qtvar, rien ne doit y différer. Sans lui, le registre pourrait y cacher une faute. Puis rejouer `pages`, `exports`, `imports`, `accounts` et `admin` (`make mail-start` d'abord) : on attend 0 « différents », et aucune « Règle sans écart ». Écrire alors la règle dans `CLAUDE.md`, ligne de la comparaison : un écart admis s'inscrit dans `dev/compare/expected.py`.
+2. **Toutes les fautes, une fois**, avec le registre : `mutants.py` écrit désormais « ADMISE » pour une faute qu'une règle cacherait (règle trop large ou cas manquant). Elles ont été laissées pour ici plutôt que jouées avant C1 : la même passe éprouve les deux. `mutants.py` s'arrête si un mode a déjà un écart inattendu sans faute : d'où le point 1 d'abord.
+3. **C2**, voir plus bas.
+4. **L'ouverture dans un navigateur** (`make browser-check`, à étendre : export sans compte, fenêtre d'une chronique cachée). `dev/browser/check.py` refuse encore de démarrer si `REAL-COLLOBRIER` a des chroniques cachées, en citant `CLAUDE.md` : ce refus date de la barrière, à revoir.
+5. **Proposer la version 0.3.0**, l'état que verront les testeurs, et ajouter la page de version GitHub de la 0.2.0 : le tag existe, la page manque.
+6. **La VM**, selon la réponse de l'équipe infra. Les fichiers déposés de la production (logos, images) sont dans `../bdoh_reference/uploads/bdoh-uploads-prod.tar.gz`, à reprendre dans `public/uploads/` sur la VM ; OTHU n'en a pas.
+
+**C2, ce qui est déjà lu, rien n'est écrit ni essayé.** Le but est une liste à lire, ce qui écrit d'abord, pas un pourcentage.
+
+- PHP : `php8.4-pcov` existe dans Debian 13 (`apt-cache policy` : 1.0.12-1). Une image à part, `FROM bdoh-app`, pour ne pas changer celle de production, et un fichier compose superposé (comme `dev/compare/small-tmp.yaml`) qui monte un `.ini` dans `/etc/php/8.4/{apache2,cli}/conf.d/` : `pcov.enabled=1`, `pcov.directory=/var/www/bdoh/src`, `opcache.enable=0`, `auto_prepend_file`. Le fichier préfixé appelle `\pcov\start()`, puis à l'arrêt `\pcov\stop()`, `\pcov\collect()`, et écrit un JSON par processus ; un script fusionne, et ajoute les fichiers jamais chargés. La documentation ne dit rien d'opcache, des processus en ligne de commande ni du sens de `1` et `-1` : à mesurer par un essai ; opcache coupé par prudence.
+- SQL : `plpgsql_check` est préchargé dans `bdoh-db`. `plpgsql_check.profiler=on`, `plpgsql_check.max_stats_size` (20 Mo par défaut, 200 au plus, réglé au démarrage du serveur ; plein, il ignore les nouveaux profils). Lecture : `plpgsql_profiler_function_statements_tb(oid)`, `plpgsql_coverage_statements(name)`, `plpgsql_coverage_branches(name)`. La documentation ne dit pas si les profils sont propres à chaque base, ni à quel moment il faut `CREATE EXTENSION` : à essayer d'abord. S'ils le sont, les relever dans `copy_base` (`compare.py`), avant que le `DROP DATABASE` ne perde la copie, et créer l'extension sur la copie plutôt que dans le gabarit.
 
 Pour repartir de zéro depuis les dumps, en 35 min (mesure du 4 novembre) :
 
@@ -90,6 +97,8 @@ Les comptes utiles des rapports sont notés dans le Suivi, et le détail du reca
 
 ## Suivi
 
+- 2026-11-05, nuit, registre des écarts (C1) écrit, pas encore éprouvé sur les modes. `dev/compare/expected.py` : des lignes admises, des masques pour un seul champ d'une ligne d'état, des lignes qui doivent s'y trouver, et un autre ordre seulement pour les deux listes sans tri. Chaque règle renvoie à un titre de `dev/differences.md`, qu'un test vérifie ; 33 tests passent. Rejouées à part sur les fichiers d'écarts de la passe ci-dessous, avec un script jetable : tout est expliqué et chaque règle sert. Ce script ne voit que les lignes du diff, pas des lignes entières : c'est un indice, pas la preuve, que seul le rejeu donnera. `terms_of_use` ne compare plus que son statut et son type, comme `conditions` : le diff d'un PDF ne se lit pas.
+- 2026-11-05, nuit, les 10 fautes de l'ouverture, sur `state`, commit 8a8007c : 10 vues sur 10, chacune en 8 min. Avant le registre, donc selon l'ancien verdict de `mutants.py`, mais `state` n'a aucun écart admis : le nouveau verdict donnerait le même résultat.
 - 2026-11-04, nuit, tous les modes sur les nouveaux dumps, commit 1df7b1c, ouverture comprise (`theia` sur `bdoh`, les autres sur `bdoh_small`). En identiques / à un arrondi près / autre ordre / différents : `pages` 963/0/44/205, `exports` 15/0/0/126, `state` 81/0/0/0, `queue` 11/0/0/0, `imports` 73/0/0/10, `accounts` 28/0/0/10, `admin` 649/0/0/9, `theia` 38/0/0/0. Lecture de tous les écarts, ligne à ligne : aucun d'inattendu.
   - `exports` : les 126 écarts ne portent que sur le nom de la licence jointe, sur les 8 chroniques visibles et les 2 discontinues. Les 15 identiques sont la chronique convertie 2521, cachée, qui garde ses conditions. Les 6 arrondis d'avant sont toujours là, dans ces écarts.
   - `pages`, les 205 : `contact` 48 (la nouvelle adresse) ; pages de chronique 47, seulement pour l'anonyme et l'utilisateur sans droit, qui gagnent leur ligne de points de contrôle (25 chroniques, toutes visibles, vérifié en base) ; `terms_of_use` 44 (le PDF des conditions, qui dit INRAE) ; `resetting` 24 (renvoi vers la connexion) ; `login` 12, `user/edit` 9, `user/new` 3 (connexion par lien) ; `select_lang` 8 (l'ancien répond 500) ; `/` 4, `besoin/new` 2 (textes de l'ouverture) ; `messages.js` 4 (clés retirées et ajoutées). Les 44 « autre ordre » sont les deux listes sans tri, inchangées.

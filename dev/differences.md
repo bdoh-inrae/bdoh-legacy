@@ -1,6 +1,6 @@
 # Écarts avec l'ancien BDOH
 
-Ce que le nouveau BDOH fait autrement que l'ancien, exprès : bogues de l'ancien corrigés au passage, améliorations, écarts dus aux nouvelles versions de PHP et de PostgreSQL ; et les bizarreries de l'ancien que le nouveau reproduit, avec leur raison. L'outil de comparaison admet ces écarts et eux seuls ; tout autre écart est une régression. Chaque entrée dit ce que faisait l'ancien, ce que fait le nouveau, pourquoi, son état et comment il est vérifié.
+Ce que le nouveau BDOH fait autrement que l'ancien, exprès : bogues de l'ancien corrigés au passage, améliorations, écarts dus aux nouvelles versions de PHP et de PostgreSQL ; et les bizarreries de l'ancien que le nouveau reproduit, avec leur raison. L'outil de comparaison admet ces écarts et eux seuls (`dev/compare/expected.py`) ; tout autre écart est une régression. Chaque entrée dit ce que faisait l'ancien, ce que fait le nouveau, pourquoi, son état et comment il est vérifié.
 
 ## Bogues de l'ancien BDOH
 

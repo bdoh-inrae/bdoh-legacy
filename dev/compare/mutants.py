@@ -8,8 +8,10 @@ dev/decisions.md, ou une ligne qui se recopie mal. Le lanceur modifie le fichier
 copie du nouveau, joue le mode qui devrait la voir, compare son rapport à celui de la même passe sans faute,
 puis remet tout en place. Une faute non vue n'est pas un échec à masquer : elle dit qu'il manque un cas.
 
-Le verdict lit les fichiers d'écarts sans les montrer : un cas de plus en écart, ou un écart qui change. Un
-mode qui s'arrête en route ne prouve rien tant qu'on n'a pas lu pourquoi (un Apache de l'ancien tombé a déjà
+Le verdict lit les fichiers d'écarts sans les montrer, et le rapport du mode. Une faute est vue si elle fait
+échouer le mode, par un écart que le registre (dev/compare/expected.py) n'admet pas. Si elle ne change qu'un
+écart que le registre admet, elle est « admise » : une passe ordinaire ne la verrait pas, la règle est trop large,
+ou il manque un cas. Un mode qui s'arrête en route ne prouve rien tant qu'on n'a pas lu pourquoi (un Apache de l'ancien tombé a déjà
 passé pour une faute vue) : il ne compte pas parmi les fautes vues, et le rapport donne sa dernière ligne d'erreur.
 
 Un seul lancement à la fois, sur un dépôt propre : il travaille sur les fichiers de src/. Le rapport, qui
@@ -190,7 +192,7 @@ def play(mode, only, base, inject=None):
         return None, (done.stderr.strip().splitlines() or ['sans message'])[-1][:200], seconds
     text = (written[-1] / 'rapport.txt').read_text()
     counts = {key: int(n) for n, key in re.findall(r'^\s*(\d+) (.+)$', text, re.M)
-              if key in ('identiques', 'à un arrondi près', 'même contenu, autre ordre', 'différents')}
+              if key in ('identiques', 'à un arrondi près', 'même contenu, autre ordre', 'écarts admis', 'différents')}
     gaps = {path.name: hashlib.sha1(path.read_bytes()).hexdigest() for path in written[-1].glob('*.diff')}
     return counts, gaps, seconds
 
@@ -229,6 +231,8 @@ def main():
             baselines[mode, only] = play(mode, only, args.base)
             if baselines[mode, only][0] is None or not sum(baselines[mode, only][0].values()):
                 sys.exit(f'Sans faute, {mode} {only!r} ne joue aucun cas, ou ne va pas au bout : à revoir.')
+            if baselines[mode, only][0].get('différents'):
+                sys.exit(f'Sans faute, {mode} {only!r} a déjà des écarts inattendus : les lire avant de jouer des fautes.')
         return baselines[mode, only]
 
     def verdict(name, mode, only, inject=None):
@@ -239,7 +243,7 @@ def main():
         else:
             appeared = len(gaps.keys() - reference_gaps.keys())
             changed = sum(gaps[key] != reference_gaps[key] for key in gaps.keys() & reference_gaps.keys())
-            state = 'vue    ' if appeared or changed else 'NON VUE'
+            state = 'vue    ' if counts.get('différents', 0) else 'ADMISE ' if appeared or changed else 'NON VUE'
             line = (f"{state} | {name} | {mode} | {appeared} cas en écart de plus, {changed} écarts changés,"
                     f" {reference.get('différents', 0)} → {counts.get('différents', 0)} différents | {seconds:.0f} s")
         lines.append(line)

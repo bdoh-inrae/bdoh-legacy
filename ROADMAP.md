@@ -11,8 +11,8 @@ Priorité (Lou, 3 novembre) : stabiliser ce BDOH au plus près de l'ancien et le
 ## À faire
 
 - **Preuves de solidité** : la phase A est faite (`CHANGELOG.md`, 0.2.0). Reste, dans cet ordre ; l'avancée et le point de reprise sont dans [dev/plans/2026-11-04_validation.md](dev/plans/2026-11-04_validation.md), les raisons dans [dev/audits/2026-11-03_validation-plan.md](dev/audits/2026-11-03_validation-plan.md) :
-  1. rejouer tous les modes sur les nouveaux dumps, restaurés le 4 novembre ;
-  2. registre des écarts admis, puis couverture du PHP (PCOV) et du SQL (`plpgsql_check`) ;
+  1. finir le registre des écarts admis, écrit mais pas encore rejoué sur les modes, puis jouer toutes les fautes avec lui ;
+  2. couverture du PHP (PCOV) et du SQL (`plpgsql_check`) ;
   3. élargir les cas d'après la couverture et l'usage réel : « 1 événement », 5 et 15 minutes, fuseaux, plages, sortes de calcul ; adapter les modes à la forme d'OTHU ;
   4. invariants (`E(I(E(x))) = E(x)`, relations sur les calculs) ;
   5. pannes provoquées : exécuteur tué, PostgreSQL redémarré, `/tmp` plein ;

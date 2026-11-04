@@ -10,6 +10,7 @@ copie de base : compare.py selftest.
 import datetime
 import importlib.util
 import io
+import re
 import sys
 import tempfile
 import unittest
@@ -204,6 +205,121 @@ class Reports(unittest.TestCase):
                     report.add('un cas', ['a'], ['b'])
                 names.append(next(report.dir.glob('*.diff')).name)
             self.assertEqual(*names)
+
+
+class Register(unittest.TestCase):
+    """Le registre des écarts admis : ce qu'il admet, et surtout ce qu'il n'admet pas."""
+
+    RULE = compare.expected.Rule('essai', r'page .*', 'essai', lines=('-T ancien', '+T nouveau', compare.expected.RX(r'\+T \d+ points?')))
+
+    @staticmethod
+    def rule(**fields):
+        return compare.expected.Rule('essai', r'page .*', 'essai', **fields)
+
+    def verdict(self, rules, name, old, new, exact=False):
+        key = compare.classify(old, new, exact)[0]
+        return compare.registered(rules, name, key, old, new, exact)[0]
+
+    def test_the_listed_lines_and_no_other(self):
+        self.assertEqual(self.verdict([self.RULE], 'page a', ['T ancien'], ['T nouveau', 'T 3 points']), 'écarts admis')
+        self.assertEqual(self.verdict([self.RULE], 'page a', ['T ancien', 'T x'], ['T nouveau', 'T y']), 'différents')
+
+    def test_an_expression_covers_the_whole_line(self):
+        self.assertEqual(self.verdict([self.RULE], 'page a', [], ['T 3 points de plus']), 'différents')
+
+    def test_a_rule_only_for_its_cases(self):
+        self.assertEqual(self.verdict([self.RULE], 'autre page', ['T ancien'], ['T nouveau']), 'différents')
+        self.assertEqual(self.verdict([self.RULE], 'une page a', ['T ancien'], ['T nouveau']), 'différents')
+
+    def test_a_mask_admits_one_field_only(self):
+        rule = self.rule(masks=((r'^(\{"id": 8, .*"a": )\d+', r'\1<m>'),))
+        admitted = ['{"id": 8, "a": 1, "b": 2}'], ['{"id": 8, "a": 5, "b": 2}']
+        self.assertEqual(self.verdict([rule], 'page a', *admitted, exact=True), 'écarts admis')
+        for name, old, new in [('un autre champ', '{"id": 8, "a": 1, "b": 2}', '{"id": 8, "a": 5, "b": 3}'),
+                               ('une autre ligne', '{"id": 9, "a": 1, "b": 2}', '{"id": 9, "a": 5, "b": 2}')]:
+            with self.subTest(name):
+                self.assertEqual(self.verdict([rule], 'page a', [old], [new], exact=True), 'différents')
+
+    def test_what_must_be_there(self):
+        rule = compare.expected.replaced('essai', r'page .*', 'essai', 301, '+redirection /a')
+        self.assertEqual(self.verdict([rule], 'page a', ['statut 200', 'T x'], ['statut 301', 'redirection /a']), 'écarts admis')
+        # La page a perdu une ligne, sans être remplacée : ce n'est pas l'écart admis
+        self.assertEqual(self.verdict([rule], 'page a', ['statut 200', 'T x'], ['statut 200']), 'différents')
+        self.assertEqual(self.verdict([rule], 'page a', ['statut 200'], ['statut 500']), 'différents')
+
+    def test_another_order_needs_a_named_list(self):
+        old, new = ['T a', 'T b'], ['T b', 'T a']
+        self.assertEqual(self.verdict([], 'page a', old, new), 'différents')
+        self.assertEqual(self.verdict([self.RULE], 'page a', old, new), 'différents')
+        self.assertEqual(self.verdict([self.rule(order=True)], 'page a', old, new), 'même contenu, autre ordre')
+
+    def test_a_named_list_admits_the_order_only(self):
+        self.assertEqual(self.verdict([self.rule(order=True)], 'page a', ['T a'], ['T b']), 'différents')
+
+    def test_a_report_fails_on_what_is_not_admitted(self):
+        with tempfile.TemporaryDirectory() as out:
+            compare.OUT = Path(out)
+            compare.Report.failed = False
+            report = compare.Report('essai')
+            report.rules = [self.RULE]
+            with redirect_stdout(io.StringIO()):
+                report.add('page a', ['T ancien'], ['T nouveau'])
+                report.close()
+            self.assertEqual(report.counts['écarts admis'], 1)
+            self.assertFalse(compare.Report.failed)
+            # Un écart admis garde son fichier : il se relit, et mutants.py en lit l'empreinte
+            self.assertEqual(len(list(report.dir.glob('*.diff'))), 1)
+            with redirect_stdout(io.StringIO()):
+                report.add('page b', ['T x'], ['T y'])
+                report.close()
+            self.assertTrue(compare.Report.failed)
+            compare.Report.failed = False
+
+    def test_a_report_names_the_rules_that_served_nothing(self):
+        with tempfile.TemporaryDirectory() as out:
+            compare.OUT = Path(out)
+            report = compare.Report('essai')
+            report.rules = [self.RULE]
+            with redirect_stdout(io.StringIO()):
+                report.close()
+            self.assertIn('Règle sans écart', (report.dir / 'rapport.txt').read_text())
+
+    def test_each_rule_says_why_in_the_differences(self):
+        text = (Path(__file__).resolve().parent.parent / 'differences.md').read_text()
+        for rule in compare.expected.RULES:
+            with self.subTest(rule.case):
+                self.assertIn(f'**{rule.why}', text)
+
+    def test_each_rule_reads(self):
+        for rule in compare.expected.RULES:
+            with self.subTest(rule.case):
+                re.compile(rule.case)
+                for pattern, _ in rule.masks:
+                    re.compile(pattern)
+                self.assertTrue(rule.lines or rule.masks or rule.order)
+
+    def test_a_faulty_export_is_not_admitted(self):
+        # Une valeur fausse à côté de l'écart admis des licences : le mode échoue
+        rules = [r for r in compare.expected.RULES if r.mode == 'exports']
+        old = ['code de sortie 0', '# Ignoring ConditionsGeneralesUtilisation.pdf', '01/01/2024;1.500;v']
+        licence = ['# Ignoring Licence-Ouverte-2.0-fr.pdf', '# Ignoring Open-Licence-2.0-en.pdf']
+        name = 'bdoh:export:identical x'
+        self.assertEqual(self.verdict(rules, name, old, ['code de sortie 0', *licence, '01/01/2024;1.500;v']), 'écarts admis')
+        self.assertEqual(self.verdict(rules, name, old, ['code de sortie 0', *licence, '01/01/2024;2.500;v']), 'différents')
+        # La licence perdue : pas davantage
+        self.assertEqual(self.verdict(rules, name, old, ['code de sortie 0', '01/01/2024;1.500;v']), 'différents')
+
+    def test_a_faulty_import_on_another_chronique_is_not_admitted(self):
+        rules = [r for r in compare.expected.RULES if r.mode == 'imports']
+        self.assertEqual(self.verdict(rules, 'état mesure', ['mesure\t9\t10\t111'], ['mesure\t9\t20\t222'], exact=True), 'écarts admis')
+        self.assertEqual(self.verdict(rules, 'état mesure', ['mesure\t10\t10\t111'], ['mesure\t10\t20\t222'], exact=True), 'différents')
+
+    def test_the_points_of_a_chronique_show_nothing_else(self):
+        rules = [r for r in compare.expected.RULES if r.mode == 'pages']
+        name = 'anonyme /DRAIX/LAVAL-AMONT/HT'
+        self.assertEqual(self.verdict(rules, name, ['T a'], ['T a', 'T Points de contrôle (?) : Aucun']), 'écarts admis')
+        self.assertEqual(self.verdict(rules, name, ['T a'], ['T a', 'T Points de contrôle (?) : Aucun', 'T 3.5']), 'différents')
+        self.assertEqual(self.verdict(rules, 'gestionnaire /DRAIX/LAVAL-AMONT/HT', ['T a'], ['T a', 'T Points de contrôle (?) : Aucun']), 'différents')
 
 
 class Fingerprints(unittest.TestCase):

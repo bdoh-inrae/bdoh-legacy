@@ -22,8 +22,9 @@ l'état des deux copies. « queue » est l'essai de la file de tâches (audit de
 
 Les pages se comparent par ce qu'elles montrent (texte, liens, formulaires, attributs data-*), pas
 par leur balisage ; les nombres décimaux, à un arrondi près (règle « Arrondis à la limite » de
-dev/differences.md), compté à part pour être relu. Le rapport dit ce qui a été comparé, et le code de
-sortie vaut 1 s'il reste un cas différent. « selftest » éprouve l'outil : des erreurs inventées sur une
+dev/differences.md), compté à part pour être relu. Un écart admis (dev/compare/expected.py) se compte à
+part aussi ; un autre fait échouer le mode, de même qu'un autre ordre hors des listes que ce registre nomme.
+Le rapport dit ce qui a été comparé, et le code de sortie vaut 1 s'il reste un cas différent. « selftest » éprouve l'outil : des erreurs inventées sur une
 copie de base, qu'il doit toutes voir. « fingerprints » compare, en comptes, deux empreintes écrites par
 make fingerprint. Bibliothèque standard seulement.
 """
@@ -53,6 +54,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 sys.dont_write_bytecode = True
+import expected  # noqa: E402  (dev/compare/expected.py)
 import invented  # noqa: E402  (dev/compare/invented.py)
 
 HERE = Path(__file__).resolve().parent
@@ -581,6 +583,37 @@ def classify(old, new, exact=False):
     return ('à un arrondi près' if rounding else 'identiques'), diff, rounding
 
 
+def admitted(rules, old, new, exact=False):
+    """Ces règles du registre expliquent-elles tout l'écart entre deux suites de lignes ?"""
+    masks = [(re.compile(pattern), replacement) for rule in rules for pattern, replacement in rule.masks]
+
+    def masked(lines):
+        for pattern, replacement in masks:
+            lines = [pattern.sub(replacement, line) for line in lines]
+        return lines
+
+    def found(wanted, line):
+        return wanted == line if isinstance(wanted, str) else wanted.fullmatch(line) is not None
+
+    diff = compare(masked(old), masked(new), exact)[0]
+    changed = [line for line in diff[2:] if line[0] in '+-']  # ni les deux lignes de tête, ni le contexte
+    allowed = [wanted for rule in rules for wanted in rule.lines]
+    return (all(any(found(wanted, line) for wanted in allowed) for line in changed)
+            and all(any(found(wanted, line) for line in changed) for rule in rules for wanted in rule.must))
+
+
+def registered(rules, name, key, old, new, exact=False):
+    """Ce que le registre fait d'un écart : (catégorie du rapport, règles qui l'expliquent). Un autre ordre
+    n'est admis que pour une liste qu'il nomme."""
+    rules = [rule for rule in rules if re.fullmatch(rule.case, name)]
+    if key == 'même contenu, autre ordre':
+        lists = [rule for rule in rules if rule.order]
+        return (key, lists) if lists else ('différents', [])
+    if key == 'différents' and rules and admitted(rules, old, new, exact):
+        return 'écarts admis', rules
+    return key, []
+
+
 def run_text(*command):
     """La sortie d'une commande, ou rien si elle échoue."""
     r = subprocess.run(command, capture_output=True, text=True)
@@ -624,9 +657,12 @@ class Report:
     def __init__(self, kind, exact=False):
         self.dir = OUT / f"{datetime.datetime.now():%Y-%m-%d_%H%M%S}_{kind}"
         self.dir.mkdir(parents=True)
-        self.counts = {'identiques': 0, 'à un arrondi près': 0, 'même contenu, autre ordre': 0, 'différents': 0}
+        self.counts = {'identiques': 0, 'à un arrondi près': 0, 'même contenu, autre ordre': 0, 'écarts admis': 0,
+                       'différents': 0}
         self.summary = []
         self.exact = exact
+        self.rules = [rule for rule in expected.RULES if rule.mode == kind]
+        self.used = []
 
     def add(self, name, old, new):
         # L'état d'une base se compare sans tolérance : deux copies sous un même PostgreSQL n'ont aucune
@@ -634,6 +670,8 @@ class Report:
         exact = self.exact or name.startswith('état ') or name in STATE_QUERIES or name in ACCOUNT_QUERIES \
             or name == 'autres tables'
         key, diff, rounding = classify(old, new, exact)
+        key, rules = registered(self.rules, name, key, old, new, exact)
+        self.used += rules
         self.counts[key] += 1
         if diff or rounding:
             # Écrits pour un système de fichiers, deux noms de cas peuvent se confondre (« +01:00 » et
@@ -642,12 +680,15 @@ class Report:
             unique = hashlib.sha1(name.encode()).hexdigest()[:8]
             shown = [f'~ {a}\n~ {b}' for a, b in rounding[:20]]
             (self.dir / f'{slug}.{unique}.diff').write_text('\n'.join([name, *diff, *shown, '']))
-            self.summary.append(f"{key:<26} {name}" + (f'  ({len(rounding)} arrondis)' if rounding else ''))
+            self.summary.append(f"{key:<26} {name}" + (f'  ({len(rounding)} arrondis)' if rounding else '')
+                                + (f"  [{rules[0].why}]" if rules else ''))
         print('X' if key == 'différents' else '.', end='', flush=True)
 
     def close(self):
-        # Les comptes d'abord, puis la provenance, puis les cas qui diffèrent.
-        text ='\n'.join([*(f'{n:>6} {k}' for k, n in self.counts.items()), '', *provenance(), '', *self.summary, ''])
+        # Les comptes d'abord, puis la provenance, puis les cas qui diffèrent. Une règle sans écart n'est pas une
+        # erreur (--only, ou un écart qui a disparu), mais elle se relit : elle n'a peut-être plus lieu d'être.
+        unused = [f'Règle sans écart : {rule.case}  [{rule.why}]' for rule in self.rules if rule not in self.used]
+        text = '\n'.join([*(f'{n:>6} {k}' for k, n in self.counts.items()), '', *provenance(), '', *self.summary, *unused, ''])
         (self.dir / 'rapport.txt').write_text(text)
         Report.failed = Report.failed or self.counts['différents'] > 0
         print('\n' + text + f'Rapport : {self.dir}')
@@ -672,8 +713,9 @@ def run_pages(args):
                 responses = [client.get(path) for client in pair]
                 strip = EXPORT_MARK not in responses[0][2]
                 lines = [page_lines(client.side.url, *response, strip_export=strip) for client, response in zip(pair, responses)]
-                # Le fichier des conditions dit INRAE et non plus Irstea : son statut et son type seulement
-                return [page[:2] for page in lines] if path.endswith('/conditions') else lines
+                # Les conditions disent INRAE et non plus Irstea (dev/differences.md, « Ouverture des données ») :
+                # leur statut et leur type seulement.
+                return [page[:2] for page in lines] if path.endswith(('/conditions', '/terms_of_use')) else lines
 
             for path, lines in zip(paths, pool.map(fetch, paths)):
                 report.add(f'{profile} {path}', *lines)
