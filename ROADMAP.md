@@ -10,7 +10,7 @@ Priorité (Lou, 3 novembre) : stabiliser ce BDOH au plus près de l'ancien et le
 
 ## À faire
 
-- **Preuves de solidité à apporter**, dans cet ordre ; le détail, les raisons et les coûts sont dans [dev/audits/2026-11-03_validation-plan.md](dev/audits/2026-11-03_validation-plan.md), qui reprend [dev/audits/2026-11-03_migration-trust.md](dev/audits/2026-11-03_migration-trust.md). Ce qui doit précéder les essais des gestionnaires reste à décider (décision 3) ; recommandé : les étapes 1 à 5.
+- **Preuves de solidité à apporter**, dans cet ordre ; le détail, les raisons et les coûts sont dans [dev/audits/2026-11-03_validation-plan.md](dev/audits/2026-11-03_validation-plan.md), qui reprend [dev/audits/2026-11-03_migration-trust.md](dev/audits/2026-11-03_migration-trust.md). Ce qui doit précéder les essais des gestionnaires reste à décider (décision 3) ; recommandé : les étapes 1 à 5. En cours, avec l'avancée et l'ordre retenu : [dev/plans/2026-11-04_validation.md](dev/plans/2026-11-04_validation.md).
   1. Durcir le comparateur : règle d'arrondi selon la nature du nombre, empreintes sans `concat_ws`, toutes les tables dont `plage`, rapport qui note commit et base lue, registre des écarts admis, code de sortie ;
   2. l'éprouver : tests de ses fonctions, altérations SQL, passe de l'ancien contre l'ancien, pièges et corrections passés remis un à un ;
   3. corriger le calcul en échec qui vide la chronique (`dev/differences.md`) ;

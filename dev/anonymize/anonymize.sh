@@ -8,8 +8,9 @@
 # (un volume Docker) est détruite à la fin, même en cas d'échec ; les anciennes valeurs, qui
 # restent dans ses fichiers jusqu'à leur nettoyage, partent avec elle.
 #
-# Ne sortent que le dump anonymisé et un rapport fait de comptes. Si le rapport signale une fuite
-# possible, aucun dump n'est produit. Le dossier de sortie (par défaut ../bdoh_reference, à côté du
+# Ne sortent que le dump anonymisé et un rapport fait de comptes, les chroniques cachées réduites à
+# leurs dates et à leurs qualités (anonymize.sql). Si le rapport signale une fuite possible, aucun
+# dump n'est produit. Le dossier de sortie (par défaut ../bdoh_reference, à côté du
 # dépôt) reste hors de git : certaines séries ne sont pas publiques.
 set -euo pipefail
 
@@ -72,21 +73,30 @@ for _ in $(seq 120); do
 done
 docker exec "$container" pg_isready -U postgres -q || { echo "PostgreSQL ne démarre pas." >&2; exit 1; }
 
-echo "Restauration dans une base temporaire (longue : la table des mesures est grosse)…"
-docker exec "$container" createdb -U postgres -T template0 -E UTF8 bdoh
 # Le journal de restauration reste dans le conteneur : il peut citer des valeurs. En cas d'échec,
 # n'en sortent que les lignes de pg_restore et les messages d'erreur, guillemets masqués.
-if ! docker exec "$container" sh -c \
-    'pg_restore -U postgres -d bdoh --no-owner --no-privileges -j 4 /in/source.dump 2> /tmp/restore.log'; then
-    echo "La restauration a échoué : arrêt, aucun dump produit." >&2
-    docker exec "$container" grep -E '^pg_restore:|ERROR:' /tmp/restore.log \
-        | sed -E '/ERROR:/ s/"[^"]*"/"…"/g' | head -40 >&2
-    exit 1
-fi
+restore() {
+    if ! docker exec "$container" sh -c \
+        "pg_restore -U postgres -d bdoh --no-owner --no-privileges -j 4 $* /in/source.dump 2> /tmp/restore.log"; then
+        echo "La restauration a échoué : arrêt, aucun dump produit." >&2
+        docker exec "$container" grep -E '^pg_restore:|ERROR:' /tmp/restore.log \
+            | sed -E '/ERROR:/ s/"[^"]*"/"…"/g' | head -40 >&2
+        exit 1
+    fi
+}
+
+echo "Restauration dans une base temporaire, sans les index (longue : la table des mesures est grosse)…"
+docker exec "$container" createdb -U postgres -T template0 -E UTF8 bdoh
+restore --section=pre-data --section=data
 
 echo "Anonymisation…"
 docker exec "$container" psql -U postgres -d bdoh -v ON_ERROR_STOP=1 --single-transaction -q \
     -f /in/sql/anonymize.sql
+
+# Les index et les contraintes après : remplacer les valeurs des chroniques cachées réécrit des millions
+# de lignes, et les contraintes vérifient alors le résultat.
+echo "Index et contraintes…"
+restore --section=post-data
 
 echo "Rapport…"
 counts=$(docker exec "$container" psql -U postgres -d bdoh -At -F $'\t' -c 'SELECT item, n FROM anon.report()')

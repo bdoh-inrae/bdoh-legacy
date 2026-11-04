@@ -7,8 +7,8 @@
 --   clear     vidée (NULL) ;
 --   truncate  table vidée entièrement.
 -- Une colonne de texte absente de la liste arrête tout, pour qu'aucune ne passe par oubli.
--- Les colonnes qui ne sont pas du texte (nombres, dates, géométries) sont gardées : les mesures
--- restent intactes.
+-- Les colonnes qui ne sont pas du texte (nombres, dates, géométries) sont gardées : les mesures des
+-- chroniques visibles restent intactes. Celles des chroniques cachées sont traitées à part, plus bas.
 --
 -- Lancé par anonymize.sh, en une seule transaction :
 --   psql -v ON_ERROR_STOP=1 --single-transaction -f anonymize.sql
@@ -295,6 +295,83 @@ BEGIN
     END LOOP;
 END $$;
 
+-- Les chroniques cachées (estvisible = false) ne sont pas publiques : leurs valeurs sont remplacées, leurs
+-- dates et leurs qualités gardées, ce qui garde le volume et la forme que les essais éprouvent (plages
+-- contiguës, lacunes, trous). Une valeur devient un tirage entre le minimum et le maximum de sa chronique,
+-- fait de l'identifiant de la ligne et d'un sel détruit avec ce schéma : à sens unique, et sans rien du
+-- signal d'origine. -9999 et NULL restent, ce sont la forme des lacunes. Les chroniques calculées visibles
+-- gardent leurs valeurs, déjà publiques (dev/local/hidden-series.md).
+CREATE TABLE anon.sel AS SELECT md5(random()::text || clock_timestamp()::text) AS sel;
+
+CREATE FUNCTION anon.tirage(sel text, ligne bigint, lo float8, hi float8) RETURNS float8
+LANGUAGE sql IMMUTABLE AS $$
+    SELECT lo + (hi - lo) * (('x' || substr(md5(sel || ligne), 1, 13))::bit(52)::bigint / 4503599627370496.0::float8)
+$$;
+
+DO $$
+DECLARE
+    t text;
+    salt text := (SELECT sel FROM anon.sel);
+BEGIN
+    FOREACH t IN ARRAY ARRAY['mesure', 'plage', 'pointcontrole'] LOOP
+        EXECUTE format($f$
+            CREATE TABLE anon.bornes_%1$s AS
+            SELECT x.chronique_id, min(x.valeur) AS lo, max(x.valeur) AS hi
+              FROM bdoh.%1$I x JOIN bdoh.chronique c ON c.id = x.chronique_id
+             WHERE NOT c.estvisible AND x.valeur IS NOT NULL AND x.valeur <> -9999
+             GROUP BY 1$f$, t);
+        EXECUTE format($f$
+            UPDATE bdoh.%1$I x SET
+                   valeur = CASE WHEN x.valeur IS NULL OR x.valeur = -9999 THEN x.valeur
+                                 ELSE anon.tirage(%2$L, x.id, b.lo, b.hi) END,
+                   minimum = CASE WHEN x.minimum IS NULL THEN NULL
+                                  ELSE anon.tirage(%2$L, x.id, b.lo, b.hi) - (b.hi - b.lo) / 100 END,
+                   maximum = CASE WHEN x.maximum IS NULL THEN NULL
+                                  ELSE anon.tirage(%2$L, x.id, b.lo, b.hi) + (b.hi - b.lo) / 100 END
+              FROM anon.bornes_%1$s b WHERE b.chronique_id = x.chronique_id$f$, t, salt);
+        -- Une chronique cachée sans aucune vraie valeur n'a que des lacunes : ses bornes partent
+        EXECUTE format($f$
+            UPDATE bdoh.%1$I x SET minimum = NULL, maximum = NULL
+              FROM bdoh.chronique c
+             WHERE c.id = x.chronique_id AND NOT c.estvisible
+               AND (x.minimum IS NOT NULL OR x.maximum IS NOT NULL)
+               AND NOT EXISTS (SELECT 1 FROM anon.bornes_%1$s b WHERE b.chronique_id = x.chronique_id)$f$, t);
+    END LOOP;
+END $$;
+
+-- Ce qui les décrit. La visibilité, l'unité, le paramètre et les dates restent : les droits et les
+-- formulaires s'essaient avec, et sans code ni lieu ils ne disent rien de ce qui est mesuré où.
+UPDATE bdoh.chronique
+   SET code = 'CACHEE-' || id, libelle = 'Chronique cachée ' || id, libelleen = 'Hidden series ' || id,
+       description = NULL, genealogie = NULL, genealogieen = NULL, producteur_id = NULL,
+       minimumvalide = NULL, maximumvalide = NULL
+ WHERE NOT estvisible;
+
+-- Les stations dont toutes les chroniques sont cachées : leur nom, leur code et leur position.
+CREATE TABLE anon.stations_cachees AS
+SELECT station_id AS id FROM bdoh.chronique GROUP BY 1 HAVING bool_and(NOT estvisible);
+
+UPDATE bdoh.station s
+   SET code = 'CACHEE-' || s.id, nom = 'Station cachée ' || s.id, codealternatif = NULL, commentaire = NULL,
+       commentaireen = NULL, altitude = NULL, latitude = NULL, longitude = NULL, point = NULL, commune_id = NULL
+  FROM anon.stations_cachees c WHERE c.id = s.id;
+
+-- Tout ce qui les cite : l'historique (les textes, déjà brouillés, gardent leurs chiffres), et les noms
+-- de barèmes en courbe de leurs transformations, qui peuvent nommer une station.
+UPDATE bdoh.historique h
+   SET description = '', name = NULL, lien = NULL
+ WHERE h.chronique_id IN (SELECT id FROM bdoh.chronique WHERE NOT estvisible)
+    OR h.station_id IN (SELECT id FROM anon.stations_cachees);
+
+UPDATE bdoh.bareme b
+   SET nom = 'BAREME-' || b.id, commentaire = NULL
+ WHERE b.nom NOT IN ('identite', 'lacune', 'manuel')
+   AND b.id IN (SELECT bj.bareme_id FROM bdoh.baremejeubareme bj
+                  JOIN bdoh.transformation t ON t.jeubaremeactuel_id = bj.jeubareme_id
+                  JOIN bdoh.chronique e ON e.id = t.entree_id
+                  JOIN bdoh.chronique f ON f.id = t.sortie_id
+                 WHERE NOT e.estvisible OR NOT f.estvisible);
+
 -- Rapport : uniquement des comptes. Les lignes « fuite » et « contrôle » doivent valoir 0.
 CREATE FUNCTION anon.report() RETURNS TABLE (item text, n bigint)
 LANGUAGE plpgsql AS $$
@@ -355,4 +432,38 @@ BEGIN
     item := 'contrôle jetons de confirmation restants';
     SELECT count(*) INTO n FROM bdoh.utilisateur WHERE confirmationtoken IS NOT NULL;
     RETURN NEXT;
+
+    item := 'chroniques cachées';
+    SELECT count(*) INTO n FROM bdoh.chronique WHERE NOT estvisible;
+    RETURN NEXT;
+    item := 'stations dont toutes les chroniques sont cachées';
+    SELECT count(*) INTO n FROM anon.stations_cachees;
+    RETURN NEXT;
+    item := 'contrôle chroniques cachées encore décrites';
+    SELECT count(*) INTO n FROM bdoh.chronique WHERE NOT estvisible
+       AND (code <> 'CACHEE-' || id OR description IS NOT NULL OR genealogie IS NOT NULL OR genealogieen IS NOT NULL
+            OR producteur_id IS NOT NULL OR minimumvalide IS NOT NULL OR maximumvalide IS NOT NULL);
+    RETURN NEXT;
+    item := 'contrôle stations cachées encore décrites';
+    SELECT count(*) INTO n FROM bdoh.station s JOIN anon.stations_cachees sc ON sc.id = s.id
+     WHERE s.code <> 'CACHEE-' || s.id OR s.point IS NOT NULL OR s.latitude IS NOT NULL OR s.longitude IS NOT NULL
+        OR s.altitude IS NOT NULL OR s.commune_id IS NOT NULL OR s.commentaire IS NOT NULL;
+    RETURN NEXT;
+    item := 'contrôle historique qui décrit encore une chronique cachée';
+    SELECT count(*) INTO n FROM bdoh.historique h
+     WHERE (h.description <> '' OR h.name IS NOT NULL OR h.lien IS NOT NULL)
+       AND (h.chronique_id IN (SELECT id FROM bdoh.chronique WHERE NOT estvisible)
+            OR h.station_id IN (SELECT id FROM anon.stations_cachees));
+    RETURN NEXT;
+    -- Chaque valeur d'une chronique cachée doit être son tirage, ou une lacune
+    FOR c IN SELECT unnest(ARRAY['mesure', 'plage', 'pointcontrole']) AS table_name LOOP
+        item := 'contrôle valeurs de chroniques cachées non remplacées, ' || c.table_name;
+        EXECUTE format($f$
+            SELECT count(*) FROM bdoh.%1$I x JOIN bdoh.chronique k ON k.id = x.chronique_id
+              LEFT JOIN anon.bornes_%1$s b ON b.chronique_id = x.chronique_id
+             WHERE NOT k.estvisible AND x.valeur IS NOT NULL AND x.valeur <> -9999
+               AND x.valeur IS DISTINCT FROM anon.tirage((SELECT sel FROM anon.sel), x.id, b.lo, b.hi)$f$, c.table_name)
+           INTO n;
+        RETURN NEXT;
+    END LOOP;
 END $$;

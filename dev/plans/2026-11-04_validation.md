@@ -22,7 +22,7 @@ L'ordre de l'audit, resserré autour de la barrière : ce qui demande de lire de
 
 **Phase B, la régénération (Lou lance)**
 
-- [ ] B1. `dev/anonymize/anonymize.sql` : chroniques cachées traitées, rapport qui s'arrête s'il en reste.
+- [x] B1. `dev/anonymize/anonymize.sql` : chroniques cachées traitées, rapport qui s'arrête s'il en reste ; essayé sur des lignes inventées.
 - [ ] B2. Lou confirme la décision 2, lance `make anonymize` sur les deux dumps bruts, détruit ce qui vient des anciens dumps.
 - [ ] B3. Base de développement sur les paquets de Debian 13, rôle sans superuser ; restauration.
 
@@ -42,6 +42,42 @@ L'ordre de l'audit, resserré autour de la barrière : ce qui demande de lire de
 - Confirmer la décision 2, puis lancer `make anonymize` (B2).
 - Les questions de fait de l'audit : fichiers d'imports restés sur l'ancien serveur, collation et rôle de la base de production, tâches à code 16 ou 32 sur le dump brut.
 
+## Pour reprendre
+
+Rien ne tourne ; les deux instances sont sur `bdoh_small`. Dans l'ordre :
+
+1. Trois défauts du comparateur, révélés par une passe qui a franchi minuit :
+   - `run_exports` : masquer le jour de la ligne `DEB;EXP-HYDRO` (`date('Ymd')`, `Qtvar.php:71`), Paris pour l'ancien en ligne de commande, UTC pour le nouveau ;
+   - `run_queue` (`compare.py:1001`) : le masque ne connaît que la date locale du jour, alors que le nouveau écrit en UTC ; prendre aussi la veille, comme `state_lines` ;
+   - `Report.add` : deux noms de cas qui donnent le même nom de fichier s'écrasent (27 cas, 24 fichiers d'écart) ; rendre le nom unique.
+2. Ce qui manque à `compare.py` pour la suite : `--inject-sql FICHIER` (appliqué à la copie du nouveau juste après `copy_base`, au moins dans `run_state`), attendu par `mutants.py` ; les recouvrements de `queue` dans le rapport (aujourd'hui seulement imprimés).
+3. Rejouer `exports` et `queue` : on attend les comptes d'hier (135/6/0/0 et 8/0/0/0). Les 3 cas d'exports sans fichier d'écart ne sont vérifiés qu'à ce moment-là.
+4. Tirer au clair ce qui a bougé depuis hier, en comptes et en forme masquée seulement : `pages` (ci-dessous) et `theia` (2 cas de moins alors qu'un cas s'est ajouté : un cas perdu sans bruit serait grave).
+5. A3, puis `mutants.py` (environ 1 h 30, modifie `src/`, rien d'autre en parallèle), puis A4 : `recompute.py --base bdoh` (3 à 5 h). `mutants.py` et `recompute.py` n'ont encore jamais tourné.
+
+Pour jouer tous les modes : `dev/compare/compare.py MODE --old reference --new new --base bdoh_small`, l'un après l'autre, avec `pages`, `exports`, `queue`, `imports`, `accounts`, `admin`, `theia`. Environ 1 h 10.
+
+Avant de détruire les rapports (B2) : noter les comptes utiles ici.
+
 ## Suivi
 
-- 2026-11-04 : plan ouvert, décisions notées.
+- 2026-11-04, nuit : tous les modes avec le comparateur durci, sur `bdoh_small` (commit 1a1920c). En identiques / à un arrondi près / autre ordre / différents :
+
+  ```
+  Mode       Avant le durcissement      Cette nuit
+  pages      1108 /  0 / 44 / 60        1064 / 10 / 72 / 66
+  exports     135 /  6 /  0 /  0 (*)     114 /  0 /  0 / 27
+  queue         8 /  0 /  0 /  0           7 /  0 /  0 /  1
+  imports      49 /  1 /  0 / 10          52 /  0 /  0 / 10
+  accounts     27 /  0 /  0 / 10          28 /  0 /  0 / 10
+  admin       648 /  0 /  0 /  9         649 /  0 /  0 /  9
+  theia        36 /  0 /  0 /  0          34 /  0 /  0 /  0
+  (*) sur la base complète
+  ```
+
+  Écarts relevés en forme masquée, sans lire de nom de cas ni de valeur :
+  - `exports` : sur les 24 fichiers d'écart, une seule ligne diffère, le jour de la ligne `DEB`, 20261104 d'un côté, 20261103 de l'autre, dans les 24. C'est l'horloge. Les 3 autres cas restent à voir (point 3 ci-dessus).
+  - `queue` : 48 lignes de `bdoh:compute:filling_rates`, même chronique et même commande, dates du moment décalées de 140 à 174 s. Le masque du comparateur, pas le calcul.
+  - `pages`, par rapport au rapport précédent : 36 cas passent d'identiques à « autre ordre » (8 en sens inverse), 10 d'identiques à « à un arrondi près » (20 paires de nombres ou plus par page), 6 d'identiques à différents (4 lignes ajoutées côté nouveau, avec un courriel : ressemble au menu d'un compte connecté). **Pas encore expliqué.** L'ancien contre lui-même ne bouge pas : ce n'est pas du bruit de l'outil.
+  - `imports`, `accounts`, `admin` : les mêmes nombres de différents qu'avant, à inscrire au registre (C1).
+- 2026-11-04 : plan ouvert, décisions notées. Comparateur durci (commit 1a1920c) : `compare.py selftest` voit ses 30 erreurs, après avoir révélé que l'état des bases se comparait à tort avec une tolérance d'arrondi. L'ancien contre lui-même : aucun bruit (`pages` 1 212 cas, `exports` 141, `state` 18). Traitement des chroniques cachées écrit (`dev/anonymize/`), essayé sur des lignes inventées seulement : l'outil d'autorisation de Claude refuse de lancer le script sur un dump, même déjà anonymisé ; la première passe réelle sera celle de Lou. Image de base sur les paquets de Debian 13 prête (`docker/db/`), à brancher en B3.
