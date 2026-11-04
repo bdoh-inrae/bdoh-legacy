@@ -1684,6 +1684,32 @@ def shape_cases(base, slug):
     return cases
 
 
+def real_import_cases(base):
+    """De vrais fichiers d'import, tels que les gestionnaires les écrivent (hors du dépôt, ../bdoh_reference/data-test-import,
+    déposés par Lou) : (nom, sorte, cas). Ils peuvent porter des valeurs de chroniques cachées : on n'en lit que l'en-tête, et
+    leurs rapports se lisent en comptes. Un barème de ce nom existe déjà en base : il s'importe sous un autre nom."""
+    cases = []
+    folder = OUT.parent / 'data-test-import'
+    for path in sorted(folder.glob('*')) if folder.is_dir() else []:
+        content = path.read_bytes()
+        head = [re.split(r'\s*;\s*', line.strip()) for line in content.decode('utf-8-sig', 'replace').splitlines()[:3]]
+        if head[0][0].lower() == 'nom':
+            cases.append((path.name, 'barème', {'content': content.replace(head[1][0].encode(), f'{head[1][0]}_essai'.encode(), 1)}))
+            continue
+        codes = head[1][2::2]
+        rows = query(base, f"""SELECT c.id, c.slug, c.code FROM ({CHRONIQUES}) c
+                                WHERE c.station = '{head[1][0]}' AND c.code IN ({','.join(f"'{code}'" for code in codes)})""", NEW_SERVER)
+        ids = [row[0] for row in rows]
+        if path.name.lower().startswith('controle'):
+            cases.append((path.name, 'contrôle', {'content': content, 'cid': ids[0], 'slug': rows[0][1]}))
+        else:
+            cases.append((path.name, 'mesures', {
+                'name': path.name, 'format': 'BdohPlage' if head[2][0].lower() == 'debut' else 'Bdoh', 'content': content,
+                'filename': 'import.txt', 'cid': ids[0], 'slug': rows[0][1], 'type': 'overwriteExisting',
+                'types': {cid: 'overwriteExisting' for cid in ids}}))
+    return cases
+
+
 @contextlib.contextmanager
 def small_tmp():
     """Un /tmp minuscule pour le nouveau, le temps du bloc : une panne que les imports doivent dire. Le conteneur
@@ -1975,11 +2001,38 @@ def run_imports(args):
             for title, target, filename, content in shape_cases(template, slug):
                 report.add(f'import {title}', play_shape('ancien', slug, target, filename, content),
                            play_shape('nouveau', slug, target, filename, content))
+        # De vrais fichiers : l'ancien et le nouveau, puis où chacun est arrivé, sans rien lire de leurs valeurs
+        real_cases = real_import_cases(template) if args.only in 'fichiers réels' else []
+        reached, touched = [], set()
+        for title, kind, case in real_cases:
+            where = case.get('slug') or real_cases[-1][2]['slug']
+            logs = []
+            for name in ('ancien', 'nouveau'):
+                if kind == 'barème':
+                    logs.append(play_bareme(name, where, case['content']))
+                elif kind == 'contrôle':
+                    logs.append(play_controle(name, case['cid'], where, case['content']))
+                else:
+                    logs.append(play(name, case))
+            report.add(f'import fichier réel {title}', *logs)
+            actions = [line for line in logs[1] if line.startswith('action : ')]
+            reached.append((title, actions[-1] if actions else 'aucune étape'))
+            if kind == 'mesures':
+                touched |= set(case['types'])
         for name in sides:
             sides[name] = {**state_lines(bases[name], historique),
                            'autres tables': other_tables_lines(bases[name], STATE_QUERIES)}
     for table in sides['ancien']:
         report.add(f'état {table}', sides['ancien'][table], sides['nouveau'][table])
+    for title, action in reached:
+        report.add(f'nouveau seul : fichier réel {title}, importé jusqu’au bout', ['conforme'],
+                   ['conforme' if action == 'action : "step4"' else f'non conforme : {action}'])
+    for table in ('mesure', 'plage'):
+        if touched:
+            prints = [query(bases[name], FINGERPRINTS[table].replace('GROUP BY', f"WHERE chronique_id IN ({','.join(touched)}) GROUP BY"), NEW_SERVER)
+                      for name in ('ancien', 'nouveau')]
+            report.add(f'nouveau seul : fichiers réels, {table} écrites identiques à l’ancien', ['conforme'],
+                       ['conforme' if prints[0] == prints[1] else f'non conforme : {len(prints[0])} et {len(prints[1])} chroniques'])
     # Ce que seul le nouveau fait aux formats QJO et Qtvar (dev/differences.md, « Zéro importé » et
     # « Jours manquants ») : chaque cas, les mesures attendues, et combien de mesures diffèrent de l'ancien
     hydro = {'QJO': (1, 'zéro écrit 0 gardé', "date >= '2025-09-09 12:00' AND date < '2025-09-10 12:00' AND valeur = 0", 1),
