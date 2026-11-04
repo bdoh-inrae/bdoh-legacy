@@ -4,6 +4,10 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/). Numéros de v
 
 ## Non publié
 
+## 0.2.0 - 2026-11-04
+
+Le portage corrigé et éprouvé, avant l'ouverture des données : le comparateur a vu toutes les fautes remises dans le code, le recalcul de la base complète retrouve les mesures, et tous les modes passent sur les paquets de Debian 13 avec un rôle sans superuser.
+
 ### Corrigé
 
 - Un import qui échoue en route ne laisse rien : l'ancien BDOH pouvait laisser une période vide, ou une partie de ses chroniques importée sans historique. De même pour les points de contrôle.
