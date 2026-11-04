@@ -27,6 +27,7 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/). Numéros de v
 
 ### Ajouté
 
+- La comparaison avec l'ancien BDOH est éprouvée : 29 fautes remises dans le code, toutes vues (`dev/compare/mutants.py`), et un petit jeu de calcul aux résultats écrits à la main, joué aussi sous PostgreSQL 11 (`dev/compare/invented.py`).
 - Chaque page publique indique la licence et un lien vers le code source, comme le demande l'AGPL.
 - `CITATION.cff` et `codemeta.json` : qui a fait BDOH, comment le citer.
 - Essais de l'interface dans un vrai navigateur (`make browser-check`), en plus de la comparaison.

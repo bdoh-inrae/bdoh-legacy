@@ -16,7 +16,7 @@ L'ordre de l'audit, resserré autour de la barrière : ce qui demande de lire de
 **Phase A, sur les dumps actuels (barrière en place, rapports lus en comptes)**
 
 - [x] A1. Durcir le comparateur : règle d'arrondi selon la nature du nombre, empreintes sans `concat_ws` et en binaire (`dev/reference/fingerprint.sql`), `plage`, toutes les autres tables, provenance du rapport, code de sortie, tests de ses fonctions (dans les contrôles de GitHub).
-- [ ] A2. L'éprouver : altérations SQL (`compare.py selftest`, fait), passe de l'ancien contre l'ancien (faite), fautes remises dans le code (`dev/compare/mutants.py`, reste à jouer).
+- [x] A2. L'éprouver : altérations SQL (`compare.py selftest`), passe de l'ancien contre l'ancien, fautes remises dans le code (`dev/compare/mutants.py`), toutes les 29 vues.
 - [x] A3. Corriger le calcul en échec qui vide la chronique, avec son cas dans `state`.
 - [ ] A4. Recalcul contre la base : chroniques calculées et converties, les plus profondes d'abord, codes comptés, identifiants vérifiés, tri par l'ancien sur PostgreSQL 11 ; taux de remplissage ; temps et mémoire ; OTHU restaurée, empreinte et taux.
 
@@ -46,8 +46,9 @@ L'ordre de l'audit, resserré autour de la barrière : ce qui demande de lire de
 
 Dans l'ordre :
 
-1. `dev/compare/mutants.py` (environ 2 h pour toutes, `--only` pour quelques-unes ; modifie `src/`, rien d'autre en parallèle, dépôt propre) : une faute non vue appelle un cas, un arrêt se lit.
-2. A4 : `dev/compare/recompute.py --base bdoh` (3 à 5 h), puis temps et mémoire (`dev/compare/volumes.py`, pas encore lancé).
+1. A4 : `dev/compare/recompute.py --base bdoh` (3 à 5 h), puis temps et mémoire (`dev/compare/volumes.py`, pas encore lancé).
+
+Pour rejouer les fautes : `dev/compare/mutants.py` (environ 2 h 30 pour toutes, `--only` pour quelques-unes ; modifie `src/`, rien d'autre en parallèle, dépôt propre). Une faute non vue appelle un cas, un arrêt se lit.
 
 Pour jouer tous les modes, l'un après l'autre (environ 1 h 10) :
 
@@ -67,6 +68,7 @@ Avant de détruire les rapports (B2) : noter les comptes utiles ici.
 - 2026-11-04, journée :
   - Fautes remises dans le code, première passe complète : 21 vues sur 29, 7 non vues, 1 arrêt. Le rapport en annonçait 22 parce qu'il comptait l'arrêt comme une faute vue. Or cet arrêt n'avait rien à voir avec la faute : l'Apache de `reference-17` plantait à presque chaque requête après une cinquantaine de vidages de cache (cache d'opcodes de PHP 7.1). `compare.py` recharge désormais Apache après chaque vidage, et `mutants.py` donne la dernière ligne d'erreur d'un arrêt sans le compter.
   - Les 7 non vues (6 dans les fonctions SQL, 1 sur les dates de la chronique) : les données ne passent pas par ces chemins. Dans la base réduite, aucune mesure limite sur une mère, aucune mesure pile sur un début de validité, aucune sous un barème lacune ; sur les 430 chroniques calculées visibles, aucune ne prend la moitié d'une limite ni ne la change en lacune, même dans la base complète. `dev/compare/invented.py` y passe : un petit jeu inventé, résultats écrits à la main, joué par `state` contre l'ancien, contre la main et sous PostgreSQL 11. `state` : 43/0/0/0, soit 21 cas de plus. Aucune différence au bit près entre PostgreSQL 11 et 17, dont les politiques de limites que rien d'autre n'emploie.
+  - Rejouées avec ce jeu, les 8 fautes qui restaient sont vues, et « facteur oublié » passe de 1 à 7 cas en écart : **29 sur 29**, A2 clos. La faute sur les dates ne se voit que dans les arguments de la tâche de taux de remplissage, seul effet réel : `MeasuresMetadataListener` réécrit aussitôt les dates de la chronique. Apache de `reference-17` : aucun plantage depuis son redémarrage, en 23 rechargements.
   - Un piège, pris en écrivant ce jeu : `../bdoh/app/sql/` est plus ancien que les fonctions en base (`dev/decisions.md`). Mes premiers résultats à la main, tirés de ces fichiers, étaient faux ; les deux serveurs les contredisaient d'accord.
   - Les 8 fonctions qui diffèrent entre les deux serveurs : les seuls `::double precision` de la migration déjà connue (`dev/differences.md`, « EXTRACT sous PostgreSQL 14 et plus »).
   - OTHU (A4, en partie) : restaurée sous PostgreSQL 17 en 7 min 22. Empreintes contre PostgreSQL 11 identiques, `mesure` 57 chroniques sur 57 (106 006 788 lignes), `tauxremplissage` 57 sur 57. Les 4 migrations appliquées ne changent pas l'empreinte. `recompute.py --base bdoh_othu` : taux de 57 chroniques en 668 s, tous au code 0, aucun qui diffère. Aucune chronique à recalculer : elles sont toutes continues.
