@@ -4,6 +4,11 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/). Numéros de v
 
 ## Non publié
 
+### Modifié
+
+- Les données ouvertes s'ouvrent : une chronique visible se télécharge sans compte, sous Licence Ouverte Etalab, et ses points de contrôle se voient avec elle. Une chronique cachée reste fermée, sur demande de droit, comme avant.
+- Un export se récupère par un lien, valable 7 jours, sur une page de suivi sans compte, par courriel avec un compte ; il n'y a plus de pièce jointe.
+
 ### Corrigé
 
 - Un import qui échoue en route ne laisse rien : l'ancien BDOH pouvait laisser une période vide, ou une partie de ses chroniques importée sans historique. De même pour les points de contrôle.

@@ -414,6 +414,10 @@ def canonical_query(query, per_page_option=False):
 
 # Les mentions légales, réécrites pour INRAE, et le lien vers le code source (dev/differences.md)
 LEGAL_NOTICE = re.compile(r"<p style='text-align: center;'>\s*(?:Institut national|INRAE).*?</p>", re.S)
+# Les boutons et la fenêtre d'export suivent le droit de télécharger, que le nouveau ouvre à qui n'a pas de compte
+# (dev/decisions.md, « Ouverture des données ») : hors de la comparaison, et vérifiés par open_data_checks.
+EXPORT_WIDGETS = re.compile(r'(?:<!-- The modal for Terms Of Uses -->.*?)?<!-- Link which triggers the modal for export -->.*?'
+                            r'<!-- END_The modal for export -->|<button class="graph-export-button.*?</button>', re.S)
 
 
 def page_lines(site, status, headers, body):
@@ -425,7 +429,7 @@ def page_lines(site, status, headers, body):
     lines.append(f'type {kind}')
     if kind == 'text/html':
         parser = Extract()
-        parser.feed(LEGAL_NOTICE.sub('', body.decode('utf-8', 'replace')))
+        parser.feed(EXPORT_WIDGETS.sub('', LEGAL_NOTICE.sub('', body.decode('utf-8', 'replace'))))
         parser.flush()
         # Un script et une feuille que l'administration de l'ancien chargeait pour rien (dev/differences.md)
         lines += [line for line in parser.lines if not re.match(r'(S|L stylesheet) /assets/(locales/|admin/measure-import\.css)', line)]
@@ -787,6 +791,24 @@ def other_tables_lines(base, known):
 MAILPIT = 'http://172.30.26.25:8025'  # service mailpit de compose.yaml (make mail-start)
 
 
+EXPORT_LINK = re.compile(r'Votre export de chronique est prêt : \S*/mesure/export/\d+/([0-9a-f]{32})/file\nCe lien reste valable \d+ jours\.')
+OLD_EXPORT_BODY = 'Veuillez trouver en pièce jointe votre export de chronique.'
+EXPORT_FILES = lambda token: (HERE.parent.parent / 'var' / 'exports' / f'{token}.zip').read_bytes()
+
+
+def archive_lines(name, kind, body):
+    """Une archive d'export : son nom et son type, puis ses fichiers."""
+    lines = [f'Pièce jointe : {name} ({kind})']
+    with zipfile.ZipFile(io.BytesIO(body)) as z:
+        for inner in z.namelist():
+            content = z.read(inner)
+            if inner.endswith('.txt'):
+                lines += [f'== {inner}', *map(export_line, content.decode('utf-8', 'replace').splitlines())]
+            else:
+                lines.append(f'== {inner} {hashlib.sha256(content).hexdigest()[:16]}')
+    return lines
+
+
 def mail_lines(ordered=True):
     """Les courriels retenus par Mailpit, du plus ancien au plus récent (ou rangés par leur texte,
     quand leur ordre ne compte pas), pièces jointes dépliées."""
@@ -799,21 +821,20 @@ def mail_lines(ordered=True):
         address = lambda a: f"{a['Name']} <{a['Address']}>"
         # Les destinataires triés : leur ordre suit celui d'une requête sans tri. Le texte sans ses fins
         # de ligne finales, que Swiftmailer ajoute en l'encodant ; un courriel en HTML, lu comme une page.
+        # L'ancien joint l'archive, le nouveau donne un lien (dev/differences.md, « Ouverture des données ») : l'archive
+        # du lien se lit comme une pièce jointe, et c'est son contenu qui se compare.
+        link = EXPORT_LINK.search(m['Text'])
+        text = EXPORT_LINK.sub(OLD_EXPORT_BODY, m['Text'])
         lines += [f"Sujet : {m['Subject']}", f"De : {address(m['From'])}",
                   'À : ' + ', '.join(sorted(map(address, m['To']))),
                   *(['Cc : ' + ', '.join(sorted(map(address, m['Cc'])))] if m.get('Cc') else []),
-                  *m['Text'].rstrip().splitlines()]
+                  *text.rstrip().splitlines()]
+        if link:
+            lines += archive_lines('export.zip', 'application/zip', EXPORT_FILES(link.group(1)))
         if m['HTML']:
             lines += page_lines(MAILPIT, 200, {'Content-Type': 'text/html'}, m['HTML'].encode())[2:]
         for part in m['Attachments']:
-            lines.append(f"Pièce jointe : {part['FileName']} ({part['ContentType']})")
-            with zipfile.ZipFile(io.BytesIO(get(f"/api/v1/message/{summary['ID']}/part/{part['PartID']}"))) as z:
-                for name in z.namelist():
-                    content = z.read(name)
-                    if name.endswith('.txt'):
-                        lines += [f'== {name}', *map(export_line, content.decode('utf-8', 'replace').splitlines())]
-                    else:
-                        lines.append(f'== {name} {hashlib.sha256(content).hexdigest()[:16]}')
+            lines += archive_lines(part['FileName'], part['ContentType'], get(f"/api/v1/message/{summary['ID']}/part/{part['PartID']}"))
     return [line for lines in (messages if ordered else sorted(messages)) for line in lines]
 
 
@@ -881,7 +902,9 @@ def state_lines(base, historique, tables=STATE_QUERIES):
     26/10/2026 13:18:50 UTC »), que les deux côtés écrivent à une seconde d'écart."""
     moment = moment_mask()
     offset = re.compile(r'(\dT\d\d:\d\d:\d\d|<maintenant>)[+-]\d\d:\d\d')
-    return {table: [offset.sub(r'\1', moment.sub('<maintenant>', '\t'.join(row))) if table == 'jms_jobs'
+    # Le chemin de l'archive, qui n'existe que dans le nouveau (dev/differences.md, « Ouverture des données »)
+    archive = re.compile(r'\\?"--write-to\\?",\s*\\?"[^"\\]*\\?",\s*')
+    return {table: [archive.sub('', offset.sub(r'\1', moment.sub('<maintenant>', '\t'.join(row)))) if table == 'jms_jobs'
                     else moment.sub('<maintenant>', '\t'.join(row))
                     for row in query(base, STATE_QUERIES[table].format(historique=historique), NEW_SERVER)]
             for table in tables}
@@ -953,6 +976,144 @@ def emptied_with_milliseconds_check(side, base, cid, page, manager, slug):
     ok = status == 302 and count() == before and gaps != '0'
     return {'nouveau seul : vider une période, dernière mesure à millisecondes, en lacune':
             ['conforme'] if ok else [f'statut {status}, {before} mesures avant, {count()} après, {gaps} lacunes']}
+
+
+def open_data_checks(side, console, runner, base):
+    """L'ouverture des données (dev/decisions.md, « Ouverture des données ») : ce qui s'ouvre et ce qui reste fermé.
+    Sur la copie du nouveau, avec Mailpit ; rien ne se lit des valeurs d'une chronique cachée, seulement des statuts."""
+    checks = {}
+
+    def check(name, ok, detail=''):
+        checks[f'nouveau seul : ouverture, {name}'] = ['conforme' if ok else f'non conforme : {detail}']
+
+    def chronique(where):
+        return query(base, f"""SELECT c.id, c.slug FROM ({CHRONIQUES}) c JOIN chronique ch ON ch.id = c.id
+                                WHERE c.dtype = 'continue' AND ch.nbmesures > 0 AND {where} ORDER BY ch.nbmesures, c.id LIMIT 1""", NEW_SERVER)[0]
+
+    visible, slug = chronique('c.estvisible')
+    other = query(base, f"""SELECT c.id FROM ({CHRONIQUES}) c WHERE c.slug = '{slug}' AND c.estvisible AND c.id <> {visible}
+                             AND c.dtype = 'continue' ORDER BY c.id LIMIT 1""", NEW_SERVER)[0][0]
+    hidden, hidden_slug = chronique(f'NOT c.estvisible')
+    role = lambda obs, value: query(base, f"""
+        SELECT u.email FROM utilisateur u JOIN role r ON r.utilisateur_id = u.id JOIN observatoire o ON o.id = r.observatoire_id
+         WHERE r.valeur = '{value}' AND r.dtype = 'observatoire' AND o.slug = '{obs}' AND (u.finacces IS NULL OR u.finacces > now())
+         ORDER BY u.id LIMIT 1""", NEW_SERVER)[0][0]
+    stranger = query(base, """SELECT u.email FROM utilisateur u WHERE u.roleadmin IS NULL AND (u.finacces IS NULL OR u.finacces > now())
+                                AND NOT EXISTS (SELECT 1 FROM role r WHERE r.utilisateur_id = u.id) ORDER BY u.id LIMIT 1""", NEW_SERVER)[0][0]
+    manager = Client(side, role(hidden_slug, 'gestionnaire'), hidden_slug)
+    jobs = lambda: query(base, 'SELECT count(*) FROM jms_jobs', NEW_SERVER)[0][0]
+    form = {'beginDate': '1800-01-01T00:00:00Z', 'endDate': '2030-01-01T00:00:00Z', 'exportFormat': 'Bdoh', 'exportType': 'identical',
+            'instantStep': '60', 'meanCumulStep': '7', 'timezone': '1'}
+
+    def export(client, where, ids, **extra):
+        return client.get(f'/{where}/mesure/export', urllib.parse.urlencode({**form, 'chroniques[]': ids, **extra}, doseq=True).encode(),
+                          {'Referer': f'{side.url}/{where}/'})
+
+    limiter = lambda: subprocess.run([*console, 'cache:pool:clear', 'cache.rate_limiter', '--env=prod'], check=True, capture_output=True)
+    limiter()
+
+    # Sans compte : une chronique visible, par son lien
+    anonymous = Client(side, None, slug)
+    logged = lambda: query(base, "SELECT count(*) FROM historique WHERE auteur_id IS NULL AND dtype ILIKE '%export%'", NEW_SERVER)[0][0]
+    logged_before = logged()
+    status, headers, _ = export(anonymous, slug, visible)
+    found = re.search(r'/mesure/export/(\d+)/([0-9a-f]{32})$', headers.get('Location', ''))
+    check('chronique visible, demandée sans compte', status == 302 and found, f"statut {status}, {headers.get('Location')}")
+    job, token = found.groups()
+    page = f'/{slug}/mesure/export/{job}/{token}'
+    status, headers, body = anonymous.get(page)
+    check('page de suivi, en attente, qui se recharge', status == 200 and headers.get('Refresh'), f'statut {status}')
+    check('archive pas encore prête', anonymous.get(f'{page}/file')[0] == 404)
+    drain(console, runner, base)
+    status, headers, body = anonymous.get(page)
+    check('page de suivi, prête', status == 200 and not headers.get('Refresh') and f'{token}/file'.encode() in body, f'statut {status}')
+    status, headers, archive = anonymous.get(f'{page}/file')
+    check('archive sans compte', status == 200 and archive[:2] == b'PK' and 'export.zip' in headers.get('Content-Disposition', ''), f'statut {status}')
+    check('export sans compte noté dans l’historique', int(logged()) > int(logged_before), f'{logged_before} puis {logged()}')
+
+    # Le même fichier qu'avec un compte, dont le lien arrive par courriel
+    mails = lambda: json.loads(urllib.request.urlopen(MAILPIT + '/api/v1/messages', timeout=60).read())['messages']
+    last_link = lambda: re.search(r'(/[\w-]+/mesure/export/\d+/[0-9a-f]{32}/file)', json.loads(urllib.request.urlopen(
+        f"{MAILPIT}/api/v1/message/{mails()[0]['ID']}", timeout=60).read())['Text'])
+    owner = Client(side, role(slug, 'gestionnaire'), slug)
+    before = len(mails())
+    export(owner, slug, visible)
+    drain(console, runner, base)
+    check('courriel d’un export avec compte, sans pièce jointe', len(mails()) == before + 1 and not mails()[0]['Attachments'],
+          f'{before} courriels, puis {len(mails())}')
+    link = last_link()
+    same = link and owner.get(link.group(1))[2]
+    check('même archive avec ou sans compte', link and archive_lines('', '', same) == archive_lines('', '', archive))
+    check('lien d’une chronique visible, ouvert à tous', link and Client(side, None, slug).get(link.group(1))[0] == 200)
+
+    # Une chronique cachée reste fermée
+    before = jobs()
+    check('chronique cachée, sans compte', export(Client(side, None, hidden_slug), hidden_slug, hidden, termsOfUses='1')[0] == 403)
+    check('chronique cachée, compte sans droit', export(Client(side, stranger, hidden_slug), hidden_slug, hidden, termsOfUses='1')[0] == 403)
+    mixed = query(base, f"""SELECT c.id FROM ({CHRONIQUES}) c WHERE c.estvisible AND c.slug = '{hidden_slug}' AND c.dtype = 'continue' ORDER BY c.id LIMIT 1""", NEW_SERVER)
+    if mixed:
+        check('demande mêlée, sans compte', export(Client(side, None, hidden_slug), hidden_slug, [mixed[0][0], hidden], termsOfUses='1')[0] == 403)
+    check('aucune tâche pour ces demandes', jobs() == before, f'{before} puis {jobs()}')
+    check('chronique cachée, conditions non cochées', export(manager, hidden_slug, hidden)[0] == 400)
+    check('valeurs d’une chronique cachée, sans compte', Client(side, None, hidden_slug).get(
+        f'/{hidden_slug}/chronique/{hidden}/measures?beginDate=2024-01-01T00:00:00Z&endDate=2024-02-01T00:00:00Z')[0] == 403)
+
+    # L'archive d'une chronique cachée redemande son droit à qui ouvre le lien
+    export(manager, hidden_slug, hidden, termsOfUses='1')
+    drain(console, runner, base)
+    link = last_link()
+    if link:
+        path = link.group(1)
+        status, headers, _ = Client(side, None, hidden_slug).get(path)
+        check('archive d’une chronique cachée, sans compte', status == 302 and 'login' in headers.get('Location', ''), f'statut {status}')
+        check('archive d’une chronique cachée, compte sans droit', Client(side, stranger, hidden_slug).get(path)[0] == 403)
+        check('archive d’une chronique cachée, avec le droit', manager.get(path)[0] == 200)
+    else:
+        check('lien de l’archive d’une chronique cachée', False, 'pas de lien')
+
+    # Un jeton faux
+    check('jeton inconnu', anonymous.get(f'/{slug}/mesure/export/{job}/{"0" * 32}')[0] == 404
+          and anonymous.get(f'/{slug}/mesure/export/{job}/{"0" * 32}/file')[0] == 404)
+
+    # Les points de contrôle d'une chronique visible, comme avec un droit
+    pointed = query(base, f"""SELECT c.id, c.slug FROM ({CHRONIQUES}) c JOIN chronique ch ON ch.id = c.id
+        WHERE c.estvisible AND EXISTS (SELECT 1 FROM pointcontrole p WHERE p.chronique_id = c.id) ORDER BY ch.nbmesures, c.id LIMIT 1""", NEW_SERVER)[0]
+    measures = f'/{pointed[1]}/chronique/{pointed[0]}/measures?beginDate=1800-01-01T00:00:00Z&endDate=2030-01-01T00:00:00Z'
+    check('points de contrôle d’une chronique visible, comme avec un droit',
+          Client(side, None, pointed[1]).get(measures)[2] == Client(side, role(pointed[1], 'gestionnaire'), pointed[1]).get(measures)[2])
+
+    # Un lien échu : le prochain export retire l'archive
+    stale = HERE.parent.parent / 'var' / 'exports' / f'{token}.zip'
+    moment = time.time() - 8 * 86400
+    os.utime(stale, (moment, moment))
+    export(anonymous, slug, visible)
+    drain(console, runner, base)
+    status, headers, body = anonymous.get(page)
+    check('lien échu, dit, et archive retirée', status == 200 and not stale.exists() and anonymous.get(f'{page}/file')[0] == 404, f'statut {status}')
+
+    # Le seuil : une chronique seule passe toujours, un ensemble lourd demande un compte
+    subprocess.run(['docker', 'exec', '-i', NEW_SERVER, 'psql', '-U', 'bdoh', '-d', base, '-v', 'ON_ERROR_STOP=1', '-q'], check=True, capture_output=True, text=True, input=f"""
+        INSERT INTO mesure (id, chronique_id, qualite_id, date, valeur, estcalculee)
+        SELECT nextval('mesure_id_seq'), {visible}, (SELECT qualite_id FROM mesure WHERE chronique_id = {visible} LIMIT 1),
+               timestamp '1800-01-01' + n * interval '1 minute', 1, false FROM generate_series(1, 5000100) n;
+        UPDATE chronique SET nbmesures = nbmesures + 5000100 WHERE id = {visible};""")
+    limiter()
+    before = jobs()
+    status, headers, _ = export(anonymous, slug, [visible, other])
+    check('ensemble trop lourd, refusé sans compte', status == 302 and jobs() == before and '/mesure/export/' not in headers.get('Location', ''),
+          f"statut {status}, {before} tâches puis {jobs()}")
+    check('la même chronique seule, acceptée', export(anonymous, slug, visible)[0] == 302 and int(jobs()) == int(before) + 1, f'{jobs()} tâches')
+    status = export(owner, slug, [visible, other], termsOfUses='1')[0]
+    check('ensemble trop lourd, accepté avec un compte', status == 302 and int(jobs()) == int(before) + 2, f'statut {status}, {jobs()} tâches')
+
+    # La limite de fréquence, par adresse IP et sans compte
+    limiter()
+    before = jobs()
+    for _ in range(21):
+        export(Client(side, None, slug), slug, visible)
+    check('limite de fréquence sans compte', int(jobs()) == int(before) + 20, f'{before} tâches puis {jobs()}')
+    limiter()
+    return checks
 
 
 def run_state(args):
@@ -1042,6 +1203,8 @@ def run_state(args):
             with new_on(base, template) as console:
                 checks.update(failed_computation_checks(console, base, *commands[0][1:3]))
                 checks.update(emptied_with_milliseconds_check(SIDES['new'], base, cid, f'/{slug}/{station}/{code}', manager, slug))
+            with new_on(base, template, 'MAILER_DSN=smtp://mailpit:1025') as console:
+                checks.update(open_data_checks(SIDES['new'], console, 'bdoh:jobs:run', base))
 
     report = Report('state')
     for part in sides['ancien']:

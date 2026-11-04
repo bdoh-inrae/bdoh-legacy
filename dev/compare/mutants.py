@@ -61,6 +61,18 @@ PHP = [
      '$days = $interval->invert ? 0 : $interval->days;', '$days = $interval->invert ? 0 : $interval->d;'),
     ('shapefile : latitude et longitude échangées', 'imports', 'shapefile', STATIONS,
      'latitude=ST_X(ST_GeometryN(t.geom, 1))', 'latitude=ST_Y(ST_GeometryN(t.geom, 1))'),
+    # L'ouverture des données : ce qui doit rester fermé
+    ('ouverture : une chronique cachée téléchargeable par tous', 'state', '', SRC + 'BdohSecurityBundle/Security/BdohRightVoter.php',
+     "        if ($object instanceof Chronique) {\n            return $this->canConsultTimeseries($user, $object);\n        }\n\n        if (!($user instanceof Utilisateur)) {\n            return false;\n        }\n\n        if ($object instanceof Station) {",
+     "        if ($object instanceof Chronique) {\n            return true;\n        }\n\n        if (!($user instanceof Utilisateur)) {\n            return false;\n        }\n\n        if ($object instanceof Station) {"),
+    ('ouverture : le lien d’une archive ne redemande pas le droit', 'state', '', SRC + 'BdohDataBundle/Controller/ExportController.php',
+     "if ($entity instanceof Chronique && !$this->authChecker->isGranted('DOWNLOAD', $entity)) {", 'if (false) {'),
+    ('ouverture : le jeton n’est pas vérifié', 'state', '', SRC + 'BdohDataBundle/Controller/ExportController.php',
+     "if ($job === null || !\\in_array($this->exportFiles->path($token), $job->getArgs(), true)) {", 'if ($job === null) {'),
+    ('ouverture : pas de limite pour un ensemble lourd', 'state', '', SRC + 'BdohDataBundle/Controller/ExportController.php',
+     "if ($this->isTooHeavyWithoutAccount($chroniques->toArray(), $beginDate, $endDate)) {", 'if (false) {'),
+    ('ouverture : les archives échues restent', 'state', '', SRC + 'BdohDataBundle/Exporter/Measure/ExportFiles.php',
+     'if (filemtime($file) < time() - self::KEEP_DAYS * 86400) {', 'if (false) {'),
     # Les corrections de la relecture de ce qui écrit (dev/differences.md) : chacune retirée, son cas doit la voir
     ('import : sans transaction (ancien comportement)', 'imports', 'pannes', IMPORTER,
      '$this->em->getConnection()->transactional(function', '\\call_user_func(function'),

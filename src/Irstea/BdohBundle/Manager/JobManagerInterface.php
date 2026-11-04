@@ -43,12 +43,13 @@ interface JobManagerInterface
      * @return Job
      */
     public function enqueueExport(
-        Utilisateur $user,
+        ?Utilisateur $user,
         $type,
         $format,
         \DateTime $begin,
         \DateTime $end,
         array $chroniques,
+        string $archivePath,
         $timestep = null,
         ?\DateTimeZone $timezone = null,
         $locale = null

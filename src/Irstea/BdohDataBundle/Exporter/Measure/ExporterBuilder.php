@@ -144,7 +144,7 @@ class ExporterBuilder
     private function createReporter(array $parameters)
     {
         $reporter = new Twig($this->twigEngine);
-        if (isset($parameters['user'])) {
+        if (!empty($parameters['logged'])) {
             $reporter = new LoggerDecorator($this->bdohLogger, $reporter);
         }
         $reporter->addParameters($parameters);

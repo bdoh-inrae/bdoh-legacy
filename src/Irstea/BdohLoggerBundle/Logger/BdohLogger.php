@@ -107,7 +107,7 @@ class BdohLogger
      */
     protected function initiateHistorique(
         Historique $historique,
-        Utilisateur $author,
+        ?Utilisateur $author,
         \DateTime $date,
         Observatoire $obs,
         $description = null
@@ -796,7 +796,7 @@ class BdohLogger
      * @param null $description
      */
     public function createHistoriqueDonneesExport(
-        Utilisateur $author,
+        ?Utilisateur $author,
         \DateTime $date,
         Observatoire $obs,
         Chronique $chronique,

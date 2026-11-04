@@ -104,12 +104,13 @@ class JobManager implements JobManagerInterface
      * {@inheritdoc}
      */
     public function enqueueExport(
-        Utilisateur $user,
+        ?Utilisateur $user,
         $type,
         $format,
         \DateTime $begin,
         \DateTime $end,
         array $chroniques,
+        string $archivePath,
         $timestep = null,
         ?\DateTimeZone $timezone = null,
         $locale = null
@@ -132,7 +133,8 @@ class JobManager implements JobManagerInterface
 
         $options = [
             'format'   => strtolower($format),
-            'send-to'  => $user->getEmail(),
+            'write-to' => $archivePath,
+            'send-to'  => $user?->getEmail(),
             'timezone' => $timezone ? "'" . $timezone->getName() . "'" : null,
             'locale'   => $locale,
         ];
@@ -151,7 +153,9 @@ class JobManager implements JobManagerInterface
             Job::PRIORITY_LOW
         );
 
-        $job->addRelatedEntity($user);
+        if ($user !== null) {
+            $job->addRelatedEntity($user);
+        }
         foreach ($chroniques as $chronique) {
             $job->addRelatedEntity($chronique);
             $job->addRelatedEntity($chronique->getObservatoire());

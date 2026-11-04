@@ -1,0 +1,19 @@
+{% extends '@IrsteaBdohConsult/layout.html.twig' %}
+
+{# L'état d'un export, par son lien : un visiteur sans compte n'a ni courriel ni page des tâches. #}
+{% block title %}{{ "measure.export.status.title"|trans }}{% endblock %}
+
+{% block main %}
+    <h1>{{ 'measure.export.status.title'|trans }}</h1>
+
+    {% if state == 'finished' %}
+        <p>{{ 'measure.export.status.finished(%days%)'|trans({'%days%': keepDays}) }}</p>
+        <p>
+            <a class="btn btn-info" href="{{ path('bdoh_data_measure_export_file', {id: id, token: token}) }}">
+                <i class="glyphicon glyphicon-download"></i>&nbsp;{{ 'measure.export.status.download'|trans }}
+            </a>
+        </p>
+    {% else %}
+        <p>{{ ('measure.export.status.' ~ state)|trans }}</p>
+    {% endif %}
+{% endblock %}

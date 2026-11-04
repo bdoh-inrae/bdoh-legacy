@@ -29,6 +29,8 @@ services:
     Irstea\BdohDataBundle\Controller\:
         resource: '../../Controller/'
 
+    Irstea\BdohDataBundle\Exporter\Measure\ExportFiles: ~
+
     # Les commandes de la console, dont celles que lance la file de tâches
     Irstea\BdohDataBundle\Command\:
         resource: '../../Command/'
