@@ -11,5 +11,8 @@ RUN apt-get update \
     && chmod 1777 /var/run/postgresql \
     && chmod a+w /etc/passwd
 
+# Les vrais programmes, et non les aiguillages de Debian (pg_wrapper) : docker exec les trouve sans autre réglage
+ENV PATH=/usr/lib/postgresql/17/bin:$PATH
+
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]

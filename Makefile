@@ -1,6 +1,6 @@
 # Commandes du projet ; `make` seul les liste.
 # SERVER choisit le serveur de base : reference (PostgreSQL 11, comme la production, par défaut) ou
-# new (PostgreSQL 17, comme Debian 13, celui du nouveau BDOH).
+# new (PostgreSQL 17, les paquets de Debian 13, celui du nouveau BDOH).
 
 OUT ?= ../bdoh_reference
 DUMP ?= $(OUT)/bdoh-205-2026-10-21-anon.dump
@@ -22,7 +22,7 @@ ENCORE = docker run --rm --network none --user $(HOST_UID):$(HOST_GID) -e HOME=/
 	-v $(CURDIR):/var/www/bdoh bdoh-app node_modules/.bin/encore
 DB_CONTAINER = $(if $(filter new,$(SERVER)),bdoh-db,bdoh-reference-db)
 
-.PHONY: help app-install assets start stop composer phpstan browser-check anonymize db db-small inspect fingerprint reference-app reference-start reference-stop reference-base reference-17-start mail-start worker-start
+.PHONY: help app-install assets start stop composer phpstan browser-check anonymize db db-small inspect fingerprint migrate reference-app reference-start reference-stop reference-base reference-17-start mail-start worker-start
 
 help: ## Liste les commandes
 	@grep -E '^[a-z0-9-]+:.*## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*## "} {printf "  %-19s %s\n", $$1, $$2}'
@@ -63,6 +63,9 @@ anonymize: ## Anonymise un dump de production : make anonymize SOURCE=chemin/du.
 
 db: ## Restaure un dump anonymisé : make db [DUMP=… BASE=… SERVER=…]
 	dev/reference/restore-db.sh "$(DUMP)" "$(BASE)"
+
+migrate: ## Applique les migrations du nouveau BDOH à une base de son serveur : make migrate BASE=…
+	docker exec -e DATABASE_URL="postgresql://bdoh@db:5432/$(BASE)?serverVersion=17&charset=utf8" bdoh-app php bin/console doctrine:migrations:migrate --no-interaction --env=prod
 
 db-small: ## Tire de la base bdoh la base de travail réduite bdoh_small (mesures de 2024) [SERVER=…]
 	dev/reference/small-db.sh

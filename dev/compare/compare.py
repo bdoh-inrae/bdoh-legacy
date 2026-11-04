@@ -823,7 +823,7 @@ ENV_LOCAL = HERE.parent.parent / '.env.local'  # la base du nouveau BDOH, comme 
 
 def copy_base(template, base):
     """Une copie fraîche d'une base, sur le serveur PostgreSQL 17."""
-    for sql in [f'DROP DATABASE IF EXISTS {base} WITH (FORCE)', f'CREATE DATABASE {base} TEMPLATE {template}']:
+    for sql in [f'DROP DATABASE IF EXISTS {base} WITH (FORCE)', f'CREATE DATABASE {base} TEMPLATE {template} OWNER bdoh']:
         subprocess.run(['docker', 'exec', NEW_SERVER, 'psql', '-U', 'postgres', '-v', 'ON_ERROR_STOP=1',
                         '-qc', sql], check=True)
 

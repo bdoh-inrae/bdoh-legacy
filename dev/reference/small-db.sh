@@ -64,4 +64,8 @@ DELETE FROM bdoh.tauxremplissage
  WHERE NOT (debut < '$end' AND fin > '$begin') AND fin > '1900-01-01';
 VACUUM ANALYZE;
 SQL
+if [[ ${SERVER:-reference} == new ]]; then
+    psql -c "ALTER DATABASE $target OWNER TO bdoh"
+    psql -d "$target" < "$(dirname "$0")/own-by-bdoh.sql"
+fi
 echo "Base $target prête."

@@ -1,19 +1,20 @@
 # L'environnement de développement du nouveau BDOH : PHP 8.4, PostgreSQL 17 et PostGIS 3.5, les
-# versions de Debian 13, sur les bases anonymisées ; l'application répond à http://172.30.26.10/.
+# paquets de Debian 13, sur les bases anonymisées ; l'application répond à http://172.30.26.10/.
 # Comme pour la référence (dev/reference/compose.yaml), le réseau est interne et tout tourne aux
 # droits de l'utilisateur ; se pilote par le Makefile.
 name: bdoh
 
 services:
+  # Sur les paquets de Debian 13, ceux de la production (docker/db/Dockerfile). plpgsql_check donne la couverture
+  # des fonctions de calcul, le temps d'une passe qui l'allume ; éteint, il ne fait rien.
   db:
-    image: postgis/postgis:17-3.5
+    image: bdoh-db
+    build: docker/db
+    command: [-c, shared_preload_libraries=plpgsql_check]
     container_name: bdoh-db
     user: "${HOST_UID:?}:${HOST_GID:?}"
-    environment:
-      POSTGRES_HOST_AUTH_METHOD: trust
     volumes:
-      - /etc/passwd:/etc/passwd:ro
-      - ${REFERENCE_DIR:?}/postgres-17:/var/lib/postgresql/data
+      - ${REFERENCE_DIR:?}/postgres-17-debian:/var/lib/postgresql/data
       - ${REFERENCE_DIR:?}:/in:ro
     healthcheck:
       test: [CMD, pg_isready, -h, 127.0.0.1, -U, postgres, -q]
