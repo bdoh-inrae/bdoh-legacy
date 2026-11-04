@@ -203,6 +203,7 @@ def main():
     for fault in faults:
         if len(fault) == 6:
             name, mode, only, file, old, new = fault
+            baseline(mode, only)  # avant la faute : la passe de référence ne doit pas la contenir
             path = ROOT / file
             original = path.read_text()
             try:
@@ -214,6 +215,7 @@ def main():
                 time.sleep(3)
         else:
             name, mode, function, old, new = fault
+            baseline(mode, '')
             with tempfile.NamedTemporaryFile('w', suffix='.sql', delete=False) as sql:
                 sql.write(sql_fault(function, old, new))
             verdict(name, mode, '', sql.name)
