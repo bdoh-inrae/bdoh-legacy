@@ -49,9 +49,8 @@ L'ordre de l'audit, resserré autour de la barrière : ce qui demande de lire de
 
 État du 4 novembre, en début d'après-midi : A1, A2, A3 et le recalcul de A4 sont faits, et les corrections de la relecture aussi (Suivi). Il reste, dans l'ordre :
 
-1. **Vérifier que les cas voient leur correction** : `mutants.py --only "ancien comportement"`, 9 fautes, environ 1 h. Une faute non vue appelle un cas.
-2. **Temps et mémoire** : `dev/compare/volumes.py`, jamais lancé, relu et vérifié contre `compare.py`, seul sur la machine. A4 sera alors clos.
-3. **Le signal à Lou pour la phase B**, dans `dev/local/notes-for-lou.md`. Lou peut déjà lancer `make anonymize`, qui ne touche pas aux bases restaurées ; seule la destruction de `postgres/`, `postgres-17/` et `compare/` attend la fin de la phase A.
+1. **Temps et mémoire** : `dev/compare/volumes.py`, jamais lancé, relu et vérifié contre `compare.py`, seul sur la machine. A4 sera alors clos.
+2. **Le signal à Lou pour la phase B**, dans `dev/local/notes-for-lou.md`. Lou peut déjà lancer `make anonymize`, qui ne touche pas aux bases restaurées ; seule la destruction de `postgres/`, `postgres-17/` et `compare/` attend la fin de la phase A.
 
 Pour rejouer les fautes : `dev/compare/mutants.py` (environ 2 h 30 pour toutes, `--only` pour quelques-unes ; modifie `src/`, rien d'autre en parallèle, dépôt propre). Une faute non vue appelle un cas, un arrêt se lit. Chaque correction de la relecture y a sa faute (« ancien comportement »).
 
@@ -76,6 +75,7 @@ Avant de détruire les rapports (B2) : noter les comptes utiles ici.
   - Le montage d'un `/tmp` minuscule est refusé même en root avec `docker exec --privileged`. `small_tmp` recrée le conteneur avec `dev/compare/small-tmp.yaml`, ce qui perd ses sessions : on se connecte dans le bloc.
   - Un arrêt du mode perdait le rapport entier. Les vérifications de panne s'y écrivent au fil de l'eau, et `imports --only pannes` les joue seules, en 75 s.
   - Passes avec les corrections : `imports` 59/0/0/10, les 10 mêmes écarts admis qu'avant ; `state` 44/0/0/0 ; `theia` sur `bdoh` 38/0/0/0, en 15 min.
+  - Chaque correction retirée, son cas la voit : 9 fautes sur 9 (`mutants.py --only "ancien comportement"`, 1 h), dont celles de `state` et de `theia` qui n'avaient pas été jouées sans correction.
 - 2026-11-04, ce qui est privé (décision 2, plus haut) : `dev/anonymize/anonymize.sql` ne traite plus que les valeurs, et plus les codes, les libellés, les stations, les sites, l'historique ni les barèmes. Rejoué sur une copie jetable de la base réduite, sous PostgreSQL 11, en 54 s : contrôles à 0 ; au bit près, toutes les chroniques visibles restent identiques (467 mesures, 746 plages, 98 points) et tous les taux de remplissage aussi ; toutes les cachées changent, sauf une qui n'a que des lacunes. Cet essai a montré un défaut, corrigé : une chronique cachée à valeur unique gardait sa vraie valeur (bornes égales), ce que le contrôle du rapport ne voyait pas ; 8 cas dans la base complète, d'après les comptes.
 - 2026-11-04, recalcul de la base complète, 67 min en tout (et non 3 à 5 h, l'estimation venait de l'audit), commit 98fcd2e, rapport `2026-11-04_075855_recompute` :
   - Codes : 422 calculées au code 0, 151 converties au code 0. Les 28 calculées au code 255 et la convertie au code 1 sont exactement les 28 chroniques calculées sans première transformation et la convertie sans conversion, configurations déjà connues et refusées proprement.
