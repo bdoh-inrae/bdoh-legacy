@@ -2,7 +2,9 @@
 # de l'application à revoir au déploiement. À l'arrêt, systemd ne signale que l'exécuteur
 # (KillMode=mixed), qui ne lance plus rien et laisse finir ses tâches ; au-delà de TimeoutStopSec,
 # tout est tué : une tâche coupée passe en échec, et son calcul, fait dans une transaction, est
-# annulé (dev/differences.md, « Tâche interrompue par un signal »).
+# annulé (dev/differences.md, « Tâche interrompue par un signal »). RestartSec : sans lui, systemd relance après
+# 100 ms et renonce après 5 démarrages en 10 s ; une panne de quelques secondes de PostgreSQL arrêterait la file
+# pour de bon, sans alerte.
 [Unit]
 Description=Exécuteur des tâches de BDOH
 Requires=postgresql.service
@@ -13,6 +15,7 @@ Type=simple
 ExecStart=/usr/bin/php /var/www/bdoh/current/bin/console bdoh:jobs:run --max-concurrent-jobs=2 --max-runtime=3600 --env=prod --no-interaction -vv
 Nice=10
 Restart=always
+RestartSec=30
 User=www-data
 KillMode=mixed
 TimeoutStopSec=5min

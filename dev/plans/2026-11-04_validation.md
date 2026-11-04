@@ -65,6 +65,16 @@ Avant de détruire les rapports (B2) : noter les comptes utiles ici.
 
 ## Suivi
 
+- 2026-11-04, relecture de ce qui écrit (C5, second Claude en lecture seule, constats revérifiés dans le code) : **aucune régression du portage sur les mesures**, les défauts sont ceux de l'ancien. À corriger une fois le recalcul fini, chacun avec son cas :
+  1. L'import « écraser » efface puis insère sans transaction : une panne entre les deux laisse la période vide (mesures, plages, points de contrôle).
+  2. Un import de plusieurs chroniques qui échoue sur l'une garde les précédentes, sans historique ni message.
+  3. Relance de l'exécuteur par systemd : corrigé (`RestartSec`, plan de mise en service).
+  4. Une sortie de tâche en UTF-8 invalide (réponse d'un serveur distant) fait tomber l'exécuteur, ce qui tue l'autre tâche en cours.
+  5. Deux imports zip dont le fichier intérieur porte le même nom s'écrasent entre deux étapes : l'un peut lire les lignes de l'autre.
+  6. L'écriture du CSV d'import n'est pas contrôlée : `/tmp` plein peut raccourcir un import sans message. Le comportement de PHP est à mesurer.
+  7. Un exécuteur tué hors de systemd libère la file alors que sa tâche tourne encore. Pas de correction : on ne le lance que par le service ; à jouer dans les pannes provoquées.
+  8. Vider une période intérieure supprime au lieu de mettre en lacune si la dernière mesure a des millisecondes (aucune aujourd'hui, le format d'import les accepte).
+  9. Point de contrôle : une date future passe, le test compare un texte à un objet ; une valeur écrite `0` est refusée.
 - 2026-11-04, journée :
   - Fautes remises dans le code, première passe complète : 21 vues sur 29, 7 non vues, 1 arrêt. Le rapport en annonçait 22 parce qu'il comptait l'arrêt comme une faute vue. Or cet arrêt n'avait rien à voir avec la faute : l'Apache de `reference-17` plantait à presque chaque requête après une cinquantaine de vidages de cache (cache d'opcodes de PHP 7.1). `compare.py` recharge désormais Apache après chaque vidage, et `mutants.py` donne la dernière ligne d'erreur d'un arrêt sans le compter.
   - Les 7 non vues (6 dans les fonctions SQL, 1 sur les dates de la chronique) : les données ne passent pas par ces chemins. Dans la base réduite, aucune mesure limite sur une mère, aucune mesure pile sur un début de validité, aucune sous un barème lacune ; sur les 430 chroniques calculées visibles, aucune ne prend la moitié d'une limite ni ne la change en lacune, même dans la base complète. `dev/compare/invented.py` y passe : un petit jeu inventé, résultats écrits à la main, joué par `state` contre l'ancien, contre la main et sous PostgreSQL 11. `state` : 43/0/0/0, soit 21 cas de plus. Aucune différence au bit près entre PostgreSQL 11 et 17, dont les politiques de limites que rien d'autre n'emploie.
