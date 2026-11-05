@@ -17,11 +17,12 @@ import sys
 import zipfile
 from pathlib import Path
 
-from playwright.sync_api import TimeoutError as PlaywrightTimeout
+from playwright.sync_api import Error as PlaywrightError
 from playwright.sync_api import sync_playwright
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / 'compare'))
 import compare as c  # noqa: E402
+import journeys as j  # noqa: E402
 
 TEMPLATE, BASE = 'bdoh_small', 'bdoh_browser'
 SLUG = 'REAL-COLLOBRIER'
@@ -38,6 +39,15 @@ def one(sql):
     return rows[0][0] if rows else None
 
 
+def login_with_console(page, console, email, slug):
+    """Une connexion sans passer par le courriel : le lien que donne la console."""
+    link = subprocess.run([*console, 'security:users:login-link', email, slug, '--env=prod'],
+                          capture_output=True, text=True, check=True).stdout.strip()
+    page.goto(re.sub(r'^https?://[^/]+', SITE, link.replace('&amp;', '&')))
+    page.locator('form button, form [type=submit]').first.click()
+    page.wait_for_load_state('networkidle')
+
+
 class Session:
     """Un navigateur, connecté ou non, et le relevé de ses étapes."""
 
@@ -45,6 +55,7 @@ class Session:
         self.context = browser.new_context(viewport={'width': 1400, 'height': 1000}, locale='fr-FR')
         self.page = self.context.new_page()
         self.label, self.only, self.results, self.problems = label, only, results, []
+        self.link = None
         self.page.on('console', lambda m: self.problem(f'console : {m.text}') if m.type == 'error' else None)
         self.page.on('pageerror', lambda e: self.problem(f'JavaScript : {e}'))
         self.page.on('response', lambda r: self.problem(f'{r.status} {r.url}') if r.status >= 400 else None)
@@ -66,7 +77,7 @@ class Session:
                 self.page.goto(SITE + path, wait_until='networkidle', timeout=120000)
             if check:
                 check(self.page)
-        except (PlaywrightTimeout, AssertionError, RuntimeError) as e:
+        except (PlaywrightError, AssertionError, RuntimeError, IndexError, ValueError) as e:
             failure = str(e).split('\n')[0]
         number = len(self.results) + 1
         self.page.screenshot(path=OUT / f"{number:02d}-{re.sub(r'[^a-zA-Z0-9]+', '-', title)[:70]}.png", full_page=True)
@@ -163,6 +174,7 @@ def open_data_steps(s, station, chronique, console, hidden):
         names = zipfile.ZipFile(saved).namelist()
         assert any('Licence-Ouverte' in name for name in names), f'pas de licence dans le zip : {names}'
         assert any(name.endswith('.txt') for name in names), f'pas de données dans le zip : {names}'
+        s.problems.clear()  # le navigateur note un téléchargement comme une navigation abandonnée
 
     s.step('export sans compte, jusqu’au fichier', chronique_page, export_to_file)
 
@@ -297,7 +309,9 @@ def main():
     OUT.mkdir(parents=True)
     c.copy_base(TEMPLATE, BASE)
     results = []
-    with c.new_on(BASE, TEMPLATE) as console, sync_playwright() as playwright:
+    with c.new_on(BASE, TEMPLATE, 'MAILER_DSN=smtp://mailpit:1025') as console, sync_playwright() as playwright:
+        # Les limites de fréquence comptent d'une passe à l'autre : compare.py accounts les épuise
+        subprocess.run([*console, 'cache:pool:clear', 'cache.rate_limiter', '--env=prod'], check=True, capture_output=True)
         oid = one(f"SELECT id FROM observatoire WHERE slug = '{SLUG}'")
         visible_chronique = f"""SELECT st.code, ch.code, ch.id FROM chronique ch JOIN station st ON st.id = ch.station_id
             JOIN stations_sites ss ON ss.station_id = st.id JOIN siteexperimental si ON si.id = ss.site_id
@@ -312,11 +326,7 @@ def main():
 
         def signed_in(label, email):
             session = Session(browser, label, args.only, results)
-            link = subprocess.run([*console, 'security:users:login-link', email, SLUG, '--env=prod'],
-                                  capture_output=True, text=True, check=True).stdout.strip()
-            session.page.goto(re.sub(r'^https?://[^/]+', SITE, link.replace('&amp;', '&')))
-            session.page.locator('form button, form [type=submit]').first.click()
-            session.page.wait_for_load_state('networkidle')
+            login_with_console(session.page, console, email, SLUG)
             return session
 
         # Un fichier d'import au format BDOH, pour une période sans mesures (2020)
@@ -348,7 +358,29 @@ def main():
         manager_steps(managing, oid, station_id, chronique_id, chronique_page, dataset, str(import_file))
         admin = one("""SELECT email FROM utilisateur WHERE roleadmin = 'FCT'
                         AND (finacces IS NULL OR finacces > now()) ORDER BY id LIMIT 1""")
-        admin_steps(signed_in('administrateur', admin), hidden)
+        admin_session = signed_in('administrateur', admin)
+        admin_steps(admin_session, hidden)
+
+        # Les parcours : de bout en bout, comme les ferait quelqu'un (journeys.py)
+        trip = j.Trip(BASE, SITE, SLUG, console, lambda label: Session(browser, label, args.only, results), one, OUT)
+        trip.follow_console_link = lambda page, email, slug: login_with_console(page, console, email, slug)
+        email, newcomer = j.new_account(trip)
+        j.closed_series(trip, email, newcomer)
+        j.manager_work(trip, managing, station_code, chronique_code, chronique_id, unite, quality)
+        j.control_points(trip, managing, station_code, chronique_code, chronique_id, unite, quality)
+
+        sessions = {SLUG: managing}
+
+        def session_for(slug):
+            if slug not in sessions:
+                boss = one(f"""SELECT u.email FROM utilisateur u JOIN role r ON r.utilisateur_id = u.id JOIN observatoire o ON o.id = r.observatoire_id
+                    WHERE o.slug = '{slug}' AND r.valeur = 'gestionnaire' AND u.roleadmin IS NULL AND (u.finacces IS NULL OR u.finacces > now()) ORDER BY u.id LIMIT 1""")
+                sessions[slug] = Session(browser, f'gestionnaire de {slug}', args.only, results)
+                login_with_console(sessions[slug].page, console, boss, slug)
+            return sessions[slug]
+
+        j.calculations(trip, session_for)
+        j.jobs_page(trip, admin_session)
         browser.close()
 
     failed = [r for r in results if r[1]]

@@ -11,8 +11,13 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/). Numéros de v
 - Le zip d'un export porte la licence de ses chroniques : la Licence Ouverte 2.0, en français et en anglais, pour une chronique visible ; les conditions d'utilisation pour une chronique cachée, actualisées : INRAE, portée limitée à ces chroniques, RGPD.
 - L'adresse de contact devient `bdoh.support@listes.inrae.fr`.
 
+### Corrigé
+
+- Après une suppression dans l'administration, on revient à la liste, et plus à une page « Pas trouvé » (régression de la 0.1.0).
+
 ### Ajouté
 
+- Des parcours de bout en bout dans un vrai navigateur, comme les ferait quelqu'un, rejoués par `make browser-check` : inscription, lien reçu par courriel, demande d'accès, droit sur une chronique cachée, export jusqu'au fichier, import, suppression.
 - Le registre des écarts admis avec l'ancien BDOH, sous une forme que la comparaison lit : tout autre écart fait échouer un mode (`dev/compare/expected.py`).
 - Pendant les essais sur le vrai dump, les courriels peuvent être détournés, sauf vers une liste d'adresses (`MAILER_DIVERT_TO`, `MAILER_ALLOWED_RECIPIENTS`).
 - Le kit des essais : message et tableur par observatoire, contacts tirés du dump brut, suivi (`dev/test-kit/`).

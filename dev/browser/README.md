@@ -7,6 +7,7 @@ python3 -m venv .python_env
 .python_env/bin/pip install -r dev/browser/requirements.txt
 .python_env/bin/playwright install chromium
 make start
+make mail-start
 make browser-check
 ```
 

@@ -2993,7 +2993,7 @@ def run_admin(args):
 
         def send(path, action, values, button, token=True, who=None):
             """Un formulaire de la page, envoyé comme par un navigateur, et la page où il renvoie. Sans
-            button, aucun bouton n'est envoyé (bouton sans nom) ; sans token, le formulaire part sans le
+            button, aucun bouton n'est envoyé ; sans token, le formulaire part sans le
             jeton CSRF que les couleurs et la conversion tirent eux-mêmes ; who : un autre compte que
             l'administrateur."""
             client = client_for(who or email, path.split('/')[1])
@@ -3004,9 +3004,10 @@ def run_admin(args):
                 form.fields = [f for f in form.fields if not f[0].startswith('CSRFToken')]
             values = {k: (form.choices(k)[:1] or [''])[0] if v is FIRST else v for k, v in values.items()}
             body = form.filled(values)
-            if button:
-                if form.buttons and button not in form.buttons:
-                    button = form.buttons[0]
+            # Le bouton qu'un navigateur enverrait : aucun si ceux du formulaire n'ont pas de nom (Sonata 4 décide de la page
+            # suivante d'après ce nom : sans lui, une suppression renvoyait à l'édition de l'entité supprimée)
+            if button and form.buttons:
+                button = button if button in form.buttons else form.buttons[0]
                 body += b'&' + urllib.parse.urlencode({button: ''}).encode()
             status, headers, _ = client.get(form.url, body, {'Referer': side.url + path})
             lines = redirect_lines(side.url, status, headers)
