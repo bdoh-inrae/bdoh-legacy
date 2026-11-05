@@ -22,6 +22,7 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/). Numéros de v
 - Pendant les essais sur le vrai dump, les courriels peuvent être détournés, sauf vers une liste d'adresses (`MAILER_DIVERT_TO`, `MAILER_ALLOWED_RECIPIENTS`).
 - Le kit des essais : message et tableur par observatoire, contacts tirés du dump brut, suivi (`dev/test-kit/`).
 - La mesure de ce que la comparaison exécute, en PHP et en SQL (`dev/coverage/`).
+- Les étapes de l'installation sur la VM, pour les deux instances, en texte, à éprouver sur place (`dev/deploy/README.md`).
 
 ### Sécurité
 

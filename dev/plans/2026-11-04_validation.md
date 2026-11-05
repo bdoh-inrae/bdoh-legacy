@@ -46,13 +46,21 @@ L'ordre de l'audit, resserré autour de la barrière : ce qui demande de lire de
 
 ## Pour reprendre
 
-État au 5 novembre : Symfony est en 7.4.23, C1 est fini, tous les modes passent à 0 « différents » avec le registre. Dans l'ordre :
+État au 5 novembre, 20 h 30 : Symfony est en 7.4.23, C1 est fini, tous les modes passent à 0 « différents » avec le registre. Dans l'ordre :
 
-1. Les parcours du navigateur sont écrits : `make browser-check`, à rejouer à chaque passe.
-2. **Toutes les fautes, une fois**, avec le registre : `mutants.py` écrit « ADMISE » pour une faute qu'une règle cacherait (règle trop large ou cas manquant). Elles ont été laissées pour ici plutôt que jouées avant C1 : la même passe éprouve les deux.
-3. **C2**, voir plus bas : `dev/coverage/`, écrit, pas encore joué sur une passe.
+1. Les parcours du navigateur sont écrits : `make browser-check`, à rejouer à chaque passe. Les 58 étapes et les 4 parcours complets ont passé, mais en deux passes : en jouer une seule, des 62, avant la 0.3.0.
+2. **Toutes les fautes, une fois**, avec le registre : `mutants.py` écrit « ADMISE » pour une faute qu'une règle cacherait (règle trop large ou cas manquant). La passe tourne depuis 16 h 50 (rapport `../bdoh_reference/compare/2026-11-05_165026_mutants/rapport.txt`, écrit au fil de l'eau) ; voir le Suivi. À la reprise :
+   - Si elle a fini, la dernière ligne du rapport donne le compte. Lire chaque ADMISE, NON VUE et ARRÊT ; traiter « minimum et maximum échangés » (Suivi du 5 novembre, 17 h).
+   - Si elle a été coupée (session fermée), une faute peut être restée dans `src/` : `git status`, puis `git checkout --` sur le fichier modifié (`src/` était propre au départ), et `dev/compare/use-base.sh bdoh_small`. Rejouer ensuite, avec `--only`, les fautes absentes du rapport.
+   - Dans tous les cas, `git status` propre avant tout commit ; pendant une passe, ne commiter que des chemins nommés.
+3. **C2**, voir plus bas : `dev/coverage/`, écrit, pas encore joué sur une passe. Il manque dans `compare.py`, à écrire une fois les fautes finies (elles relisent ce fichier) :
+   - `save_sql_coverage(base)`, qu'appelle `coverage.py report` : créer l'extension `plpgsql_check` (en `-U postgres`), lire `plpgsql_profiler_function_statements_tb(p.oid)` sur les fonctions plpgsql du schéma `bdoh`, écrire dans `../bdoh_reference/coverage/sql/<base>-….tsv` les 5 champs, séparés par des tabulations, que lit `sql_report` (`proname(args)`, `stmtid`, `lineno`, `exec_stmts`, `stmtname`) ;
+   - l'appeler dans `copy_base`, avant le `DROP`, si `BDOH_COVERAGE` est réglé, pour les bases qui ne finissent pas par `_old` ;
+   - `small_tmp()` doit aussi passer `-f dev/coverage/coverage.yaml` ;
+   - retirer l'extension de `bdoh_small` après le relevé, pour garder le gabarit propre.
+4. **La liste de Lou**, à écrire (`dev/test-kit/lou-checklist.md`) : ce que la machine ne juge pas et que Lou essaie d'abord, avant les gestionnaires. Le rendu à l'œil (couleurs, thèmes, boutons de la boîte à outils, graphiques) ; de vrais courriels, dont les messageries qui ouvrent les liens pour les analyser (le lien de connexion doit survivre) ; et les doutes : `DocumentationBDOH.pdf` cite encore l'ancienne adresse de contact ; `/admin/station/None/delete` répond 500, non comparé à l'ancien ; une fiche que le navigateur refuse quand l'anonymisation a vidé téléphone et adresse.
 5. **Proposer la version 0.3.0**, l'état que verront les testeurs, et ajouter la page de version GitHub de la 0.2.0 : le tag existe, la page manque.
-6. **La VM**, selon la réponse de l'équipe infra. Les fichiers déposés de la production (logos, images) sont dans `../bdoh_reference/uploads/bdoh-uploads-prod.tar.gz`, à reprendre dans `public/uploads/` sur la VM ; OTHU n'en a pas.
+6. **La VM**, selon la réponse de l'équipe infra, en suivant `dev/deploy/README.md`. Les fichiers déposés de la production (logos, images) sont dans `../bdoh_reference/uploads/bdoh-uploads-prod.tar.gz`, à reprendre dans `public/uploads/` sur la VM ; OTHU n'en a pas.
 
 **C2, ce qui a été lu et mesuré** (l'outil et son mode d'emploi : `dev/coverage/`). Le but est une liste à lire, ce qui écrit d'abord, pas un pourcentage.
 
@@ -96,6 +104,7 @@ Les comptes utiles des rapports sont notés dans le Suivi, et le détail du reca
 
 ## Suivi
 
+- 2026-11-05, 20 h 26, fautes en cours, code b1aa6a4 : 33 jouées sur 47, **32 vues**, 1 ADMISE (ci-dessous), aucune NON VUE, aucun arrêt. Vues : toutes celles de l'import (décalage horaire, écraser, garder, plages, points de contrôle, QJO, shapefile), les 10 de l'ouverture, les 9 « ancien comportement » et 6 sur les calculs et la conversion. Restent 14, surtout sur `state` (8 min chacune), fin estimée vers 22 h 15.
 - 2026-11-05, 17 h, fautes en cours. Premier constat, à traiter à la fin de la passe : « import : minimum et maximum échangés » sort ADMISE. Elle se joue avec `--only`, qui écarte les cas QJO, et donc le contrôle ligne à ligne de la chronique 9 : le masque de `état mesure` cache alors la faute. Une passe complète de `imports` la verrait ; un `--only` non.
 - 2026-11-05, après-midi, parcours dans le navigateur (`dev/browser/journeys.py`), 62 étapes, toutes passent, dont l'ouverture : export sans compte jusqu'au fichier, chronique cachée refusée, droit donné puis retiré, archive refusée après coup. 500 pages parcourues sans erreur, les 34 administrations ouvertes et 27 fiches enregistrées. **Un vrai défaut trouvé, que tous les modes laissaient passer :** toute suppression dans l'administration finissait sur « Pas trouvé » (`dev/decisions.md`, « Pièges »). `compare.py` envoyait un bouton nommé que le formulaire n'a pas : corrigé, il voit désormais le défaut sur 5 cas, et les gabarits sont corrigés, `admin` 649/0/0/9/0.
 - 2026-11-05, après-midi, Symfony 7.4.23 (16 avis lus, aucun ne touche ce que BDOH emploie : `dev/local/security.md`), et C1 fini : tous les modes avec le registre, commit 3cc5c8a (`theia` sur `bdoh`, les autres sur `bdoh_small`), 46 min en tout. En identiques / à un arrondi près / autre ordre / écarts admis / différents : `pages` 1007/0/44/161/0, `exports` 15/0/0/126/0, `state` 81/0/0/0/0, `queue` 11/0/0/0/0, `imports` 74/0/0/10/0, `accounts` 28/0/0/10/0, `admin` 649/0/0/9/0, `theia` 38/0/0/0/0. Aucune règle sans écart. Le cas de plus d'`imports` est la chronique fille 936, qui ne diffère de l'ancien qu'aux dates où sa mère diffère. Les 44 pages de moins en écart sont `terms_of_use`, qui ne compare plus que son statut et son type.
