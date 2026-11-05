@@ -11,6 +11,10 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/). Numéros de v
 - Le zip d'un export porte la licence de ses chroniques : la Licence Ouverte 2.0, en français et en anglais, pour une chronique visible ; les conditions d'utilisation pour une chronique cachée, actualisées : INRAE, portée limitée à ces chroniques, RGPD.
 - L'adresse de contact devient `bdoh.support@listes.inrae.fr`.
 
+### Sécurité
+
+- Symfony passe à 7.4.23, pour les 16 avis publiés le 4 novembre 2026. D'après leur lecture et le code, BDOH n'y était pas exposé : ni connexion par programme, ni `methods` dans `access_control`, ni sérialiseur sur des données reçues, ni fragments en ligne, ni `private_ranges`.
+
 ## 0.2.0 - 2026-11-04
 
 Le portage corrigé et éprouvé, avant l'ouverture des données : le comparateur a vu toutes les fautes remises dans le code, le recalcul de la base complète retrouve les mesures, et tous les modes passent sur les paquets de Debian 13 avec un rôle sans superuser.
