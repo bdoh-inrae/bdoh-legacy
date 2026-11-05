@@ -46,13 +46,13 @@ L'ordre de l'audit, resserré autour de la barrière : ce qui demande de lire de
 
 ## Pour reprendre
 
-État au 5 novembre, 20 h 30 : Symfony est en 7.4.23, C1 est fini, tous les modes passent à 0 « différents » avec le registre. Dans l'ordre :
+État au 5 novembre, minuit : Symfony est en 7.4.23 ; C1 est fini, tous les modes passent à 0 « différents » avec le registre ; les 47 fautes sont vues (Suivi). Dans l'ordre :
 
-1. Les parcours du navigateur sont écrits : `make browser-check`, à rejouer à chaque passe. Les 58 étapes et les 4 parcours complets ont passé, mais en deux passes : en jouer une seule, des 62, avant la 0.3.0.
-2. **Toutes les fautes, une fois**, avec le registre : fait le 5 novembre, 47 sur 47 vues une fois les deux trous bouchés (Suivi).
-3. **C2**, voir plus bas : `dev/coverage/`, avec son relevé dans `compare.py` (`save_sql_coverage`, appelé avant chaque destruction d'une base du nouveau). Pas encore joué sur une passe : `coverage.py start`, tous les modes avec `BDOH_COVERAGE=1`, `make browser-check`, `report`, `stop` ; puis lire les deux listes, ce qui écrit d'abord.
-4. **La liste de Lou** : [dev/test-kit/lou-checklist.md](../test-kit/lou-checklist.md), ce que la machine ne juge pas et que Lou essaie sur la VM, avant les gestionnaires.
-5. **Proposer la version 0.3.0**, l'état que verront les testeurs, et ajouter la page de version GitHub de la 0.2.0 : le tag existe, la page manque.
+1. **Une passe unique des 62 étapes du navigateur** (`make browser-check`) : les 58 étapes et les 4 parcours complets ont passé, mais en deux passes.
+2. **Proposer la version 0.3.0** à Lou, l'état que verront les testeurs. La page GitHub de la 0.2.0 existe depuis le 5 novembre.
+3. **C2**, voir plus bas : `dev/coverage/`, avec son relevé dans `compare.py` (`save_sql_coverage`, appelé avant chaque destruction d'une base du nouveau, essayé sur une copie jetable). Pas encore joué sur une passe : `coverage.py start`, tous les modes avec `BDOH_COVERAGE=1`, `make browser-check`, `report`, `stop` ; puis lire les deux listes, ce qui écrit d'abord.
+4. **La carte de l'accueil**, dans une session à part, pendant l'attente de la VM (`ROADMAP.md`, « Modernisations »).
+5. **La liste de Lou** : [dev/test-kit/lou-checklist.md](../test-kit/lou-checklist.md), ce que la machine ne juge pas et que Lou essaie sur la VM, avant les gestionnaires.
 6. **La VM**, selon la réponse de l'équipe infra, en suivant `dev/deploy/README.md`. Les fichiers déposés de la production (logos, images) sont dans `../bdoh_reference/uploads/bdoh-uploads-prod.tar.gz`, à reprendre dans `public/uploads/` sur la VM ; OTHU n'en a pas.
 
 **C2, ce qui a été lu et mesuré** (l'outil et son mode d'emploi : `dev/coverage/`). Le but est une liste à lire, ce qui écrit d'abord, pas un pourcentage.

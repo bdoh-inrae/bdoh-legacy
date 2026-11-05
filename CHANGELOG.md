@@ -18,7 +18,7 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/). Numéros de v
 ### Ajouté
 
 - Des parcours de bout en bout dans un vrai navigateur, comme les ferait quelqu'un, rejoués par `make browser-check` : inscription, lien reçu par courriel, demande d'accès, droit sur une chronique cachée, export jusqu'au fichier, import, suppression.
-- Le registre des écarts admis avec l'ancien BDOH, sous une forme que la comparaison lit : tout autre écart fait échouer un mode (`dev/compare/expected.py`).
+- Le registre des écarts admis avec l'ancien BDOH, sous une forme que la comparaison lit : tout autre écart fait échouer un mode (`dev/compare/expected.py`). Les 47 fautes remises dans le code sont toutes vues avec lui ; un nombre qui change de valeur, même au dernier chiffre, n'est jamais admis.
 - Pendant les essais sur le vrai dump, les courriels peuvent être détournés, sauf vers une liste d'adresses (`MAILER_DIVERT_TO`, `MAILER_ALLOWED_RECIPIENTS`).
 - Le kit des essais : message et tableur par observatoire, contacts tirés du dump brut, suivi (`dev/test-kit/`).
 - La mesure de ce que la comparaison exécute, en PHP et en SQL (`dev/coverage/`).
