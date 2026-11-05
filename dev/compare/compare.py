@@ -604,9 +604,22 @@ def admitted(rules, old, new, exact=False):
             and all(any(found(wanted, line) for line in changed) for rule in rules for wanted in rule.must))
 
 
-def registered(rules, name, key, old, new, exact=False):
+def changed_values(rounding):
+    """Les paires arrondies où un nombre change vraiment de valeur. Les autres ne changent que son écriture :
+    3,34 et 3.34 (l'ancien écrivait parfois une virgule), -0.000 et 0.000, 1.50 et 1.5."""
+    value = lambda token: decimal.Decimal(token.replace(',', '.'))
+    return [(a, b) for a, b in rounding if any(
+        x.group('number') and value(x.group('number')) != value(y.group('number'))
+        for x, y in zip(TOKEN.finditer(a), TOKEN.finditer(b)))]
+
+
+def registered(rules, name, key, old, new, exact=False, rounding=()):
     """Ce que le registre fait d'un écart : (catégorie du rapport, règles qui l'expliquent). Un autre ordre
-    n'est admis que pour une liste qu'il nomme."""
+    n'est admis que pour une liste qu'il nomme. Un nombre qui change de valeur, même au dernier chiffre, n'est
+    admis par aucune règle : c'est ainsi qu'une faute d'arrondi se voit, y compris dans un cas dont un autre
+    écart est admis. Aucune passe n'en a depuis que les exports passent à 15 chiffres (dev/decisions.md)."""
+    if changed_values(rounding):
+        return 'différents', []
     rules = [rule for rule in rules if re.fullmatch(rule.case, name)]
     if key == 'même contenu, autre ordre':
         lists = [rule for rule in rules if rule.order]
@@ -672,7 +685,7 @@ class Report:
         exact = self.exact or name.startswith('état ') or name in STATE_QUERIES or name in ACCOUNT_QUERIES \
             or name == 'autres tables'
         key, diff, rounding = classify(old, new, exact)
-        key, rules = registered(self.rules, name, key, old, new, exact)
+        key, rules = registered(self.rules, name, key, old, new, exact, rounding)
         self.used += rules
         self.counts[key] += 1
         if diff or rounding:
@@ -904,8 +917,41 @@ NEW_URL = 'postgresql://bdoh@db:5432/{}?serverVersion=17&charset=utf8'
 ENV_LOCAL = HERE.parent.parent / '.env.local'  # la base du nouveau BDOH, comme l'écrit use-base.sh
 
 
+COVERAGE_SQL = OUT.parent / 'coverage' / 'sql'
+
+
+def save_sql_coverage(base):
+    """Ce que les fonctions plpgsql d'une base du nouveau ont exécuté, relevé pour dev/coverage/ avant que la base parte.
+    Le profil est propre à la base, ne suit pas sa copie, et ne se lit qu'avec l'extension plpgsql_check, retirée
+    aussitôt : le gabarit et les copies suivantes restent comme avant."""
+    def run(sql):
+        return subprocess.run(['docker', 'exec', '-i', NEW_SERVER, 'psql', '-U', 'postgres', '-d', base, '-v', 'ON_ERROR_STOP=1',
+                               '-Atq', '-F', '\t', '-c', sql], check=True, capture_output=True, text=True).stdout
+    run('CREATE EXTENSION IF NOT EXISTS plpgsql_check')
+    try:
+        # Les fonctions nomment leurs tables sans le schéma : le relevé les compile avec le chemin du rôle bdoh
+        rows = run("""SET search_path = bdoh, public;
+                      SELECT p.proname || '(' || pg_get_function_identity_arguments(p.oid) || ')', s.stmtid, s.lineno, s.exec_stmts, s.stmtname
+                        FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace JOIN pg_language l ON l.oid = p.prolang,
+                             plpgsql_profiler_function_statements_tb(p.oid) s
+                       WHERE n.nspname = 'bdoh' AND l.lanname = 'plpgsql'""")
+    finally:
+        run('DROP EXTENSION plpgsql_check')
+    COVERAGE_SQL.mkdir(parents=True, exist_ok=True)
+    (COVERAGE_SQL / f'{base}-{datetime.datetime.now():%Y%m%d%H%M%S%f}.tsv').write_text(rows)
+
+
+def keep_sql_coverage(base):
+    """Pendant une mesure de la couverture (BDOH_COVERAGE), le profil d'une base du nouveau qui va être détruite."""
+    if os.environ.get('BDOH_COVERAGE') and not base.endswith('_old') and subprocess.run(
+            ['docker', 'exec', NEW_SERVER, 'psql', '-U', 'postgres', '-Atqc', f"SELECT 1 FROM pg_database WHERE datname = '{base}'"],
+            check=True, capture_output=True, text=True).stdout.strip():
+        save_sql_coverage(base)
+
+
 def copy_base(template, base):
     """Une copie fraîche d'une base, sur le serveur PostgreSQL 17."""
+    keep_sql_coverage(base)
     for sql in [f'DROP DATABASE IF EXISTS {base} WITH (FORCE)', f'CREATE DATABASE {base} TEMPLATE {template} OWNER bdoh']:
         subprocess.run(['docker', 'exec', NEW_SERVER, 'psql', '-U', 'postgres', '-v', 'ON_ERROR_STOP=1',
                         '-qc', sql], check=True)
@@ -1327,6 +1373,7 @@ def run_state(args):
                 # Rien ne reste d'une archive, dont une de chronique cachée
                 for path in exports.glob('*.zip*'):
                     path.unlink()
+                keep_sql_coverage('bdoh_open_data')
                 subprocess.run(['docker', 'exec', NEW_SERVER, 'psql', '-U', 'postgres', '-qc', 'DROP DATABASE IF EXISTS bdoh_open_data WITH (FORCE)'], capture_output=True)
 
     report = Report('state')
@@ -1850,11 +1897,13 @@ def small_tmp():
                 time.sleep(0.5)
         raise RuntimeError('le nouveau BDOH ne répond plus')
 
-    app('-f', str(HERE / 'small-tmp.yaml'))
+    # Pendant une mesure de la couverture, le conteneur recréé garde PCOV
+    coverage = ['-f', str(HERE.parent / 'coverage' / 'coverage.yaml')] if os.environ.get('BDOH_COVERAGE') else []
+    app(*coverage, '-f', str(HERE / 'small-tmp.yaml'))
     try:
         yield
     finally:
-        app()
+        app(*coverage)
 
 
 def import_failure_checks(template, base, check):
@@ -1978,7 +2027,8 @@ def run_imports(args):
     et l'état des deux copies."""
     template = args.base
     historique = query(template, 'SELECT coalesce(max(id), 0) FROM historique', NEW_SERVER)[0][0]
-    cases = [c for c in import_cases(template) if args.only in c['name']]
+    every_case = import_cases(template)
+    cases = [c for c in every_case if args.only in c['name']]
     bases = {'ancien': 'bdoh_imports_old', 'nouveau': 'bdoh_imports_new'}
     for base in bases.values():
         copy_base(template, base)
@@ -2174,19 +2224,22 @@ def run_imports(args):
                           NEW_SERVER)[0][0])
         report.add(f"nouveau seul : {label}, {case['name']}", ['conforme'],
                    ['conforme' if found == expected else f'non conforme : {found} au lieu de {expected}'])
-    if played:
-        rows = lambda base, chronique: {tuple(row) for row in query(base, f"""SELECT date, valeur, minimum, maximum, qualite_id FROM mesure
-                                                                               WHERE chronique_id = {chronique}""", NEW_SERVER)}
-        changed = lambda chronique: {row[0] for row in rows(bases['ancien'], chronique) ^ rows(bases['nouveau'], chronique)}
-        mother, expected = changed(played[0]['cid']), sum(hydro[c['name']][0] for c in played)
-        report.add('nouveau seul : seules ces mesures diffèrent de l’ancien', ['conforme'],
-                   ['conforme' if len(mother) == expected else f'non conforme : {len(mother)} au lieu de {expected}'])
-        # Ses filles recalculées : le registre admet leur empreinte (dev/compare/expected.py), c'est ce contrôle qui
-        # les protège. Une fille ne diffère qu'aux dates où sa mère diffère.
-        for child, in query(bases['nouveau'], f"SELECT sortie_id FROM transformation WHERE entree_id = {played[0]['cid']}", NEW_SERVER):
-            extra = changed(child) - mother
-            report.add(f'nouveau seul : chronique fille {child}, ne diffère qu’aux dates où sa mère diffère', ['conforme'],
-                       ['conforme' if not extra else f'non conforme : {len(extra)} dates de plus'])
+    # Le registre masque l'empreinte des mesures de la chronique des cas QJO et de ses filles (QJO_CHRONIQUES, dans
+    # dev/compare/expected.py). Tous les imports au format BDOH y écrivent aussi : ce contrôle ligne à ligne les protège,
+    # et se joue donc à chaque passe, même quand --only écarte les cas QJO. Rien ne doit alors différer de l'ancien.
+    rows = lambda base, chronique: {tuple(row) for row in query(base, f"""SELECT date, valeur, minimum, maximum, qualite_id FROM mesure
+                                                                           WHERE chronique_id = {chronique}""", NEW_SERVER)}
+    changed = lambda chronique: {row[0] for row in rows(bases['ancien'], chronique) ^ rows(bases['nouveau'], chronique)}
+    hydro_cid = next(c['cid'] for c in every_case if c['name'] in hydro)
+    mother, expected = changed(hydro_cid), sum(hydro[c['name']][0] for c in played)
+    report.add('nouveau seul : seules ces mesures diffèrent de l’ancien', ['conforme'],
+               ['conforme' if len(mother) == expected else f'non conforme : {len(mother)} au lieu de {expected}'])
+    # Ses filles recalculées : le registre admet leur empreinte, c'est ce contrôle qui les protège. Une fille ne diffère
+    # qu'aux dates où sa mère diffère.
+    for child, in query(bases['nouveau'], f"SELECT sortie_id FROM transformation WHERE entree_id = {hydro_cid}", NEW_SERVER):
+        extra = changed(child) - mother
+        report.add(f'nouveau seul : chronique fille {child}, ne diffère qu’aux dates où sa mère diffère', ['conforme'],
+                   ['conforme' if not extra else f'non conforme : {len(extra)} dates de plus'])
     try:
         # --only pannes : ces vérifications seules, sur des copies neuves
         if not args.only or args.only == 'pannes':

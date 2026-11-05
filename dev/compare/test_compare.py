@@ -217,8 +217,17 @@ class Register(unittest.TestCase):
         return compare.expected.Rule('essai', r'page .*', 'essai', **fields)
 
     def verdict(self, rules, name, old, new, exact=False):
-        key = compare.classify(old, new, exact)[0]
-        return compare.registered(rules, name, key, old, new, exact)[0]
+        key, _, rounding = compare.classify(old, new, exact)
+        return compare.registered(rules, name, key, old, new, exact, rounding)[0]
+
+    def test_a_value_that_changes_is_never_admitted(self):
+        # 3.500 et 3.501 : la comparaison le range à un arrondi près, le registre ne l'admet pas
+        old, new = ['T a', 'T 3.500'], ['T a', 'T 3.501']
+        self.assertEqual(self.verdict([], 'page x', old, new), 'différents')
+        # Seule l'écriture change : la virgule de l'ancien, un zéro négatif, un zéro final
+        for before, after in (('T 3,500', 'T 3.500'), ('T -0.000', 'T 0.000'), ('T 3.5', 'T 3.500')):
+            with self.subTest(before=before):
+                self.assertEqual(self.verdict([], 'page x', ['T a', before], ['T a', after]), 'à un arrondi près')
 
     def test_the_listed_lines_and_no_other(self):
         self.assertEqual(self.verdict([self.RULE], 'page a', ['T ancien'], ['T nouveau', 'T 3 points']), 'écarts admis')
@@ -306,6 +315,12 @@ class Register(unittest.TestCase):
         name = 'bdoh:export:identical x'
         self.assertEqual(self.verdict(rules, name, old, ['code de sortie 0', *licence, '01/01/2024;1.500;v']), 'écarts admis')
         self.assertEqual(self.verdict(rules, name, old, ['code de sortie 0', *licence, '01/01/2024;2.500;v']), 'différents')
+        # Une valeur arrondie autrement, loin de l'écart admis des licences : l'arrondi ne se cache plus derrière lui.
+        # La virgule de l'ancien (l'en-tête Qtvar d'une station), elle, n'est qu'une écriture.
+        head = ['code de sortie 0', '# Ignoring ConditionsGeneralesUtilisation.pdf', 'Station X', '950;X;Y;3,34;;;;']
+        new_head = ['code de sortie 0', *licence, 'Station X', '950;X;Y;3.34;;;;']
+        self.assertEqual(self.verdict(rules, name, [*head, '01/01/2024;1.500;v'], [*new_head, '01/01/2024;1.500;v']), 'écarts admis')
+        self.assertEqual(self.verdict(rules, name, [*head, '01/01/2024;1.500;v'], [*new_head, '01/01/2024;1.501;v']), 'différents')
         # La licence perdue : pas davantage
         self.assertEqual(self.verdict(rules, name, old, ['code de sortie 0', '01/01/2024;1.500;v']), 'différents')
 
