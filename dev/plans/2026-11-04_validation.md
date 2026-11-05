@@ -58,7 +58,7 @@ L'ordre de l'audit, resserré autour de la barrière : ce qui demande de lire de
    - l'appeler dans `copy_base`, avant le `DROP`, si `BDOH_COVERAGE` est réglé, pour les bases qui ne finissent pas par `_old` ;
    - `small_tmp()` doit aussi passer `-f dev/coverage/coverage.yaml` ;
    - retirer l'extension de `bdoh_small` après le relevé, pour garder le gabarit propre.
-4. **La liste de Lou**, à écrire (`dev/test-kit/lou-checklist.md`) : ce que la machine ne juge pas et que Lou essaie d'abord, avant les gestionnaires. Le rendu à l'œil (couleurs, thèmes, boutons de la boîte à outils, graphiques) ; de vrais courriels, dont les messageries qui ouvrent les liens pour les analyser (le lien de connexion doit survivre) ; et les doutes : `DocumentationBDOH.pdf` cite encore l'ancienne adresse de contact ; `/admin/station/None/delete` répond 500, non comparé à l'ancien ; une fiche que le navigateur refuse quand l'anonymisation a vidé téléphone et adresse.
+4. **La liste de Lou** : [dev/test-kit/lou-checklist.md](../test-kit/lou-checklist.md), ce que la machine ne juge pas et que Lou essaie sur la VM, avant les gestionnaires.
 5. **Proposer la version 0.3.0**, l'état que verront les testeurs, et ajouter la page de version GitHub de la 0.2.0 : le tag existe, la page manque.
 6. **La VM**, selon la réponse de l'équipe infra, en suivant `dev/deploy/README.md`. Les fichiers déposés de la production (logos, images) sont dans `../bdoh_reference/uploads/bdoh-uploads-prod.tar.gz`, à reprendre dans `public/uploads/` sur la VM ; OTHU n'en a pas.
 
