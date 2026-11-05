@@ -4,6 +4,8 @@ Les étapes, à lire et à lancer une par une sur la VM, en root. **Rien de ceci
 
 Aucune de ces étapes ne supprime une base ni un serveur. Une erreur en route s'arrête et se lit : ne pas relancer à l'aveugle.
 
+Chaque session root commence par `set -u` : une variable oubliée (une nouvelle session, un `NOM` changé sans le reste) arrête alors la commande au lieu de devenir un chemin vide. Les commandes qui effacent ou changent des droits en masse écrivent en plus `"${DIR:?}"`, que bash refuse si la variable est vide. Relu par un second Claude le 5 novembre : ce texte en tient compte.
+
 ## 1. Sur le poste : l'archive de la version
 
 La VM n'a ainsi besoin ni de Composer, ni de Node, ni d'accès à Packagist, npm ou GitHub.
@@ -12,16 +14,20 @@ La VM n'a ainsi besoin ni de Composer, ni de Node, ni d'accès à Packagist, npm
 version=$(git describe --tags --always)
 work=$(realpath -m ../bdoh_reference/releases/build-$version)
 mkdir -p "$work" && git archive HEAD | tar -x -C "$work"
-docker run --rm --user "$(id -u):$(id -g)" -e HOME=/tmp -e APP_ENV=prod -v "$work":/var/www/bdoh bdoh-app sh -c '
+docker run --rm --user "$(id -u):$(id -g)" -e HOME=/tmp -e APP_ENV=prod -v "$work":/var/www/bdoh bdoh-app sh -ec '
     cp .env.example .env
     composer install --no-dev --no-scripts --no-interaction --classmap-authoritative
     mkdir -p public/assets public/css/themes public/uploads
     php bin/console assets:install public --no-debug
     npm ci --no-audit --no-fund
     NODE_OPTIONS=--openssl-legacy-provider node_modules/.bin/encore production
-    rm -rf node_modules .env var'
-tar -C "$work" -czf ../bdoh_reference/releases/bdoh-legacy-$version.tar.gz .
+    test -f vendor/autoload.php && test -n "$(ls public/assets)"
+    find node_modules -mindepth 1 -maxdepth 1 ! -name bootstrap -exec rm -rf {} +
+    rm -rf .env var' \
+  && tar -C "$work" -czf ../bdoh_reference/releases/bdoh-legacy-$version.tar.gz .
 ```
+
+`sh -e` et le `&&` : une étape qui échoue (npm ou GitHub injoignable) ne donne pas d'archive. `node_modules/bootstrap` reste : `CssManager` compile les thèmes des observatoires sur la VM, à la première vue, avec le LESS de Bootstrap (`src/Irstea/BdohBundle/Resources/config/services.yml`).
 
 Lou copie sur la VM, dans `/root/` : cette archive, les deux dumps bruts, et `uploads/bdoh-uploads-prod.tar.gz`.
 
@@ -68,13 +74,14 @@ Les services : créer `/etc/systemd/system/bdoh-job-worker@.service` (section 5)
 
 Pour la production, `NOM=prod PORT=443`, et pour OTHU, `NOM=othu PORT=8443`, avec `ADRESSE` l'adresse IP de la VM ou son nom, et `DUMP` le dump brut de l'instance.
 
-```
-NOM=prod PORT=443 ADRESSE=… DUMP=/root/….dump ARCHIVE=/root/bdoh-legacy-….tar.gz
-DIR=/var/www/bdoh-$NOM ROLE=bdoh_$NOM BASE=bdoh_$NOM
+Une seule ligne pour toutes les variables, à recopier entière à chaque session, et pour passer à l'autre instance :
 
-mkdir -p $DIR && tar -xzf $ARCHIVE -C $DIR
+```
+set -u; NOM=prod PORT=443 ADRESSE=… DUMP=/root/….dump ARCHIVE=/root/bdoh-legacy-….tar.gz; DIR=/var/www/bdoh-$NOM ROLE=bdoh_$NOM BASE=bdoh_$NOM
+
+mkdir -p "${DIR:?}" && tar -xzf $ARCHIVE -C "${DIR:?}"
 mkdir -p $DIR/var $DIR/public/uploads $DIR/public/css/themes
-chown -R root:www-data $DIR && chmod -R g-w,o-rwx $DIR
+chown -R root:www-data "${DIR:?}" && chmod -R g-w,o-rwx "${DIR:?}"
 chown -R www-data:www-data $DIR/var $DIR/public/uploads $DIR/public/css/themes
 ```
 
@@ -99,33 +106,43 @@ MAILER_DIVERT_TO=               # l'adresse de Lou, pendant les essais
 MAILER_ALLOWED_RECIPIENTS=      # la ligne de allowed-recipients.env (dev/test-kit/README.md)
 ```
 
-La base. Le rôle de l'instance n'est pas superuser, et son nom ne le mène pas seul au schéma `bdoh` :
+La base. Le rôle de l'instance n'est pas superuser, et son nom ne le mène pas seul au schéma `bdoh`. La restauration tient en une commande, qui ne va pas plus loin que `createdb` si la base existe déjà : restaurer dans une base vivante ajouterait des lignes et ramènerait ses séquences en arrière.
 
 ```
 MOT_DE_PASSE=$(openssl rand -hex 24)     # le même que dans le .env
 runuser -u postgres -- psql -c "CREATE ROLE $ROLE LOGIN PASSWORD '$MOT_DE_PASSE'"
 runuser -u postgres -- psql -c "ALTER ROLE $ROLE SET search_path = bdoh, public"
-runuser -u postgres -- createdb -T template0 -E UTF8 --locale=en_US.UTF-8 $BASE
-runuser -u postgres -- psql -c "REVOKE CONNECT ON DATABASE $BASE FROM PUBLIC"
 
-install -o postgres -m 600 $DUMP /var/lib/postgresql/restore.dump
-runuser -u postgres -- pg_restore -d $BASE --no-owner --no-privileges -j 4 /var/lib/postgresql/restore.dump
-rm /var/lib/postgresql/restore.dump
+runuser -u postgres -- createdb -T template0 -E UTF8 --locale=en_US.UTF-8 $BASE \
+  && runuser -u postgres -- psql -c "REVOKE CONNECT ON DATABASE $BASE FROM PUBLIC" \
+  && install -o postgres -m 600 $DUMP /var/lib/postgresql/restore.dump \
+  && runuser -u postgres -- pg_restore -d $BASE --no-owner --no-privileges -j 4 /var/lib/postgresql/restore.dump
+rm -f /var/lib/postgresql/restore.dump
 
 runuser -u postgres -- psql -c "ALTER DATABASE $BASE OWNER TO $ROLE"
 sed "s/OWNER TO bdoh/OWNER TO $ROLE/" $DIR/dev/reference/own-by-bdoh.sql | runuser -u postgres -- psql -d $BASE -v ON_ERROR_STOP=1 -q
 runuser -u postgres -- psql -d $BASE -c 'VACUUM ANALYZE'
 ```
 
-Les contrôles, les migrations, le cache. Les comptes doivent rester les mêmes avant et après, sauf la ligne « séquences en retard », qui passe à 0 :
+Les contrôles, les migrations, le cache. Les comptes d'`inspect.sql` doivent rester les mêmes avant et après, sauf la ligne « séquences en retard », qui passe à 0 ; l'empreinte (`fingerprint.sql`, quelques minutes) ne doit changer que sur les tables que visent les migrations. Le fichier SQL est lu par root (`<`) : `postgres` n'a pas le droit d'entrer dans `$DIR`. `controle avant` et `controle apres` s'arrêtent sur une sortie vide, qui passerait sinon pour « rien n'a changé » :
 
 ```
-cd $DIR
-runuser -u postgres -- psql -d $BASE -At -F '|' -f $DIR/dev/reference/inspect.sql > /root/inspect-$NOM-avant.txt
-runuser -u www-data -- php bin/console doctrine:migrations:migrate --env=prod
-runuser -u www-data -- php bin/console cache:clear --env=prod
-runuser -u postgres -- psql -d $BASE -At -F '|' -f $DIR/dev/reference/inspect.sql > /root/inspect-$NOM-apres.txt
+controle() { cd /root && for f in inspect fingerprint; do
+    runuser -u postgres -- psql -d $BASE -v ON_ERROR_STOP=1 -qAt -F '|' < $DIR/dev/reference/$f.sql > /root/$f-$NOM-$1.txt \
+      && test -s /root/$f-$NOM-$1.txt || { echo "contrôle $f vide ou en erreur"; return 1; }; done; }
+
+controle avant \
+  && cd $DIR && runuser -u www-data -- php bin/console doctrine:migrations:migrate --env=prod --no-interaction \
+  && runuser -u www-data -- php bin/console cache:clear --env=prod \
+  && controle apres
 diff /root/inspect-$NOM-avant.txt /root/inspect-$NOM-apres.txt
+diff /root/fingerprint-$NOM-avant.txt /root/fingerprint-$NOM-apres.txt | cut -d'|' -f1-2 | sort -u
+```
+
+Les courriels, avant que rien ne puisse en envoyer (l'exécuteur, en section 5, enverra ceux des tâches restées en attente dans le dump). `MAILER_DIVERT_TO` doit être rempli : sans lui, `MAILER_ALLOWED_RECIPIENTS` est ignoré, et tout part aux vrais destinataires (`vendor/symfony/mailer/EventListener/EnvelopeListener.php`). Ce courriel doit arriver à Lou, et à personne d'autre :
+
+```
+cd $DIR && runuser -u www-data -- php bin/console mailer:test --env=prod quelquun@example.org
 ```
 
 OTHU seulement : ses trois fonctions SQL, à aligner sur la production après comparaison (`ROADMAP.md`).
@@ -196,26 +213,27 @@ KillMode=mixed
 TimeoutStopSec=5min
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=multi-user.target postgresql@17-main.service
 ```
+
+`Requires=` arrête l'exécuteur avant PostgreSQL, proprement ; mais une mise à jour de `postgresql-17` arrête puis redémarre PostgreSQL, et rien ne relancerait l'exécuteur (`Restart=` ne joue pas après un arrêt demandé). Le `WantedBy=` sur PostgreSQL le redémarre avec lui.
 
 `systemctl enable --now bdoh-job-worker@$NOM`. Les tâches restées « en cours » dans le dump passent alors en « incomplètes », relançables.
 
 ## 6. Une instance : les sauvegardes
 
-`/var/backups/bdoh/`, à l'emplacement que l'infra sauvegarde hors de la VM (`install -d -m 750 -o postgres -g postgres`).
+Deux dossiers, à l'emplacement que l'infra sauvegarde hors de la VM : `/var/backups/bdoh/` pour les dumps (`install -d -m 750 -o postgres -g postgres`), et `/var/backups/bdoh-files/` pour le `.env` et les fichiers déposés, que le dump ne contient pas (`install -d -m 700`). Sans le `.env`, sa clé `THEIA_PASSWORD_SECRET_KEY` est perdue, et les mots de passe Theia d'une base restaurée ne se lisent plus.
 
-`/etc/systemd/system/bdoh-backup@.service` :
+`/etc/systemd/system/bdoh-backup@.service` (en root, pour lire le `.env`) :
 
 ```
 [Unit]
-Description=Sauvegarde de la base de BDOH, %i
+Description=Sauvegarde de BDOH, %i
 After=postgresql@17-main.service
 
 [Service]
 Type=oneshot
-User=postgres
-ExecStart=/bin/sh -c 'pg_dump -Fc -f /var/backups/bdoh/%i-$(date +%%F).dump bdoh_%i && find /var/backups/bdoh -name "%i-*.dump" -mtime +7 -delete'
+ExecStart=/bin/sh -ec 'd=$(date +%%F); runuser -u postgres -- pg_dump -Fc -f /var/backups/bdoh/%i-$d.dump bdoh_%i; tar -czf /var/backups/bdoh-files/%i-$d.tar.gz -C /var/www/bdoh-%i .env public/uploads; find /var/backups/bdoh /var/backups/bdoh-files -name "%i-*" -mtime +7 -delete'
 ```
 
 `/etc/systemd/system/bdoh-backup@.timer` :
@@ -233,7 +251,16 @@ Persistent=true
 WantedBy=timers.target
 ```
 
-`systemctl enable --now bdoh-backup@$NOM.timer`. Une sauvegarde ne vaut qu'une fois restaurée : en restaurer une dans une base à part, une fois.
+`systemctl enable --now bdoh-backup@$NOM.timer`. Une sauvegarde qui échoue ne prévient personne : `systemctl --failed` la montre, à regarder chaque jour la première semaine (`dev/plans/2026-10-26_deployment.md`, « Après »).
+
+Une sauvegarde ne vaut qu'une fois restaurée. L'essayer une fois, dans une base à part (`bdoh_essai`), où `inspect.sql` doit donner les mêmes comptes que dans la base vivante ; c'est la seule base qu'on supprime ensuite (`dropdb bdoh_essai`) :
+
+```
+runuser -u postgres -- createdb -T template0 -E UTF8 --locale=en_US.UTF-8 bdoh_essai \
+  && runuser -u postgres -- pg_restore -d bdoh_essai --no-owner --no-privileges /var/backups/bdoh/$NOM-AAAA-MM-JJ.dump
+```
+
+Une vraie restauration, sur une VM neuve, reprend la section 3 avec ce dump à la place du dump brut (le rôle, son `search_path` et les propriétaires ne sont pas dans le dump), et le `.env` et `public/uploads/` de `/var/backups/bdoh-files/`.
 
 ## 7. Vérifier
 
@@ -246,14 +273,21 @@ WantedBy=timers.target
 
 ## Installer une nouvelle version
 
+Instance par instance. Une sauvegarde juste avant les migrations, sous un nom à part (celle de la nuit garderait le retour arrière au matin, et la suivante du même jour l'écraserait), puis les mêmes contrôles qu'à l'installation, avec la fonction `controle` de la section 3. Les thèmes compilés ne sont pas gardés : ils se recompilent avec la nouvelle version.
+
 ```
-mkdir /root/version && tar -xzf /root/bdoh-legacy-….tar.gz -C /root/version
+set -u; NOM=prod ARCHIVE=/root/bdoh-legacy-….tar.gz; DIR=/var/www/bdoh-$NOM BASE=bdoh_$NOM
+
+mkdir /root/version && tar -xzf $ARCHIVE -C /root/version
 systemctl stop bdoh-job-worker@$NOM
-rsync -a --delete --exclude=.env --exclude=/var --exclude=/public/uploads --exclude=/public/css/themes /root/version/ $DIR/
-chown -R root:www-data $DIR && chmod -R g-w,o-rwx $DIR
+runuser -u postgres -- pg_dump -Fc -f /var/backups/bdoh/$NOM-avant-$(date +%F-%H%M).dump $BASE && controle avant
+rsync -a --delete --exclude=/.env --exclude=/var --exclude=/public/uploads /root/version/ "${DIR:?}/"
+chown -R root:www-data "${DIR:?}" && chmod -R g-w,o-rwx "${DIR:?}"
 chown -R www-data:www-data $DIR/var $DIR/public/uploads $DIR/public/css/themes
-cd $DIR && runuser -u www-data -- php bin/console doctrine:migrations:migrate --env=prod
-runuser -u www-data -- php bin/console cache:clear --env=prod
+cd $DIR && runuser -u www-data -- php bin/console doctrine:migrations:migrate --env=prod --no-interaction \
+  && runuser -u www-data -- php bin/console cache:clear --env=prod \
+  && controle apres
+diff /root/inspect-$NOM-avant.txt /root/inspect-$NOM-apres.txt
 systemctl reload apache2 && systemctl start bdoh-job-worker@$NOM
 rm -rf /root/version
 ```

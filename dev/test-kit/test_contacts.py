@@ -14,9 +14,13 @@ COPY bdoh.observatoire (id, slug, email, projectleader_id) FROM stdin;
 COPY bdoh.personnetheia (id, nom, prenom, email) FROM stdin;
 10	Dupont	Ana	ana@univ.example
 11	Roy	Max	max@irstea.fr
+12	Duo	Ali	ali@x.example; Bea@Y.example
+13	Rien	Sans	voir le site web
 \.
 COPY bdoh.observatoires_data_manager (observatoire_id, personnetheia_id) FROM stdin;
 1	11
+2	12
+2	13
 \.
 COPY bdoh.siteexperimental (id, observatoire_id) FROM stdin;
 5	2
@@ -47,7 +51,11 @@ class Contacts(unittest.TestCase):
 
     def test_who_is_listed(self):
         self.assertEqual(sorted(self.found['ALPHA']), ['ana@univ.example', 'contact@inrae.fr', 'max@irstea.fr'])
-        self.assertEqual(sorted(self.found['BETA']), ['site@labo.inrae.fr'])
+        self.assertEqual(sorted(self.found['BETA']), ['ali@x.example', 'bea@y.example', 'site@labo.inrae.fr'])
+
+    def test_a_field_with_two_addresses_gives_both_and_text_gives_none(self):
+        self.assertEqual(self.found['BETA']['bea@y.example'], ['Ali Duo', ['gestionnaire de données (Theia)']])
+        self.assertFalse(any(' ' in email for people in self.found.values() for email in people))
 
     def test_an_expired_account_and_a_mere_user_are_left_out(self):
         self.assertNotIn('vieux@inrae.fr', self.found['ALPHA'])
@@ -61,9 +69,12 @@ class Contacts(unittest.TestCase):
 
     def test_allowed_recipients_need_no_backslash(self):
         self.assertEqual(c.allowed_recipients(['a.b+c@inrae.fr', 'd@x.fr']), '(?i)a[.]b[+]c@inrae[.]fr,(?i)d@x[.]fr')
+        self.assertEqual(c.allowed_recipients(['a_b-c@x.fr']), '(?i)a[_]b[-]c@x[.]fr')
 
     def test_old_domains_are_flagged(self):
         self.assertTrue(c.OLD_DOMAIN.search('a@irstea.fr'))
+        self.assertTrue(c.OLD_DOMAIN.search('a@lyon.cemagref.fr'))
+        self.assertTrue(c.INRAE.search('a@cemagref.fr'))
         self.assertFalse(c.OLD_DOMAIN.search('a@inrae.fr'))
 
 

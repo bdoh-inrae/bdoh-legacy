@@ -22,8 +22,11 @@ OUT = ROOT.parent / 'bdoh_reference' / 'private-test-contacts'
 COUNTS = ROOT.parent / 'bdoh_reference' / 'test-kit' / 'contacts-counts.csv'
 IMAGE = 'postgis/postgis:11-2.5'  # la version de la production
 TABLES = ['utilisateur', 'role', 'observatoire', 'siteexperimental', 'personnetheia', 'observatoires_data_manager']
-INRAE = re.compile(r'@(?:[\w.-]+\.)?(?:inrae|inra|irstea)\.fr$', re.I)
-OLD_DOMAIN = re.compile(r'@(?:[\w.-]+\.)?(?:inra|irstea)\.fr$', re.I)
+INRAE = re.compile(r'@(?:[\w.-]+\.)?(?:inrae|inra|irstea|cemagref)\.fr$', re.I)
+OLD_DOMAIN = re.compile(r'@(?:[\w.-]+\.)?(?:inra|irstea|cemagref)\.fr$', re.I)
+# Une adresse, en ASCII : une fiche Theia ou un observatoire en saisit en texte libre (« a@x.fr; b@y.fr »), et ce qui
+# n'en est pas une rendrait illisible le .env où va allowed-recipients.env
+ADDRESS = re.compile(r'[A-Za-z0-9._+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+')
 
 
 def parse_copy(lines):
@@ -51,10 +54,16 @@ def contacts(tables, today):
     sites = {row['id']: row['observatoire_id'] for row in tables['siteexperimental']}
     slugs = {row['id']: row['slug'] for row in tables['observatoire']}
     found = {slug: {} for slug in slugs.values()}
+    unreadable = [0]  # les champs sans aucune adresse lisible : seulement comptés
 
-    def add(observatory, email, name, what):
-        if observatory in slugs and email:
-            entry = found[slugs[observatory]].setdefault(email.strip().lower(), [name, []])
+    def add(observatory, field, name, what):
+        if observatory not in slugs or not field:
+            return
+        emails = ADDRESS.findall(field)
+        if not emails:
+            unreadable[0] += 1
+        for email in emails:
+            entry = found[slugs[observatory]].setdefault(email.lower(), [name, []])
             entry[0] = entry[0] or name  # l'adresse de contact de l'observatoire n'a pas de nom
             if what not in entry[1]:
                 entry[1].append(what)
@@ -77,13 +86,16 @@ def contacts(tables, today):
             add(row['observatoire_id'], user['email'], name, 'gestionnaire')
         elif row['dtype'] == 'site':
             add(sites.get(row['site_id']), user['email'], name, 'gestionnaire d’un site')
+    if unreadable[0]:
+        print(f'{unreadable[0]} champs d’adresse sans adresse lisible, écartés')
     return found
 
 
 def allowed_recipients(emails):
     """La valeur de MAILER_ALLOWED_RECIPIENTS : des expressions régulières sans antislash, que .env lirait autrement.
-    La casse ne compte pas : une adresse de la base peut en avoir."""
-    return ','.join('(?i)' + re.sub(r'[.+]', lambda m: f'[{m[0]}]', email) for email in emails)
+    La casse ne compte pas : une adresse de la base peut en avoir. Tout ce qui n'est ni lettre, ni chiffre, ni @ s'écrit
+    entre crochets."""
+    return ','.join('(?i)' + re.sub(r'[^A-Za-z0-9@]', lambda m: f'[{m[0]}]', email) for email in emails)
 
 
 def write_files(found):
@@ -115,7 +127,7 @@ def main():
         sys.exit(__doc__)
     dump = str(Path(sys.argv[1]).resolve())
     names = [arg for table in TABLES for arg in ('-t', table)]
-    process = subprocess.Popen(['docker', 'run', '--rm', '--network', 'none', '-v', f'{dump}:/in/source.dump:ro', IMAGE,
+    process = subprocess.Popen(['docker', 'run', '--rm', '--network', 'none', '--log-driver', 'none', '-v', f'{dump}:/in/source.dump:ro', IMAGE,
                                 'pg_restore', '--data-only', '-n', 'bdoh', *names, '-f', '-', '/in/source.dump'],
                                stdout=subprocess.PIPE, text=True, errors='replace')
     tables = parse_copy(process.stdout)

@@ -60,7 +60,7 @@ Chaque tâche renvoie à l'endroit où elle s'explique. Un module qui découvre 
 
 ## Après
 
-- Première semaine : `inspect.sql` chaque jour ; toute chronique dont l'empreinte change doit avoir une entrée d'historique ; regarder les tâches en échec (`dev/audits/2026-11-03_validation-plan.md`, 6.8).
+- Première semaine : `inspect.sql` chaque jour, et `systemctl --failed` (une sauvegarde ratée ne prévient personne) ; toute chronique dont l'empreinte change doit avoir une entrée d'historique ; regarder les tâches en échec (`dev/audits/2026-11-03_validation-plan.md`, 6.8).
 - À l'ouverture au public : essayer une à une les adresses que citent les DOI.
 - Publier les corrections de sécurité dans `dev/differences.md` (`dev/local/security.md`).
 - Effacer les hachages des anciens mots de passe, une fois la connexion par lien éprouvée (`ROADMAP.md`, « Modernisations »).
@@ -68,6 +68,17 @@ Chaque tâche renvoie à l'endroit où elle s'explique. Un module qui découvre 
 
 ## Suivi
 
+- 2026-11-05, soir : le guide relu par un second Claude, en lecture seule, avec `contacts.py`. Dix constats, vérifiés dans le code et corrigés dans le texte :
+  - une mise à jour lancée dans une session où `DIR` n'est plus défini aurait fait `rsync --delete` vers `/` : `set -u`, `"${DIR:?}"`, et les variables sur une seule ligne ;
+  - une restauration relancée dans une base existante y aurait ajouté des lignes et reculé ses séquences : elle s'arrête désormais à `createdb` ;
+  - `inspect.sql` lu par `postgres`, qui n'entre pas dans `$DIR` : le contrôle sortait vide et passait toujours. Lu par root, avec l'empreinte, et une sortie vide arrête ;
+  - une sauvegarde à part avant les migrations d'une mise à jour ;
+  - `MAILER_ALLOWED_RECIPIENTS` n'agit que si `MAILER_DIVERT_TO` est rempli : un courriel d'essai avant de démarrer l'exécuteur, et `.env.example` le dit ;
+  - l'exécuteur ne repartait pas après une mise à jour de PostgreSQL : `WantedBy=` sur PostgreSQL ;
+  - `CssManager` compile les thèmes avec `node_modules/bootstrap`, que l'archive retirait ;
+  - `.env` (sa clé Theia) et `public/uploads/` sauvegardés, et une commande de restauration ;
+  - une archive cassée sortait quand même : `sh -e` ;
+  - `contacts.py` : une fiche peut porter plusieurs adresses ou du texte, qui aurait rendu le `.env` illisible ; adresses extraites une à une, le reste compté, tout caractère spécial échappé, `cemagref.fr` reconnu. Aucune fuite trouvée.
 - 2026-11-05 : le guide d'installation reste du texte, [dev/deploy/README.md](../deploy/README.md) (Lou) : pas de script ni d'essai sur le poste, l'installation se fait pas à pas sur la vraie VM, et le guide se corrige au fur et à mesure. Un conteneur n'aurait de toute façon pas joué ce qui est difficile (systemd, `/tmp`, certificat, SMTP). Relevé en la préparant, à reprendre le moment venu :
   - un cookie ne dépend pas du port : sur une même adresse, les deux instances partageraient leur cookie de session. Donner à chacune son nom, dans son site Apache (`php_admin_value session.name`). Le cookie `REMEMBERME` reste commun tant qu'elles n'ont pas chacune leur nom d'hôte : se connecter à l'une déconnecte de l'autre, sans risque, chacune ayant son `APP_SECRET` ;
   - le rôle `bdoh` trouve son schéma par son nom (chemin de recherche `"$user"`) : un rôle par instance demande `ALTER ROLE … SET search_path = bdoh, public`, et `dev/reference/own-by-bdoh.sql` nomme `bdoh` en dur ;
