@@ -68,5 +68,11 @@ Chaque tâche renvoie à l'endroit où elle s'explique. Un module qui découvre 
 
 ## Suivi
 
+- 2026-11-05 : le guide d'installation reste du texte, ici (Lou) : pas de script ni d'essai sur le poste, l'installation se fait pas à pas sur la vraie VM, et s'écrit au fur et à mesure. Un conteneur n'aurait de toute façon pas joué ce qui est difficile (systemd, `/tmp`, certificat, SMTP). Relevé en la préparant, à reprendre le moment venu :
+  - un cookie ne dépend pas du port : sur une même adresse, les deux instances partageraient leur cookie de session. Donner à chacune son nom, dans son site Apache (`php_admin_value session.name`). Le cookie `REMEMBERME` reste commun tant qu'elles n'ont pas chacune leur nom d'hôte : se connecter à l'une déconnecte de l'autre, sans risque, chacune ayant son `APP_SECRET` ;
+  - le rôle `bdoh` trouve son schéma par son nom (chemin de recherche `"$user"`) : un rôle par instance demande `ALTER ROLE … SET search_path = bdoh, public`, et `dev/reference/own-by-bdoh.sql` nomme `bdoh` en dur ;
+  - `config/bdoh-job-worker.service` ne vise qu'une instance, et `postgresql.service` ne suit pas la grappe : un service par instance (`bdoh-job-worker@.service`), sur `postgresql@17-main.service` ;
+  - pour les essais, PHP reste dans Apache (`mod_php`) : c'est ce qui a été comparé, et une seule chose change à la fois ;
+  - ne jamais supprimer une grappe PostgreSQL par une commande automatique. La collation se lit dans la base (`SELECT datcollate FROM pg_database`), pas dans `postgresql.conf`, qui ne la porte pas : un premier jet, jamais exécuté, y aurait effacé les bases à sa seconde exécution.
 - 2026-10-26 : ouvert, avec ce que les modules 1 à 5 ont relevé.
 - 2026-11-03 : en préparant la demande de VM, accès sous VPN et une VM pour les deux instances décidés ; système, taille, flux, sauvegardes, `/tmp` et mode de PHP relevés. Demande envoyée par Lou le même jour. Suite selon la réponse : Debian 13, installer ; Ubuntu 26.04, repasser `compare.py` sur une image de ce système, puis installer ; « Sans OS », installer Debian 13 et `open-vm-tools`. Le soir, relevé des tâches planifiées des deux serveurs, et migration du point des stations ; puis audit du plan de validation, qui précise la répétition, le retour arrière, les courriels et la base des essais.
