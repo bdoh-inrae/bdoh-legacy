@@ -383,3 +383,91 @@ def jobs_page(trip, admin_session):
         assert re.search(r'/jobs/\d+', page.url), f'pas de page de tâche : {page.url}'
 
     s.step('tâches : la liste, puis une tâche', f'/{slug}/jobs/', read_jobs)
+
+
+# --- Tout parcourir ---------------------------------------------------------------------------------------
+
+# Ce qu'un parcours automatique ne doit pas suivre : ce qui déconnecte, télécharge, ou agit par un simple lien
+NOT_FOLLOWED = re.compile(r'/logout|/select_lang|/fillingrate|/admin/observatoire/\d+/.*(?:send|theia)|/uploads/|/documents/|/mesure/export|'
+                          r'\.(?:pdf|zip|csv|png|jpe?g|gif|txt)(?:\?|$)|/conditions|/terms_of_use|/user_manual|/translations/|/delete|/batch')
+
+
+def crawl(s, site, start, label, limit):
+    """Suit les liens d'un site à partir d'une page, comme quelqu'un de curieux : tout ce qui répond mal, ou fait une
+    erreur JavaScript, sort avec la page où ça arrive. Une adresse se visite une fois, sans ses paramètres de liste."""
+    def walk(page):
+        seen, queue, bad = set(), [start], []
+        while queue and len(seen) < limit:
+            path = queue.pop(0)
+            key = re.sub(r'[?#].*', '', path)
+            if key in seen:
+                continue
+            seen.add(key)
+            s.problems = []
+            try:
+                response = page.goto(site + path, wait_until='networkidle', timeout=60000)
+            except Exception as error:  # noqa: BLE001 (une page qui ne répond pas est un constat)
+                bad.append(f'{path} : {str(error).splitlines()[0][:120]}')
+                continue
+            if response and response.status >= 400 and response.status != 403:
+                bad.append(f'{path} : statut {response.status}')
+            elif s.problems:
+                bad.append(f'{path} : {s.problems[0][:140]}')
+            links = page.evaluate("""() => [...document.querySelectorAll('a[href]')].map(a => a.getAttribute('href'))""")
+            for link in links:
+                link = re.sub(r'^' + re.escape(site), '', link)
+                if link.startswith('/') and not link.startswith('//') and not NOT_FOLLOWED.search(link):
+                    queue.append(link)
+        s.problems = []
+        (s.out / f'crawl-{label}.txt').write_text('\n'.join(sorted(seen)) + '\n')
+        print(f'      {len(seen)} pages visitées, {len(queue)} liens restants')
+        assert not bad, f'{len(bad)} pages en défaut : ' + ' | '.join(bad[:12])
+
+    s.step(f'tout parcourir : {label}', None, walk)
+
+
+def every_admin_form(s, slug):
+    """Chaque administration du menu : sa liste, sa création, et la première fiche enregistrée telle quelle."""
+    def walk(page):
+        page.goto(f'{s.site}/{slug}/admin/dashboard', wait_until='networkidle')
+        links = page.evaluate("""() => [...document.querySelectorAll('.sidebar-menu a[href*="/admin/"]')].map(a => a.getAttribute('href'))""")
+        lists = sorted({re.sub(r'^https?://[^/]+', '', link).split('?')[0] for link in links if '/list' in link})
+        bad, saved, refused = [], 0, []
+        for path in lists:
+            s.problems = []
+            page.goto(s.site + path, wait_until='networkidle', timeout=60000)
+            if s.problems:
+                bad.append(f'{path} : {s.problems[0][:120]}')
+            edit = page.locator('table tbody a[href*="/edit"]')
+            target = edit.first.get_attribute('href') if edit.count() else None
+            create = path.replace('/list', '/create')
+            s.problems = []
+            response = page.goto(s.site + create, wait_until='networkidle', timeout=60000)
+            if response.status >= 500 or (response.status < 400 and s.problems):
+                bad.append(f'{create} : statut {response.status} {" ".join(s.problems)[:120]}')
+            if not target:
+                continue
+            s.problems = []
+            page.goto(s.site + re.sub(r'^https?://[^/]+', '', target), wait_until='networkidle', timeout=60000)
+            button = page.locator('button[name=btn_update_and_edit]')
+            if not button.count():
+                continue
+            try:
+                with page.expect_navigation(wait_until='networkidle', timeout=20000):
+                    button.first.click()
+            except Exception:  # noqa: BLE001 (le navigateur refuse d'envoyer le formulaire : il dit quel champ)
+                empty = page.evaluate("""() => [...document.querySelectorAll(':invalid')].map(e => e.name).filter(Boolean)""")
+                refused.append(f"{target} : {', '.join(empty) or 'sans champ invalide'}")
+                continue
+            saved += 1
+            if s.problems or '/edit' not in page.url:
+                bad.append(f'{target} enregistré : {page.url} {" ".join(s.problems)[:120]}')
+        s.problems = []
+        print(f'      {len(lists)} administrations, {saved} fiches enregistrées')
+        # Une fiche dont un champ obligatoire est vide en base : le navigateur refuse, comme avec l'ancien
+        for line in refused:
+            print(f'      refusée par le navigateur : {line[:150]}')
+        assert lists, 'aucune administration dans le menu'
+        assert not bad, f'{len(bad)} en défaut : ' + ' | '.join(bad[:12])
+
+    s.step('toutes les administrations : liste, création, enregistrement', None, walk)

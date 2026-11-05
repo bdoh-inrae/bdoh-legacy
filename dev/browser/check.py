@@ -381,6 +381,14 @@ def main():
 
         j.calculations(trip, session_for)
         j.jobs_page(trip, admin_session)
+
+        # Tout parcourir, comme quelqu'un de curieux, et chaque formulaire de l'administration
+        for session in (managing, admin_session, anonymous):
+            session.site, session.out = SITE, OUT
+        j.crawl(anonymous, SITE, f'/{SLUG}/', 'sans compte', 250)
+        j.crawl(managing, SITE, f'/{SLUG}/', 'gestionnaire', 250)
+        j.every_admin_form(managing, SLUG)
+        j.every_admin_form(admin_session, SLUG)
         browser.close()
 
     failed = [r for r in results if r[1]]
