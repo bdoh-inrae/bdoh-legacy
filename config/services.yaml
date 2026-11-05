@@ -29,6 +29,9 @@ parameters:
     env(THEIA_SCHEMA_URI): https://in-situ.theia-land.fr/json-schema/pivotSchemaDraft7.json
     uri_theia_send_data: '%env(THEIA_SEND_URI)%'
     uri_theia_ozcar_schema_json: '%env(THEIA_SCHEMA_URI)%'
+    # Le détournement des courriels pendant les essais (.env.example) ; vides, rien n'est détourné
+    env(MAILER_DIVERT_TO): ''
+    env(MAILER_ALLOWED_RECIPIENTS): ''
 
     absent_quality_codes:
         VALID:     a
@@ -48,3 +51,10 @@ parameters:
         cumulative:
             samplings: ['cumulative']
             steps: [[1, 'day'], [1, 'month'], [1, 'year'], [1, 'event']]
+
+services:
+    # Celui de Symfony, lu dans l'environnement : framework.mailer.envelope n'y accepte pas de variable.
+    mailer.envelope_listener:
+        class: Symfony\Component\Mailer\EventListener\EnvelopeListener
+        arguments: [null, '%env(csv:MAILER_DIVERT_TO)%', '%env(csv:MAILER_ALLOWED_RECIPIENTS)%']
+        tags: [kernel.event_subscriber]

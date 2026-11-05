@@ -11,6 +11,13 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/). Numéros de v
 - Le zip d'un export porte la licence de ses chroniques : la Licence Ouverte 2.0, en français et en anglais, pour une chronique visible ; les conditions d'utilisation pour une chronique cachée, actualisées : INRAE, portée limitée à ces chroniques, RGPD.
 - L'adresse de contact devient `bdoh.support@listes.inrae.fr`.
 
+### Ajouté
+
+- Le registre des écarts admis avec l'ancien BDOH, sous une forme que la comparaison lit : tout autre écart fait échouer un mode (`dev/compare/expected.py`).
+- Pendant les essais sur le vrai dump, les courriels peuvent être détournés, sauf vers une liste d'adresses (`MAILER_DIVERT_TO`, `MAILER_ALLOWED_RECIPIENTS`).
+- Le kit des essais : message et tableur par observatoire, contacts tirés du dump brut, suivi (`dev/test-kit/`).
+- La mesure de ce que la comparaison exécute, en PHP et en SQL (`dev/coverage/`).
+
 ### Sécurité
 
 - Symfony passe à 7.4.23, pour les 16 avis publiés le 4 novembre 2026. D'après leur lecture et le code, BDOH n'y était pas exposé : ni connexion par programme, ni `methods` dans `access_control`, ni sérialiseur sur des données reçues, ni fragments en ligne, ni `private_ranges`.

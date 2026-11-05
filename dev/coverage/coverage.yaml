@@ -1,0 +1,8 @@
+# Le nouveau BDOH avec PCOV, le temps d'une passe (dev/coverage/README.md). Se superpose à compose.yaml.
+services:
+  app:
+    image: bdoh-app-coverage
+    volumes:
+      - ./dev/coverage/pcov.ini:/etc/php/8.4/apache2/conf.d/99-coverage.ini:ro
+      - ./dev/coverage/pcov.ini:/etc/php/8.4/cli/conf.d/99-coverage.ini:ro
+      - ${REFERENCE_DIR:?}/coverage:/coverage

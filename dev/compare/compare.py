@@ -43,8 +43,10 @@ import io
 import json
 import os
 import re
+import socketserver
 import subprocess
 import sys
+import threading
 import time
 import urllib.error
 import urllib.parse
@@ -841,6 +843,7 @@ def other_tables_lines(base, known):
     return [*lines, f'schéma temp\t{temp} tables']
 
 
+SINK_HOST, SINK_PORT = '172.30.26.1', 2525  # smtp_sink(), sur la passerelle du réseau de compose.yaml
 MAILPIT = 'http://172.30.26.25:8025'  # service mailpit de compose.yaml (make mail-start)
 
 
@@ -2201,6 +2204,42 @@ CAPTCHA_BYPASS = 'comparaison'  # passe outre le captcha de l'ancien (install-ap
 LOGIN_LINK = re.compile(r'(<site>)?/[\w-]+/login_check\?[^\s"<]+')
 
 
+@contextlib.contextmanager
+def smtp_sink():
+    """Un serveur SMTP réduit, le temps du bloc : rend la liste où s'ajoute chaque (destinataires réels) reçu. Mailpit
+    ne les dit pas : il lit l'en-tête To, que le détournement laisse tel quel. Il écoute sur la passerelle du réseau."""
+    received = []
+
+    class Handler(socketserver.StreamRequestHandler):
+        def handle(self):
+            self.wfile.write(b'220 sink\r\n')
+            recipients = []
+            while line := self.rfile.readline():
+                command = line.decode('utf-8', 'replace').strip().upper()
+                if command.startswith('RCPT'):
+                    recipients += re.findall(r'<([^>]+)>', line.decode('utf-8', 'replace'))
+                if command == 'DATA':
+                    self.wfile.write(b'354 go\r\n')
+                    while self.rfile.readline().rstrip(b'\r\n') != b'.':
+                        pass
+                    received.append(recipients)
+                    recipients = []
+                self.wfile.write(b'221 bye\r\n' if command == 'QUIT' else b'250 ok\r\n')
+                if command == 'QUIT':
+                    return
+
+    class Server(socketserver.ThreadingTCPServer):
+        allow_reuse_address = True
+        daemon_threads = True
+
+    with Server((SINK_HOST, SINK_PORT), Handler) as server:
+        threading.Thread(target=server.serve_forever, daemon=True).start()
+        try:
+            yield received
+        finally:
+            server.shutdown()
+
+
 def mail_messages():
     """Les courriels retenus par Mailpit, résumés, du plus récent au plus ancien."""
     return json.loads(urllib.request.urlopen(MAILPIT + '/api/v1/messages', timeout=60).read())['messages']
@@ -2494,6 +2533,25 @@ def run_accounts(args):
         ENV_LOCAL.write_text(f'DATABASE_URL="{NEW_URL.format(base)}"\nMAILER_DSN=smtp://mailpit:1025\n')
         check("panne du courriel sans erreur", status == 302 and created == '1' and link_status == 302,
               f'inscription {status}, compte créé {created}, demande de lien {link_status}')
+
+        # Pendant les essais : tout part à l'adresse de détournement, et seule une adresse de la liste reçoit le sien
+        # (dev/plans/2026-10-26_deployment.md). La liste, écrite comme make test-contacts, et en majuscules : la casse ne compte pas.
+        kept, diverted = [row[0] for row in query(base, f"""SELECT email FROM utilisateur WHERE (finacces IS NULL OR finacces > now())
+                                                             AND email <> '{manager}' ORDER BY id LIMIT 2""", NEW_SERVER)]
+        allowed = f"(?i){kept.upper().replace('.', '[.]')},(?i)personne[.]absente@example[.]invalid"
+        ENV_LOCAL.write_text(f'DATABASE_URL="{NEW_URL.format(base)}"\nMAILER_DSN=smtp://{SINK_HOST}:{SINK_PORT}\n'
+                             f'MAILER_DIVERT_TO=essais@example.invalid\nMAILER_ALLOWED_RECIPIENTS={allowed}\n')
+        with smtp_sink() as received:
+            ask_link(down, kept)
+            ask_link(down, diverted)
+            for _ in range(40):
+                if len(received) == 2:
+                    break
+                time.sleep(0.25)
+        ENV_LOCAL.write_text(f'DATABASE_URL="{NEW_URL.format(base)}"\nMAILER_DSN=smtp://mailpit:1025\n')
+        check('courriels détournés pendant les essais, sauf la liste',
+              len(received) == 2 and sorted(received[0]) == sorted(['essais@example.invalid', kept])
+              and received[1] == ['essais@example.invalid'], f'reçus : {received}')
 
         # Changer d'adresse déconnecte, et un lien part vers la nouvelle
         user = Client(side, NEW_EMAIL, slug)

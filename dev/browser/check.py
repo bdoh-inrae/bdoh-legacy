@@ -6,8 +6,7 @@
 Chaque étape ouvre une page ou manipule un formulaire, vérifie ce qu'elle doit montrer, et relève les erreurs
 JavaScript et les requêtes en échec. Les captures vont hors du dépôt, dans ../bdoh_reference/browser/.
 
-Tout se joue sur une copie de la base réduite, sur un observatoire sans aucune chronique cachée : le
-programme refuse de démarrer sinon (CLAUDE.md, « Chroniques cachées »).
+Tout se joue sur une copie de la base réduite.
 """
 
 import argparse
@@ -15,6 +14,7 @@ import datetime
 import re
 import subprocess
 import sys
+import zipfile
 from pathlib import Path
 
 from playwright.sync_api import TimeoutError as PlaywrightTimeout
@@ -81,6 +81,15 @@ def visible(page, selector, timeout=20000):
     page.locator(selector).first.wait_for(state='visible', timeout=timeout)
 
 
+def chart_step(page):
+    visible(page, '#fillingRates')
+    page.locator('.set-min').first.click()
+    page.locator('.set-max').nth(1).click()
+    page.locator('a.submit.validated').first.click()
+    visible(page, 'canvas', timeout=60000)
+    page.wait_for_load_state('networkidle')
+
+
 def public_steps(s, station, chronique):
     def footer(page):
         assert page.locator('a[href*="github.com/bdoh-inrae/bdoh-legacy"]').count() == 1, 'pas de lien vers le code source'
@@ -100,15 +109,7 @@ def public_steps(s, station, chronique):
     s.step('nos données, recherche dans le tableau', f'/{SLUG}/nos-donnees', our_data)
     s.step('page de la station', f'/{SLUG}/station/{station}', lambda p: visible(p, 'text=Caractéristiques'))
 
-    def chart(page):
-        visible(page, '#fillingRates')
-        page.locator('.set-min').first.click()
-        page.locator('.set-max').nth(1).click()
-        page.locator('a.submit.validated').first.click()
-        visible(page, 'canvas', timeout=60000)
-        page.wait_for_load_state('networkidle')
-
-    s.step('chronique, taux de remplissage et graphique', f'/{SLUG}/{station}/{chronique}', chart)
+    s.step('chronique, taux de remplissage et graphique', f'/{SLUG}/{station}/{chronique}', chart_step)
 
     def complex_viewer(page):
         page.locator('.set-min').first.click()
@@ -131,6 +132,57 @@ def public_steps(s, station, chronique):
 
     s.step('passage en anglais depuis une page, qui tient à la suivante', f'/{SLUG}/station/{station}', language)
     s.step('retour en français', '/select_lang/fr', lambda p: visible(p, 'body'))
+
+
+def open_export(page):
+    """Ouvre la fenêtre d'export d'une chronique, dates comprises."""
+    page.locator('[data-target^="#export-"], a[href^="#export-"]').first.click()
+    visible(page, '.modal.in [name=exportFormat]')
+
+
+def open_data_steps(s, station, chronique, console, hidden):
+    """L'ouverture des données, vue sans compte : un export jusqu'au fichier, et une chronique cachée refusée."""
+    chronique_page = f'/{SLUG}/{station}/{chronique}'
+
+    def export_to_file(page):
+        open_export(page)
+        assert page.locator('.modal.in .export-licence').is_visible(), 'la licence n’est pas dite'
+        assert page.locator('.modal.in [name=termsOfUses]').count() == 0, 'conditions à cocher sur une chronique visible'
+        page.locator('.modal.in .start').fill('01/01/2024 00:00')
+        page.locator('.modal.in .end').fill('01/02/2024 00:00')
+        page.locator('.modal.in .end').press('Tab')
+        with page.expect_navigation(wait_until='networkidle'):
+            page.locator('.modal.in input[type=submit]').click()
+        assert re.search(r'/mesure/export/\d+/\w+$', page.url), f'pas de page de suivi : {page.url}'
+        c.drain(console, 'bdoh:jobs:run', BASE)
+        page.reload(wait_until='networkidle')
+        with page.expect_download() as download:
+            page.locator('a.btn-info').click()
+        saved = OUT / 'export-sans-compte.zip'
+        download.value.save_as(saved)
+        names = zipfile.ZipFile(saved).namelist()
+        assert any('Licence-Ouverte' in name for name in names), f'pas de licence dans le zip : {names}'
+        assert any(name.endswith('.txt') for name in names), f'pas de données dans le zip : {names}'
+
+    s.step('export sans compte, jusqu’au fichier', chronique_page, export_to_file)
+
+    if hidden:
+        def refused(page):
+            response = page.goto(f'{SITE}/{hidden[0]}/{hidden[1]}/{hidden[2]}', wait_until='networkidle')
+            assert response.status == 403, f'statut {response.status}'
+            s.problems.clear()  # ce refus est celui qu'on attend, pas une erreur de la page
+
+        s.step('chronique cachée refusée', None, refused)
+
+
+def hidden_export_step(s, hidden):
+    """Un compte qui a le droit : la fenêtre d'export d'une chronique cachée garde ses conditions à cocher."""
+    def terms(page):
+        open_export(page)
+        assert page.locator('.modal.in [name=termsOfUses]').count() == 1, 'pas de conditions à cocher'
+        assert page.locator('.modal.in .export-licence').count() == 0, 'la licence ouverte sur une chronique cachée'
+
+    s.step('chronique cachée, fenêtre d’export', f'/{hidden[0]}/{hidden[1]}/{hidden[2]}', terms)
 
 
 def field_group(page, name):
@@ -231,20 +283,16 @@ def manager_steps(s, oid, station, chronique_id, chronique_page, dataset, import
     s.step('historique : onglets', f'/{SLUG}/historique/recent', history)
 
 
-def admin_steps(s):
+def admin_steps(s, hidden):
     s.step('couleurs (sélecteurs)', f'/{SLUG}/admin/colors', lambda p: visible(p, 'form'))
+    if hidden:
+        hidden_export_step(s, hidden)
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__.split('\n')[0])
     parser.add_argument('--only', default='', help='ne garder que les étapes qui contiennent ce texte')
     args = parser.parse_args()
-
-    hidden = c.query(TEMPLATE, f"""SELECT count(*) FROM chronique ch JOIN stations_sites ss ON ss.station_id = ch.station_id
-        JOIN siteexperimental si ON si.id = ss.site_id JOIN observatoire o ON o.id = si.observatoire_id
-        WHERE o.slug = '{SLUG}' AND NOT ch.estvisible""", c.NEW_SERVER)[0][0]
-    if hidden != '0':
-        sys.exit(f'{SLUG} a des chroniques cachées : essai refusé (CLAUDE.md).')
 
     OUT.mkdir(parents=True)
     c.copy_base(TEMPLATE, BASE)
@@ -279,15 +327,28 @@ def main():
         import_file.write_text('Station;Fuseau;Chronique;Unite\n' + f'{station_code};UTC+01;{chronique_code};{unite}\n'
                                + 'DateHeure;Valeur;Qualite\n' + ''.join(f'2020-03-0{d} 12:00:00;1.5;{quality}\n' for d in range(1, 6)))
 
+        # Une chronique d'une autre sorte, pour son graphique : (observatoire, station, chronique) ; et une cachée
+        other_kind = lambda where: (c.query(BASE, f"""SELECT o.slug, st.code, ch.code FROM chronique ch JOIN station st ON st.id = ch.station_id
+            JOIN stations_sites ss ON ss.station_id = st.id JOIN siteexperimental si ON si.id = ss.site_id
+            JOIN observatoire o ON o.id = si.observatoire_id
+            WHERE {where} AND ch.nbmesures > 0 ORDER BY ch.nbmesures DESC, ch.id LIMIT 1""", c.NEW_SERVER) or [None])[0]
+        hidden = other_kind('NOT ch.estvisible')
+
         browser = playwright.chromium.launch()
-        public_steps(Session(browser, 'sans compte', args.only, results), station_code, chronique_code)
+        anonymous = Session(browser, 'sans compte', args.only, results)
+        public_steps(anonymous, station_code, chronique_code)
+        open_data_steps(anonymous, station_code, chronique_code, console, hidden)
+        for label, where in (('discontinue', "ch.estvisible AND ch.dtype = 'discontinue'"), ('calculée', "ch.estvisible AND ch.dtype = 'calculee'")):
+            found = other_kind(where)
+            if found:
+                anonymous.step(f'chronique {label}, graphique', f'/{found[0]}/{found[1]}/{found[2]}', chart_step)
         managing = signed_in('gestionnaire', manager)
         chronique_page = f'/{SLUG}/{station_code}/{chronique_code}'
         public_steps(managing, station_code, chronique_code)
         manager_steps(managing, oid, station_id, chronique_id, chronique_page, dataset, str(import_file))
         admin = one("""SELECT email FROM utilisateur WHERE roleadmin = 'FCT'
                         AND (finacces IS NULL OR finacces > now()) ORDER BY id LIMIT 1""")
-        admin_steps(signed_in('administrateur', admin))
+        admin_steps(signed_in('administrateur', admin), hidden)
         browser.close()
 
     failed = [r for r in results if r[1]]

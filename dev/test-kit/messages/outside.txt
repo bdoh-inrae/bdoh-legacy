@@ -1,0 +1,22 @@
+Objet : BDOH rouvre, 5 minutes pour {observatoire}
+
+Salut,
+
+BDOH a été porté sur une version à jour. Mêmes pages, mêmes formats, mêmes données : tout a été comparé à l'ancien, et ça colle.
+
+Deux changements :
+- plus de mot de passe : à votre prochaine visite, saisissez votre adresse, vous recevrez un lien par mail ;
+- les données s'ouvrent : une chronique visible se télécharge sans compte, sous Licence Ouverte. Une chronique cachée reste fermée, sur demande, comme avant.
+
+Il me faut une seule chose de votre part avant le {date}, le tableau joint. {comptes}
+
+Le site d'essai n'est accessible que sous le VPN d'INRAE, donc rien d'autre à faire pour l'instant.
+
+{onglet}
+
+{theia}
+
+On reste vigilants le premier mois après la réouverture : si un truc vous paraît bizarre, écrivez à bdoh.support@listes.inrae.fr.
+
+Merci !
+Lou

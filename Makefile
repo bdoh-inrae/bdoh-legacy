@@ -22,7 +22,7 @@ ENCORE = docker run --rm --network none --user $(HOST_UID):$(HOST_GID) -e HOME=/
 	-v $(CURDIR):/var/www/bdoh bdoh-app node_modules/.bin/encore
 DB_CONTAINER = $(if $(filter new,$(SERVER)),bdoh-db,bdoh-reference-db)
 
-.PHONY: help app-install assets start stop composer phpstan browser-check anonymize db db-small inspect fingerprint migrate reference-app reference-start reference-stop reference-base reference-17-start mail-start worker-start
+.PHONY: help app-install assets start stop composer phpstan browser-check anonymize db db-small inspect fingerprint migrate reference-app reference-start reference-stop reference-base reference-17-start mail-start worker-start test-kit test-contacts
 
 help: ## Liste les commandes
 	@grep -E '^[a-z0-9-]+:.*## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*## "} {printf "  %-19s %s\n", $$1, $$2}'
@@ -56,6 +56,13 @@ phpstan: ## Analyse statique du nouveau BDOH
 
 browser-check: ## Essaie l'interface dans un navigateur (.python_env, dev/browser/README.md) : make browser-check [ARGS="--only TEXTE"]
 	.python_env/bin/python dev/browser/check.py $(ARGS)
+
+test-kit: ## Prépare les tableurs et les messages des essais, par observatoire : make test-kit [ARGS="--site … --site-othu … --deadline …"]
+	.python_env/bin/python dev/test-kit/kit.py $(ARGS)
+
+test-contacts: ## Trie les contacts des observatoires, sur un dump brut (Lou) : make test-contacts SOURCE=chemin/du.dump
+	@test -n "$(SOURCE)" || { echo "Indiquer le dump : make test-contacts SOURCE=chemin/du.dump"; exit 1; }
+	python3 -B dev/test-kit/contacts.py "$(SOURCE)"
 
 anonymize: ## Anonymise un dump de production : make anonymize SOURCE=chemin/du.dump [OUT=dossier]
 	@test -n "$(SOURCE)" || { echo "Indiquer le dump : make anonymize SOURCE=chemin/du.dump"; exit 1; }

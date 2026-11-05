@@ -10,9 +10,8 @@ Priorité (Lou, 3 novembre) : stabiliser ce BDOH au plus près de l'ancien et le
 
 ## À faire
 
-- **Mettre Symfony à jour en 7.4.23** : 16 avis de sécurité publiés le 4 novembre, dont `composer audit` fait échouer les contrôles de GitHub depuis le commit `1df7b1c`. À faire en premier, avant de rejouer les modes (`dev/plans/2026-11-04_validation.md`, « Pour reprendre »).
 - **Preuves de solidité** : la phase A est faite (`CHANGELOG.md`, 0.2.0). Reste, dans cet ordre ; l'avancée et le point de reprise sont dans [dev/plans/2026-11-04_validation.md](dev/plans/2026-11-04_validation.md), les raisons dans [dev/audits/2026-11-03_validation-plan.md](dev/audits/2026-11-03_validation-plan.md) :
-  1. finir le registre des écarts admis, écrit mais pas encore rejoué sur les modes, puis jouer toutes les fautes avec lui ;
+  1. jouer toutes les fautes avec le registre des écarts admis ;
   2. couverture du PHP (PCOV) et du SQL (`plpgsql_check`) ;
   3. élargir les cas d'après la couverture et l'usage réel : « 1 événement », 5 et 15 minutes, fuseaux, plages, sortes de calcul ; adapter les modes à la forme d'OTHU ;
   4. invariants (`E(I(E(x))) = E(x)`, relations sur les calculs) ;
@@ -20,8 +19,8 @@ Priorité (Lou, 3 novembre) : stabiliser ce BDOH au plus près de l'ancien et le
   6. code gelé, tous les modes sur la base complète et sur OTHU, une fois.
 - **Proxy inverse** (Lou, question à l'équipe infra, dans sa réponse sur la VM) : y en aura-t-il un devant la VM, et quelle est son adresse ? Si oui, le nouveau doit la connaître (`SYMFONY_TRUSTED_PROXIES`), sinon les limites de fréquence valent pour tout le site (`dev/decisions.md`, « Connexion par lien »).
 - **Affiliations des auteurs à confirmer** (Lou, auprès de Flora Branger) : `CITATION.cff` et `codemeta.json` ; les personnes en CDD sont à RiverLy dans le doute, et Degiuli, Gesche, Jamet et Crochemore à la DSI sans source officielle.
-- **Question aux gestionnaires pendant les essais** : gardent-ils le courriel « nouvel utilisateur » (`dev/differences.md`) ?
-- **Prévenir les gestionnaires** que les fiches publiées sur Theia/OZCAR par l'ancien BDOH ont des coordonnées décalées de 300 à 700 m, corrigées au prochain envoi par le nouveau (`dev/differences.md`, « Coordonnées envoyées à Theia/OZCAR ») ; à joindre au message sur la connexion par lien (`dev/plans/2026-10-26_deployment.md`). Leur signaler aussi ce qu'ils ont à corriger : l'inventaire est dans `dev/local/data-issues.md` (ignoré par Git) : une chronique qui bloque la fiche Theia de REAL-COLLOBRIER, 11 stations placées hors de France, 135 stations sans coordonnées.
+- **Les essais des gestionnaires** : message et tableur par observatoire, contacts, suivi (`dev/test-kit/README.md`). Prêts, sauf les contacts, que Lou tire du dump brut, et l'adresse du site ; ils partent une fois les essais de Lou faits sur la VM. Le message porte aussi la question du courriel « nouvel utilisateur » (`dev/differences.md`) et le décalage des coordonnées envoyées à Theia.
+- **Ce que les gestionnaires ont à corriger** : second onglet de leur tableur, tiré de `dev/local/data-issues.md` (ignoré par Git) : une chronique qui bloque la fiche Theia de REAL-COLLOBRIER, 11 stations placées hors de France, 135 stations sans coordonnées.
 - **Archivage et version 1** (Lou, 3 novembre). La 1.0.0 viendra avec la bascule ; Lou branchera alors le webhook de Software Heritage. Rien à faire d'ici là.
 - **Essais dans un navigateur.** `make browser-check` les joue sur un observatoire (`dev/browser/`) : pages publiques, graphique, visualiseur, export, formulaires, choix d'une entité liée, onglets de l'historique. À étendre : chroniques discontinues et calculées, conversion, enregistrement d'un import jusqu'au bout. À l'œil (Lou) : les couleurs, le rendu du graphique et des thèmes (boutons de la boîte à outils, `dev/differences.md`). Déjà essayées (27 octobre) : l'inscription et la connexion par lien, courriels compris (façon de faire dans le `README.md`).
 - **Fonctions SQL d'OTHU.** La base d'OTHU a trois fonctions qui diffèrent de la production : `bdoh_interp_cumul_to_cumul` et `bdoh_interp_to_mean_or_cumul`, faute de la migration `Version20241216124726` (correction du pas mensuel des exports), et `bdoh_chronique_calcul_dates_mesures`, qui y remet à `NULL` les dates et le nombre de mesures d'une chronique devenue vide, comme le code, quand la version de la production les laisse inchangés (relevé le 23 octobre). Les exports mensuels d'OTHU ont donc encore le bogue corrigé en production. À aligner sur la production à la bascule d'OTHU, après comparaison.
@@ -36,7 +35,7 @@ Ce qui améliore nettement l'expérience, la sécurité ou la maintenance pour p
 
 ## Ouvrir les données, avant les essais
 
-Objectif minimum fixé par Lou le 3 novembre. À faire une fois l'identité avec l'ancien prouvée, comparé à part, pour que les testeurs voient l'ouverture elle-même et donnent leur aval (Lou, 4 novembre). Ce qui est décidé et pourquoi : `dev/decisions.md`, « Ouverture des données ». Comment, et où ça en est : [dev/plans/2026-11-04_open-data.md](dev/plans/2026-11-04_open-data.md) ; écrit et fusionné, à passer au complet sur les nouveaux dumps, restaurés le 4 novembre.
+Objectif minimum fixé par Lou le 3 novembre. À faire une fois l'identité avec l'ancien prouvée, comparé à part, pour que les testeurs voient l'ouverture elle-même et donnent leur aval (Lou, 4 novembre). Ce qui est décidé et pourquoi : `dev/decisions.md`, « Ouverture des données ». Comment, et où ça en est : [dev/plans/2026-11-04_open-data.md](dev/plans/2026-11-04_open-data.md) ; écrit, fusionné et comparé sur les nouveaux dumps ; reste à l'essayer dans un navigateur.
 
 - **Données ouvertes** : les chroniques visibles, dérivées comprises. Visibles et téléchargeables sans compte, comme sur Recherche Data Gouv, sous Licence Ouverte Etalab.
 - **Données fermées** : les valeurs des chroniques cachées (`estvisible = false`), et elles seules. Ni visibles ni exportables sans les droits, y compris quand elles font partie d'un jeu de données. Leurs métadonnées et la position de leurs stations restent visibles, comme aujourd'hui.
