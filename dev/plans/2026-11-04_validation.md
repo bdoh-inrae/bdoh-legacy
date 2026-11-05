@@ -46,14 +46,12 @@ L'ordre de l'audit, resserré autour de la barrière : ce qui demande de lire de
 
 ## Pour reprendre
 
-État au 5 novembre, minuit : Symfony est en 7.4.23 ; C1 est fini, tous les modes passent à 0 « différents » avec le registre ; les 47 fautes sont vues (Suivi). Dans l'ordre :
+État au 6 novembre : version 0.3.0 publiée, l'état que verront les testeurs ; C1 fini, les 47 fautes vues, les 62 étapes du navigateur passées en une seule passe (Suivi). Dans l'ordre :
 
-1. **Une passe unique des 62 étapes du navigateur** (`make browser-check`) : les 58 étapes et les 4 parcours complets ont passé, mais en deux passes.
-2. **Proposer la version 0.3.0** à Lou, l'état que verront les testeurs. La page GitHub de la 0.2.0 existe depuis le 5 novembre.
-3. **C2**, voir plus bas : `dev/coverage/`, avec son relevé dans `compare.py` (`save_sql_coverage`, appelé avant chaque destruction d'une base du nouveau, essayé sur une copie jetable). Pas encore joué sur une passe : `coverage.py start`, tous les modes avec `BDOH_COVERAGE=1`, `make browser-check`, `report`, `stop` ; puis lire les deux listes, ce qui écrit d'abord.
-4. **La carte de l'accueil**, dans une session à part, pendant l'attente de la VM (`ROADMAP.md`, « Modernisations »).
-5. **La liste de Lou** : [dev/test-kit/lou-checklist.md](../test-kit/lou-checklist.md), ce que la machine ne juge pas et que Lou essaie sur la VM, avant les gestionnaires.
-6. **La VM**, selon la réponse de l'équipe infra, en suivant `dev/deploy/README.md`. Les fichiers déposés de la production (logos, images) sont dans `../bdoh_reference/uploads/bdoh-uploads-prod.tar.gz`, à reprendre dans `public/uploads/` sur la VM ; OTHU n'en a pas.
+1. **C2**, voir plus bas : `dev/coverage/`, avec son relevé dans `compare.py` (`save_sql_coverage`, appelé avant chaque destruction d'une base du nouveau, essayé sur une copie jetable). Une passe : `coverage.py start`, tous les modes avec `BDOH_COVERAGE=1`, `make browser-check`, `report`, `stop` ; puis lire les deux listes, ce qui écrit d'abord.
+2. **La carte de l'accueil**, dans une session à part, pendant l'attente de la VM (`ROADMAP.md`, « Modernisations »).
+3. **La liste de Lou** : [dev/test-kit/lou-checklist.md](../test-kit/lou-checklist.md), ce que la machine ne juge pas et que Lou essaie sur la VM, avant les gestionnaires.
+4. **La VM**, selon la réponse de l'équipe infra, en suivant `dev/deploy/README.md`. Les fichiers déposés de la production (logos, images) sont dans `../bdoh_reference/uploads/bdoh-uploads-prod.tar.gz`, à reprendre dans `public/uploads/` sur la VM ; OTHU n'en a pas.
 
 **C2, ce qui a été lu et mesuré** (l'outil et son mode d'emploi : `dev/coverage/`). Le but est une liste à lire, ce qui écrit d'abord, pas un pourcentage.
 
@@ -97,6 +95,7 @@ Les comptes utiles des rapports sont notés dans le Suivi, et le détail du reca
 
 ## Suivi
 
+- 2026-11-06, 0 h 03, **une passe unique de `make browser-check` : 62 étapes sur 62**, sans erreur relevée, au code f56393b, en 11 min. 250 pages parcourues sans compte et 250 en gestionnaire ; 16 administrations ouvertes et 8 fiches enregistrées en gestionnaire, 34 et 20 en administrateur technique ; aucune fiche refusée par le navigateur. Version 0.3.0 publiée sur ce code.
 - 2026-11-05, 23 h 50, **toutes les fautes avec le registre : 47 vues sur 47**, une fois bouchés les deux trous qu'elles ont montrés. Passe complète au code b1aa6a4, de 16 h 50 à 23 h 20 (une veille du poste en pleine faute n'a rien faussé) : 45 vues, 2 ADMISE, aucune non vue, aucun arrêt.
   - « import : minimum et maximum échangés ». Le registre masque l'empreinte des mesures des chroniques 9 et 936, où écrivent tous les imports ; seul le contrôle ligne à ligne les protège, et il ne se jouait qu'avec les cas QJO, donc pas avec `--only`. Il se joue désormais à chaque passe d'`imports`, et rien ne doit différer sans cas QJO. Rejouées : cette faute et « points de contrôle : minimum et maximum échangés » sont vues.
   - « export : arrondi sans les 15 chiffres ». 367 paires de nombres arrondies au lieu de 6, mais un cas dont un écart est admis (la licence) l'était en entier, arrondis compris. Un nombre qui change de valeur n'est plus admis par aucune règle (`dev/decisions.md`). Les 6 paires de la passe sans faute ne changent que l'écriture : `3,34` et `3.34`, la virgule de l'ancien dans l'en-tête Qtvar de deux chroniques. Rejouée : vue, 4 différents ; `exports` sans faute reste 15/0/0/126/0. 34 tests de l'outil, dont ce cas.

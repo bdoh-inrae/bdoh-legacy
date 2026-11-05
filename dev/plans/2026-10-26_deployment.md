@@ -61,7 +61,7 @@ Chaque tâche renvoie à l'endroit où elle s'explique. Un module qui découvre 
 ## Après
 
 - Première semaine : `inspect.sql` chaque jour, et `systemctl --failed` (une sauvegarde ratée ne prévient personne) ; toute chronique dont l'empreinte change doit avoir une entrée d'historique ; regarder les tâches en échec (`dev/audits/2026-11-03_validation-plan.md`, 6.8).
-- À l'ouverture au public : essayer une à une les adresses que citent les DOI.
+- À l'ouverture au public : essayer une à une les adresses que citent les DOI. Et mettre à jour, chez leur registre, hors de BDOH, la licence que déclarent les 20 DOI : la Licence Ouverte, comme leur fiche Theia/OZCAR (`dev/plans/2026-11-04_open-data.md`, 6).
 - Publier les corrections de sécurité dans `dev/differences.md` (`dev/local/security.md`).
 - Effacer les hachages des anciens mots de passe, une fois la connexion par lien éprouvée (`ROADMAP.md`, « Modernisations »).
 - Supprimer la table `station_point_rebuilt`, qui ne sert qu'au retour arrière de `Version20261103120000`, une fois la bascule éprouvée.

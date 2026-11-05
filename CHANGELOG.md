@@ -4,10 +4,15 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/). Numéros de v
 
 ## Non publié
 
+## 0.3.0 - 2026-11-06
+
+Les données ouvertes, sur le portage éprouvé : une chronique visible se télécharge sans compte, sous Licence Ouverte, et la comparaison avec l'ancien BDOH n'admet plus que les écarts inscrits à son registre, avec lequel elle voit les 47 fautes remises dans le code. C'est l'état que verront les testeurs. Pas encore en service.
+
 ### Modifié
 
 - Les données ouvertes s'ouvrent : une chronique visible se télécharge sans compte, sous Licence Ouverte Etalab, et ses points de contrôle se voient avec elle. Une chronique cachée reste fermée, sur demande de droit, comme avant.
 - Un export se récupère par un lien, valable 7 jours, sur une page de suivi sans compte, par courriel avec un compte ; il n'y a plus de pièce jointe.
+- Sans compte, un export porte sur 5 millions de mesures au plus, une adresse IP en demande 20 par heure au plus, et aucun n'est accepté quand 30 attendent déjà ; au-delà, il faut un compte. Les archives occupent 20 Go au plus (`EXPORTS_MAX_BYTES`) : les plus anciennes partent d'abord.
 - Le zip d'un export porte la licence de ses chroniques : la Licence Ouverte 2.0, en français et en anglais, pour une chronique visible ; les conditions d'utilisation pour une chronique cachée, actualisées : INRAE, portée limitée à ces chroniques, RGPD.
 - L'adresse de contact devient `bdoh.support@listes.inrae.fr`.
 
