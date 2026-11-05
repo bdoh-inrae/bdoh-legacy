@@ -112,8 +112,8 @@ def translation(sign, keys):
 
 # Les chroniques où les imports QJO écrivent, et leur fille calculée : les deux cas « QJO » de `imports` y changent
 # volontairement des mesures. Tous les imports de ce mode écrivent sur la 9 : ces règles y cacheraient une vraie faute,
-# sans « seules ces mesures diffèrent de l'ancien », du même mode, qui la compare ligne à ligne. La 936 n'a pas encore
-# ce contrôle (dev/plans/2026-11-04_validation.md).
+# sans « seules ces mesures diffèrent de l'ancien » et « chronique fille » (la 936), du même mode, qui les comparent
+# ligne à ligne.
 QJO_CHRONIQUES = '9|936'
 
 RULES = [

@@ -2172,12 +2172,18 @@ def run_imports(args):
         report.add(f"nouveau seul : {label}, {case['name']}", ['conforme'],
                    ['conforme' if found == expected else f'non conforme : {found} au lieu de {expected}'])
     if played:
-        rows = lambda base: {tuple(row) for row in query(base, f"""SELECT date, valeur, minimum, maximum, qualite_id FROM mesure
-                                                                     WHERE chronique_id = {played[0]['cid']}""", NEW_SERVER)}
-        changed = len({row[0] for row in rows(bases['ancien']) ^ rows(bases['nouveau'])})
-        expected = sum(hydro[c['name']][0] for c in played)
+        rows = lambda base, chronique: {tuple(row) for row in query(base, f"""SELECT date, valeur, minimum, maximum, qualite_id FROM mesure
+                                                                               WHERE chronique_id = {chronique}""", NEW_SERVER)}
+        changed = lambda chronique: {row[0] for row in rows(bases['ancien'], chronique) ^ rows(bases['nouveau'], chronique)}
+        mother, expected = changed(played[0]['cid']), sum(hydro[c['name']][0] for c in played)
         report.add('nouveau seul : seules ces mesures diffèrent de l’ancien', ['conforme'],
-                   ['conforme' if changed == expected else f'non conforme : {changed} au lieu de {expected}'])
+                   ['conforme' if len(mother) == expected else f'non conforme : {len(mother)} au lieu de {expected}'])
+        # Ses filles recalculées : le registre admet leur empreinte (dev/compare/expected.py), c'est ce contrôle qui
+        # les protège. Une fille ne diffère qu'aux dates où sa mère diffère.
+        for child, in query(bases['nouveau'], f"SELECT sortie_id FROM transformation WHERE entree_id = {played[0]['cid']}", NEW_SERVER):
+            extra = changed(child) - mother
+            report.add(f'nouveau seul : chronique fille {child}, ne diffère qu’aux dates où sa mère diffère', ['conforme'],
+                       ['conforme' if not extra else f'non conforme : {len(extra)} dates de plus'])
     try:
         # --only pannes : ces vérifications seules, sur des copies neuves
         if not args.only or args.only == 'pannes':
