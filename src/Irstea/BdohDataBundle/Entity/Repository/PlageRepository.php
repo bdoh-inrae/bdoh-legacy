@@ -529,9 +529,9 @@ class PlageRepository extends EntityRepository implements MesureRepositoryInterf
                 'DELETE FROM plage WHERE chronique_id = :id AND ' .
                     '((fin > :begin AND debut < :end) OR (debut = fin AND (debut = :begin OR fin = :end )))',
                 [
-                    ':id'    => $chronique->getId(),
-                    ':begin' => $beginDate->format(DATE_ATOM),
-                    ':end'   => $endDate->format(DATE_ATOM),
+                    'id'    => $chronique->getId(),
+                    'begin' => $beginDate->format(DATE_ATOM),
+                    'end'   => $endDate->format(DATE_ATOM),
                 ]
             );
 

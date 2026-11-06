@@ -41,6 +41,7 @@ RUNNER = SRC + 'BdohBundle/Job/RunJobsCommand.php'
 STATIONS = SRC + 'BdohDataBundle/Entity/Repository/StationRepository.php'
 CONTROLES = SRC + 'BdohAdminBundle/Importer/Controle/Manager.php'
 USERS = SRC + 'BdohSecurityBundle/Controller/UtilisateurController.php'
+PLAGES = SRC + 'BdohDataBundle/Entity/Repository/PlageRepository.php'
 
 # (nom, mode, --only, fichier, texte, remplacement) ; le texte doit se trouver, et tous ses exemplaires changent
 PHP = [
@@ -139,7 +140,21 @@ PHP = [
      "'observatoire' => $obs, 'valeur' => Role::UTILISATEUR]\n                    );\n                    // $em->remove($role);"),
     ('visualiseur : le droit sur une seule chronique oublié', 'pages', 'viewer/load',
      SRC + 'BdohDataBundle/Entity/Repository/ChroniqueRepository.php',
-     "$clauses[] = 'ch = :chronique' . $i;", "// $clauses[] = 'ch = :chronique' . $i;"),
+     "$clauses[] = 'ch = :chronique' . $i;\n                            $params['chronique' . $i++] = $chronique;",
+     "// le droit oublié, sans erreur : la liste ne montre que les chroniques visibles"),
+    # Les plages et les chevauchements d'import (C3, groupe 2)
+    ('plages, écraser : seules les plages incluses effacées', 'imports', 'plages, écraser', PLAGES,
+     "DELETE FROM plage WHERE ((fin > '$firstDate' AND debut < '$lastDate') OR ",
+     "DELETE FROM plage WHERE ((debut >= '$firstDate' AND fin <= '$lastDate') OR "),
+    ('plages ponctuelles, garder : le premier point importé en double', 'imports', 'ponctuelles', PLAGES,
+     """$sqlSelect .= "(fin < '$firstExistingDate')";""", """$sqlSelect .= "(fin <= '$firstExistingDate')";"""),
+    ('plages : une autre qualité de lacune garde sa valeur', 'imports', 'plages, lacunes',
+     SRC + 'BdohAdminBundle/Importer/Measure/BdohPlageImporter.php', 'if ($isGapType) {', 'if (false) {'),
+    ("mesures, garder : la période de l'historique prise du mauvais côté", 'imports', 'chevauche le début', IMPORTER,
+     '$effectiveEndDate = $firstExistingDate;', '$effectiveBeginDate = $firstExistingDate;'),
+    ('vider une période de plages : les plages à cheval gardées', 'state', '', PLAGES,
+     "'((fin > :begin AND debut < :end) OR (debut = fin AND (debut = :begin OR fin = :end )))'",
+     "'((debut >= :begin AND fin <= :end) OR (debut = fin AND (debut = :begin OR fin = :end )))'"),
 ]
 
 # (nom, mode, fonction SQL, texte, remplacement) : une fonction changée dans la copie du nouveau seul, comme

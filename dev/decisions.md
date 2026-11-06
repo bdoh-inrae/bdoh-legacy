@@ -61,6 +61,7 @@ Les choix techniques du portage, avec leur raison : ce qu'un prochain Claude dé
 - **Format pivot de Theia sérialisé par nous.** JMS Serializer 1.14 écrivait les classes du format pivot sans annotation ni réglage : toutes les propriétés déclarées, dans leur ordre, sans valeurs nulles (ni dans les tableaux), un objet vide en `{}`, `json_encode` sans option. `SerializerJSON::normalize` le refait en trente lignes, sans les quatre paquets de JMS 3, qui aurait aussi changé ses réglages par défaut. opis/json-schema reste en version 1 (1.3, compatible avec la 1.1 de l'ancien) : la page du contrôle montre ses erreurs telles quelles. Guzzle 7 garde l'interface et les messages de Guzzle 6. Vérifié par `compare.py theia` (`dev/plans/2026-10-27_theia.md`). (2026-10-27)
 - **Pièges de la montée de version**, déjà rencontrés : à chercher dans tout code porté, et à rappeler à chaque relecture.
   - Un `Result` de DBAL 4 ne se parcourt plus avec `foreach`.
+  - DBAL 4 ne lit plus un paramètre nommé dont la clé garde ses deux-points (`':id' => …`) : la requête échoue (« Named parameter "id" does not have a bound value »). La clé s'écrit sans (`'id' => …`). Vider une période d'une chronique discontinue répondait ainsi 500, ce qu'aucun mode ne jouait avant le 6 novembre (C3).
   - `setParameters` d'ORM 2 remplaçait les paramètres ; une boucle de `setParameter` les ajoute.
   - `InputBag::get()` refuse les tableaux : `all()`.
   - Les `choices` de `ChoiceType` s'écrivent libellé ⇒ valeur ; `DateType` a changé de widget par défaut.

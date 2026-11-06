@@ -4,6 +4,10 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/). Numéros de v
 
 ## Non publié
 
+### Corrigé
+
+- Vider une période d'une chronique discontinue la vide de nouveau, au lieu d'une erreur interne (régression de la 0.1.0).
+
 ## 0.3.0 - 2026-11-06
 
 Les données ouvertes, sur le portage éprouvé : une chronique visible se télécharge sans compte, sous Licence Ouverte, et la comparaison avec l'ancien BDOH n'admet plus que les écarts inscrits à son registre, avec lequel elle voit les 47 fautes remises dans le code. C'est l'état que verront les testeurs. Pas encore en service.

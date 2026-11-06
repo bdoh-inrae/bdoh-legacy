@@ -1312,6 +1312,20 @@ def run_state(args):
     discontinue, discontinue_slug = query(template, f"""
         SELECT c.id, c.slug FROM ({CHRONIQUES}) c JOIN chronique ch ON ch.id = c.id
          WHERE c.dtype = 'discontinue' AND ch.nbmesures > 0 ORDER BY c.id LIMIT 1""", NEW_SERVER)[0]
+    # Vider une période d'une chronique discontinue, du milieu d'une plage à celui d'une autre : les plages qui
+    # chevauchent les bornes partent aussi (PlageRepository::emptyChroniquePeriode)
+    cut = query(template, f"""
+        WITH p AS (SELECT p.chronique_id, p.debut, p.fin, count(*) OVER w AS n, row_number() OVER (w ORDER BY p.debut) AS k
+                     FROM plage p WHERE p.fin > p.debut WINDOW w AS (PARTITION BY p.chronique_id))
+        SELECT c.slug, c.station, c.code,
+               to_char(min(p.debut + (p.fin - p.debut) / 2) FILTER (WHERE p.k = p.n / 3 + 1), 'YYYY-MM-DD"T"HH24:MI:SS"Z"'),
+               to_char(min(p.debut + (p.fin - p.debut) / 2) FILTER (WHERE p.k = 2 * p.n / 3 + 1), 'YYYY-MM-DD"T"HH24:MI:SS"Z"'),
+               (SELECT u.email FROM utilisateur u JOIN role r ON r.utilisateur_id = u.id JOIN observatoire o ON o.id = r.observatoire_id
+                 WHERE r.valeur = 'gestionnaire' AND o.slug = c.slug AND (u.finacces IS NULL OR u.finacces > now())
+                 ORDER BY u.id LIMIT 1)
+          FROM ({CHRONIQUES}) c JOIN p ON p.chronique_id = c.id
+         WHERE c.dtype = 'discontinue' AND c.estvisible AND p.n >= 6
+         GROUP BY c.id, c.slug, c.station, c.code ORDER BY c.id LIMIT 1""", NEW_SERVER)
     checks = {}
     lab = invented.choose(lambda sql: query(template, sql, NEW_SERVER))
     def play(side, console, runner, base):
@@ -1354,6 +1368,12 @@ def run_state(args):
         ).encode(), {'Referer': side.url + page})
         log.append(f"vider une période : {status} {headers.get('Location', '').replace(side.url, '')}")
         log += page_lines(side.url, *manager_client.get(page))  # avec le message qui le confirme
+        for cut_slug, cut_station, cut_code, cut_begin, cut_end, cut_manager in cut:
+            cut_page, cut_client = f'/{cut_slug}/{cut_station}/{cut_code}', Client(side, cut_manager, cut_slug)
+            status, headers, _ = cut_client.get(f'{cut_page}/empty', urllib.parse.urlencode(
+                {'beginDate': cut_begin, 'endDate': cut_end, 'propagate': 'propagate'}).encode(), {'Referer': side.url + cut_page})
+            log.append(f"vider une période de plages : {status} {headers.get('Location', '').replace(side.url, '')}")
+            log += page_lines(side.url, *cut_client.get(cut_page))
         failed = query(base, "SELECT min(id) FROM jms_jobs WHERE state = 'failed'", NEW_SERVER)[0][0]
         status, headers, _ = post(f'/{slug}/jobs/{failed}', {'action': 'retry'})
         log.append(f"relance : {status} {headers.get('Location', '').replace(side.url, '')}")
@@ -1685,6 +1705,19 @@ def import_cases(base):
     rows = lambda months: [list(r) for r in measures(months)]
     cases = []
 
+    def stamp(moment, years=0, days=0, hours=0):
+        """Une date de la base (UTC), décalée, écrite pour un fichier au fuseau UTC+01."""
+        when = datetime.datetime.fromisoformat(moment)
+        if years:
+            when = when.replace(year=when.year + years, day=min(when.day, 28) if when.month == 2 else when.day)
+        return (when + datetime.timedelta(days=days, hours=hours + 1)).strftime('%d/%m/%Y %H:%M:%S')
+
+    def qualities(chronique):
+        """La meilleure qualité du jeu d'une chronique, puis ses qualités de lacune autres que « gap »."""
+        codes = query(base, f"""SELECT q.code, coalesce(q.type, '') FROM qualite q
+                                 WHERE q.jeu_id = bdoh_jeu_qualite_id({chronique}) ORDER BY q.ordre DESC, q.code""", NEW_SERVER)
+        return [next(code for code, kind in codes if kind != 'gap'), *[c for c, kind in codes if kind == 'gap' and c != 'gap']]
+
     def add(name, content, import_type='keepExisting', **extra):
         cases.append({'name': name, 'format': 'Bdoh', 'content': content, 'type': import_type, 'cid': cid,
                       'slug': slug, **extra})
@@ -1757,6 +1790,80 @@ def import_cases(base):
         content = bdoh(inverted, unit=punite, st=pstation, ch=pcode, dates='Debut;Fin')
         cases.append({'name': 'plages, fin avant le début', 'format': 'BdohPlage', 'content': content,
                       'type': 'keepExisting', 'cid': pid, 'slug': pslug})
+        plages = lambda name, rows, kind='keepExisting': cases.append({
+            'name': name, 'format': 'BdohPlage', 'content': bdoh(rows, unit=punite, st=pstation, ch=pcode, dates='Debut;Fin'),
+            'type': kind, 'cid': pid, 'slug': pslug})
+        # Écraser : les plages de janvier 2024 décalées d'une heure, d'autres valeurs ; les plages existantes
+        # qu'elles chevauchent en partie s'effacent aussi (PlageRepository::overwriteExistingImport)
+        plages('plages, écraser', [[stamp(d, hours=1), stamp(f, hours=1), '-9999' if v == '-9999' else f'{float(v) + 1:g}', q]
+                                   for d, f, v, q in query(base, f"""
+            SELECT to_char(p.debut, 'YYYY-MM-DD HH24:MI:SS'), to_char(p.fin, 'YYYY-MM-DD HH24:MI:SS'),
+                   coalesce(p.valeur::text, '-9999'), q.code
+              FROM plage p JOIN qualite q ON q.id = p.qualite_id
+             WHERE p.chronique_id = {pid} AND p.debut >= '2024-01-01' AND p.debut < '2024-02-01'
+             ORDER BY p.debut""", NEW_SERVER)], 'overwriteExisting')
+        # Lacunes : -9999 sous la qualité « gap », et une autre qualité de lacune dont la valeur ne compte pas ;
+        # deux ans plus tard, sur une période libre. Puis « gap » avec une valeur : le fichier est refusé.
+        good, *gap_codes = qualities(pid)
+        later = [[stamp(r[0], years=2), stamp(r[1], years=2), '1.5', good] for r in query(base, f"""
+            SELECT to_char(p.debut, 'YYYY-MM-DD HH24:MI:SS'), to_char(p.fin, 'YYYY-MM-DD HH24:MI:SS') FROM plage p
+             WHERE p.chronique_id = {pid} AND p.debut >= '2024-01-01' AND p.debut < '2024-02-01' ORDER BY p.debut""", NEW_SERVER)]
+        if len(later) >= 3 and gap_codes:
+            gaps = [list(r) for r in later]
+            gaps[0][2:], gaps[1][2:] = ['-9999', 'gap'], ['2.5', gap_codes[0]]
+            plages('plages, lacunes', gaps)
+            plages('plages, lacune incohérente', [[*later[0][:2], '3.5', 'gap']])
+
+    # Plages ponctuelles, en gardant l'existant : deux points avant le premier et les trois premiers, puis les trois
+    # derniers et deux points après le dernier. Seuls les points hors des bornes s'ajoutent (PlageRepository,
+    # keepExistingImport, quand la première ou la dernière plage est un point).
+    points = query(base, f"""
+        SELECT c.id, c.slug, c.station, c.code, u.libelle FROM ({CHRONIQUES}) c
+          JOIN chronique ch ON ch.id = c.id JOIN unite u ON u.id = ch.unite_id
+         WHERE c.dtype = 'discontinue' AND c.estvisible AND (SELECT count(*) FROM plage p WHERE p.chronique_id = c.id) >= 3
+           AND NOT EXISTS (SELECT 1 FROM plage p WHERE p.chronique_id = c.id AND p.debut <> p.fin)
+         ORDER BY c.id LIMIT 1""", NEW_SERVER)
+    if points:
+        qid, qslug, qstation, qcode, qunite = points[0]
+        good = qualities(qid)[0]
+        pts = query(base, f"""SELECT to_char(p.debut, 'YYYY-MM-DD HH24:MI:SS'), coalesce(p.valeur::text, '-9999'), q.code
+                                FROM plage p JOIN qualite q ON q.id = p.qualite_id WHERE p.chronique_id = {qid} ORDER BY p.debut""",
+                    NEW_SERVER)
+        point = lambda moment, value, quality, **shift: [stamp(moment, **shift), stamp(moment, **shift), value, quality]
+        for name, rows in [
+            ('plages ponctuelles, garder, chevauche le début',
+             [point(pts[0][0], '1.5', good, days=-k) for k in (2, 1)] + [point(*r) for r in pts[:3]]),
+            ('plages ponctuelles, garder, chevauche la fin',
+             [point(*r) for r in pts[-3:]] + [point(pts[-1][0], '2.5', good, days=k) for k in (1, 2)]),
+        ]:
+            cases.append({'name': name, 'format': 'BdohPlage', 'type': 'keepExisting', 'cid': qid, 'slug': qslug,
+                          'content': bdoh(rows, unit=qunite, st=qstation, ch=qcode, dates='Debut;Fin')})
+
+    # Mesures, en gardant l'existant, sur une chronique que rien d'autre ne touche : deux mesures avant la première
+    # et les six premières, puis les six dernières et deux après la dernière. Seules celles hors des bornes
+    # s'ajoutent ; l'entrée d'historique porte la période réellement ajoutée (Importer, « chevauchement »).
+    other = query(base, f"""
+        SELECT c.id, c.slug, c.station, c.code, u.libelle FROM ({CHRONIQUES}) c
+          JOIN chronique ch ON ch.id = c.id JOIN unite u ON u.id = ch.unite_id
+         WHERE c.dtype = 'continue' AND c.estvisible AND c.id <> {cid} AND ch.nbmesures >= 12
+           AND NOT EXISTS (SELECT 1 FROM transformation t WHERE t.entree_id = c.id)
+           AND NOT EXISTS (SELECT 1 FROM conversion cv WHERE cv.entree_id = c.id)
+         ORDER BY c.id LIMIT 1""", NEW_SERVER)
+    if other:
+        oid, oslug, ostation, ocode, ounite = other[0]
+        good = qualities(oid)[0]
+        rows = query(base, f"""SELECT to_char(m.date, 'YYYY-MM-DD HH24:MI:SS'), coalesce(m.valeur::text, '-9999'), q.code
+                                 FROM mesure m JOIN qualite q ON q.id = m.qualite_id WHERE m.chronique_id = {oid} ORDER BY m.date""",
+                     NEW_SERVER)
+        measure = lambda moment, value, quality, **shift: [stamp(moment, **shift), value, quality]
+        for name, lines in [
+            ('mesures, garder, chevauche le début',
+             [measure(rows[0][0], '1.5', good, days=-k) for k in (2, 1)] + [measure(*r) for r in rows[:6]]),
+            ('mesures, garder, chevauche la fin',
+             [measure(*r) for r in rows[-6:]] + [measure(rows[-1][0], '2.5', good, days=k) for k in (1, 2)]),
+        ]:
+            cases.append({'name': name, 'format': 'Bdoh', 'type': 'keepExisting', 'cid': oid, 'slug': oslug,
+                          'content': bdoh(lines, unit=ounite, st=ostation, ch=ocode)})
 
     # QJO et Qtvar : qualités du jeu Hydro2 ; la station et la chronique se choisissent à l'import
     hydro2 = ['0', '5', '8', '9']
