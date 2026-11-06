@@ -152,6 +152,14 @@ PHP = [
     # le refait, si bien qu'en retirer un ne change rien (essai du 6 novembre). « plages, lacunes » vérifie le résultat.
     ("mesures, garder : la période de l'historique prise du mauvais côté", 'imports', 'chevauche le début', IMPORTER,
      '$effectiveEndDate = $firstExistingDate;', '$effectiveBeginDate = $firstExistingDate;'),
+    # Les fichiers refusés et les lignes au même instant (C3, groupe 3)
+    ('import : une qualité valide sans valeur acceptée', 'imports', 'valide sans valeur', IMPORTER,
+     "elseif ($valeur === null || $valeur === '') {", 'elseif (false) {'),
+    ('import : la même chronique deux fois acceptée', 'imports', 'deux fois', IMPORTER,
+     '$this->errors->chroniqueAlreadyExists($chronique);', '// acceptée'),
+    ('Qtvar : la seconde ligne au même instant non décalée', 'imports', 'même instant',
+     SRC + 'BdohAdminBundle/Importer/Measure/QtvarImporter.php',
+     "$currentDateTime->add(\\DateInterval::createFromDateString($this->secondsToAdd . ' seconds'));", '// pas de décalage'),
     ('vider une période de plages : les plages à cheval gardées', 'state', '', PLAGES,
      "'((fin > :begin AND debut < :end) OR (debut = fin AND (debut = :begin OR fin = :end )))'",
      "'((debut >= :begin AND fin <= :end) OR (debut = fin AND (debut = :begin OR fin = :end )))'"),

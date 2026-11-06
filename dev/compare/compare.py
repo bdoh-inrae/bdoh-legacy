@@ -1830,14 +1830,14 @@ def import_cases(base):
                                 FROM plage p JOIN qualite q ON q.id = p.qualite_id WHERE p.chronique_id = {qid} ORDER BY p.debut""",
                     NEW_SERVER)
         point = lambda moment, value, quality, **shift: [stamp(moment, **shift), stamp(moment, **shift), value, quality]
-        for name, rows in [
+        for name, lines in [
             ('plages ponctuelles, garder, chevauche le début',
              [point(pts[0][0], '1.5', good, days=-k) for k in (2, 1)] + [point(*r) for r in pts[:3]]),
             ('plages ponctuelles, garder, chevauche la fin',
              [point(*r) for r in pts[-3:]] + [point(pts[-1][0], '2.5', good, days=k) for k in (1, 2)]),
         ]:
             cases.append({'name': name, 'format': 'BdohPlage', 'type': 'keepExisting', 'cid': qid, 'slug': qslug,
-                          'content': bdoh(rows, unit=qunite, st=qstation, ch=qcode, dates='Debut;Fin')})
+                          'content': bdoh(lines, unit=qunite, st=qstation, ch=qcode, dates='Debut;Fin')})
 
     # Mesures, en gardant l'existant, sur une chronique que rien d'autre ne touche : deux mesures avant la première
     # et les six premières, puis les six dernières et deux après la dernière. Seules celles hors des bornes
@@ -1852,15 +1852,15 @@ def import_cases(base):
     if other:
         oid, oslug, ostation, ocode, ounite = other[0]
         good = qualities(oid)[0]
-        rows = query(base, f"""SELECT to_char(m.date, 'YYYY-MM-DD HH24:MI:SS'), coalesce(m.valeur::text, '-9999'), q.code
-                                 FROM mesure m JOIN qualite q ON q.id = m.qualite_id WHERE m.chronique_id = {oid} ORDER BY m.date""",
-                     NEW_SERVER)
+        existing = query(base, f"""SELECT to_char(m.date, 'YYYY-MM-DD HH24:MI:SS'), coalesce(m.valeur::text, '-9999'), q.code
+                                     FROM mesure m JOIN qualite q ON q.id = m.qualite_id WHERE m.chronique_id = {oid}
+                                    ORDER BY m.date""", NEW_SERVER)
         measure = lambda moment, value, quality, **shift: [stamp(moment, **shift), value, quality]
         for name, lines in [
             ('mesures, garder, chevauche le début',
-             [measure(rows[0][0], '1.5', good, days=-k) for k in (2, 1)] + [measure(*r) for r in rows[:6]]),
+             [measure(existing[0][0], '1.5', good, days=-k) for k in (2, 1)] + [measure(*r) for r in existing[:6]]),
             ('mesures, garder, chevauche la fin',
-             [measure(*r) for r in rows[-6:]] + [measure(rows[-1][0], '2.5', good, days=k) for k in (1, 2)]),
+             [measure(*r) for r in existing[-6:]] + [measure(existing[-1][0], '2.5', good, days=k) for k in (1, 2)]),
         ]:
             cases.append({'name': name, 'format': 'Bdoh', 'type': 'keepExisting', 'cid': oid, 'slug': oslug,
                           'content': bdoh(lines, unit=ounite, st=ostation, ch=ocode)})
@@ -1893,6 +1893,48 @@ def import_cases(base):
         cases.append({'name': name, 'format': 'Qjo', 'content': ('\n'.join(lines) + '\n').encode(),
                       'type': 'keepExisting', 'cid': cid, 'slug': slug, 'station': station, 'chronique': code,
                       'timezone': '+1'})
+
+    # Des fichiers refusés que rien ne jouait (couverture du 6 novembre) : en-têtes, valeurs, bornes, chronique
+    # nommée deux fois, trop d'erreurs ; chacun sur un mois à lui, s'il passait
+    text = lambda lines: ('\n'.join(lines) + '\n').encode()
+    add('en-tête, deux premières lignes de longueurs différentes',
+        text(['Station;Fuseau;Chronique;Unite', f'{station};UTC+01;{code};{unite};de trop', 'DateHeure;Valeur;Qualite',
+              *[';'.join(r[:3]) for r in rows(26)]]))
+    add('en-tête, troisième ligne fausse', bdoh(rows(27), dates='Date'))
+    empty = rows(28)
+    empty[1][1] = ''
+    add('valide sans valeur', bdoh(empty))
+    bounds = rows(29)
+    bounds[1][3] = 'x'
+    add('minimum non numérique', bdoh(bounds, minmax=True))
+    many = rows(30)
+    for r in many[:12]:
+        r[1] = 'abc'
+    add("trop d'erreurs", bdoh(many))
+    add('même chronique deux fois', text([
+        'Station;Fuseau;Chronique;Unite;Chronique;Unite', f'{station};UTC+01;{code};{unite};{code};{unite}',
+        'DateHeure;Valeur;Qualite;Valeur;Qualite', *[f'{r[0]};{r[1]};{r[2]};{r[1]};{r[2]}' for r in rows(31)]]))
+    # Une limite de quantification sur une chronique qui ne les accepte pas
+    for lid, lslug, lstation, lcode, lunite, limit in query(base, f"""
+            SELECT c.id, c.slug, c.station, c.code, u.libelle,
+                   (SELECT q.code FROM qualite q WHERE q.jeu_id = bdoh_jeu_qualite_id(c.id) AND q.ordre = 600 ORDER BY q.code LIMIT 1)
+              FROM ({CHRONIQUES}) c JOIN chronique ch ON ch.id = c.id JOIN unite u ON u.id = ch.unite_id
+             WHERE c.dtype = 'continue' AND c.estvisible AND ch.allowvaluelimits IS NOT TRUE
+               AND EXISTS (SELECT 1 FROM qualite q WHERE q.jeu_id = bdoh_jeu_qualite_id(c.id) AND q.ordre = 600)
+             ORDER BY c.id LIMIT 1""", NEW_SERVER):
+        cases.append({'name': 'limite sur une chronique qui ne les accepte pas', 'format': 'Bdoh', 'type': 'keepExisting',
+                      'cid': lid, 'slug': lslug, 'content': bdoh([['01/06/2020 12:00:00', '0.5', limit]],
+                                                                 unit=lunite, st=lstation, ch=lcode)})
+
+    # Qtvar : deux lignes au même instant ; la seconde s'écrit 5 s plus tard (QtvarImporter). Sur la chronique des
+    # chevauchements, en 2022, avant ses mesures.
+    if other:
+        cases.append({'name': 'Qtvar, deux lignes au même instant', 'format': 'Qtvar', 'type': 'keepExisting',
+                      'cid': oid, 'slug': oslug, 'station': ostation, 'chronique': ocode, 'timezone': '+0',
+                      'content': text(['DEC;. 6 13', f'950;{ostation};essai;0;;;;',
+                                       *[f'920;1;{ostation};20220610;{hour};{value};5;2;'
+                                         for hour, value in (('12:00', '1.5'), ('12:00', '2.5'), ('13:00', '3.5'))],
+                                       'FIN;EXP-HYDRO;1;'])})
     return cases
 
 
