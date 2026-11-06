@@ -2318,9 +2318,10 @@ def run_imports(args):
             # Le chemin du fichier téléversé, propre à chaque installation
             return [re.sub(r'/[\w/.-]*/imports/shape/[\w.-]*', '<fichier>', line) for line in log]
 
-        def play_transformation(name, cid, slug):
+        def play_transformation(name, cid, slug, adjust=None):
             """La transformation d'une chronique calculée, lue comme la page la lit, puis enregistrée de
-            nouveau avec un autre coefficient, une généalogie complétée et la propagation."""
+            nouveau avec un autre coefficient, une généalogie complétée et la propagation ; adjust(fields)
+            change encore les champs envoyés."""
             side, console, runner = sides[name]
             client = client_for(name, slug)
             ajax = {'X-Requested-With': 'XMLHttpRequest'}
@@ -2356,9 +2357,30 @@ def run_imports(args):
                 fields[f'delaiPropagation{block}'] = current.get(f'delaiPropagation{block}') or 0
                 fields[f'valueLimits{block}'] = current.get(f'valueLimitPolicy{block}') or ''
                 fields[f'limitPlaceholder{block}'] = current.get(f'valueLimitPlaceholder{block}') or ''
+            if adjust:
+                adjust(fields)
             response = client.get(f'/{slug}/admin/transformation/save', urllib.parse.urlencode(fields).encode(), ajax)
             log += ['== enregistrement', *step_lines(side.url, *response)]
             drain(console, runner, bases[name])
+            return [re.sub(r'\d\d/\d\d/\d{4} \d\d:\d\d(:\d\d)?', '<date>', line) for line in log]
+
+        def play_created(name, cid, slug, mother, identity):
+            """La première transformation d'une chronique calculée qui n'en a pas : le barème identité depuis une
+            chronique de même unité, puis le calcul, et la transformation relue comme la page la lit."""
+            side, console, runner = sides[name]
+            client = client_for(name, slug)
+            ajax = {'X-Requested-With': 'XMLHttpRequest'}
+            fields = {'chroniqueCalculee': cid, 'coefficient': '1', 'genealogie': 'essai', 'genealogieEn': 'test',
+                      'propagate': 'propagate', 'selectChroniqueMerePrincipale': mother,
+                      'jeuBaremePrincipale': f'{identity}_2000-01-01T00:00:00.000Z_', 'selectChroniqueMereSecondaire': '-1',
+                      'jeuBaremeSecondaire': '', **{f'{field}{block}': value for block in ('Principale', 'Secondaire')
+                                                    for field, value in (('delaiPropagation', 0), ('valueLimits', ''),
+                                                                         ('limitPlaceholder', ''))}}
+            response = client.get(f'/{slug}/admin/transformation/save', urllib.parse.urlencode(fields).encode(), ajax)
+            log = ['== enregistrement', *step_lines(side.url, *response)]
+            drain(console, runner, bases[name])
+            response = client.get(f'/{slug}/admin/get-chronique-calculee?id={cid}', None, ajax)
+            log += ['== chronique calculée', *step_lines(side.url, *response)]
             return [re.sub(r'\d\d/\d\d/\d{4} \d\d:\d\d(:\d\d)?', '<date>', line) for line in log]
 
         if args.only in 'transformation':
@@ -2368,6 +2390,24 @@ def run_imports(args):
                  WHERE c.dtype = 'calculee' ORDER BY c.id LIMIT 1""", NEW_SERVER)[0]
             report.add('transformation enregistrée', play_transformation('ancien', cid, slug),
                        play_transformation('nouveau', cid, slug))
+            # Le premier barème valable un an plus tôt : un nouveau jeu de barèmes, l'ancien gardé dans l'historique de la
+            # transformation (TransformationController, JeuBareme::equals). Pas le délai de propagation : il ne compte
+            # qu'avec deux entrées, et l'enregistrement l'efface sinon.
+            later = lambda fields: fields.update(jeuBaremePrincipale=re.sub(
+                r'^(\d+)_(\d{4})', lambda m: f'{m[1]}_{int(m[2]) - 1}', fields['jeuBaremePrincipale']))
+            report.add('transformation, jeu de barèmes changé', play_transformation('ancien', cid, slug, later),
+                       play_transformation('nouveau', cid, slug, later))
+            # Une chronique calculée sans première transformation (configuration incomplète) en reçoit une
+            for created in query(template, f"""
+                    WITH mere AS (SELECT m.id, m.slug, mc.unite_id FROM ({CHRONIQUES}) m JOIN chronique mc ON mc.id = m.id
+                                   WHERE m.dtype = 'continue' AND mc.nbmesures > 0)
+                    SELECT c.id, c.slug, (SELECT min(mere.id) FROM mere WHERE mere.slug = c.slug AND mere.unite_id = ch.unite_id),
+                           (SELECT min(b.id) FROM bareme b WHERE b.nom = 'identite' AND b.uniteentree_id IS NULL)
+                      FROM ({CHRONIQUES}) c JOIN chronique ch ON ch.id = c.id
+                     WHERE c.dtype = 'calculee' AND ch.premiereentree_id IS NULL
+                       AND EXISTS (SELECT 1 FROM mere WHERE mere.slug = c.slug AND mere.unite_id = ch.unite_id)
+                     ORDER BY c.id LIMIT 1""", NEW_SERVER):
+                report.add('transformation créée', play_created('ancien', *created), play_created('nouveau', *created))
 
         if args.only in 'shapefile':
             for title, target, filename, content in shape_cases(template, slug):

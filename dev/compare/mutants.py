@@ -42,6 +42,7 @@ STATIONS = SRC + 'BdohDataBundle/Entity/Repository/StationRepository.php'
 CONTROLES = SRC + 'BdohAdminBundle/Importer/Controle/Manager.php'
 USERS = SRC + 'BdohSecurityBundle/Controller/UtilisateurController.php'
 PLAGES = SRC + 'BdohDataBundle/Entity/Repository/PlageRepository.php'
+TRANSFORMATIONS = SRC + 'BdohAdminBundle/Controller/TransformationController.php'
 
 # (nom, mode, --only, fichier, texte, remplacement) ; le texte doit se trouver, et tous ses exemplaires changent
 PHP = [
@@ -166,6 +167,11 @@ PHP = [
     # Les doublons ne sont plus cherchés : retirer le seul arrêt ne change rien, l'erreur notée refuse le fichier plus loin
     ('points de contrôle : une date en double acceptée', 'imports', 'contrôle', CONTROLES,
      'if ([] !== $redundancies = $this->controleRepo->detectDateRedundancies($this->tmpSqlTable)) {', 'if (false) {'),
+    # Les transformations (C3, groupe 5)
+    ('transformation : un jeu de barèmes changé non gardé', 'imports', 'transformation', TRANSFORMATIONS,
+     'if (!$jeuBareme->equals($transformation->getJeuBaremeActuel())) {', 'if (false) {'),
+    ('transformation : la première entrée créée non rattachée', 'imports', 'transformation', TRANSFORMATIONS,
+     '$chroniqueFille->setPremiereEntree($transformation);', '// non rattachée'),
     ('vider une période de plages : les plages à cheval gardées', 'state', '', PLAGES,
      "'((fin > :begin AND debut < :end) OR (debut = fin AND (debut = :begin OR fin = :end )))'",
      "'((debut >= :begin AND fin <= :end) OR (debut = fin AND (debut = :begin OR fin = :end )))'"),
