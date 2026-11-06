@@ -124,7 +124,7 @@ RULES = [
         "+T Pour les demandes techniques concernant l'utilisation de BDOH veuillez contacter bdoh.support@listes.inrae.fr.")),
     # Une chronique visible montre ses points de contrôle à tous. Une cachée répond 403 sans droit, ce que vérifie
     # « nouveau seul : ouverture », de `state` : cette règle ne distingue pas les deux.
-    Rule('pages', rf'(?:anonyme|utilisateur) {OBS}/[^/ ]+/[^/ ]+', OPEN, lines=(
+    Rule('pages', rf'(?:anonyme|utilisateur|utilisateur-chronique) {OBS}/[^/ ]+/[^/ ]+', OPEN, lines=(
         '+T Points de contrôle (?) : Aucun', RX(r'\+T Points de contrôle \(\?\) : \d+ points?'),
         RX(r'\+T (?:du|au) \d\d/\d\d/\d{4} \d\d:\d\d:\d\d UTC'))),
     Rule('pages', rf'{ROLE} {OBS}/login', LINK, lines=LOGIN_PAGE),

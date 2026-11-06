@@ -40,6 +40,7 @@ EXTRACTOR = SRC + 'BdohDataBundle/Exporter/Measure/Extractor/AbstractExtractor.p
 RUNNER = SRC + 'BdohBundle/Job/RunJobsCommand.php'
 STATIONS = SRC + 'BdohDataBundle/Entity/Repository/StationRepository.php'
 CONTROLES = SRC + 'BdohAdminBundle/Importer/Controle/Manager.php'
+USERS = SRC + 'BdohSecurityBundle/Controller/UtilisateurController.php'
 
 # (nom, mode, --only, fichier, texte, remplacement) ; le texte doit se trouver, et tous ses exemplaires changent
 PHP = [
@@ -130,6 +131,15 @@ PHP = [
     ('export : quatre décimales', 'exports', '', EXTRACTOR, "$parameters['precision'] ?? 3", "$parameters['precision'] ?? 4"),
     ("export : fuseau de la demande ignoré", 'exports', '', SRC + 'BdohDataBundle/Command/AbstractExportCommand.php',
      """return new \\DateTimeZone(str_replace(':', '', trim($value, "'")));""", "return new \\DateTimeZone('UTC');"),
+    # Les droits d'un compte (C3, groupe 1)
+    ('droits : contributeur de site donné comme gestionnaire', 'accounts', '', USERS,
+     '$role->setValeur(Role::CONTRIBUTEUR);', '$role->setValeur(Role::GESTIONNAIRE);'),
+    ("droits : rôle d'utilisateur de l'observatoire jamais retiré", 'accounts', '', USERS,
+     "'observatoire' => $obs, 'valeur' => Role::UTILISATEUR]\n                    );\n                    $em->remove($role);",
+     "'observatoire' => $obs, 'valeur' => Role::UTILISATEUR]\n                    );\n                    // $em->remove($role);"),
+    ('visualiseur : le droit sur une seule chronique oublié', 'pages', 'viewer/load',
+     SRC + 'BdohDataBundle/Entity/Repository/ChroniqueRepository.php',
+     "$clauses[] = 'ch = :chronique' . $i;", "// $clauses[] = 'ch = :chronique' . $i;"),
 ]
 
 # (nom, mode, fonction SQL, texte, remplacement) : une fonction changée dans la copie du nouveau seul, comme
@@ -175,7 +185,11 @@ def play(mode, only, base, inject=None):
     # Les envois de theia ne vont au bout que sur la base complète
     base = 'bdoh' if mode == 'theia' else base
     command = [sys.executable, '-B', str(ROOT / 'dev/compare/compare.py'), mode, '--base', base]
-    if mode in ('pages', 'exports'):
+    # pages contre l'ancien sous PostgreSQL 17 : contre PostgreSQL 11, ses pages de mesures diffèrent exprès
+    # (dev/decisions.md, « Un nombre qui change de valeur n'est jamais admis »)
+    if mode == 'pages':
+        command += ['--old', 'reference-17', '--new', 'new', '--server', 'bdoh-db']
+    elif mode == 'exports':
         command += ['--old', 'reference', '--new', 'new']
     if only:
         command += ['--only', only]

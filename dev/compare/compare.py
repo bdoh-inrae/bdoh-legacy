@@ -111,6 +111,15 @@ CHRONIQUES = """
      ORDER BY c.id, se.observatoire_id"""
 
 
+# Un compte qui n'a de droits que sur des chroniques, dont une cachée qui a des mesures dans la fenêtre du
+# visualiseur : ce qu'il lui montre dépend de ces seuls droits (ChroniqueRepository::createSecuredQueryBuilderForView)
+CHRONIQUE_IN_VIEW = """NOT c.estvisible AND EXISTS (SELECT 1 FROM mesure m WHERE m.chronique_id = c.id
+                                                     AND m.date >= '2024-03-01' AND m.date < '2024-04-01')"""
+CHRONIQUE_USER = f"""(u.finacces IS NULL OR u.finacces > now()) AND u.roleadmin IS NULL
+    AND NOT EXISTS (SELECT 1 FROM role r WHERE r.utilisateur_id = u.id AND (r.chronique_id IS NULL OR r.valeur <> 'utilisateur'))
+    AND EXISTS (SELECT 1 FROM role r JOIN chronique c ON c.id = r.chronique_id WHERE r.utilisateur_id = u.id AND {CHRONIQUE_IN_VIEW})"""
+
+
 def profiles(base):
     """Comptes de connexion par profil : le premier compte actif de chaque sorte."""
     active = "(u.finacces IS NULL OR u.finacces > now())"
@@ -122,6 +131,7 @@ def profiles(base):
         ('utilisateur', f"{active} AND u.roleadmin IS NULL AND NOT EXISTS (SELECT 1 FROM role r"
                         " WHERE r.utilisateur_id = u.id AND r.valeur <> 'utilisateur')"
                         " AND EXISTS (SELECT 1 FROM role r WHERE r.utilisateur_id = u.id)"),
+        ('utilisateur-chronique', CHRONIQUE_USER),
     ]:
         rows = query(base, f"SELECT u.email FROM utilisateur u WHERE {where} ORDER BY u.id LIMIT 1")
         if rows:
@@ -176,6 +186,15 @@ def page_cases(base):
         SELECT DISTINCT ON (d.id) o.slug, d.uuid FROM dataset d
           JOIN observatoire o ON o.id = d.observatoire_id ORDER BY d.id""")
     paths += [f'/{slug}/dataset/{uuid}' for slug, uuid in datasets]
+    # Le compte qui n'a de droits que sur des chroniques : sa première chronique cachée, et le visualiseur de son
+    # observatoire, qui la montre à lui seul
+    for slug, station, code, cid in query(base, f"""
+            SELECT c.slug, c.station, c.code, c.id FROM ({CHRONIQUES}) c
+              JOIN role r ON r.chronique_id = c.id AND r.valeur = 'utilisateur'
+             WHERE {CHRONIQUE_IN_VIEW} AND r.utilisateur_id = (SELECT min(u.id) FROM utilisateur u WHERE {CHRONIQUE_USER})
+             ORDER BY c.id LIMIT 1"""):
+        paths += [f'/{slug}/{station}/{code}', f'/{slug}/viewer/load?start=2024-03-01T00:00:00Z&end=2024-04-01T00:00:00Z',
+                  f'/{slug}/chronique/{cid}/measures?beginDate=2024-03-01T00:00:00Z&endDate=2024-04-01T00:00:00Z']
     for slug in observatoires[:3]:
         paths.append(f'/{slug}/viewer/load?start=2024-03-01T00:00:00Z&end=2024-04-01T00:00:00Z')
         # Les pages des imports et des transformations (module 4)
@@ -196,7 +215,7 @@ def page_cases(base):
           JOIN observatoire o ON r.related_class LIKE '%Observatoire' AND r.related_id::json->>'id' = o.id::text
          ORDER BY j.id""")
     paths += [f'/{slug}/jobs/{job}' for job, slug in jobs]
-    return paths
+    return list(dict.fromkeys(paths))  # une adresse tirée deux fois ne se compare qu'une fois
 
 
 def export_cases(base):
@@ -2438,8 +2457,10 @@ def run_accounts(args):
          WHERE r.valeur = 'gestionnaire' AND (u.finacces IS NULL OR u.finacces > now())
          ORDER BY o.id, u.id LIMIT 1""")
     taken = first('SELECT email FROM utilisateur ORDER BY id LIMIT 1')[0]
+    admin = first("""SELECT email FROM utilisateur WHERE roleadmin = 'FCT' AND (finacces IS NULL OR finacces > now())
+                      ORDER BY id LIMIT 1""")[0]
 
-    def play(side, console):
+    def play(side, console, base):
         steps = {}
 
         def post(name, client, path, data, then=None):
@@ -2506,6 +2527,25 @@ def run_accounts(args):
             '[dateFin][day]': '30', '[dateFin][month]': '6', '[dateFin][year]': '2027',
             '[utilisateurChronique]': form.choices('[utilisateurChronique]')[:3]}))
         steps['droits, page relue'] = page_lines(side.url, *boss.get(right))
+
+        # Les rôles sur l'observatoire et ses sites, donnés puis retirés ; celui de gestionnaire de l'observatoire,
+        # par un administrateur. Les rôles se relèvent après chaque envoi : retirés, ils ne laissent rien à la fin.
+        def roles(name):
+            steps[f'{name}, rôles'] = ['\t'.join(row) for row in query(base, f"""
+                SELECT (to_jsonb(r) - 'id' - 'utilisateur_id')::text FROM role r JOIN utilisateur u ON u.id = r.utilisateur_id
+                 WHERE u.email = '{NEW_EMAIL}' ORDER BY 1""", NEW_SERVER)]
+
+        form, chief = form_of(boss, right), Client(side, admin, slug)
+        given = {'[utilisateurObservatoire]': '1', '[gestionnaireSite]': form.choices('[gestionnaireSite]')[:2],
+                 '[contributeurSite]': form.choices('[contributeurSite]')[-2:]}
+        for name, values, client in [
+            ("droits sur l'observatoire et ses sites, donnés", given, boss),
+            ("droits sur l'observatoire et ses sites, retirés", {key: [] for key in given}, boss),
+            ("gestionnaire de l'observatoire, donné", {'[gestionnaireObservatoire]': '1'}, chief),
+            ("gestionnaire de l'observatoire, retiré", {'[gestionnaireObservatoire]': []}, chief),
+        ]:
+            post(name, client, right, form_of(client, right).filled(values))
+            roles(name)
 
         for answer in ['y', 'non']:
             password = [] if side.login_link else ['admin-2026']  # le nouveau n'en demande plus
@@ -2687,13 +2727,13 @@ def run_accounts(args):
         if name == 'ancien':
             side = SIDES['reference-17']
             with old_17_on(base, mailer_transport='smtp', mailer_host='mailpit', mailer_port='1025') as console:
-                sides[name] = {**play(side, console), **snapshot(side, base)}
+                sides[name] = {**play(side, console, base), **snapshot(side, base)}
         else:
             side = SIDES['new']
             # Les limites de fréquence repartent de zéro : d'une comparaison à l'autre, elles compteraient
             subprocess.run([*side.console, 'cache:pool:clear', 'cache.rate_limiter'], check=True, capture_output=True)
             with new_on(base, template, 'MAILER_DSN=smtp://mailpit:1025') as console:
-                sides[name] = {**play(side, console), **snapshot(side, base)}
+                sides[name] = {**play(side, console, base), **snapshot(side, base)}
                 checks = new_only_checks(side, console, base)
 
     report = Report('accounts')
