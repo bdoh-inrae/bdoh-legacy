@@ -172,6 +172,10 @@ PHP = [
      'if (!$jeuBareme->equals($transformation->getJeuBaremeActuel())) {', 'if (false) {'),
     ('transformation : la première entrée créée non rattachée', 'imports', 'transformation', TRANSFORMATIONS,
      '$chroniqueFille->setPremiereEntree($transformation);', '// non rattachée'),
+    # Le visualiseur (C3, groupe 8)
+    ('visualiseur : une moyenne sans direction dessinée en arrière', 'pages', '/measures',
+     SRC + 'BdohDataBundle/Entity/Repository/ChroniqueContinueRepository.php',
+     "$chronique->getDirectionMesure() !== 'backward',", "$chronique->getDirectionMesure() === 'ahead',"),
     ('vider une période de plages : les plages à cheval gardées', 'state', '', PLAGES,
      "'((fin > :begin AND debut < :end) OR (debut = fin AND (debut = :begin OR fin = :end )))'",
      "'((debut >= :begin AND fin <= :end) OR (debut = fin AND (debut = :begin OR fin = :end )))'"),

@@ -171,6 +171,16 @@ def page_cases(base):
         paths.append(f'/{slug}/{station}/{code}')
         paths.append(f'/{slug}/chronique/{cid}/measures?beginDate=2024-03-01T00:00:00Z'
                      '&endDate=2024-04-01T00:00:00Z')
+    # Le visualiseur d'une chronique visible de chaque échantillonnage et de chaque direction : une moyenne sans
+    # direction se dessine « en avance », un cumul a ses propres séries (ChroniqueContinueRepository::getOneChronicleViewerData)
+    for slug, station, code, cid in query(base, f"""
+            SELECT DISTINCT ON (e.code, coalesce(ch.directionmesure, '')) c.slug, c.station, c.code, c.id
+              FROM ({CHRONIQUES}) c JOIN chronique ch ON ch.id = c.id JOIN echantillonnage e ON e.id = ch.echantillonnage_id
+             WHERE c.dtype = 'continue' AND c.estvisible
+               AND EXISTS (SELECT 1 FROM mesure m WHERE m.chronique_id = c.id AND m.date >= '2024-03-01' AND m.date < '2024-04-01')
+             ORDER BY e.code, coalesce(ch.directionmesure, ''), c.id"""):
+        paths += [f'/{slug}/{station}/{code}', f'/{slug}/chronique/{cid}/measures?beginDate=2024-03-01T00:00:00Z'
+                                               '&endDate=2024-04-01T00:00:00Z']
     # Les configurations incomplètes relevées par l'inspection des bases, qui doivent s'afficher : la
     # première chronique calculée sans première transformation, et la page des transformations qui
     # la décrit ; la première chronique convertie sans conversion
@@ -224,6 +234,9 @@ def page_cases(base):
 INSTANT_STEPS = ['60', '5', '15', '1440']
 MEAN_STEPS = ['5', '7', '8', '9', '10', '6']  # 1 heure, 1 jour, 1 mois, 1 an, 1 événement, 6 heures
 CUMUL_STEPS = ['5', '7', '8', '9', '10', '1', '3', '4']  # et 5, 15 et 30 minutes
+# Les pas fins se jouent sur le premier mois de la période : sur un an, ou cinq avant 1900, un export à 5 minutes
+# compte jusqu'à 500 000 intervalles, pour les mêmes branches du code (passe du 6 novembre : 72 minutes)
+FINE_STEPS = {('instantaneous', '5'), ('instantaneous', '15'), ('cumulative', '1'), ('cumulative', '3'), ('cumulative', '4')}
 # Les fuseaux des demandes réelles, le plus employé d'abord ; -05:00 n'est pas employé, mais reste un cas
 ZONES = ["'+00:00'", "'+01:00'", "'+02:00'", "'-03:00'", "'-04:00'", "'+06:00'", "'+10:00'"]
 
@@ -271,12 +284,13 @@ def export_cases(base, draws=0, seed=1):
                 if fmt != 'bdoh' or tz not in ("'+01:00'", "'+00:00'") or kind == 'discontinue':
                     continue
                 everything = tz == "'+01:00'"
-                for step in INSTANT_STEPS if everything else INSTANT_STEPS[:1]:
-                    cases.append(['bdoh:export:instantaneous', step, *period, cid, *options])
-                for step in MEAN_STEPS if everything else ['5', '7', '10']:
-                    cases.append(['bdoh:export:mean', step, *period, cid, *options])
-                for step in CUMUL_STEPS if everything else ['5', '7', '10']:
-                    cases.append(['bdoh:export:cumulative', step, *period, cid, *options])
+                month = [period[0], period[0][:5] + '02' + period[0][7:]]
+                for kind, steps in [('instantaneous', INSTANT_STEPS if everything else INSTANT_STEPS[:1]),
+                                    ('mean', MEAN_STEPS if everything else ['5', '7', '10']),
+                                    ('cumulative', CUMUL_STEPS if everything else ['5', '7', '10'])]:
+                    for step in steps:
+                        window = month if (kind, step) in FINE_STEPS else period
+                        cases.append([f'bdoh:export:{kind}', step, *window, cid, *options])
     if draws:
         cases += drawn_export_cases(base, draws, seed)
     return list(dict.fromkeys(map(tuple, cases)))  # un cas tiré deux fois ne se compare qu'une fois
