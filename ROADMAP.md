@@ -10,12 +10,11 @@ Priorité (Lou, 3 novembre) : stabiliser ce BDOH au plus près de l'ancien et le
 
 ## À faire
 
-- **Preuves de solidité** : la phase A est faite (`CHANGELOG.md`, 0.2.0), et le registre des écarts admis, avec lequel les 47 fautes remises dans le code sont vues (0.3.0). Reste, dans cet ordre ; l'avancée et le point de reprise sont dans [dev/plans/2026-11-04_validation.md](dev/plans/2026-11-04_validation.md), les raisons dans [dev/audits/2026-11-03_validation-plan.md](dev/audits/2026-11-03_validation-plan.md) :
-  1. couverture du PHP (PCOV) et du SQL (`plpgsql_check`) (en cours) ;
-  2. élargir les cas d'après la couverture et l'usage réel : « 1 événement », 5 et 15 minutes, fuseaux, plages, sortes de calcul ; adapter les modes à la forme d'OTHU ;
-  3. invariants (`E(I(E(x))) = E(x)`, relations sur les calculs) ;
-  4. pannes provoquées : exécuteur tué, PostgreSQL redémarré, `/tmp` plein ;
-  5. code gelé, tous les modes sur la base complète et sur OTHU, une fois.
+- **Preuves de solidité** : la phase A est faite (`CHANGELOG.md`, 0.2.0), et le registre des écarts admis, avec lequel les 47 fautes remises dans le code sont vues (0.3.0), et la mesure de ce que la comparaison exécute (6 novembre). Reste, dans cet ordre ; l'avancée et le point de reprise sont dans [dev/plans/2026-11-04_validation.md](dev/plans/2026-11-04_validation.md), les raisons dans [dev/audits/2026-11-03_validation-plan.md](dev/audits/2026-11-03_validation-plan.md) :
+  1. élargir les cas d'après la couverture du 6 novembre et l'usage réel : droits sur un observatoire ou un site, plages, chevauchements d'import, transformations, fichiers joints, « 1 événement », 5 et 15 minutes, fuseaux, sortes de calcul ; adapter les modes à la forme d'OTHU (en cours, liste dans le plan) ;
+  2. invariants (`E(I(E(x))) = E(x)`, relations sur les calculs) ;
+  3. pannes provoquées : exécuteur tué, PostgreSQL redémarré, `/tmp` plein ;
+  4. code gelé, tous les modes sur la base complète et sur OTHU, une fois.
 - **Proxy inverse** (Lou, question à l'équipe infra, dans sa réponse sur la VM) : y en aura-t-il un devant la VM, et quelle est son adresse ? Si oui, le nouveau doit la connaître (`SYMFONY_TRUSTED_PROXIES`), sinon les limites de fréquence valent pour tout le site (`dev/decisions.md`, « Connexion par lien »).
 - **Affiliations des auteurs à confirmer** (Lou, auprès de Flora Branger) : `CITATION.cff` et `codemeta.json` ; les personnes en CDD sont à RiverLy dans le doute, et Degiuli, Gesche, Jamet et Crochemore à la DSI sans source officielle.
 - **Les essais des gestionnaires** : message et tableur par observatoire, contacts, suivi (`dev/test-kit/README.md`). Prêts, sauf les contacts, que Lou tire du dump brut, l'adresse du site et quatre choix de Lou (`dev/test-kit/README.md`, « À trancher ») ; ils partent une fois les essais de Lou faits sur la VM. Le message porte aussi la question du courriel « nouvel utilisateur » (`dev/differences.md`) et le décalage des coordonnées envoyées à Theia.

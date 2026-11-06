@@ -75,7 +75,8 @@ def report():
 def php_report():
     run, missed = defaultdict(set), defaultdict(set)
     for path in (OUT / 'php').glob('*.json'):
-        for file, lines in json.loads(path.read_text()).items():
+        # Un processus qui n'a chargé aucun fichier de src/ écrit [] : PHP encode ainsi un tableau vide
+        for file, lines in (json.loads(path.read_text()) or {}).items():
             run[file].update(lines['run'])
             missed[file].update(lines['missed'])
     prefix = '/var/www/bdoh/'
@@ -108,16 +109,28 @@ def php_report():
 
 
 def sql_report():
+    # Le texte des fonctions, pour lire ce qui ne s'exécute pas, et son empreinte : ceux de la base réduite. Les numéros
+    # d'instruction ne valent que pour un texte : le relevé d'une autre version (OTHU) se compte à part.
+    functions = json.loads(psql("""SELECT json_agg(json_build_array(p.proname || '(' || pg_get_function_identity_arguments(p.oid) || ')',
+                                                                    l.lanname, p.prosrc, md5(p.prosrc)))
+                                     FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace JOIN pg_language l ON l.oid = p.prolang
+                                    WHERE n.nspname = 'bdoh'""", 'bdoh_small'))
+    sources = {name: source for name, language, source, _ in functions if language == 'plpgsql'}
+    versions = {name: digest for name, language, _, digest in functions if language == 'plpgsql'}
     statements = defaultdict(dict)
+    others = defaultdict(lambda: {'bases': set(), 'rows': {}})
     for path in (OUT / 'sql').glob('*.tsv'):
+        base = path.stem.rsplit('-', 1)[0]
         for line in path.read_text().splitlines():
-            function, stmtid, lineno, executed, name = line.split('\t')
+            function, stmtid, lineno, executed, name, digest = line.split('\t')
             key = (int(stmtid), lineno, name)
-            statements[function][key] = statements[function].get(key, 0) + int(executed)
-    # Le texte des fonctions, pour lire ce qui ne s'exécute pas : celui de la base réduite
-    sources = json.loads(psql("""SELECT json_object_agg(p.proname || '(' || pg_get_function_identity_arguments(p.oid) || ')', p.prosrc)
-                                   FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace JOIN pg_language l ON l.oid = p.prolang
-                                  WHERE n.nspname = 'bdoh' AND l.lanname = 'plpgsql'""", 'bdoh_small'))
+            if digest == versions.get(function):
+                rows = statements[function]
+            else:
+                other = others[function, digest]
+                other['bases'].add(base)
+                rows = other['rows']
+            rows[key] = rows.get(key, 0) + int(executed)
     out, total, unrun = [], 0, 0
     for function in sorted(statements):
         rows = statements[function]
@@ -133,6 +146,13 @@ def sql_report():
                     for _, lineno, name in missed]
         else:
             out.append(f'{function} : tout exécuté ({len(rows)} instructions)')
+    if others:
+        out += ['', '# Autres versions que celles de la base réduite, comptées à part']
+        for (function, _), other in sorted(others.items()):
+            ran = sum(1 for count in other['rows'].values() if count)
+            out.append(f"{function}, bases {', '.join(sorted(other['bases']))} : {ran} instructions exécutées sur {len(other['rows'])}")
+    unmeasured = sorted(name for name, language, *_ in functions if language != 'plpgsql')
+    out += ['', f"# Hors de portée de plpgsql_check (fonctions en SQL, agrégats) : {', '.join(unmeasured) or 'aucune'}"]
     text = [f'{unrun} instructions jamais exécutées sur {total}, dans {len(statements)} fonctions.', '', *out]
     (OUT / 'sql.txt').write_text('\n'.join(text) + '\n')
     print(text[0], f'{OUT / "sql.txt"}')

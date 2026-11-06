@@ -923,7 +923,8 @@ COVERAGE_SQL = OUT.parent / 'coverage' / 'sql'
 def save_sql_coverage(base):
     """Ce que les fonctions plpgsql d'une base du nouveau ont exécuté, relevé pour dev/coverage/ avant que la base parte.
     Le profil est propre à la base, ne suit pas sa copie, et ne se lit qu'avec l'extension plpgsql_check, retirée
-    aussitôt : le gabarit et les copies suivantes restent comme avant."""
+    aussitôt : le gabarit et les copies suivantes restent comme avant. Chaque ligne porte l'empreinte du texte de sa
+    fonction : les numéros d'instruction ne valent que pour ce texte, et OTHU a d'autres versions de certaines."""
     def run(sql):
         return subprocess.run(['docker', 'exec', '-i', NEW_SERVER, 'psql', '-U', 'postgres', '-d', base, '-v', 'ON_ERROR_STOP=1',
                                '-Atq', '-F', '\t', '-c', sql], check=True, capture_output=True, text=True).stdout
@@ -931,7 +932,8 @@ def save_sql_coverage(base):
     try:
         # Les fonctions nomment leurs tables sans le schéma : le relevé les compile avec le chemin du rôle bdoh
         rows = run("""SET search_path = bdoh, public;
-                      SELECT p.proname || '(' || pg_get_function_identity_arguments(p.oid) || ')', s.stmtid, s.lineno, s.exec_stmts, s.stmtname
+                      SELECT p.proname || '(' || pg_get_function_identity_arguments(p.oid) || ')', s.stmtid, s.lineno, s.exec_stmts, s.stmtname,
+                             md5(p.prosrc)
                         FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace JOIN pg_language l ON l.oid = p.prolang,
                              plpgsql_profiler_function_statements_tb(p.oid) s
                        WHERE n.nspname = 'bdoh' AND l.lanname = 'plpgsql'""")
