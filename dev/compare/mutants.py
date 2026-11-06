@@ -160,6 +160,12 @@ PHP = [
     ('Qtvar : la seconde ligne au même instant non décalée', 'imports', 'même instant',
      SRC + 'BdohAdminBundle/Importer/Measure/QtvarImporter.php',
      "$currentDateTime->add(\\DateInterval::createFromDateString($this->secondsToAdd . ' seconds'));", '// pas de décalage'),
+    # Les points de contrôle (C3, groupe 4)
+    ('points de contrôle : « avant » annoncé « après »', 'imports', 'contrôle',
+     SRC + 'BdohAdminBundle/Controller/PointControleController.php', "$overlap = 'before';", "$overlap = 'after';"),
+    # Les doublons ne sont plus cherchés : retirer le seul arrêt ne change rien, l'erreur notée refuse le fichier plus loin
+    ('points de contrôle : une date en double acceptée', 'imports', 'contrôle', CONTROLES,
+     'if ([] !== $redundancies = $this->controleRepo->detectDateRedundancies($this->tmpSqlTable)) {', 'if (false) {'),
     ('vider une période de plages : les plages à cheval gardées', 'state', '', PLAGES,
      "'((fin > :begin AND debut < :end) OR (debut = fin AND (debut = :begin OR fin = :end )))'",
      "'((debut >= :begin AND fin <= :end) OR (debut = fin AND (debut = :begin OR fin = :end )))'"),

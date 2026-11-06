@@ -1957,10 +1957,39 @@ def controle_cases(base):
     full = [f'{d};{v};{q};{float(v) - 0.5:g};{float(v) + 0.5:g}' for d, v, q in rows]
     short = [f'{d};{float(v) + 1:g};{q}' for d, v, q in rows[:5]]
     content = lambda lines: ('\n'.join(head + lines) + '\n').encode()
-    return cid, slug, [('points de contrôle', content(full)),
-                       ('points de contrôle, sans bornes', content(['# commentaire', *short])),
-                       ('points de contrôle, sans qualité', content([f'{rows[0][0]};1'])),
-                       ('points de contrôle, trop de champs', content([full[0] + ';de trop']))]
+    # Un import remplace tous les points de la chronique ; son recouvrement avec ceux d'avant ne change que le message
+    # de l'étape 3 (PointControleController::prepareChroniqueData). Chaque cas part de ce qu'a laissé le précédent.
+    year = lambda row, y: f"{row[0].replace('/2024 ', f'/{y} ')};{row[1]};{row[2]}"
+    other_head = lambda st=station, tz='UTC+01', ch=code, un=unite: [
+        'Station;Fuseau;Chronique;Unite', f'{st};{tz};{ch};{un}', 'DateHeure;Valeur;Qualite;Min;Max']
+    text = lambda header, lines: ('\n'.join(header + lines) + '\n').encode()
+    converted = query(base, f"""
+        SELECT c.station, c.code, u.libelle FROM ({CHRONIQUES}) c JOIN chronique ch ON ch.id = c.id
+          JOIN unite u ON u.id = ch.unite_id WHERE c.dtype = 'convertie' AND c.slug = '{slug}' ORDER BY c.id LIMIT 1""", NEW_SERVER)
+    cases = [('points de contrôle', content(full)),
+             ('points de contrôle, sans bornes', content(['# commentaire', *short])),
+             ('points de contrôle, sans qualité', content([f'{rows[0][0]};1'])),
+             ('points de contrôle, trop de champs', content([full[0] + ';de trop'])),
+             ("points de contrôle, avant l'existant", content([year(r, 2023) for r in rows[:3]])),
+             ("points de contrôle, englobent l'existant", content([year(rows[0], 2022), year(rows[1], 2024)])),
+             ('points de contrôle, chevauchent le début', content([year(rows[0], 2021), year(rows[1], 2023)])),
+             ("points de contrôle, après l'existant", content([year(r, 2024) for r in rows[2:5]])),
+             ('points de contrôle, mêmes bornes', content([year(rows[2], 2024), year(rows[4], 2024)])),
+             # Refusés : rien ne change
+             ('points de contrôle, date en double', content([year(rows[0], 2024), year(rows[0], 2024)])),
+             ('points de contrôle, fuseau invalide', text(other_head(tz='UTC+99'), [year(rows[0], 2024)])),
+             ('points de contrôle, station inconnue', text(other_head(st='INCONNUE'), [year(rows[0], 2024)])),
+             ('points de contrôle, mauvaise unité', text(other_head(un='inconnue'), [year(rows[0], 2024)])),
+             ('points de contrôle, valeur non numérique', content([f'{rows[0][0]};abc;{rows[0][2]}'])),
+             ('points de contrôle, date invalide', content([f'32/01/2024 12:00:00;1;{rows[0][2]}'])),
+             ('points de contrôle, qualité inconnue', content([f'{rows[0][0]};1;zz'])),
+             ('points de contrôle, qualité de lacune', content([f'{rows[0][0]};1;gap'])),
+             ('points de contrôle, minimum non numérique', content([f'{rows[0][0]};1;{rows[0][2]};x;2'])),
+             ("points de contrôle, trop d'erreurs", content([f'{d};abc;{q}' for d, v, q in rows]
+                                                           + [f'0{k}/02/2024 12:00:00;abc;{rows[0][2]}' for k in range(1, 4)]))]
+    cases += [('points de contrôle, chronique convertie', text(other_head(st=st, ch=ch, un=un), [year(rows[0], 2024)]))
+              for st, ch, un in converted]
+    return cid, slug, cases
 
 
 def bareme_cases(base, slug):
