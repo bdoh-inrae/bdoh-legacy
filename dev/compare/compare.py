@@ -42,6 +42,7 @@ import http.cookiejar
 import io
 import json
 import os
+import random
 import re
 import socketserver
 import subprocess
@@ -218,8 +219,18 @@ def page_cases(base):
     return list(dict.fromkeys(paths))  # une adresse tirée deux fois ne se compare qu'une fois
 
 
-def export_cases(base):
-    """Exports en ligne de commande : chaque sorte de chronique, chaque format, chaque pas de temps."""
+# Pas de temps des exports (table pasechantillonnage) : les plus demandés d'après l'historique de la production
+# (C3, 6 novembre). Instantané : un nombre de minutes ; moyenne et cumul : l'identifiant du pas.
+INSTANT_STEPS = ['60', '5', '15', '1440']
+MEAN_STEPS = ['5', '7', '8', '9', '10', '6']  # 1 heure, 1 jour, 1 mois, 1 an, 1 événement, 6 heures
+CUMUL_STEPS = ['5', '7', '8', '9', '10', '1', '3', '4']  # et 5, 15 et 30 minutes
+# Les fuseaux des demandes réelles, le plus employé d'abord ; -05:00 n'est pas employé, mais reste un cas
+ZONES = ["'+00:00'", "'+01:00'", "'+02:00'", "'-03:00'", "'-04:00'", "'+06:00'", "'+10:00'"]
+
+
+def export_cases(base, draws=0, seed=1):
+    """Exports en ligne de commande : chaque sorte de chronique, chaque format, chaque pas de temps employé ;
+    puis, si draws, autant d'exports tirés au hasard (graine seed) parmi les chroniques visibles."""
     picked = query(base, f"""
         SELECT id, dtype FROM (
             SELECT c.id, c.dtype, row_number() OVER (PARTITION BY c.dtype ORDER BY c.id) AS n
@@ -230,6 +241,15 @@ def export_cases(base):
         UNION (SELECT m.chronique_id, 'lacunes à -9999' FROM mesure m
                  JOIN qualite q ON q.id = m.qualite_id
                 WHERE q.ordre = 100 AND m.valeur = -9999 LIMIT 1)
+        -- Échantillonnées en moyenne, en avance ou non (bdoh_integrate_mean_interval) ; une seule mesure en 2024
+        UNION (SELECT min(c.id), 'moyenne, ' || coalesce(c.directionmesure, 'sans direction') FROM chronique c
+                 JOIN echantillonnage e ON e.id = c.echantillonnage_id
+                WHERE c.dtype = 'continue' AND c.estvisible AND e.code = 'mean'
+                  AND EXISTS (SELECT 1 FROM mesure m WHERE m.chronique_id = c.id AND m.date >= '2024-01-01' AND m.date < '2025-01-01')
+                GROUP BY c.directionmesure)
+        UNION (SELECT min(c.id), 'une seule mesure' FROM chronique c
+                WHERE c.dtype = 'continue' AND c.estvisible
+                  AND (SELECT count(*) FROM mesure m WHERE m.chronique_id = c.id AND m.date >= '2024-01-01' AND m.date < '2025-01-01') = 1)
         ORDER BY 1""")
     cases = []
     for cid, kind in picked:
@@ -246,13 +266,47 @@ def export_cases(base):
                 options = ['--format', fmt, '--timezone', tz]
                 cases.append(['bdoh:export:identical', *period, cid, *options])
                 # Une chronique discontinue ne s'exporte qu'à l'identique (Modal/export.html.twig) ;
-                # les autres sortes échouent des deux côtés.
-                if fmt != 'bdoh' or tz != "'+01:00'" or kind == 'discontinue':
+                # les autres sortes échouent des deux côtés. Tous les pas à l'heure de Paris ; en UTC, le fuseau
+                # le plus demandé, les pas les plus demandés.
+                if fmt != 'bdoh' or tz not in ("'+01:00'", "'+00:00'") or kind == 'discontinue':
                     continue
-                cases.append(['bdoh:export:instantaneous', '60', *period, cid, *options])
-                for step in ['5', '7', '8', '9']:  # 1 heure, 1 jour, 1 mois, 1 an
+                everything = tz == "'+01:00'"
+                for step in INSTANT_STEPS if everything else INSTANT_STEPS[:1]:
+                    cases.append(['bdoh:export:instantaneous', step, *period, cid, *options])
+                for step in MEAN_STEPS if everything else ['5', '7', '10']:
                     cases.append(['bdoh:export:mean', step, *period, cid, *options])
+                for step in CUMUL_STEPS if everything else ['5', '7', '10']:
                     cases.append(['bdoh:export:cumulative', step, *period, cid, *options])
+    if draws:
+        cases += drawn_export_cases(base, draws, seed)
+    return list(dict.fromkeys(map(tuple, cases)))  # un cas tiré deux fois ne se compare qu'une fois
+
+
+def drawn_export_cases(base, draws, seed):
+    """Des exports tirés au hasard parmi les chroniques visibles qui ont des mesures en 2024 : sorte, pas, fuseau,
+    format et fenêtre d'un à trois mois. Ce qu'on tire au hasard permet la règle de trois : aucun écart sur
+    300 tirages dit moins de 1 % d'écarts, au seuil de 95 % (dev/audits/2026-11-03_validation-plan.md, 6.7)."""
+    chroniques = query(base, f"""
+        SELECT c.id, c.dtype FROM ({CHRONIQUES}) c JOIN chronique ch ON ch.id = c.id
+         WHERE c.estvisible AND c.dtype IN ('continue', 'calculee', 'convertie', 'discontinue')
+           AND (EXISTS (SELECT 1 FROM mesure m WHERE m.chronique_id = c.id AND m.date >= '2024-01-01' AND m.date < '2025-01-01')
+                OR EXISTS (SELECT 1 FROM plage p WHERE p.chronique_id = c.id AND p.fin >= '2024-01-01' AND p.debut < '2025-01-01'))
+         ORDER BY c.id""")
+    draw = random.Random(seed)
+    cases = []
+    for _ in range(draws):
+        cid, dtype = draw.choice(chroniques)
+        month, length = draw.randint(1, 12), draw.randint(1, 3)
+        end_year, end_month = divmod(month - 1 + length, 12)
+        period = [f'2024-{month:02d}-01T00:00:00+00:00', f'{2024 + end_year}-{end_month + 1:02d}-01T00:00:00+00:00']
+        options = ['--timezone', draw.choice(ZONES)]
+        kind = 'identical' if dtype == 'discontinue' else draw.choice(['identical', 'instantaneous', 'mean', 'cumulative'])
+        if kind == 'identical':
+            cases.append(['bdoh:export:identical', *period, cid, '--format',
+                          'bdoh' if dtype == 'discontinue' else draw.choice(['bdoh', 'qtvar']), *options])
+        else:
+            step = draw.choice({'instantaneous': INSTANT_STEPS, 'mean': MEAN_STEPS, 'cumulative': CUMUL_STEPS}[kind])
+            cases.append([f'bdoh:export:{kind}', step, *period, cid, '--format', 'bdoh', *options])
     return cases
 
 
@@ -766,12 +820,18 @@ def run_exports(args):
         # Le moment de l'export et le dossier temporaire changent à chaque fois.
         return [export_line(line) for line in lines if not line.startswith('# Printing ')]
 
-    cases = [c for c in export_cases(args.base) if args.only in ' '.join(c)]
+    cases = [c for c in export_cases(args.base, args.random, args.seed) if args.only in ' '.join(c)]
     report = Report('exports')
-    with concurrent.futures.ThreadPoolExecutor(args.jobs) as pool:
-        both = lambda case: [run(old, case), run(new, case)]
-        for case, outputs in zip(cases, pool.map(both, cases)):
-            report.add(' '.join(case), *outputs)
+    with contextlib.ExitStack() as stack:
+        if args.inject_sql:
+            # Une faute SQL (mutants.py), pour le nouveau seul, dans une copie : la base des cas reste intacte
+            copy_base(args.base, 'bdoh_exports_new')
+            inject_sql('bdoh_exports_new', args.inject_sql)
+            new = Side(new.url, stack.enter_context(new_on('bdoh_exports_new', args.base)), new.login_link)
+        with concurrent.futures.ThreadPoolExecutor(args.jobs) as pool:
+            both = lambda case: [run(old, case), run(new, case)]
+            for case, outputs in zip(cases, pool.map(both, cases)):
+                report.add(' '.join(case), *outputs)
     report.close()
 
 
@@ -4028,10 +4088,12 @@ def main():
     parser.add_argument('--jobs', type=int, default=6, help='requêtes menées en parallèle')
     parser.add_argument('--profile', help='un seul profil (anonyme, utilisateur, gestionnaire, administrateur)')
     parser.add_argument('--same', action='store_true', help="state : l'ancien contre lui-même, pour mesurer le bruit")
-    parser.add_argument('--inject-sql', metavar='FICHIER', help='state : du SQL à jouer sur la copie du nouveau (mutants.py)')
+    parser.add_argument('--inject-sql', metavar='FICHIER', help='state, exports : du SQL à jouer sur la copie du nouveau (mutants.py)')
+    parser.add_argument('--random', type=int, default=0, metavar='N', help='exports : N exports de plus, tirés au hasard')
+    parser.add_argument('--seed', type=int, default=1, help='exports : la graine de ces tirages, à noter avec le rapport')
     args = parser.parse_args()
-    if args.inject_sql and args.what != 'state':
-        parser.error('--inject-sql ne vaut que pour state')
+    if args.inject_sql and args.what not in ('state', 'exports'):
+        parser.error('--inject-sql ne vaut que pour state et exports')
     CASES_SERVER = args.server
     {'pages': run_pages, 'exports': run_exports, 'state': run_state, 'queue': run_queue, 'imports': run_imports,
      'accounts': run_accounts, 'admin': run_admin, 'theia': run_theia,

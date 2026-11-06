@@ -177,8 +177,9 @@ PHP = [
      "'((debut >= :begin AND fin <= :end) OR (debut = fin AND (debut = :begin OR fin = :end )))'"),
 ]
 
-# (nom, mode, fonction SQL, texte, remplacement) : une fonction changée dans la copie du nouveau seul, comme
-# le ferait une migration fautive. Les calculs ne sont pas tous joués : c'est ce que ces fautes mesurent.
+# (nom, mode, fonction SQL, texte, remplacement), ou (nom, mode, --only, fonction SQL, texte, remplacement) : une
+# fonction changée dans la copie du nouveau seul, comme le ferait une migration fautive. Les calculs ne sont pas tous
+# joués : c'est ce que ces fautes mesurent. Les modes state et exports savent les recevoir.
 SQL = [
     ('SQL : facteur multiplicatif oublié', 'state', 'bdoh_insert_mesures_two_transformations',
      'valeurMainInsert[1] * valeurSecondInsert[1] * coefficient', 'valeurMainInsert[1] * valeurSecondInsert[1]'),
@@ -191,7 +192,16 @@ SQL = [
     ('SQL : borne haute du barème incluse à tort', 'state', 'bdoh_interp_for_bareme',
      'entree_adaptee > maxBareme THEN', 'entree_adaptee >= maxBareme THEN'),
     ('SQL : qualité croisée prise au maximum', 'state', 'bdoh_cross_quality_orders', 'ELSIF ordre1 < ordre2 THEN', 'ELSIF ordre1 > ordre2 THEN'),
+    # Les exports (C3, groupe 7)
+    ('SQL : moyenne « 1 événement » sur la moitié de la période', 'exports', 'bdoh:export:mean 10 ',
+     'bdoh_interp_to_mean_or_cumul', 'stepInterval := maxDate - originalBoundary;', 'stepInterval := (maxDate - originalBoundary) / 2;'),
+    ("SQL : chronique échantillonnée en moyenne intégrée comme une instantanée", 'exports', 'bdoh:export:mean',
+     'bdoh_interp_to_mean_or_cumul', "integralFunction := 'bdoh_integrate_mean_interval';",
+     "integralFunction := 'bdoh_integrate_instant_interval';"),
+    ('SQL : cumul « 1 événement » sur la moitié de la période', 'exports', 'bdoh:export:cumulative 10 ',
+     'bdoh_interp_cumul_to_cumul', 'stepInterval := endDate - originalBoundary;', 'stepInterval := (endDate - originalBoundary) / 2;'),
 ]
+SQL = [fault if len(fault) == 6 else (*fault[:2], '', *fault[2:]) for fault in SQL]  # sans --only : tous les cas
 
 
 def sql_fault(function, old, new):
@@ -258,10 +268,10 @@ def main():
         return 0
 
     # Chaque texte se vérifie d'abord : une faute périmée ne doit pas passer pour non vue
-    for name, mode, only, file, old, new in [f for f in faults if len(f) == 6]:
+    for name, mode, only, file, old, new in [f for f in faults if f in PHP]:
         if old not in (ROOT / file).read_text():
             sys.exit(f'Texte introuvable pour « {name} » dans {file}')
-    for name, mode, function, old, new in [f for f in faults if len(f) == 5]:
+    for name, mode, only, function, old, new in [f for f in faults if f in SQL]:
         found = compare.query(args.base, f"""SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
             WHERE n.nspname = 'bdoh' AND p.proname = {literal(function)} AND p.prokind = 'f'
               AND position({literal(old)} in pg_get_functiondef(p.oid)) > 0""", compare.NEW_SERVER)
@@ -300,7 +310,7 @@ def main():
         (out / 'rapport.txt').write_text('\n'.join(lines) + '\n')
 
     for fault in faults:
-        if len(fault) == 6:
+        if fault in PHP:
             name, mode, only, file, old, new = fault
             baseline(mode, only)  # avant la faute : la passe de référence ne doit pas la contenir
             path = ROOT / file
@@ -313,11 +323,11 @@ def main():
                 path.write_text(original)
                 time.sleep(3)
         else:
-            name, mode, function, old, new = fault
-            baseline(mode, '')
+            name, mode, only, function, old, new = fault
+            baseline(mode, only)
             with tempfile.NamedTemporaryFile('w', suffix='.sql', delete=False) as sql:
                 sql.write(sql_fault(function, old, new))
-            verdict(name, mode, '', sql.name)
+            verdict(name, mode, only, sql.name)
             Path(sql.name).unlink()
     seen = sum(line.startswith('vue') for line in lines)
     lines.append(f'{seen} fautes vues sur {len(faults)}')
