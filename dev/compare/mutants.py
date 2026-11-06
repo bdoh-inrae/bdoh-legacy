@@ -148,8 +148,8 @@ PHP = [
      "DELETE FROM plage WHERE ((debut >= '$firstDate' AND fin <= '$lastDate') OR "),
     ('plages ponctuelles, garder : le premier point importé en double', 'imports', 'ponctuelles', PLAGES,
      """$sqlSelect .= "(fin < '$firstExistingDate')";""", """$sqlSelect .= "(fin <= '$firstExistingDate')";"""),
-    ('plages : une autre qualité de lacune garde sa valeur', 'imports', 'plages, lacunes',
-     SRC + 'BdohAdminBundle/Importer/Measure/BdohPlageImporter.php', 'if ($isGapType) {', 'if (false) {'),
+    # Pas de faute sur le vidage de la valeur d'une qualité de lacune (BdohPlageImporter) : Importer::processGeneric
+    # le refait, si bien qu'en retirer un ne change rien (essai du 6 novembre). « plages, lacunes » vérifie le résultat.
     ("mesures, garder : la période de l'historique prise du mauvais côté", 'imports', 'chevauche le début', IMPORTER,
      '$effectiveEndDate = $firstExistingDate;', '$effectiveBeginDate = $firstExistingDate;'),
     ('vider une période de plages : les plages à cheval gardées', 'state', '', PLAGES,
