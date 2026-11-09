@@ -27,6 +27,7 @@ Puis le système, une version LTS à la fois, jusqu'à Ubuntu 26.04, en redémar
 
 ```
 sudo apt update && sudo apt full-upgrade && sudo apt autoremove --purge
+sudo apt install usrmerge                     # si ls -ld /bin montre un dossier, et non un lien vers usr/bin
 sudo reboot
 sudo do-release-upgrade                       # vers 24.04
 sudo apt update && sudo apt full-upgrade
@@ -34,7 +35,7 @@ sudo do-release-upgrade                       # vers 26.04
 cat /etc/os-release
 ```
 
-Aux questions de `do-release-upgrade` : garder la version installée d'un fichier de configuration (réponse par défaut), surtout pour ssh, que l'infra a réglé ; redémarrer les services sans demander ; retirer les paquets obsolètes. Si la connexion tombe en route, ne rien relancer à l'aveugle : se reconnecter et lire ce que l'outil a écrit.
+Ubuntu 24.04 refuse un système dont `/usr` n'est pas fusionné (`/bin`, `/sbin`, `/lib` en dossiers et non en liens), ce qu'a la VM livrée : `usrmerge` le convertit. Les questions de `do-release-upgrade` sont en français sur la VM : « [oN] » attend `o`, et tout autre lettre, `y` compris, vaut non. Aux questions : garder la version installée d'un fichier de configuration (réponse par défaut), surtout pour ssh, que l'infra a réglé ; redémarrer les services sans demander ; retirer les paquets obsolètes. Si la connexion tombe en route, ne rien relancer à l'aveugle : se reconnecter et lire ce que l'outil a écrit.
 
 ## 1. Sur le poste : l'archive de la version
 
