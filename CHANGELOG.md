@@ -4,6 +4,19 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/). Numéros de v
 
 ## Non publié
 
+## 0.3.2 - 2026-11-10
+
+L'installation sur la VM, par le Makefile, sur Ubuntu 26.04. Le code de l'application est celui de la 0.3.1.
+
+### Ajouté
+
+- L'installation et la mise à jour sur la VM par des cibles du Makefile, lancées dans un clone du dépôt (`make vm-…`, `dev/deploy/README.md`) : paquets d'Ubuntu 26.04, une instance par dossier, site, file de tâches et sauvegarde quotidienne. Une mise à jour passe à une version précise, arrête la file, sauvegarde la base avant ses migrations et la contrôle avant et après.
+
+### Modifié
+
+- La base du développement tourne sur les paquets d'Ubuntu 26.04 (PostgreSQL 18, PostGIS 3.6), ceux de la VM : les trois bases s'y restaurent identiques au bit près à celles de PostgreSQL 11.
+- Le service de la file de tâches vise une instance (`config/deploy/bdoh-job-worker@.service`), et suit PostgreSQL 18.
+
 ## 0.3.1 - 2026-11-09
 
 La 0.3.0, plus une régression corrigée, trouvée en élargissant les cas de la comparaison.

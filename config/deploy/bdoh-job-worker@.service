@@ -1,0 +1,28 @@
+# La file de tâches d'une instance de BDOH (%i : prod ou othu, dans /var/www/bdoh-%i), comme
+# app/config/bdoh-job-worker.service de l'ancien ; installé par make vm-deps. À l'arrêt, systemd ne
+# signale que l'exécuteur (KillMode=mixed), qui ne lance plus rien et laisse finir ses tâches ; au-delà de
+# TimeoutStopSec, tout est tué : une tâche coupée passe en échec, et son calcul, fait dans une transaction,
+# est annulé (dev/differences.md, « Tâche interrompue par un signal »). RestartSec : sans lui, systemd
+# relance après 100 ms et renonce après 5 démarrages en 10 s ; une panne de quelques secondes de PostgreSQL
+# arrêterait la file pour de bon, sans alerte. Requires= arrête l'exécuteur avant PostgreSQL ; une mise à
+# jour de PostgreSQL l'arrête puis le redémarre, et Restart= ne joue pas après un arrêt demandé : le
+# WantedBy= sur PostgreSQL relance l'exécuteur avec lui. Ne jamais lancer l'exécuteur hors de ce service :
+# tué, il laisserait sa tâche tourner et libérerait la file.
+[Unit]
+Description=Exécuteur des tâches de BDOH, %i
+Requires=postgresql@18-main.service
+After=postgresql@18-main.service
+
+[Service]
+Type=simple
+WorkingDirectory=/var/www/bdoh-%i
+ExecStart=/usr/bin/php bin/console bdoh:jobs:run --max-concurrent-jobs=2 --max-runtime=3600 --env=prod --no-interaction -vv
+Nice=10
+Restart=always
+RestartSec=30
+User=www-data
+KillMode=mixed
+TimeoutStopSec=5min
+
+[Install]
+WantedBy=multi-user.target postgresql@18-main.service

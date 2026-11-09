@@ -22,7 +22,7 @@ ENCORE = docker run --rm --network none --user $(HOST_UID):$(HOST_GID) -e HOME=/
 	-v $(CURDIR):/var/www/bdoh bdoh-app node_modules/.bin/encore
 DB_CONTAINER = $(if $(filter new,$(SERVER)),bdoh-db,bdoh-reference-db)
 
-.PHONY: help app-install assets start stop composer phpstan browser-check anonymize db db-small inspect fingerprint migrate reference-app reference-start reference-stop reference-base reference-17-start mail-start worker-start test-kit test-contacts
+.PHONY: help app-install assets start stop composer phpstan browser-check anonymize db db-small inspect fingerprint migrate reference-app reference-start reference-stop reference-base reference-17-start mail-start worker-start test-kit test-contacts vm-deps vm-env vm-build vm-db vm-apache vm-mail-test vm-worker vm-backup vm-update vm-status
 
 help: ## Liste les commandes
 	@grep -E '^[a-z0-9-]+:.*## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*## "} {printf "  %-19s %s\n", $$1, $$2}'
@@ -101,3 +101,37 @@ reference-17-start: ## L'ancien code sur le serveur du nouveau BDOH : http://172
 
 mail-start: ## Retient les courriels du développement, ancien et nouveau : http://172.30.26.25:8025/
 	$(NEW) --profile mail up -d mailpit
+
+# --- Sur la VM, en root, dans le dossier de l'instance (/var/www/bdoh-prod ou /var/www/bdoh-othu, un clone
+# du dépôt) : sudo make vm-… NOM=prod. L'ordre et ce qu'il faut regarder entre deux : dev/deploy/README.md.
+VM = config/deploy/vm.sh
+
+vm-deps: ## VM, une fois : paquets d'Ubuntu 26.04, réglages de PostgreSQL et d'Apache, services
+	$(VM) deps
+
+vm-env: ## VM : .env et rôle PostgreSQL d'une instance : sudo make vm-env NOM=prod ADRESSE=…
+	NOM=$(NOM) ADRESSE=$(ADRESSE) $(VM) env
+
+vm-build: ## VM : bibliothèques PHP et JavaScript compilé : sudo make vm-build NOM=prod
+	NOM=$(NOM) $(VM) build
+
+vm-db: ## VM : restaure le dump brut, migrations et contrôles : sudo make vm-db NOM=prod DUMP=…
+	NOM=$(NOM) DUMP=$(DUMP) $(VM) db
+
+vm-apache: ## VM : le site, derrière le mot de passe des essais : sudo make vm-apache NOM=prod
+	NOM=$(NOM) $(VM) apache
+
+vm-mail-test: ## VM : un courriel d'essai, qui doit arriver à MAILER_DIVERT_TO : sudo make vm-mail-test NOM=prod
+	NOM=$(NOM) TO=$(TO) $(VM) mail-test
+
+vm-worker: ## VM : lance la file de tâches (MAILER_DIVERT_TO rempli) : sudo make vm-worker NOM=prod
+	NOM=$(NOM) $(VM) worker
+
+vm-backup: ## VM : la sauvegarde quotidienne : sudo make vm-backup NOM=prod
+	NOM=$(NOM) $(VM) backup
+
+vm-update: ## VM : installe une version, base sauvegardée avant : sudo make vm-update NOM=prod V=v0.3.2
+	NOM=$(NOM) V=$(V) $(VM) update
+
+vm-status: ## VM : version installée, services, réponse du site : sudo make vm-status NOM=prod
+	NOM=$(NOM) $(VM) status

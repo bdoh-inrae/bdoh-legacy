@@ -63,7 +63,7 @@ services:
       bdoh:
         ipv4_address: 172.30.26.10
 
-  # La file de tâches, lancée comme par le service de production (config/bdoh-job-worker.service),
+  # La file de tâches, lancée comme par le service de production (config/deploy/bdoh-job-worker@.service),
   # qui la relance quand elle s'arrête au bout d'une heure. À part (make worker-start) : elle lit sa
   # base au démarrage, et compare.py mène lui-même la file des copies qu'il compare.
   worker:

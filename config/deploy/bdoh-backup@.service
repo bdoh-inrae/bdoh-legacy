@@ -1,0 +1,11 @@
+# Sauvegarde quotidienne d'une instance de BDOH (%i : prod ou othu), lancée par bdoh-backup@.timer :
+# la base, et ce que le dump ne contient pas (le .env, dont la clé Theia, et les fichiers déposés).
+# En root, pour lire le .env. Gardées 8 jours. Une sauvegarde qui échoue ne prévient personne :
+# systemctl --failed la montre.
+[Unit]
+Description=Sauvegarde de BDOH, %i
+After=postgresql@18-main.service
+
+[Service]
+Type=oneshot
+ExecStart=/bin/sh -ec 'd=$(date +%%F); runuser -u postgres -- pg_dump -Fc -f /var/backups/bdoh/%i-$d.dump bdoh_%i; tar -czf /var/backups/bdoh-files/%i-$d.tar.gz -C /var/www/bdoh-%i .env public/uploads; find /var/backups/bdoh /var/backups/bdoh-files -name "%i-*" -mtime +7 -delete'
