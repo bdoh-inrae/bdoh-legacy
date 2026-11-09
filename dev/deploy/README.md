@@ -2,6 +2,8 @@
 
 Les étapes, à lire et à lancer une par une sur la VM, en root. **Rien de ceci n'a encore été essayé** (choix de Lou, 2026-11-05 : pas d'essai sur le poste) : à corriger ici pendant la première installation, en notant le temps de chaque étape. Le pourquoi de chaque choix est dans [dev/plans/2026-10-26_deployment.md](../plans/2026-10-26_deployment.md).
 
+**Écrit pour Debian 13, et la VM livrée le 9 novembre est sous Ubuntu** : avant la section 2, mener le système à Ubuntu 26.04 et repasser la comparaison sur ce système (`dev/plans/2026-10-26_deployment.md`, Suivi du 9 novembre). Les noms des paquets (`php8.4-…`, `postgresql-17`), le chemin de la configuration de PostgreSQL et le nom de son service (`postgresql@17-main`) sont alors à reprendre ici.
+
 Aucune de ces étapes ne supprime une base ni un serveur. Une erreur en route s'arrête et se lit : ne pas relancer à l'aveugle.
 
 Chaque session root commence par `set -u` : une variable oubliée (une nouvelle session, un `NOM` changé sans le reste) arrête alors la commande au lieu de devenir un chemin vide. Les commandes qui effacent ou changent des droits en masse écrivent en plus `"${DIR:?}"`, que bash refuse si la variable est vide. Relu par un second Claude le 5 novembre : ce texte en tient compte.
