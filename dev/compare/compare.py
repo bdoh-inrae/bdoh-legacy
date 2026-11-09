@@ -17,7 +17,7 @@ par des règles écrites ici : le dépôt ne contient ni données ni codes de ch
 les écarts vont dans ../bdoh_reference/compare/, hors du dépôt.
 
 « state » mène les mêmes calculs (recalcul, conversion, taux de remplissage, puis la file de tâches)
-avec l'ancien code sur PostgreSQL 17 et avec le nouveau, chacun sur sa copie de BASE, et compare
+avec l'ancien code sur le nouveau serveur et avec le nouveau, chacun sur sa copie de BASE, et compare
 l'état des deux copies. « queue » est l'essai de la file de tâches (audit des risques, constat 3).
 
 Les pages se comparent par ce qu'elles montrent (texte, liens, formulaires, attributs data-*), pas
@@ -77,9 +77,10 @@ SIDES = {
     # les heures (--max-runtime, comme en production), ce qui couperait une commande en cours.
     'reference': Side('http://172.30.25.10',
                       ['docker', 'exec', 'bdoh-reference-app', 'php', 'app/console']),
-    # Le nouveau BDOH (service app de compose.yaml), sur PostgreSQL 17.
+    # Le nouveau BDOH (service app de compose.yaml), sur son serveur de base (docker/db/).
     'new': Side('http://172.30.26.10', ['docker', 'exec', 'bdoh-app', 'php', 'bin/console'], login_link=True),
-    # L'ancien code sur PostgreSQL 17 (service reference-app-17 de compose.yaml).
+    # L'ancien code sur le nouveau serveur, celui du nouveau BDOH (service reference-app-17 de compose.yaml ;
+    # son nom date de PostgreSQL 17, le serveur est en PostgreSQL 18 depuis novembre 2026).
     'reference-17': Side('http://172.30.26.17',
                          ['docker', 'exec', 'bdoh-reference-app-17', 'php', 'app/console']),
 }
@@ -611,7 +612,7 @@ def close_numbers(x, y):
     exponent_x, exponent_y = a.as_tuple().exponent, b.as_tuple().exponent
     if exponent_x == exponent_y:  # mêmes décimales : une unité du dernier chiffre
         return abs(a - b) <= decimal.Decimal(1).scaleb(exponent_x)
-    # Autres décimales : le même nombre, écrit à 15 chiffres par PostgreSQL 11, à 17 par PostgreSQL 17
+    # Autres décimales : le même nombre, écrit à 15 chiffres par PostgreSQL 11, à 17 par PostgreSQL 12 et plus
     return abs(a - b) <= max(abs(a), abs(b)) * decimal.Decimal('1e-14')
 
 
@@ -851,7 +852,7 @@ def run_exports(args):
 
 # --- État de la base après les calculs ------------------------------------------------------------
 
-NEW_SERVER = 'bdoh-db'  # PostgreSQL 17, où tournent l'ancien code (reference-17) et le nouveau
+NEW_SERVER = 'bdoh-db'  # le nouveau serveur, où tournent l'ancien code (reference-17) et le nouveau
 OLD_17_PARAMETERS = OUT.parent / 'app-17' / 'app' / 'config' / 'parameters.yml'
 
 
@@ -1006,7 +1007,7 @@ def mail_lines(ordered=True):
     return [line for lines in (messages if ordered else sorted(messages)) for line in lines]
 
 
-NEW_URL = 'postgresql://bdoh@db:5432/{}?serverVersion=17&charset=utf8'
+NEW_URL = 'postgresql://bdoh@db:5432/{}?serverVersion=18&charset=utf8'
 ENV_LOCAL = HERE.parent.parent / '.env.local'  # la base du nouveau BDOH, comme l'écrit use-base.sh
 
 
@@ -1045,7 +1046,7 @@ def keep_sql_coverage(base):
 
 
 def copy_base(template, base):
-    """Une copie fraîche d'une base, sur le serveur PostgreSQL 17."""
+    """Une copie fraîche d'une base, sur le nouveau serveur."""
     keep_sql_coverage(base)
     for sql in [f'DROP DATABASE IF EXISTS {base} WITH (FORCE)', f'CREATE DATABASE {base} TEMPLATE {template} OWNER bdoh']:
         subprocess.run(['docker', 'exec', NEW_SERVER, 'psql', '-U', 'postgres', '-v', 'ON_ERROR_STOP=1',
@@ -1053,7 +1054,7 @@ def copy_base(template, base):
 
 
 def configure_old_17(text):
-    """Écrit les paramètres de l'ancien code sur PostgreSQL 17, vide son cache et recharge Apache. Sans ce
+    """Écrit les paramètres de l'ancien code sur le nouveau serveur, vide son cache et recharge Apache. Sans ce
     rechargement, le cache d'opcodes de PHP 7.1 garde les fichiers de tous les caches vidés, et Apache finit par
     planter à chaque requête ou presque (une cinquantaine de vidages, en jouant toutes les fautes de mutants.py)."""
     OLD_17_PARAMETERS.write_text(text)
@@ -1064,7 +1065,7 @@ def configure_old_17(text):
 
 @contextlib.contextmanager
 def old_17_on(base, **params):
-    """L'ancien code sur PostgreSQL 17 branché sur une base (et d'autres paramètres), le temps du bloc."""
+    """L'ancien code sur le nouveau serveur branché sur une base (et d'autres paramètres), le temps du bloc."""
     original = OLD_17_PARAMETERS.read_text()
     edited = original
     for key, value in {'database_name': base, **params}.items():
@@ -2295,7 +2296,7 @@ def import_failure_checks(template, base, check):
 
 
 def run_imports(args):
-    """Chaque import, étape par étape, par l'ancien code sur PostgreSQL 17 et par le nouveau, chacun
+    """Chaque import, étape par étape, par l'ancien code sur le nouveau serveur et par le nouveau, chacun
     sur sa copie de BASE, au nom d'un gestionnaire de l'observatoire visé ; puis la file de tâches,
     et l'état des deux copies."""
     template = args.base
@@ -2729,7 +2730,7 @@ ACCOUNT_QUERIES = {
 
 
 def run_accounts(args):
-    """Les parcours de comptes, par l'ancien code sur PostgreSQL 17 et par le nouveau, chacun sur sa
+    """Les parcours de comptes, par l'ancien code sur le nouveau serveur et par le nouveau, chacun sur sa
     copie de BASE : inscription (et ses refus), modification de son compte, demande d'accès,
     attribution de droits par un gestionnaire, création de comptes d'administration en ligne de
     commande ; les réponses, les courriels et l'état des tables de comptes.
@@ -3316,7 +3317,7 @@ def attached_files(base):
 
 
 def run_admin(args):
-    """L'administration (module 6), par l'ancien code sur PostgreSQL 17 et par le nouveau, chacun sur
+    """L'administration (module 6), par l'ancien code sur le nouveau serveur et par le nouveau, chacun sur
     sa copie de BASE. Pour chaque administration portée (ADMINS), au nom d'un administrateur et d'un
     gestionnaire : la liste, la création, l'édition et la suppression de son entité, sans rien
     envoyer ; puis, au nom de l'administrateur, l'édition renvoyée telle quelle, une édition qui
@@ -3847,7 +3848,7 @@ def theia_received(*sites):
 
 
 def run_theia(args):
-    """L'envoi des fiches vers Theia/OZCAR (module 7), par l'ancien code sur PostgreSQL 17 et par le
+    """L'envoi des fiches vers Theia/OZCAR (module 7), par l'ancien code sur le nouveau serveur et par le
     nouveau, chacun sur sa copie de BASE. Pour chaque observatoire qui a un code Theia, au nom d'un de
     ses gestionnaires : le JSON téléchargé et la page de son contrôle ; puis un mot de passe Theia
     enregistré par le formulaire, l'envoi mené par la file et reçu par le récepteur, et un envoi refusé

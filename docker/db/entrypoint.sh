@@ -2,7 +2,7 @@
 # Crée le serveur à son premier démarrage, dans le dossier monté, aux droits de l'utilisateur du poste ;
 # en développement seulement : confiance à tout le réseau interne, comme POSTGRES_HOST_AUTH_METHOD=trust.
 set -eu
-export PATH="/usr/lib/postgresql/17/bin:$PATH"
+export PATH="/usr/lib/postgresql/18/bin:$PATH"
 data=/var/lib/postgresql/data
 
 # Le compte du poste peut n'être connu que de son annuaire : PostgreSQL veut lui trouver un nom

@@ -1,6 +1,6 @@
 # Commandes du projet ; `make` seul les liste.
 # SERVER choisit le serveur de base : reference (PostgreSQL 11, comme la production, par défaut) ou
-# new (PostgreSQL 17, les paquets de Debian 13, celui du nouveau BDOH).
+# new (PostgreSQL 18, les paquets d'Ubuntu 26.04, celui du nouveau BDOH).
 
 OUT ?= ../bdoh_reference
 DUMP ?= $(OUT)/bdoh-205-2026-10-21-anon.dump
@@ -72,7 +72,7 @@ db: ## Restaure un dump anonymisé : make db [DUMP=… BASE=… SERVER=…]
 	dev/reference/restore-db.sh "$(DUMP)" "$(BASE)"
 
 migrate: ## Applique les migrations du nouveau BDOH à une base de son serveur : make migrate BASE=…
-	docker exec -e DATABASE_URL="postgresql://bdoh@db:5432/$(BASE)?serverVersion=17&charset=utf8" bdoh-app php bin/console doctrine:migrations:migrate --no-interaction --env=prod
+	docker exec -e DATABASE_URL="postgresql://bdoh@db:5432/$(BASE)?serverVersion=18&charset=utf8" bdoh-app php bin/console doctrine:migrations:migrate --no-interaction --env=prod
 
 db-small: ## Tire de la base bdoh la base de travail réduite bdoh_small (mesures de 2024) [SERVER=…]
 	dev/reference/small-db.sh
@@ -95,7 +95,7 @@ reference-stop: ## Arrête la référence
 reference-base: ## Branche la référence sur une autre base : make reference-base BASE=bdoh_small
 	dev/reference/use-base.sh "$(BASE)"
 
-reference-17-start: ## L'ancien code sur PostgreSQL 17, pour l'étape de la base : http://172.30.26.17/
+reference-17-start: ## L'ancien code sur le serveur du nouveau BDOH : http://172.30.26.17/
 	test -d $(REFERENCE_DIR)/app-17 || cp -a $(REFERENCE_DIR)/app $(REFERENCE_DIR)/app-17
 	$(NEW) --profile pg17 up -d reference-app-17
 

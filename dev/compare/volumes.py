@@ -4,7 +4,7 @@
     dev/compare/volumes.py [--base bdoh] [--small bdoh_small]
 
 Sur les plus grosses chroniques visibles : les exports en ligne de commande, le calcul et les taux de
-remplissage dans une transaction annulée (les fonctions de PostgreSQL 11 contre celles de PostgreSQL 17), les
+remplissage dans une transaction annulée (les fonctions de PostgreSQL 11 contre celles du nouveau serveur), les
 pages les plus lourdes d'un administrateur, et un gros import, en archive zip, sur des copies de la base réduite.
 Les instances sont branchées sur la base complète le temps de la mesure, puis sur la base réduite.
 
@@ -134,7 +134,7 @@ def main():
             say(f'{name:<34}{cells[0]:>18}{cells[1]:>18}')
 
         say('')
-        say(f"{'Calcul, transaction annulée':<34}{'PostgreSQL 11':>18}{'PostgreSQL 17':>18}")
+        say(f"{'Calcul, transaction annulée':<34}{'PostgreSQL 11':>18}{'nouveau serveur':>18}")
         for name, sql in [('calcul', f'SELECT bdoh_compute_chronique({calculated})'),
                           ('taux de remplissage', f"SELECT bdoh_update_filling_rates({continuous}, '-infinity', 'infinity')")]:
             cells = []
@@ -157,7 +157,7 @@ def main():
     finally:
         use_base(args.small)
 
-    # Les imports écrivent : sur des copies de la base réduite, l'ancien code et le nouveau sous PostgreSQL 17
+    # Les imports écrivent : sur des copies de la base réduite, l'ancien code et le nouveau sur le nouveau serveur
     cid = compare.query(args.small, """SELECT c.id FROM chronique c WHERE c.estvisible AND c.dtype = 'continue'
                                         ORDER BY c.nbmesures DESC NULLS LAST LIMIT 1""", compare.NEW_SERVER)[0][0]
     case, rows = import_case(args.small, cid)

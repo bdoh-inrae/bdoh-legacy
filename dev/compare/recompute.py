@@ -3,7 +3,7 @@
 
     dev/compare/recompute.py [--base bdoh] [--only-calculs] [--only-taux] [--jobs 4]
 
-Sur une copie de BASE (serveur PostgreSQL 17) et par les vraies commandes du nouveau BDOH : chaque
+Sur une copie de BASE (nouveau serveur) et par les vraies commandes du nouveau BDOH : chaque
 chronique calculée ou convertie, les plus profondes d'abord et sans propagation, si bien que chacune se
 calcule depuis ses mères telles qu'elles sont en base, et qu'un écart est bien le sien ; puis les taux de
 remplissage de toutes. Compare enfin la copie à BASE par l'empreinte au bit près.
@@ -12,7 +12,7 @@ Une chronique identique n'est prouvée que si elle a vraiment été recalculée 
 (code 32) laisse les mesures en place. Chaque code est donc compté, et les identifiants des mesures
 doivent avoir changé. Une chronique qui diffère est recalculée par les fonctions de PostgreSQL 11, dans
 une transaction annulée, pour séparer l'histoire de la chronique (l'ancien y donne comme le nouveau) d'un
-effet de PostgreSQL 17 ou du portage (dev/audits/2026-11-03_validation-plan.md, constat 3).
+effet du nouveau serveur ou du portage (dev/audits/2026-11-03_validation-plan.md, constat 3).
 
 Les chroniques cachées ne sortent qu'en comptes, y compris dans les fichiers : l'outil a tourné sur leurs
 vraies valeurs, et pourra y retourner sur la VM. Le rapport va dans ../bdoh_reference/compare/, hors du

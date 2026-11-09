@@ -1,12 +1,14 @@
-# L'environnement de développement du nouveau BDOH : PHP 8.4, PostgreSQL 17 et PostGIS 3.5, les
-# paquets de Debian 13, sur les bases anonymisées ; l'application répond à http://172.30.26.10/.
+# L'environnement de développement du nouveau BDOH, sur les bases anonymisées : PHP 8.4 (paquets de
+# Debian 13), PostgreSQL 18 et PostGIS 3.6 (paquets d'Ubuntu 26.04, ceux de la VM) ; l'application
+# répond à http://172.30.26.10/.
 # Comme pour la référence (dev/reference/compose.yaml), le réseau est interne et tout tourne aux
 # droits de l'utilisateur ; se pilote par le Makefile.
 name: bdoh
 
 services:
-  # Sur les paquets de Debian 13, ceux de la production (docker/db/Dockerfile). plpgsql_check donne la couverture
-  # des fonctions de calcul, le temps d'une passe qui l'allume ; éteint, il ne fait rien.
+  # Sur les paquets d'Ubuntu 26.04, ceux de la production (docker/db/Dockerfile). plpgsql_check donne la couverture
+  # des fonctions de calcul, le temps d'une passe qui l'allume ; éteint, il ne fait rien. Un dossier de données par
+  # version et par système : une autre glibc peut changer l'ordre des index (dev/decisions.md, « Deux serveurs de base »).
   db:
     image: bdoh-db
     build: docker/db
@@ -14,7 +16,7 @@ services:
     container_name: bdoh-db
     user: "${HOST_UID:?}:${HOST_GID:?}"
     volumes:
-      - ${REFERENCE_DIR:?}/postgres-17-debian:/var/lib/postgresql/data
+      - ${REFERENCE_DIR:?}/postgres-18-ubuntu:/var/lib/postgresql/data
       - ${REFERENCE_DIR:?}:/in:ro
     healthcheck:
       test: [CMD, pg_isready, -h, 127.0.0.1, -U, postgres, -q]
@@ -86,8 +88,9 @@ services:
     profiles: [worker]
     networks: [bdoh]
 
-  # L'ancien code sur PostgreSQL 17, pour essayer la nouvelle version de la base avant le portage :
-  # une copie de l'application de référence (REFERENCE_DIR/app-17), où l'hôte db est ce serveur-ci.
+  # L'ancien code sur le serveur du nouveau BDOH, pour essayer une nouvelle version de la base avec l'ancien code,
+  # puis comparer l'ancien et le nouveau sur le même serveur : une copie de l'application de référence
+  # (REFERENCE_DIR/app-17), où l'hôte db est ce serveur-ci. Le nom date de PostgreSQL 17.
   reference-app-17:
     image: bdoh-reference-app
     container_name: bdoh-reference-app-17

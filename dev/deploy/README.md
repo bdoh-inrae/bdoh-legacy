@@ -2,7 +2,7 @@
 
 Les étapes, à lire et à lancer une par une sur la VM, en root. **Rien de ceci n'a encore été essayé** (choix de Lou, 2026-11-05 : pas d'essai sur le poste) : à corriger ici pendant la première installation, en notant le temps de chaque étape. Le pourquoi de chaque choix est dans [dev/plans/2026-10-26_deployment.md](../plans/2026-10-26_deployment.md).
 
-**Écrit pour Debian 13, et la VM livrée le 9 novembre est sous Ubuntu** : avant la section 2, mener le système à Ubuntu 26.04 et repasser la comparaison sur ce système (`dev/plans/2026-10-26_deployment.md`, Suivi du 9 novembre). Les noms des paquets (`php8.4-…`, `postgresql-17`), le chemin de la configuration de PostgreSQL et le nom de son service (`postgresql@17-main`) sont alors à reprendre ici.
+**Écrit pour Ubuntu 26.04**, le système de la VM depuis le 9 novembre (section 0) : PHP 8.5, PostgreSQL 18, PostGIS 3.6. La liste des paquets de la section 2, les chemins et les noms des services ont été essayés le même jour dans l'image `ubuntu:26.04`, pas encore sur la VM.
 
 Aucune de ces étapes ne supprime une base ni un serveur. Une erreur en route s'arrête et se lit : ne pas relancer à l'aveugle.
 
@@ -72,21 +72,23 @@ sudo chown -R root:root /var/backups/bdoh-sources
 ```
 apt-get update
 apt-get install --no-install-recommends \
-    apache2 apache2-utils libapache2-mod-php8.4 php8.4-cli php8.4-opcache \
-    php8.4-apcu php8.4-curl php8.4-gd php8.4-intl php8.4-mbstring php8.4-pgsql php8.4-xml php8.4-zip \
-    postgresql-17 postgresql-17-postgis-3 postgis locales openssl ssl-cert rsync unattended-upgrades
+    apache2 apache2-utils libapache2-mod-php8.5 php8.5-cli \
+    php8.5-apcu php8.5-curl php8.5-gd php8.5-intl php8.5-mbstring php8.5-pgsql php8.5-xml php8.5-zip \
+    postgresql-18 postgresql-18-postgis-3 postgis locales openssl ssl-cert rsync unattended-upgrades
 
-sed -i 's/^# en_US.UTF-8/en_US.UTF-8/; s/^# fr_FR.UTF-8/fr_FR.UTF-8/' /etc/locale.gen && locale-gen
+locale-gen en_US.UTF-8 fr_FR.UTF-8
 systemctl restart postgresql
 ```
 
+OPcache fait partie de PHP depuis la 8.5 : il n'a plus de paquet.
+
 À regarder :
 
-- `findmnt /tmp` : si c'est un `tmpfs`, `systemctl mask tmp.mount`, puis redémarrer la VM. Les imports et les exports y écrivent.
+- `findmnt /tmp` : sur la VM, un volume ext4 de 8 Go (section 0), rien à faire. Si c'était un `tmpfs`, `systemctl mask tmp.mount`, puis redémarrer. Les imports et les exports y écrivent.
 - `open-vm-tools`, si l'infra l'exige.
 - `dpkg-reconfigure -plow unattended-upgrades` : répondre oui.
 
-Réglages de PostgreSQL, à adapter à la mémoire de la VM (11 Gio visibles ici), dans `/etc/postgresql/17/main/conf.d/bdoh.conf`, puis `systemctl restart postgresql` :
+Réglages de PostgreSQL, à adapter à la mémoire de la VM (11 Gio visibles ici), dans `/etc/postgresql/18/main/conf.d/bdoh.conf`, puis `systemctl restart postgresql` :
 
 ```
 shared_buffers = 3GB
@@ -133,7 +135,7 @@ Le `.env`, à partir de `.env.example`, lisible par le serveur web seul (`chown 
 ```
 APP_ENV=prod
 APP_SECRET=                     # openssl rand -hex 32, propre à l'instance
-DATABASE_URL="postgresql://bdoh_NOM:MOT_DE_PASSE@127.0.0.1:5432/bdoh_NOM?serverVersion=17&charset=utf8"
+DATABASE_URL="postgresql://bdoh_NOM:MOT_DE_PASSE@127.0.0.1:5432/bdoh_NOM?serverVersion=18&charset=utf8"
 DEFAULT_URI=https://ADRESSE:PORT
 SYMFONY_TRUSTED_HOSTS='^ADRESSE$'    # les points de l'adresse écrits \.
 THEIA_PASSWORD_SECRET_KEY=      # openssl rand -hex 32, propre à l'instance
@@ -185,7 +187,7 @@ OTHU seulement : ses trois fonctions SQL, à aligner sur la production après co
 
 ## 4. Une instance : le site
 
-`/etc/apache2/sites-available/bdoh-NOM.conf`. Debian écoute déjà sur 443 une fois `ssl` activé ; pour une autre instance, ajouter `Listen 8443 https` à `/etc/apache2/ports.conf`.
+`/etc/apache2/sites-available/bdoh-NOM.conf`. Apache écoute déjà sur 443 une fois `ssl` activé ; pour une autre instance, ajouter `Listen 8443 https` à `/etc/apache2/ports.conf`.
 
 ```
 <VirtualHost *:PORT>
@@ -234,8 +236,8 @@ a2ensite bdoh-$NOM && apache2ctl configtest && systemctl reload apache2
 ```
 [Unit]
 Description=Exécuteur des tâches de BDOH, %i
-Requires=postgresql@17-main.service
-After=postgresql@17-main.service
+Requires=postgresql@18-main.service
+After=postgresql@18-main.service
 
 [Service]
 Type=simple
@@ -249,10 +251,10 @@ KillMode=mixed
 TimeoutStopSec=5min
 
 [Install]
-WantedBy=multi-user.target postgresql@17-main.service
+WantedBy=multi-user.target postgresql@18-main.service
 ```
 
-`Requires=` arrête l'exécuteur avant PostgreSQL, proprement ; mais une mise à jour de `postgresql-17` arrête puis redémarre PostgreSQL, et rien ne relancerait l'exécuteur (`Restart=` ne joue pas après un arrêt demandé). Le `WantedBy=` sur PostgreSQL le redémarre avec lui.
+`Requires=` arrête l'exécuteur avant PostgreSQL, proprement ; mais une mise à jour de `postgresql-18` arrête puis redémarre PostgreSQL, et rien ne relancerait l'exécuteur (`Restart=` ne joue pas après un arrêt demandé). Le `WantedBy=` sur PostgreSQL le redémarre avec lui.
 
 `systemctl enable --now bdoh-job-worker@$NOM`. Les tâches restées « en cours » dans le dump passent alors en « incomplètes », relançables.
 
@@ -265,7 +267,7 @@ Deux dossiers, à l'emplacement que l'infra sauvegarde hors de la VM : `/var/bac
 ```
 [Unit]
 Description=Sauvegarde de BDOH, %i
-After=postgresql@17-main.service
+After=postgresql@18-main.service
 
 [Service]
 Type=oneshot
@@ -305,7 +307,7 @@ Une vraie restauration, sur une VM neuve, reprend la section 3 avec ce dump à l
 - Un courriel vers une adresse hors de la liste arrive à `MAILER_DIVERT_TO`, et pas à son destinataire.
 - Un export, un import, et un calcul qui se relance : `systemctl status bdoh-job-worker@$NOM`, et la page des tâches.
 - Arrêter PostgreSQL 30 s, le relancer : la file repart seule.
-- Un import en plusieurs étapes, en redémarrant Apache entre deux : le service Apache de Debian a `PrivateTmp=true`, à voir ce que ça donne.
+- Un import en plusieurs étapes, en redémarrant Apache entre deux : le service Apache d'Ubuntu a `PrivateTmp=true`, à voir ce que ça donne.
 
 ## Installer une nouvelle version
 

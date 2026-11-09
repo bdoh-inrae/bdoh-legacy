@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 # Restaure un dump anonymisé dans un serveur de base local, sur un réseau Docker interne : le
 # serveur de référence (PostgreSQL 11 et PostGIS 2.5, comme la production, dev/reference/compose.yaml)
-# ou, avec SERVER=new, celui du nouveau BDOH (les paquets de Debian 13, compose.yaml).
+# ou, avec SERVER=new, celui du nouveau BDOH (les paquets d'Ubuntu 26.04, compose.yaml).
 #
 #   [SERVER=new] dev/reference/restore-db.sh DUMP_ANONYMISÉ [BASE]
 #
 # N'accepte qu'un dump sorti de dev/anonymize (nom en *-anon.dump), rangé dans REFERENCE_DIR
 # (../bdoh_reference par défaut). BASE vaut bdoh par défaut ; un même serveur accueille plusieurs
 # bases (production, OTHU). Les fichiers des serveurs vivent dans REFERENCE_DIR/postgres et
-# REFERENCE_DIR/postgres-17-debian, et appartiennent à l'utilisateur courant. Le script refuse d'écraser
+# REFERENCE_DIR/postgres-18-ubuntu, et appartiennent à l'utilisateur courant. Le script refuse d'écraser
 # une base existante. Pour repartir de zéro, par exemple sur le serveur de référence :
 #   make reference-stop && docker rm bdoh-reference-db && rm -rf REFERENCE_DIR/postgres
 set -euo pipefail
@@ -25,7 +25,7 @@ dump=$(realpath "$1")
 base=${2:-bdoh}
 case ${SERVER:-reference} in
     reference) compose=$here/compose.yaml container=bdoh-reference-db data=postgres ;;
-    new) compose=$here/../../compose.yaml container=bdoh-db data=postgres-17-debian ;;
+    new) compose=$here/../../compose.yaml container=bdoh-db data=postgres-18-ubuntu ;;
     *) echo "Serveur inconnu : $SERVER (reference ou new)" >&2; exit 1 ;;
 esac
 

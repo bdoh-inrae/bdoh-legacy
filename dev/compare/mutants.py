@@ -234,7 +234,7 @@ def play(mode, only, base, inject=None):
     # Les envois de theia ne vont au bout que sur la base complète
     base = 'bdoh' if mode == 'theia' else base
     command = [sys.executable, '-B', str(ROOT / 'dev/compare/compare.py'), mode, '--base', base]
-    # pages contre l'ancien sous PostgreSQL 17 : contre PostgreSQL 11, ses pages de mesures diffèrent exprès
+    # pages contre l'ancien sur le nouveau serveur : contre PostgreSQL 11, ses pages de mesures diffèrent exprès
     # (dev/decisions.md, « Un nombre qui change de valeur n'est jamais admis »)
     if mode == 'pages':
         command += ['--old', 'reference-17', '--new', 'new', '--server', 'bdoh-db']
