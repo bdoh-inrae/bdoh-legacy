@@ -4,9 +4,17 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/). Numéros de v
 
 ## Non publié
 
+## 0.3.1 - 2026-11-09
+
+La 0.3.0, plus une régression corrigée, trouvée en élargissant les cas de la comparaison.
+
 ### Corrigé
 
 - Vider une période d'une chronique discontinue la vide de nouveau, au lieu d'une erreur interne (régression de la 0.1.0).
+
+### Ajouté
+
+- Des cas de plus dans la comparaison, tirés de la mesure de couverture et de l'usage réel : droits sur un observatoire et ses sites, plages et chevauchements d'import, fichiers refusés, points de contrôle, transformations, pas d'export employés en production, visualiseur de chaque échantillonnage ; et 300 exports tirés au hasard, sans écart.
 
 ## 0.3.0 - 2026-11-06
 

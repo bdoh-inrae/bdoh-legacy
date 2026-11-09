@@ -46,12 +46,17 @@ L'ordre de l'audit, resserré autour de la barrière : ce qui demande de lire de
 
 ## Pour reprendre
 
-État au 6 novembre : version 0.3.0 publiée, l'état que verront les testeurs ; C1 fini, les 47 fautes vues, les 62 étapes du navigateur passées en une seule passe (Suivi). Dans l'ordre :
+État au 9 novembre : version 0.3.1 publiée (la 0.3.0, plus la régression du 6 novembre corrigée) ; C1 et C2 finis, les 47 fautes vues, les 62 étapes du navigateur passées en une seule passe (Suivi). La VM est livrée, sous Ubuntu et pas à jour, sans proxy inverse. Ordre convenu avec Lou le 9 novembre : les retours des gestionnaires sont ce qui attendra le plus, donc l'installation passe devant, et le reste de la validation se poursuit pendant les essais.
+
+- **Le système de la VM**, puis **la comparaison sur Ubuntu 26.04** : `dev/plans/2026-10-26_deployment.md`, Suivi du 9 novembre. Un écart se corrige et donne une version.
+- **L'instance de production**, en suivant `dev/deploy/README.md`, corrigé sur place ; puis la liste de Lou (point 3).
+- **C3, groupes 6 et 9** (point 1), pendant la liste de Lou. Ensuite seulement : la VM mise à jour (ce qui éprouve « Installer une nouvelle version »), l'instance d'OTHU, dont les trois fonctions SQL s'alignent après le groupe 9, et le message aux gestionnaires, qui toucheront l'administration que joue le groupe 6.
+- Pendant leurs essais : la passe de couverture, C4, C5 ; puis une relecture en lecture seule (du code qui écrit et que la comparaison n'exécute toujours pas, et de ce qui a changé depuis la 0.3.0), avant C6. Le 6 novembre, la lecture des lignes jamais exécutées n'avait rien trouvé, et le cas joué une heure plus tard trouvait une erreur 500 dans ces lignes : ce qui reste non joué mérite une seconde lecture.
 
 1. **C3**, la liste plus bas. Faits le 6 novembre : groupes 1 à 5, 7 et 8 (Suivi). Restent, chacun avec un contexte frais :
    - le groupe 6, l'administration (`run_admin`) : fichier joint à la création d'une fiche, remplacé, retiré (noms tirés au hasard par BDOH : comparer leur présence et leur extension, pas leur nom) ; couleurs changées et thème recompilé, comparé à l'ancien avec l'écart admis « Thèmes des observatoires » ; fiche d'une chronique qui a déjà des limites ; bassin modifié et retiré, cours d'eau retiré ; shapefile en gardant l'existant ;
    - le groupe 9, OTHU : `state_commands`, `run_state` (dont `invented.play` et `failed_computation_checks`, qui prennent la chaîne de calcul), `run_queue` et `run_imports` prennent leur premier résultat sans garde ; une base sans transformation ni conversion doit sauter ces cas au lieu de s'arrêter. Puis tous les modes sur `bdoh_othu`.
-   Ensuite, une nouvelle passe de couverture dira ce qui reste. Chaque groupe de cas s'écrit, se joue contre l'ancien, et voit sa faute (`mutants.py --only`) avant le suivant. Une nouvelle passe de couverture (`dev/coverage/README.md`) dira ensuite ce qui reste.
+   Chaque groupe de cas s'écrit, se joue contre l'ancien, et voit sa faute (`mutants.py --only`) avant le suivant. Une nouvelle passe de couverture (`dev/coverage/README.md`) dira ensuite ce qui reste.
 2. **La carte de l'accueil**, dans une session à part, pendant l'attente de la VM (`ROADMAP.md`, « Modernisations »).
 3. **La liste de Lou** : [dev/test-kit/lou-checklist.md](../test-kit/lou-checklist.md), ce que la machine ne juge pas et que Lou essaie sur la VM, avant les gestionnaires.
 4. **La VM**, selon la réponse de l'équipe infra, en suivant `dev/deploy/README.md`. Les fichiers déposés de la production (logos, images) sont dans `../bdoh_reference/uploads/bdoh-uploads-prod.tar.gz`, à reprendre dans `public/uploads/` sur la VM ; OTHU n'en a pas.
