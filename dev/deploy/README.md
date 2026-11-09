@@ -8,6 +8,34 @@ Aucune de ces étapes ne supprime une base ni un serveur. Une erreur en route s'
 
 Chaque session root commence par `set -u` : une variable oubliée (une nouvelle session, un `NOM` changé sans le reste) arrête alors la commande au lieu de devenir un chemin vide. Les commandes qui effacent ou changent des droits en masse écrivent en plus `"${DIR:?}"`, que bash refuse si la variable est vide. Relu par un second Claude le 5 novembre : ce texte en tient compte.
 
+## 0. La VM livrée : le disque et le système
+
+La VM est livrée sous Ubuntu 22.04, avec un disque de 200 Go dont 19 seulement sont attribués, en LVM (groupe `vg1`) : `/` n'a plus que 1 Go libre, et `/var`, qui portera les bases, les exports et les sauvegardes, fait 3,7 Go (relevé et calcul des tailles : `dev/plans/2026-10-26_deployment.md`, Suivi du 9 novembre). Les volumes s'agrandissent d'abord, sans arrêter la machine ; le reste du groupe sert de réserve. Les tailles sont absolues : une ligne relancée ne grandit pas deux fois.
+
+Avec le compte d'administration de la VM. Si `vgs` montre moins de 160 Go dans la colonne `VFree`, s'arrêter là :
+
+```
+sudo vgs
+sudo lvextend -r -L 15G  /dev/vg1/root
+sudo lvextend -r -L 140G /dev/vg1/var
+sudo lvextend -r -L 8G   /dev/vg1/tmp
+sudo lvextend -r -L 5G   /dev/vg1/varlog
+df -h / /var /var/log /tmp /boot
+```
+
+Puis le système, une version LTS à la fois, jusqu'à Ubuntu 26.04, en redémarrant après chacune :
+
+```
+sudo apt update && sudo apt full-upgrade && sudo apt autoremove --purge
+sudo reboot
+sudo do-release-upgrade                       # vers 24.04
+sudo apt update && sudo apt full-upgrade
+sudo do-release-upgrade                       # vers 26.04
+cat /etc/os-release
+```
+
+Aux questions de `do-release-upgrade` : garder la version installée d'un fichier de configuration (réponse par défaut), surtout pour ssh, que l'infra a réglé ; redémarrer les services sans demander ; retirer les paquets obsolètes. Si la connexion tombe en route, ne rien relancer à l'aveugle : se reconnecter et lire ce que l'outil a écrit.
+
 ## 1. Sur le poste : l'archive de la version
 
 La VM n'a ainsi besoin ni de Composer, ni de Node, ni d'accès à Packagist, npm ou GitHub.
@@ -31,7 +59,12 @@ docker run --rm --user "$(id -u):$(id -g)" -e HOME=/tmp -e APP_ENV=prod -v "$wor
 
 `sh -e` et le `&&` : une étape qui échoue (npm ou GitHub injoignable) ne donne pas d'archive. `node_modules/bootstrap` reste : `CssManager` compile les thèmes des observatoires sur la VM, à la première vue, avec le LESS de Bootstrap (`src/Irstea/BdohBundle/Resources/config/services.yml`).
 
-Lou copie sur la VM, dans `/root/` : cette archive, les deux dumps bruts, et `uploads/bdoh-uploads-prod.tar.gz`.
+Lou copie sur la VM, dans `/var/backups/bdoh-sources/` : cette archive, les deux dumps bruts, et `uploads/bdoh-uploads-prod.tar.gz`. Pas dans `/root/`, sur `/` (15 Go), ni dans le dossier personnel du compte, sur `/home` (1 Go) : les dumps bruts pèsent environ 4 Go. Le dossier se crée, avec le compte d'administration, avant la copie, et passe à root ensuite (les dumps bruts contiennent les comptes) :
+
+```
+sudo install -d -m 700 -o "$USER" /var/backups/bdoh-sources
+sudo chown -R root:root /var/backups/bdoh-sources
+```
 
 ## 2. La machine, une fois
 
@@ -52,11 +85,11 @@ systemctl restart postgresql
 - `open-vm-tools`, si l'infra l'exige.
 - `dpkg-reconfigure -plow unattended-upgrades` : répondre oui.
 
-Réglages de PostgreSQL, à adapter à la mémoire de la VM (16 Go ici), dans `/etc/postgresql/17/main/conf.d/bdoh.conf`, puis `systemctl restart postgresql` :
+Réglages de PostgreSQL, à adapter à la mémoire de la VM (11 Gio visibles ici), dans `/etc/postgresql/17/main/conf.d/bdoh.conf`, puis `systemctl restart postgresql` :
 
 ```
-shared_buffers = 4GB
-effective_cache_size = 8GB
+shared_buffers = 3GB
+effective_cache_size = 7GB
 work_mem = 64MB
 maintenance_work_mem = 512MB
 ```
@@ -79,7 +112,7 @@ Pour la production, `NOM=prod PORT=443`, et pour OTHU, `NOM=othu PORT=8443`, ave
 Une seule ligne pour toutes les variables, à recopier entière à chaque session, et pour passer à l'autre instance :
 
 ```
-set -u; NOM=prod PORT=443 ADRESSE=… DUMP=/root/….dump ARCHIVE=/root/bdoh-legacy-….tar.gz; DIR=/var/www/bdoh-$NOM ROLE=bdoh_$NOM BASE=bdoh_$NOM
+set -u; NOM=prod PORT=443 ADRESSE=… DUMP=/var/backups/bdoh-sources/….dump ARCHIVE=/var/backups/bdoh-sources/bdoh-legacy-….tar.gz; DIR=/var/www/bdoh-$NOM ROLE=bdoh_$NOM BASE=bdoh_$NOM
 
 mkdir -p "${DIR:?}" && tar -xzf $ARCHIVE -C "${DIR:?}"
 mkdir -p $DIR/var $DIR/public/uploads $DIR/public/css/themes
@@ -90,7 +123,7 @@ chown -R www-data:www-data $DIR/var $DIR/public/uploads $DIR/public/css/themes
 La production seulement, ses logos et images, et le fichier d'Oracle (`dev/plans/2026-10-26_deployment.md`) :
 
 ```
-tar -xzf /root/bdoh-uploads-prod.tar.gz --strip-components=1 -C $DIR/public web/uploads
+tar -xzf /var/backups/bdoh-sources/bdoh-uploads-prod.tar.gz --strip-components=1 -C $DIR/public web/uploads
 chown -R www-data:www-data $DIR/public/uploads
 ```
 
@@ -278,7 +311,7 @@ Une vraie restauration, sur une VM neuve, reprend la section 3 avec ce dump à l
 Instance par instance. Une sauvegarde juste avant les migrations, sous un nom à part (celle de la nuit garderait le retour arrière au matin, et la suivante du même jour l'écraserait), puis les mêmes contrôles qu'à l'installation, avec la fonction `controle` de la section 3. Les thèmes compilés ne sont pas gardés : ils se recompilent avec la nouvelle version.
 
 ```
-set -u; NOM=prod ARCHIVE=/root/bdoh-legacy-….tar.gz; DIR=/var/www/bdoh-$NOM BASE=bdoh_$NOM
+set -u; NOM=prod ARCHIVE=/var/backups/bdoh-sources/bdoh-legacy-….tar.gz; DIR=/var/www/bdoh-$NOM BASE=bdoh_$NOM
 
 mkdir /root/version && tar -xzf $ARCHIVE -C /root/version
 systemctl stop bdoh-job-worker@$NOM
