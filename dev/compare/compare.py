@@ -758,6 +758,11 @@ def provenance():
             f"Fin : {datetime.datetime.now():%Y-%m-%d %H:%M:%S}"]
 
 
+# Ce que rend un cas que la base ne permet pas de jouer (une base sans chronique cachée, sans chronique calculée…) :
+# il ne fait pas échouer le mode, et le rapport le nomme, à part (« sans cas dans cette base »).
+NO_CASE = 'aucun cas dans la base'
+
+
 class Report:
     failed = False  # un cas différent dans ce lancement : le code de sortie le dit
 
@@ -765,13 +770,17 @@ class Report:
         self.dir = OUT / f"{datetime.datetime.now():%Y-%m-%d_%H%M%S}_{kind}"
         self.dir.mkdir(parents=True)
         self.counts = {'identiques': 0, 'à un arrondi près': 0, 'même contenu, autre ordre': 0, 'écarts admis': 0,
-                       'différents': 0}
+                       'différents': 0, 'sans cas dans cette base': 0}
         self.summary = []
         self.exact = exact
         self.rules = [rule for rule in expected.RULES if rule.mode == kind]
         self.used = []
 
     def add(self, name, old, new):
+        if new == [NO_CASE] and old in (['conforme'], [NO_CASE]):
+            self.counts['sans cas dans cette base'] += 1
+            self.summary.append(f"{'sans cas dans cette base':<26} {name}")
+            return
         # L'état d'une base se compare sans tolérance : deux copies sous un même PostgreSQL n'ont aucune
         # raison de différer d'un bit (dev/decisions.md, « Nombres lus en base, réécrits en texte »)
         exact = self.exact or name.startswith('état ') or name in STATE_QUERIES or name in ACCOUNT_QUERIES \
@@ -894,8 +903,11 @@ def state_commands(base):
     depuis la première avec propagation ; une chronique convertie qui a une fille, avec propagation,
     et une sans fille ; les taux de remplissage d'une chronique continue ; enfin le recalcul des
     configurations incomplètes relevées par l'inspection des bases, qui doit être refusé proprement :
-    une chronique calculée sans première transformation, une convertie sans conversion."""
-    first = lambda sql: query(base, sql, NEW_SERVER)[0][0]
+    une chronique calculée sans première transformation, une convertie sans conversion. Un calcul dont la base
+    n'a pas de cas est laissé de côté (OTHU n'a que des chroniques continues)."""
+    def first(sql):
+        rows = query(base, sql, NEW_SERVER)
+        return rows[0][0] if rows and rows[0][0] else None
     user = first("SELECT id FROM utilisateur WHERE roleadmin = 'FCT' ORDER BY id LIMIT 1")
     chain = first("""
         SELECT a.sortie_id FROM transformation a
@@ -909,7 +921,7 @@ def state_commands(base):
            AND {} EXISTS (SELECT 1 FROM transformation t WHERE t.entree_id = cv.sortie_id)
          ORDER BY cv.sortie_id LIMIT 1"""
     continuous = first("SELECT id FROM chronique WHERE dtype = 'continue' AND nbmesures > 0 ORDER BY id LIMIT 1")
-    return [
+    commands = [
         ['bdoh:compute:chronique', chain, user, '--propagate'],
         ['bdoh:convert:chronique', first(converted.format('')), user, '--propagate'],
         ['bdoh:convert:chronique', first(converted.format('NOT')), user],
@@ -919,6 +931,7 @@ def state_commands(base):
         ['bdoh:convert:chronique', first("""SELECT min(c.id) FROM chronique c WHERE c.dtype = 'convertie'
              AND NOT EXISTS (SELECT 1 FROM conversion cv WHERE cv.sortie_id = c.id)"""), user],
     ]
+    return [command for command in commands if None not in command]
 
 
 # L'empreinte au bit près d'une base, table par table : dev/reference/fingerprint.sql
@@ -1406,6 +1419,8 @@ def run_state(args):
     template = args.base
     historique = query(template, 'SELECT coalesce(max(id), 0) FROM historique', NEW_SERVER)[0][0]
     commands = state_commands(template)
+    # La chaîne de calcul, s'il y en a une : le calcul en échec et le jeu inventé la prennent
+    chain = next((c[1:3] for c in commands if c[0] == 'bdoh:compute:chronique' and '--propagate' in c), None)
     email = query(template, "SELECT email FROM utilisateur WHERE roleadmin = 'FCT' ORDER BY id LIMIT 1", NEW_SERVER)[0][0]
     cid, slug, station, code = query(template, f"""
         SELECT c.id, c.slug, c.station, c.code FROM ({CHRONIQUES}) c JOIN chronique ch ON ch.id = c.id
@@ -1417,9 +1432,9 @@ def run_state(args):
          WHERE r.valeur = 'gestionnaire' AND o.slug = '{slug}' AND (u.finacces IS NULL OR u.finacces > now())
          ORDER BY u.id LIMIT 1""", NEW_SERVER)[0][0]
     # Un export en moyenne d'une chronique discontinue échoue des deux côtés : la tâche à relancer
-    discontinue, discontinue_slug = query(template, f"""
+    discontinues = query(template, f"""
         SELECT c.id, c.slug FROM ({CHRONIQUES}) c JOIN chronique ch ON ch.id = c.id
-         WHERE c.dtype = 'discontinue' AND ch.nbmesures > 0 ORDER BY c.id LIMIT 1""", NEW_SERVER)[0]
+         WHERE c.dtype = 'discontinue' AND ch.nbmesures > 0 ORDER BY c.id LIMIT 1""", NEW_SERVER)
     # Vider une période d'une chronique discontinue, du milieu d'une plage à celui d'une autre : les plages qui
     # chevauchent les bornes partent aussi (PlageRepository::emptyChroniquePeriode)
     cut = query(template, f"""
@@ -1435,7 +1450,10 @@ def run_state(args):
          WHERE c.dtype = 'discontinue' AND c.estvisible AND p.n >= 6
          GROUP BY c.id, c.slug, c.station, c.code ORDER BY c.id LIMIT 1""", NEW_SERVER)
     checks = {}
-    lab = invented.choose(lambda sql: query(template, sql, NEW_SERVER))
+    try:
+        lab = invented.choose(lambda sql: query(template, sql, NEW_SERVER)) if chain else None
+    except RuntimeError:  # aucune chronique calculée ne prête sa structure au jeu inventé
+        lab = None
     def play(side, console, runner, base):
         """Les calculs, les exports demandés par le formulaire, une tâche annulée, une semaine de
         mesures vidée avec propagation, une tâche relancée, la file jusqu'au bout, le jeu de calcul
@@ -1451,9 +1469,10 @@ def run_state(args):
         form = {'beginDate': '2024-01-01T00:00:00Z', 'endDate': '2024-02-01T00:00:00Z',
                 'exportFormat': 'Bdoh', 'exportType': 'identical', 'instantStep': '60',
                 'meanCumulStep': '7', 'timezone': '1', 'chroniques[]': cid, 'termsOfUses': '1'}
-        for fields, where in [(form, slug), (dict(form, exportType='mean'), slug),
-                              (dict(form, exportType='mean', **{'chroniques[]': discontinue}), discontinue_slug),
-                              (dict(form, exportFormat='Qtvar'), slug)]:
+        exports = [(form, slug), (dict(form, exportType='mean'), slug), (dict(form, exportFormat='Qtvar'), slug)]
+        for discontinue, discontinue_slug in discontinues:
+            exports.insert(2, (dict(form, exportType='mean', **{'chroniques[]': discontinue}), discontinue_slug))
+        for fields, where in exports:
             status, headers, _ = post(f'/{where}/mesure/export', fields)
             log.append(f"export {fields['exportFormat']} {fields['exportType']} : {status} "
                        f"{headers.get('Location', '').replace(side.url, '')}")
@@ -1483,10 +1502,13 @@ def run_state(args):
             log.append(f"vider une période de plages : {status} {headers.get('Location', '').replace(side.url, '')}")
             log += page_lines(side.url, *cut_client.get(cut_page))
         failed = query(base, "SELECT min(id) FROM jms_jobs WHERE state = 'failed'", NEW_SERVER)[0][0]
-        status, headers, _ = post(f'/{slug}/jobs/{failed}', {'action': 'retry'})
-        log.append(f"relance : {status} {headers.get('Location', '').replace(side.url, '')}")
+        if failed:
+            status, headers, _ = post(f'/{slug}/jobs/{failed}', {'action': 'retry'})
+            log.append(f"relance : {status} {headers.get('Location', '').replace(side.url, '')}")
+        else:
+            log.append('relance : aucune tâche en échec')
         drain(console, runner, base)
-        computed = invented.play(console, NEW_SERVER, base, lab, commands[0][2])
+        computed = invented.play(console, NEW_SERVER, base, lab, chain[1]) if lab else {}
         drain(console, runner, base)  # les taux de remplissage que ces calculs demandent
         return log, computed
 
@@ -1507,15 +1529,27 @@ def run_state(args):
                        **{f'état après le calcul inventé, {step}': lines for step, lines in computed[name].items()}}
         if name == 'nouveau' and not args.same:
             with new_on(base, template) as console:
-                checks.update(failed_computation_checks(console, base, *commands[0][1:3]))
+                if chain:
+                    checks.update(failed_computation_checks(console, base, *chain))
+                else:
+                    checks['nouveau seul : calcul en échec'] = [NO_CASE]
                 checks.update(emptied_with_milliseconds_check(SIDES['new'], base, cid, f'/{slug}/{station}/{code}', manager, slug))
             # Sur une copie à elle : elle ajoute des tâches et des millions de mesures, que les pages de suivi comparées
             # plus bas ne doivent pas voir
-            copy_base(template, 'bdoh_open_data')
             exports = HERE.parent.parent / 'var' / 'exports'
+            hidden = query(template, f"""SELECT 1 FROM ({CHRONIQUES}) c JOIN chronique ch ON ch.id = c.id
+                                         WHERE NOT c.estvisible AND c.dtype = 'continue' AND ch.nbmesures > 0 LIMIT 1""", NEW_SERVER)
+            if not hidden:
+                checks['nouveau seul : ouverture'] = [NO_CASE]
+            else:
+                copy_base(template, 'bdoh_open_data')
             try:
+                if not hidden:
+                    raise LookupError
                 with new_on('bdoh_open_data', template, 'MAILER_DSN=smtp://mailpit:1025') as console:
                     open_data_checks(SIDES['new'], console, 'bdoh:jobs:run', 'bdoh_open_data', checks)
+            except LookupError:  # aucune chronique cachée : l'ouverture n'a rien à séparer
+                pass
             except Exception as e:  # un arrêt ne doit pas perdre le rapport : il se lit comme un écart
                 checks['nouveau seul : ouverture, arrêt du cas'] = [f'{type(e).__name__} : {str(e)[:200]}']
             finally:
@@ -1532,10 +1566,13 @@ def run_state(args):
         report.add(part, ['conforme'], lines)
     # Le jeu inventé contre ses résultats écrits à la main, et contre PostgreSQL 11 (sans la ligne des dates,
     # que le PHP écrit) : au bit près, ces fonctions ne font passer aucun nombre par du texte
-    for step, lines in invented.expected().items():
-        report.add(f'état écrit à la main, {step}', lines, computed['nouveau'][step])
-    for step, lines in invented.under_postgresql_11(CASES_SERVER, template, lab).items():
-        report.add(f'état sous PostgreSQL 11 et 17, {step}', lines, [computed['nouveau'][step][0], *computed['nouveau'][step][2:]])
+    if lab:
+        for step, lines in invented.expected().items():
+            report.add(f'état écrit à la main, {step}', lines, computed['nouveau'][step])
+        for step, lines in invented.under_postgresql_11(CASES_SERVER, template, lab).items():
+            report.add(f'état sous PostgreSQL 11 et 17, {step}', lines, [computed['nouveau'][step][0], *computed['nouveau'][step][2:]])
+    else:
+        report.add('jeu de calcul inventé', [NO_CASE], [NO_CASE])
     report.close()
 
     # Les mêmes dates dans les deux copies, pour en comparer les pages de suivi des tâches
@@ -1574,12 +1611,18 @@ def run_queue(args):
     temps."""
     template = args.base
     first = lambda sql: query(template, sql, NEW_SERVER)[0]
-    parent, child = first("""
+    chains = query(template, """
         SELECT a.sortie_id, b.sortie_id FROM transformation a
           JOIN transformation b ON b.entree_id = a.sortie_id
           JOIN transformation c ON c.entree_id = b.sortie_id
           JOIN chronique e ON e.id = a.entree_id
-         WHERE e.nbmesures > 0 ORDER BY a.sortie_id, b.sortie_id LIMIT 1""")
+         WHERE e.nbmesures > 0 ORDER BY a.sortie_id, b.sortie_id LIMIT 1""", NEW_SERVER)
+    if not chains:  # aucune chronique calculée (OTHU) : l'essai n'a rien à mener
+        report = Report('queue')
+        report.add('recalculs rapprochés, deux à la fois puis un à la fois', [NO_CASE], [NO_CASE])
+        report.close()
+        return
+    parent, child = chains[0]
     user, = first("SELECT id FROM utilisateur WHERE roleadmin = 'FCT' ORDER BY id LIMIT 1")
 
     def enqueue(base, chronique):
@@ -2205,6 +2248,8 @@ def real_import_cases(base):
         rows = query(base, f"""SELECT c.id, c.slug, c.code FROM ({CHRONIQUES}) c
                                 WHERE c.station = '{head[1][0]}' AND c.code IN ({','.join(f"'{code}'" for code in codes)})""", NEW_SERVER)
         ids = [row[0] for row in rows]
+        if not ids:  # ses chroniques ne sont pas dans cette base (les fichiers viennent de la production)
+            continue
         if path.name.lower().startswith('controle'):
             cases.append((path.name, 'contrôle', {'content': content, 'cid': ids[0], 'slug': rows[0][1]}))
         else:
@@ -2519,11 +2564,14 @@ def run_imports(args):
             log += ['== chronique calculée', *step_lines(side.url, *response)]
             return [re.sub(r'\d\d/\d\d/\d{4} \d\d:\d\d(:\d\d)?', '<date>', line) for line in log]
 
-        if args.only in 'transformation':
-            cid, slug = query(template, f"""
-                SELECT c.id, c.slug FROM ({CHRONIQUES}) c JOIN transformation t ON t.sortie_id = c.id
-                  JOIN transformation fille ON fille.entree_id = c.id
-                 WHERE c.dtype = 'calculee' ORDER BY c.id LIMIT 1""", NEW_SERVER)[0]
+        computed = query(template, f"""
+            SELECT c.id, c.slug FROM ({CHRONIQUES}) c JOIN transformation t ON t.sortie_id = c.id
+              JOIN transformation fille ON fille.entree_id = c.id
+             WHERE c.dtype = 'calculee' ORDER BY c.id LIMIT 1""", NEW_SERVER)
+        if args.only in 'transformation' and not computed:
+            report.add('transformation enregistrée', [NO_CASE], [NO_CASE])
+        elif args.only in 'transformation':
+            cid, slug = computed[0]
             report.add('transformation enregistrée', play_transformation('ancien', cid, slug),
                        play_transformation('nouveau', cid, slug))
             # Le premier barème valable un an plus tôt : un nouveau jeu de barèmes, l'ancien gardé dans l'historique de la
@@ -2556,7 +2604,7 @@ def run_imports(args):
         real_cases = real_import_cases(template) if args.only in 'fichiers réels' else []
         reached, touched = [], set()
         for title, kind, case in real_cases:
-            where = case.get('slug') or real_cases[-1][2]['slug']
+            where = case.get('slug') or next((c[2]['slug'] for c in real_cases if 'slug' in c[2]), slug)
             logs = []
             for name in ('ancien', 'nouveau'):
                 if kind == 'barème':
@@ -3699,7 +3747,7 @@ def run_admin(args):
         for dtype, where in cases.items():
             rows = query(base, f'SELECT c.id, c.slug FROM ({CHRONIQUES}) c WHERE {where} ORDER BY c.id LIMIT 1', NEW_SERVER)
             if not rows:
-                parts[f'chronique {dtype} qui a déjà des limites'] = ['aucun cas dans la base']
+                parts[f'chronique {dtype} qui a déjà des limites'] = [NO_CASE]
                 continue
             cid, cslug = rows[0]
             if dtype != 'discontinue':
@@ -3889,7 +3937,7 @@ def run_admin(args):
                 results[label] = (['conforme'] if lines[0] == 'statut 302' and still == '1' and removed() == before
                                   else [lines[0], f'personne présente : {still}, suppressions notées : {before}, puis {removed()}'])
             else:
-                results[label] = ['aucun cas dans la base']
+                results[label] = [NO_CASE]
         if 'utilisateur' in admins and 'station' in admins:
             # Les aides de Sonata demandent le droit du formulaire qui les appelle (dev/local/security.md)
             email, slugs = accounts['administrateur']
@@ -3962,7 +4010,7 @@ def run_admin(args):
                 results[label] = (['conforme'] if lines[0] == 'statut 302' and sites() == before
                                   else [lines[0], f'sites avant : {before}, après : {sites()}'])
             else:
-                results[label] = ['aucun cas dans la base']
+                results[label] = [NO_CASE]
         if 'observatoire' in admins:
             # Un observatoire qui a des gestionnaires de données, ouvert depuis la page d'un autre : renvoyé
             # vers la sienne, où il s'enregistre tel quel
@@ -3986,7 +4034,7 @@ def run_admin(args):
                                   else [f'renvoi : {status} {headers.get("Location")}', lines[0],
                                         f'avant : {before}, après : {people()}'])
             else:
-                results[label] = ['aucun cas dans la base']
+                results[label] = [NO_CASE]
         if 'chroniquecontinue' in admins:
             slug, cid = first(base, admins['chroniquecontinue'], accounts['administrateur'][1])
             status = client_for(accounts['administrateur'][0], slug).get(
