@@ -42,7 +42,12 @@ sudo make vm-env NOM=prod ADRESSE=…
 sudo make vm-build NOM=prod
 ```
 
-`vm-env` crée le rôle PostgreSQL de l'instance et son `.env`, avec des secrets tirés au hasard ; il refuse si `.env` existe. Compléter ensuite dans `.env` (`sudo nano .env`) les courriels : `MAILER_DSN` (le relais de l'infra), `MAILER_DIVERT_TO` (l'adresse de Lou pendant les essais) et `MAILER_ALLOWED_RECIPIENTS` (la ligne de `allowed-recipients.env`, `dev/test-kit/README.md`).
+`vm-env` crée le rôle PostgreSQL de l'instance et son `.env`, avec des secrets tirés au hasard ; il refuse si `.env` existe. `MAILER_DSN` y vaut `null://null` : rien ne part. Compléter ensuite les courriels, dans cet ordre, pour qu'aucun ne puisse partir ailleurs que chez Lou :
+- `MAILER_DIVERT_TO`, l'adresse de Lou pendant les essais (`sudo nano .env`) ;
+- `MAILER_DSN` : le relais de l'INRAE, avec le compte de l'ancienne production, comme elle (port 587, STARTTLS). L'identifiant et le mot de passe s'y écrivent encodés (`rawurlencode`), par une commande d'une ligne qui les lit au clavier sans afficher le mot de passe ; Lou les recopie elle-même de l'ancien serveur ;
+- `MAILER_ALLOWED_RECIPIENTS`, vide pour les essais de Lou ; la ligne de `allowed-recipients.env` (`dev/test-kit/README.md`) quand les gestionnaires essaient, pour que chacun reçoive ses propres liens.
+
+Le site relit `.env` à chaque requête : pas de cache à vider. La file de tâches, elle, le lit à son démarrage : après un changement, `sudo systemctl restart bdoh-job-worker@prod` (sinon, elle le reprend à sa relance d'heure en heure).
 
 Les dumps bruts et les fichiers déposés se copient depuis le poste dans `/var/backups/bdoh-sources/`, que `vm-deps` a créé pour le compte d'administration (pas dans son dossier personnel : `/home` fait 1 Go). Le dossier passe ensuite à root, les dumps bruts contenant les comptes :
 

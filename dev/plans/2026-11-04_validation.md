@@ -46,7 +46,7 @@ L'ordre de l'audit, resserré autour de la barrière : ce qui demande de lire de
 
 ## Pour reprendre
 
-État au 9 novembre : version 0.3.1 publiée (la 0.3.0, plus la régression du 6 novembre corrigée) ; C1 et C2 finis, les 47 fautes vues, les 62 étapes du navigateur passées en une seule passe (Suivi). La VM est livrée, sous Ubuntu et pas à jour, sans proxy inverse. Ordre convenu avec Lou le 9 novembre : les retours des gestionnaires sont ce qui attendra le plus, donc l'installation passe devant, et le reste de la validation se poursuit pendant les essais.
+État au 10 novembre : version 0.3.3 publiée (le code de l'application est celui de la 0.3.1) ; C1 et C2 finis, les 47 fautes vues, les 62 étapes du navigateur passées en une seule passe (Suivi). La VM est sous Ubuntu 26.04, la comparaison y est repassée sans écart, et la production y est installée, à la version 0.3.2. Le dossier `../bdoh_reference/postgres-17-debian` (125 Go, l'ancienne base du poste) ne sert plus : sa suppression attend le oui de Lou. Ordre convenu avec Lou le 9 novembre : les retours des gestionnaires sont ce qui attendra le plus, donc l'installation passe devant, et le reste de la validation se poursuit pendant les essais.
 
 - **Le système de la VM**, puis **la comparaison sur Ubuntu 26.04** : faits le 10 novembre, sans écart (Suivi).
 - **L'instance de production**, en suivant `dev/deploy/README.md`, corrigé sur place : installée le 10 novembre (`dev/plans/2026-10-26_deployment.md`, Suivi) ; puis la liste de Lou (point 3).
