@@ -4,6 +4,10 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/). Numéros de v
 
 ## Non publié
 
+### Corrigé
+
+- L'image de mesure de couverture (`dev/coverage/`) installe PCOV pour PHP 8.5 : elle ne se construisait plus depuis la 0.3.3.
+
 ## 0.3.3 - 2026-11-10
 
 Le développement sur les mêmes versions que la VM, et les commandes d'installation corrigées en installant la production. Le code de l'application est celui de la 0.3.1.
