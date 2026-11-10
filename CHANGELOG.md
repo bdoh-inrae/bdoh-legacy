@@ -4,6 +4,10 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/). Numéros de v
 
 ## Non publié
 
+## 0.3.3 - 2026-11-10
+
+Le développement sur les mêmes versions que la VM, et les commandes d'installation corrigées en installant la production. Le code de l'application est celui de la 0.3.1.
+
 ### Modifié
 
 - L'application du développement tourne sur les paquets d'Ubuntu 26.04 (PHP 8.5, Node 22), ceux de la VM : tous les modes de la comparaison et les 62 étapes du navigateur y donnent les mêmes résultats que sous PHP 8.4.
