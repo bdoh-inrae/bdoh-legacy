@@ -16,7 +16,7 @@ NEW = docker compose -f compose.yaml
 # Composer a besoin du réseau : il tourne dans un conteneur jetable, hors du réseau interne.
 COMPOSER = docker run --rm --user $(HOST_UID):$(HOST_GID) -e HOME=/tmp -v $(CURDIR):/var/www/bdoh bdoh-app composer
 NPM = docker run --rm --user $(HOST_UID):$(HOST_GID) -e HOME=/tmp -v $(CURDIR):/var/www/bdoh bdoh-app npm
-# Encore 0.15 (webpack 3) de l'ancien BDOH, sous le Node 20 de Debian 13 : il lui faut les algorithmes
+# Encore 0.15 (webpack 3) de l'ancien BDOH, sous le Node 22 d'Ubuntu 26.04 : il lui faut les algorithmes
 # de hachage qu'OpenSSL 3 range à part (dev/decisions.md, « JavaScript compilé comme l'ancien »).
 ENCORE = docker run --rm --network none --user $(HOST_UID):$(HOST_GID) -e HOME=/tmp -e NODE_OPTIONS=--openssl-legacy-provider \
 	-v $(CURDIR):/var/www/bdoh bdoh-app node_modules/.bin/encore

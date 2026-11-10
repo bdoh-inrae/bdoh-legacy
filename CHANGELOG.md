@@ -4,6 +4,15 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/). Numéros de v
 
 ## Non publié
 
+### Modifié
+
+- L'application du développement tourne sur les paquets d'Ubuntu 26.04 (PHP 8.5, Node 22), ceux de la VM : tous les modes de la comparaison et les 62 étapes du navigateur y donnent les mêmes résultats que sous PHP 8.4.
+- Installation sur la VM : le compte du mot de passe d'accès des essais s'appelle `test` ; `make vm-db` dit « aucune » quand l'empreinte des mesures n'a pas changé, et si les logos ont été déballés.
+
+### Corrigé
+
+- `make vm-mail-test` envoyait depuis `from@example.org`, l'expéditeur par défaut de Symfony, que le relais refuserait : il envoie depuis `bdoh@inrae.fr`, comme BDOH.
+
 ## 0.3.2 - 2026-11-10
 
 L'installation sur la VM, par le Makefile, sur Ubuntu 26.04. Le code de l'application est celui de la 0.3.1.

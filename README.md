@@ -1,6 +1,6 @@
 # bdoh-legacy
 
-BDOH, la Base de Données des Observatoires Hydrologiques, telle qu'elle est en service, portée de Symfony 2.8 et PHP 7.1 vers Symfony 7.4 et PHP 8.4. Elle est maintenue jusqu'à son remplacement par le nouveau BDOH, développé dans les autres dépôts de [bdoh-inrae](https://github.com/bdoh-inrae), puis archivée.
+BDOH, la Base de Données des Observatoires Hydrologiques, telle qu'elle est en service, portée de Symfony 2.8 et PHP 7.1 vers Symfony 7.4 et PHP 8.4 et 8.5. Elle est maintenue jusqu'à son remplacement par le nouveau BDOH, développé dans les autres dépôts de [bdoh-inrae](https://github.com/bdoh-inrae), puis archivée.
 
 Le portage garde le comportement, les adresses et les données de l'application en service. Rien n'y tourne encore : il remplacera à la bascule le code du dépôt d'origine (forge INRAE, accès réservé). L'avancée est dans [ROADMAP.md](ROADMAP.md).
 
@@ -21,7 +21,7 @@ make reference-stop    l'arrête
 
 La comparaison ne lance pas de JavaScript : l'interface s'essaie dans un navigateur (`make browser-check`, `dev/browser/README.md`).
 
-Le nouveau BDOH a son propre serveur de base, sur les paquets de Debian 13, avec un rôle sans superuser (`compose.yaml`) : `SERVER=new` y mène les commandes `db`, `db-small` et `inspect`, et `make migrate BASE=…` lui applique les migrations, après `make db` et avant `make db-small`. Il se lance par `make start` et répond sur http://172.30.26.10/.
+Le nouveau BDOH a son propre serveur de base, sur les paquets d'Ubuntu 26.04, ceux de la VM, avec un rôle sans superuser (`compose.yaml`) : `SERVER=new` y mène les commandes `db`, `db-small` et `inspect`, et `make migrate BASE=…` lui applique les migrations, après `make db` et avant `make db-small`. Il se lance par `make start` et répond sur http://172.30.26.10/.
 
 Dans la référence, tous les comptes de la base anonymisée ont le mot de passe `bdoh-test`. Le nouveau BDOH n'a pas de mot de passe : il envoie un lien de connexion par courriel. En développement, rien ne part ; le lien s'obtient de deux façons :
 

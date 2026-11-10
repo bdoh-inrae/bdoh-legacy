@@ -1,6 +1,5 @@
-# L'environnement de développement du nouveau BDOH, sur les bases anonymisées : PHP 8.4 (paquets de
-# Debian 13), PostgreSQL 18 et PostGIS 3.6 (paquets d'Ubuntu 26.04, ceux de la VM) ; l'application
-# répond à http://172.30.26.10/.
+# L'environnement de développement du nouveau BDOH, sur les bases anonymisées : PHP 8.5, PostgreSQL 18
+# et PostGIS 3.6, paquets d'Ubuntu 26.04, ceux de la VM ; l'application répond à http://172.30.26.10/.
 # Comme pour la référence (dev/reference/compose.yaml), le réseau est interne et tout tourne aux
 # droits de l'utilisateur ; se pilote par le Makefile.
 name: bdoh
