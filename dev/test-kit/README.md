@@ -20,4 +20,6 @@ make test-kit ARGS="--site https://… --site-othu https://… --deadline 'diman
 3. Les destinataires : les gestionnaires de l'observatoire et de ses sites, son contact, le responsable et les gestionnaires de données Theia (ce que tire `contacts.py`). Lou relit la liste avant d'envoyer.
 4. Sans réponse : une relance, puis `estvisible` fait foi, et c'est noté au suivi ; la Licence Ouverte s'applique alors sans validation explicite. Le message le dit.
 
+Revue avec Lou, élément par élément, montré dans la discussion (10 novembre) : le message INRAE est validé (« nickel »), avec les changements ci-dessous et la carte des stations présentée. Restent à revoir de la même façon : le message hors INRAE, le tableur (ses deux onglets) et la liste des destinataires, que Lou regarde de son côté.
+
 Le message commence par « Bonjour », dit que « normalement ça colle », donne l'identifiant et le mot de passe d'accès au site sur deux lignes, et prévient que c'est la vraie base : une modification destructrice se signale, pour repartir à l'ouverture sur le dump propre (Lou, 10 novembre).
