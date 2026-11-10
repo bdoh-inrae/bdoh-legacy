@@ -197,4 +197,10 @@ $legal = [
     'legal.sourceCode'   => "Code source",
 ];
 
-return array_merge($errors, $observatoire, $dates, $various, $legal);
+$map = [
+    'map.title'           => 'Carte des stations',
+    'map.seeStation'      => 'Voir la station',
+    'map.withoutPosition' => 'Stations sans position, absentes de la carte : %count%.',
+];
+
+return array_merge($errors, $observatoire, $dates, $various, $legal, $map);

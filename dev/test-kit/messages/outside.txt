@@ -4,9 +4,10 @@ Bonjour,
 
 BDOH a été porté sur une version à jour. Mêmes pages, mêmes formats, mêmes données : tout a été comparé à l'ancien, et normalement ça colle.
 
-Deux changements :
+Trois changements :
 - plus de mot de passe : à votre prochaine visite, saisissez votre adresse, vous recevrez un lien par mail ;
-- les données s'ouvrent : une chronique visible se télécharge sans compte, sous Licence Ouverte. Une chronique cachée reste fermée, sur demande, comme avant.
+- les données s'ouvrent : une chronique visible se télécharge sans compte, sous Licence Ouverte. Une chronique cachée reste fermée, sur demande, comme avant ;
+- une carte des stations, sur l'accueil du site et sur celui de chaque observatoire.
 
 Il me faut une seule chose de votre part avant le {date}, le tableau joint. {comptes}
 

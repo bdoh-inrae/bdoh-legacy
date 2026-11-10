@@ -115,6 +115,32 @@ class StationRepository extends EntityRepository
     }
 
     /**
+     * Les stations pour la carte (templates/Core/stations-map.html.twig) : celles d'un observatoire, ou de tous, une
+     * fois par observatoire, avec leur position en WGS 84 arrondie au mètre près (le point est en Lambert-93), ou
+     * sans position. La position d'une station est publique, même quand ses chroniques sont cachées.
+     *
+     * @return array<array{code: string, nom: string, slug: string, observatoire: string, lat: ?string, lon: ?string}>
+     */
+    public function findForMap(?int $observatoireId = null): array
+    {
+        $where = $observatoireId !== null ? 'WHERE o.id = :observatoire' : '';
+        $sql = <<<SQL
+SELECT DISTINCT ON (o.nom, s.code) s.code, s.nom, o.slug, o.nom AS observatoire,
+       round(ST_Y(ST_Transform(s.point, 4326))::numeric, 5)::text AS lat,
+       round(ST_X(ST_Transform(s.point, 4326))::numeric, 5)::text AS lon
+  FROM station s JOIN stations_sites ss ON ss.station_id = s.id
+  JOIN siteexperimental si ON si.id = ss.site_id JOIN observatoire o ON o.id = si.observatoire_id
+  $where
+ ORDER BY o.nom, s.code
+SQL;
+
+        return $this->getEntityManager()->getConnection()->fetchAllAssociative(
+            $sql,
+            $observatoireId !== null ? ['observatoire' => $observatoireId] : []
+        );
+    }
+
+    /**
      * @param $user
      *
      * @return array

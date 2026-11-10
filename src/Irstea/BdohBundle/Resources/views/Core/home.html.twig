@@ -6,11 +6,14 @@
 {% block javascripts %}
     {{ parent() }}
     <script src="{{ asset('assets/home.js') }}"></script>
+    <script src="{{ asset('bundles/irsteabdohconsult/vendor/leaflet/leaflet.js') }}"></script>
+    <script src="{{ asset('bundles/irsteabdohconsult/js/stations-map.js') }}" defer></script>
 {% endblock javascripts %}
 
 {% block stylesheets %}
     {{ parent() }}
     <link rel="stylesheet" href="{{ asset('assets/home.css') }}"  type="text/css"/>
+    <link rel="stylesheet" href="{{ asset('bundles/irsteabdohconsult/vendor/leaflet/leaflet.css') }}" type="text/css"/>
 {% endblock stylesheets %}
 
 {% block main %}
@@ -41,6 +44,11 @@
                     </div>
                     <div class="col-md-8 text-center pull-right">
                         {{ logo('Irstea', logo_short_link_parameters) }}
+                    </div>
+                </div>
+                <div class="row" style="margin:0 10px">
+                    <div class="col-md-24">
+                        {% include 'Core/stations-map.html.twig' with {stations: mapStations, france: true} %}
                     </div>
                 </div>
             </div>

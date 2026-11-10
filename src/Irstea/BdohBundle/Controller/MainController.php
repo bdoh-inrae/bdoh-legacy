@@ -15,7 +15,9 @@ class MainController extends Controller
     #[Route('', name: 'bdoh_all_home', methods: ['GET'])]
     public function homeAction()
     {
-        return $this->render('@IrsteaBdoh/Core/home.html.twig');
+        return $this->render('@IrsteaBdoh/Core/home.html.twig', [
+            'mapStations' => $this->getBdohRepo('Station')->findForMap(),
+        ]);
     }
 
     /**

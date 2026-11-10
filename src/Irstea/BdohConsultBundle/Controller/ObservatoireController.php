@@ -84,6 +84,7 @@ class ObservatoireController extends Controller
             'parametres'            => $this->getBdohRepo('Observatoire')->getParametres($this->isLocaleEn()),
             'sites'                 => $this->getBdohRepo('SiteExperimental')->findAll(),
             'countChroniquesBySite' => $this->getBdohRepo('SiteExperimental')->countChroniquesBySite(),
+            'mapStations'           => $this->getBdohRepo('Station')->findForMap($this->getCurrentObservatoire()->getId()),
         ];
     }
 

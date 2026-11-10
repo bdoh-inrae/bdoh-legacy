@@ -1,0 +1,28 @@
+{#
+ # SPDX-FileCopyrightText: The BDOH authors
+ # SPDX-License-Identifier: AGPL-3.0-or-later
+ #
+ # La carte des stations (StationRepository::findForMap), dessinée par stations-map.js sur le plan de l'IGN :
+ # celles qui ont une position ; les autres sont comptées dessous. La page charge Leaflet et stations-map.js.
+ # france : la vue s'ajuste aux stations de la France métropolitaine, et non à toutes ; celles qui sont placées
+ # ailleurs, souvent par une erreur de saisie, restent dessinées.
+ #}
+{# Une liste, et non un objet : filter garderait les clés d'origine, que json_encode écrirait #}
+{% set placed = [] %}
+{% for s in stations %}
+    {% if s.lat is not null %}
+        {% set placed = placed|merge([{
+            code: s.code, nom: s.nom, observatoire: s.observatoire, lat: s.lat, lon: s.lon,
+            url: path('bdoh_consult_station', {'_observatoire': s.slug, 'station': s.code})
+        }]) %}
+    {% endif %}
+{% endfor %}
+<div class="box">
+    <h2>{{ 'map.title'|trans }}</h2>
+    <div class="stations-map" style="height: 420px"{{ france|default(false) ? ' data-fit-france' : '' }}
+         data-see-station="{{ 'map.seeStation'|trans }}"
+         data-stations="{{ placed|json_encode }}"></div>
+    {% if stations|length > placed|length %}
+        <p class="text-muted">{{ 'map.withoutPosition'|trans({'%count%': stations|length - placed|length}) }}</p>
+    {% endif %}
+</div>

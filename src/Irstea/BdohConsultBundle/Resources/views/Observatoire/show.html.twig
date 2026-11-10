@@ -8,11 +8,14 @@
 {% block javascripts %}
     {{ parent() }}
     <script src="{{ asset('assets/consult/observatoire.js') }}"></script>
+    <script src="{{ asset('bundles/irsteabdohconsult/vendor/leaflet/leaflet.js') }}"></script>
+    <script src="{{ asset('bundles/irsteabdohconsult/js/stations-map.js') }}" defer></script>
 {% endblock %}
 
 {% block stylesheets %}
     {{ parent() }}
     <link rel="stylesheet" href="{{ asset('assets/consult/observatoire.css') }}"/>
+    <link rel="stylesheet" href="{{ asset('bundles/irsteabdohconsult/vendor/leaflet/leaflet.css') }}"/>
 {% endblock %}
 
 {# Makes 'partenaires' list #}
@@ -153,6 +156,11 @@
             </div>
         {% endif %}
 
+    </div>
+
+    <!-- Carte des stations, sous la présentation -->
+    <div class="col-md-11">
+        {% include 'Core/stations-map.html.twig' with {stations: mapStations} %}
     </div>
 
     <!-- Permanent part : lists -->

@@ -11,6 +11,7 @@ Tout se joue sur une copie de la base réduite.
 
 import argparse
 import datetime
+import json
 import re
 import subprocess
 import sys
@@ -205,6 +206,19 @@ def public_steps(s, station, chronique):
     s.step('page de la station', f'/{SLUG}/station/{station}', lambda p: visible(p, 'text=Caractéristiques'))
 
     s.step('chronique, taux de remplissage et graphique', f'/{SLUG}/{station}/{chronique}', chart_step)
+
+    def stations_map(page):
+        visible(page, '.stations-map')
+        page.locator('.stations-map').first.scroll_into_view_if_needed()
+        page.wait_for_timeout(1000)
+        expected = len(json.loads(page.locator('.stations-map').first.get_attribute('data-stations')))
+        markers = page.locator('.stations-map path.leaflet-interactive')
+        assert expected and markers.count() == expected, f'{markers.count()} points dessinés pour {expected} stations'
+        markers.first.click(force=True)
+        visible(page, '.leaflet-popup-content a')
+
+    s.step('carte des stations de l’observatoire', f'/{SLUG}/', stations_map)
+    s.step('carte des stations du portail', '/', stations_map)
 
     def complex_viewer(page):
         page.locator('.set-min').first.click()

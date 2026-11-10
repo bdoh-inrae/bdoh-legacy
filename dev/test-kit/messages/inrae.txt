@@ -4,9 +4,10 @@ Bonjour,
 
 BDOH a été porté sur une version à jour. Mêmes pages, mêmes formats, mêmes données : tout a été comparé à l'ancien, et normalement ça colle.
 
-Deux changements :
+Trois changements :
 - plus de mot de passe, on se connecte par un lien reçu par mail ;
-- les données s'ouvrent : une chronique visible se télécharge sans compte, sous Licence Ouverte. Une chronique cachée reste fermée, sur demande, comme avant.
+- les données s'ouvrent : une chronique visible se télécharge sans compte, sous Licence Ouverte. Une chronique cachée reste fermée, sur demande, comme avant ;
+- une carte des stations, sur l'accueil du site et sur celui de chaque observatoire.
 
 Il me faut deux choses de votre part avant le {date} :
 
@@ -16,7 +17,7 @@ Il me faut deux choses de votre part avant le {date} :
    identifiant : test
    mot de passe : [à compléter]
    C'est l'accès au site d'essai ; ensuite, on se connecte à BDOH comme d'habitude, avec son adresse.
-   Faites ce que vous faites d'habitude, un import, un export. C'est la vraie base de données : ce que vous y écrivez reste, ce site deviendra le vrai BDOH. Si vous faites une modification destructrice (une suppression, un import qui écrase des mesures), dites-le-moi : on repartira à l'ouverture sur le dump propre. Pour le reste, ne me dites que ce qui cloche.
+   Faites ce que vous faites d'habitude, un import, un export, et regardez la carte de votre observatoire : une station mal placée s'y voit. C'est la vraie base de données : ce que vous y écrivez reste, ce site deviendra le vrai BDOH. Si vous faites une modification destructrice (une suppression, un import qui écrase des mesures), dites-le-moi : on repartira à l'ouverture sur le dump propre. Pour le reste, ne me dites que ce qui cloche.
 
 {onglet}
 

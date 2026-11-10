@@ -2,6 +2,12 @@
 
 Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/). Numéros de version : [SemVer](https://semver.org/lang/fr/).
 
+## Non publié
+
+### Ajouté
+
+- Une carte des stations, sur l'accueil du portail et sur celui de chaque observatoire, sur le plan de l'IGN : un point par station qui a une position, avec un lien vers sa page, et le nombre de stations sans position.
+
 ## 0.3.4 - 2026-11-10
 
 Deux bogues de l'ancien BDOH corrigés, que les testeurs verront : les lacunes du graphique, et les logos de partenaires de même nom. Et des cas de plus dans la comparaison, pour l'administration.

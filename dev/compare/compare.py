@@ -826,7 +826,36 @@ def run_pages(args):
 
             for path, lines in zip(paths, pool.map(fetch, paths)):
                 report.add(f'{profile} {path}', *lines)
+    if not args.only and not args.profile:
+        map_checks(args.base, new, slug, report)
     report.close()
+
+
+def map_checks(base, side, slug, report):
+    """La carte des stations, que seul le nouveau a (dev/differences.md, « Carte des stations ») : sur la page de
+    chaque observatoire et sur l'accueil du portail, toutes les stations qui ont une position, et le compte de
+    celles qui n'en ont pas ; sur le portail, au moins neuf sur dix en France métropolitaine, à peu près (une
+    latitude et une longitude échangées n'y tomberaient pas ; le reste, ce sont des erreurs de saisie)."""
+    guest = Client(side, None, slug)
+    of = """FROM station s JOIN stations_sites ss ON ss.station_id = s.id JOIN siteexperimental si ON si.id = ss.site_id
+              JOIN observatoire o ON o.id = si.observatoire_id"""
+    for obs, path in [(None, '/'), *((row[0], f'/{row[0]}/') for row in query(base, 'SELECT slug FROM observatoire ORDER BY id'))]:
+        where = f"WHERE o.slug = '{obs}'" if obs else ''
+        rows = query(base, f'SELECT DISTINCT o.slug, s.code, s.point IS NOT NULL {of} {where}')
+        body = guest.get(path)[2].decode('utf-8', 'replace')
+        found = re.search(r'data-stations="([^"]*)"', body)
+        stations = json.loads(html.unescape(found.group(1))) if found else []
+        shown = sorted(re.search(r'/([^/]+)/station/([^/]+)$', s['url']).groups() for s in stations)
+        missing = re.search(r'absentes de la carte : (\d+)', body)
+        wanted = sorted((o, code) for o, code, placed in rows if placed == 't')
+        lines = [] if [list(s) for s in shown] == [list(w) for w in wanted] else [f'{len(shown)} stations sur la carte, {len(wanted)} attendues']
+        if int(missing.group(1) if missing else 0) != len(rows) - len(wanted):
+            lines.append(f"sans position : {missing.group(1) if missing else 0} annoncées, {len(rows) - len(wanted)} attendues")
+        if obs is None:
+            inside = sum(41 <= float(s['lat']) <= 51.5 and -5.5 <= float(s['lon']) <= 10 for s in stations)
+            if inside < 0.9 * len(stations):
+                lines.append(f'{inside} stations sur {len(stations)} en France métropolitaine')
+        report.add(f'nouveau seul : carte des stations, {path}', ['conforme'], lines or ['conforme'])
 
 
 def run_exports(args):

@@ -87,7 +87,7 @@ GONE_KEYS = """Bad credentials. | User account has expired. | Utilisateur.newPas
     resetting.request.submit | resetting.reset.submit | security.login_form.lostPassword | security.login_form.password
     security.utilisateur.edit.info.changePassword"""
 NEW_KEYS = """Error.file.cantWrite(%file%) | admin.sendJson.missingCredentials | export.exportMail.body(%link%, %days%)
-    legal.freeSoftware | legal.sourceCode | measure.export.busy | measure.export.licence | measure.export.status.download
+    legal.freeSoftware | legal.sourceCode | map.seeStation | map.title | map.withoutPosition | measure.export.busy | measure.export.licence | measure.export.status.download
     measure.export.status.expired | measure.export.status.failed | measure.export.status.finished(%days%)
     measure.export.status.running | measure.export.status.title | measure.export.status.waiting | measure.export.tooHeavy
     measure.export.tooMany | security.login_check.info(%email%) | security.login_check.submit
@@ -118,6 +118,15 @@ QJO_CHRONIQUES = '9|936'
 
 RULES = [
     # --- pages -------------------------------------------------------------------------------------
+    # La carte des stations, sur l'accueil du portail et sur celui d'un observatoire ; son contenu se vérifie à part
+    # (« nouveau seul : carte des stations » dans le même mode)
+    Rule('pages', rf'{ROLE} (?:{OBS}/(?:home)?|/)', 'Carte des stations', lines=(
+        '+L stylesheet /bundles/irsteabdohconsult/vendor/leaflet/leaflet.css',
+        '+S /bundles/irsteabdohconsult/vendor/leaflet/leaflet.js', '+S /bundles/irsteabdohconsult/js/stations-map.js',
+        RX(r'\+T (?:Carte des stations|Map of the stations)'),
+        RX(r'\+D div (?:data-fit-france= )?data-see-station=(?:Voir la station|See the station) data-stations=\[.*\]'),
+        RX(r'\+T (?:Stations sans position, absentes de la carte : |Stations without a position, missing from the map: )\d+\.')),
+        must=(RX(r'\+T (?:Carte des stations|Map of the stations)'),)),
     Rule('pages', rf'{ROLE} {OBS}/contact', CONTACT, lines=(
         '-A mailto:bdoh.support@lists.irstea.fr', '+A mailto:bdoh.support@listes.inrae.fr',
         "-T Pour les demandes techniques concernant l'utilisation de BDOH veuillez contacter bdoh.support@lists.irstea.fr.",
