@@ -6,7 +6,12 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/). Numéros de v
 
 ### Corrigé
 
+- Les lacunes du graphique d'une chronique et du visualiseur se dessinent à la hauteur voulue à chaque affichage : après un changement de période ou de chronique, elles pouvaient se dessiner à une autre hauteur, ou en pente (bogue de l'ancien BDOH).
 - L'image de mesure de couverture (`dev/coverage/`) installe PCOV pour PHP 8.5 : elle ne se construisait plus depuis la 0.3.3.
+
+### Ajouté
+
+- Un essai du navigateur de plus : les lacunes du graphique à la hauteur que demande le serveur, d'une période à l'autre.
 
 ## 0.3.3 - 2026-11-10
 

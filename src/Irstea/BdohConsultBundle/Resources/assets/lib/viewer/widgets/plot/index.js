@@ -106,8 +106,6 @@ define([
         series: []
     };
 
-    let initialValues = null;
-
     return $.widget(
         'viewer.plot',
         {
@@ -161,13 +159,10 @@ define([
             },
 
             update(status, configOrMessage, values) {
-                // On conserve la valeur d'origine pour le dezoom des gaps.
-                if(initialValues===null && values !== undefined){
-                    initialValues = JSON.parse(JSON.stringify(values));
-                }
                 this._chartEl.empty();
                 if (status === 'ok') {
                     try {
+                        let plotted = values;
                         if (configOrMessage.axes.yaxis) {
                             if (configOrMessage.axes.yaxis.newAxis) {
                                 configOrMessage.axes.yaxis.newAxis = false;
@@ -175,40 +170,27 @@ define([
                                 this._zoomData = {};
                             }
                             if (this._zoomed) {
-                                for(let idx=0; idx < configOrMessage.series.length; ++idx){
-                                    if(configOrMessage.series[idx].bdohSerieType === 'invalid' ||
-                                        configOrMessage.series[idx].bdohSerieType === 'gap'){
-                                        for(let idx2=0; idx2 < values[idx].length; ++idx2){
-                                            if(values[idx][idx2][0] !== null){
-                                                if(values[idx][idx2][1] < this._zoomData.min){
-                                                    values[idx][idx2][1] = this._zoomData.min;
-                                                }
-                                            }
-                                        }
+                                // Les lacunes et les invalides, à la hauteur que donne le serveur, restent visibles au bas
+                                // du zoom. Sur une copie : les valeurs reçues ne changent pas. L'ancien BDOH les changeait,
+                                // puis les reprenait à chaque affichage dans le tout premier de la page, quelles que soient
+                                // la période et les séries : des lacunes en pente ou à une autre hauteur.
+                                plotted = values.map((serie, idx) => {
+                                    const type = (configOrMessage.series[idx] || {}).bdohSerieType;
+                                    if (type !== 'invalid' && type !== 'gap') {
+                                        return serie;
                                     }
-                                }
+                                    return serie.map((point) => (
+                                        point[0] !== null && point[1] < this._zoomData.min ? [point[0], this._zoomData.min] : point
+                                    ));
+                                });
                                 configOrMessage.axes.yaxis.min = this._zoomData.min;
                                 configOrMessage.axes.yaxis.max = this._zoomData.max;
                             } else {
-                                for(let idx=0; idx < configOrMessage.series.length; ++idx){
-                                    if(configOrMessage.series[idx].bdohSerieType === 'invalid' ||
-                                        configOrMessage.series[idx].bdohSerieType === 'gap'){
-                                        // On reset la valeur des gat et invalid lors du dezoom.
-                                        if(initialValues !== null){
-                                            for(let idx2=0; idx2 < values[idx].length; ++idx2){
-                                                if(typeof initialValues[idx] !== 'undefined' && typeof initialValues[idx][idx2] !== 'undefined'){
-                                                     values[idx][idx2][1]=initialValues[idx][idx2][1];
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-
                                 delete configOrMessage.axes.yaxis.min;
                                 delete configOrMessage.axes.yaxis.max;
                             }
                         }
-                        this._doPlot(values, configOrMessage);
+                        this._doPlot(plotted, configOrMessage);
                         return;
                     } catch(ex) {
                         if (ex instanceof Error && ex.message === 'No data specified') {

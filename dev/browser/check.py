@@ -101,6 +101,90 @@ def chart_step(page):
     page.wait_for_load_state('networkidle')
 
 
+# Les lignes rouges des séries du graphique, en valeurs de l'axe des y, et l'écart admis : un trait de 5 pixels
+RED_ROWS = """() => {
+  const ticks = Array.from(document.querySelectorAll('.jqplot-yaxis-tick')).map(t => {
+      const r = t.getBoundingClientRect(); return [parseFloat(t.textContent.replace(',', '.')), r.top + r.height / 2]; })
+      .filter(t => !isNaN(t[0]));
+  if (ticks.length < 2) return null;
+  const [v0, y0] = ticks[0], [v1, y1] = ticks[ticks.length - 1];
+  const value = y => v0 + (y - y0) * (v1 - v0) / (y1 - y0);
+  const values = new Set();
+  for (const c of document.querySelectorAll('canvas.jqplot-series-canvas')) {
+    const r = c.getBoundingClientRect(), d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
+    for (let y = 0; y < c.height; y++) for (let x = 0; x < c.width; x++) {
+      const i = (y * c.width + x) * 4;
+      if (d[i] > 200 && d[i + 1] < 60 && d[i + 2] < 60 && d[i + 3] > 200) values.add(value(r.top + y * r.height / c.height));
+    }
+  }
+  return {values: Array.from(values), tolerance: Math.abs(v1 - v0) * 0.03};
+}"""
+
+
+def gap_heights_step(periods):
+    """Les lacunes se dessinent à la hauteur que demande le serveur, à chaque période affichée l'une après l'autre :
+    l'ancien graphique la reprenait du premier affichage de la page (dev/differences.md, « Lacunes du graphique »)."""
+    def check(page):
+        visible(page, '#fillingRates')
+        sent = []
+
+        def keep(response):
+            if 'json' not in (response.headers.get('content-type') or ''):
+                return
+            try:
+                data = response.json()
+            except (PlaywrightError, ValueError):
+                return
+            if isinstance(data, dict) and 'chronicles' in data:
+                sent.append({v[1] for chronicle in data['chronicles'] for serie in chronicle['series']
+                             if serie['seriesFlag'] in ('gap', 'invalid') for v in serie['values'] if v[0] is not None})
+
+        page.on('response', keep)
+        try:
+            for start, end in periods:
+                fields = page.locator('input[placeholder="JJ/MM/AAAA HH:MM:SS"]')
+                for index, value in ((0, start), (1, end)):
+                    fields.nth(index).fill(value)
+                    fields.nth(index).press('Tab')
+                page.locator('a.submit.validated').first.click()
+                page.wait_for_load_state('networkidle')
+                page.wait_for_timeout(1500)
+                drawn = page.evaluate(RED_ROWS)
+                assert sent and drawn and drawn['values'], f'{start} au {end} : pas de lacune à comparer'
+                wanted = sent[-1]
+                off = [v for v in drawn['values'] if not any(abs(v - w) <= drawn['tolerance'] for w in wanted)]
+                assert not off, (f'{start[:10]} au {end[:10]} : lacunes demandées à {sorted(wanted)},'
+                                 f' dessinées aussi entre {min(off):.4g} et {max(off):.4g}')
+        finally:
+            page.remove_listener('response', keep)
+    return check
+
+
+# Une chronique visible dont les lacunes de 2024 tombent dans deux mois au moins, et dont le mois de la première a des
+# valeurs bien au-dessus du minimum de l'année : le serveur y demande ses lacunes à deux hauteurs différentes
+GAPS_CHRONIQUE = """
+    WITH m AS (SELECT m.chronique_id, m.date, m.valeur, q.ordre FROM mesure m JOIN qualite q ON q.id = m.qualite_id
+                WHERE m.date >= '2024-01-01' AND m.date < '2025-01-01'),
+         g AS (SELECT chronique_id, min(date) AS first, max(date) AS last FROM m WHERE ordre = 100 GROUP BY 1
+                HAVING count(DISTINCT date_trunc('month', date)) >= 2)
+    SELECT o.slug, st.code, ch.code, to_char(g.first, 'MM'), to_char(g.last, 'MM')
+      FROM g JOIN chronique ch ON ch.id = g.chronique_id JOIN station st ON st.id = ch.station_id
+      JOIN stations_sites ss ON ss.station_id = st.id JOIN siteexperimental si ON si.id = ss.site_id
+      JOIN observatoire o ON o.id = si.observatoire_id
+     WHERE ch.estvisible AND ch.dtype = 'continue'
+       AND (SELECT min(valeur) FROM m WHERE m.chronique_id = g.chronique_id AND ordre > 200) >= 0
+       AND (SELECT min(valeur) FROM m WHERE m.chronique_id = g.chronique_id AND ordre > 200
+              AND date_trunc('month', date) = date_trunc('month', g.first))
+         >= 10 + (SELECT min(valeur) FROM m WHERE m.chronique_id = g.chronique_id AND ordre > 200)
+     ORDER BY ch.id LIMIT 1"""
+
+
+def month(number, last=False):
+    """Le premier ou le dernier jour d'un mois de 2024, sous la forme des champs de la période."""
+    day = (datetime.date(2024 + number // 12, number % 12 + 1, 1) - datetime.timedelta(days=1)).day if last else 1
+    return f'{day:02d}/{number:02d}/2024 00:00:00'
+
+
 def public_steps(s, station, chronique):
     def footer(page):
         assert page.locator('a[href*="github.com/bdoh-inrae/bdoh-legacy"]').count() == 1, 'pas de lien vers le code source'
@@ -352,6 +436,13 @@ def main():
             found = other_kind(where)
             if found:
                 anonymous.step(f'chronique {label}, graphique', f'/{found[0]}/{found[1]}/{found[2]}', chart_step)
+        gaps = c.query(BASE, GAPS_CHRONIQUE, c.NEW_SERVER)
+        if gaps:
+            slug, station, code, first, last = gaps[0]
+            periods = [(month(int(first)), month(int(first), last=True)), (month(1), month(12, last=True)),
+                       (month(int(last)), month(int(last), last=True))]
+            anonymous.step('graphique, lacunes à leur hauteur d’une période à l’autre', f'/{slug}/{station}/{code}',
+                           gap_heights_step(periods))
         managing = signed_in('gestionnaire', manager)
         chronique_page = f'/{SLUG}/{station_code}/{chronique_code}'
         public_steps(managing, station_code, chronique_code)
