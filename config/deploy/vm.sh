@@ -173,7 +173,8 @@ cmd_apache() {
 # courriel doit arriver à MAILER_DIVERT_TO, et à personne d'autre.
 cmd_mail_test() {
     instance
-    console mailer:test "${TO:-quelquun@example.org}"
+    # L'expéditeur de BDOH : celui de Symfony par défaut, from@example.org, serait refusé par le relais
+    console mailer:test --from=bdoh@inrae.fr "${TO:-quelquun@example.org}"
 }
 
 cmd_worker() {
