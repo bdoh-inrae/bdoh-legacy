@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Prépare ce qu'on envoie aux gestionnaires pour les essais, observatoire par observatoire.
 
-    make test-kit ARGS="--site https://… --deadline '30 novembre'"
+    make test-kit ARGS="--site https://… --deadline 'dimanche 15 novembre'"
 
 Écrit dans ../bdoh_reference/test-kit/<OBSERVATOIRE>/ le tableur de ses chroniques et ses deux messages, à partir
 des bases anonymisées, qui gardent les codes, les libellés et les stations. Aucune adresse n'y figure : elles
@@ -160,7 +160,8 @@ def counts_sentence(name, opened, closed):
         return f'Toutes les chroniques de {name} sont cachées ({closed}), donc rien ne s’ouvre. Si c’est bien ce que vous voulez, un « OK » suffit.'
     fermees = f'{closed} fermée{"s" if closed > 1 else ""}' if closed else 'aucune fermée'
     return (f'{name} : {opened} chroniques ouvertes, {fermees}. La seule question : une chronique ouverte est-elle sous accord avec '
-            'un producteur ? Si oui, on la ferme. Un « OK » de l’un d’entre vous suffit, sinon dites-moi lesquelles changer.')
+            'un producteur ? Si oui, on la ferme. Un « OK » de l’un d’entre vous suffit, sinon dites-moi lesquelles changer. '
+            'Sans réponse après une relance, elles s’ouvrent telles quelles.')
 
 
 def fill(template, **values):
