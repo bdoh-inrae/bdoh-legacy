@@ -2,7 +2,9 @@
 
 Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/). Numéros de version : [SemVer](https://semver.org/lang/fr/).
 
-## Non publié
+## 0.3.4 - 2026-11-10
+
+Deux bogues de l'ancien BDOH corrigés, que les testeurs verront : les lacunes du graphique, et les logos de partenaires de même nom. Et des cas de plus dans la comparaison, pour l'administration.
 
 ### Corrigé
 
