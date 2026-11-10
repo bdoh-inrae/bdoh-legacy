@@ -38,11 +38,11 @@ L'ordre de l'audit, resserré autour de la barrière : ce qui demande de lire de
 
 **Ouverture des données**, après C1 et C2, comparée à part : `dev/plans/2026-11-04_open-data.md`. C3 à C5 peuvent se poursuivre en parallèle des essais (décision 3) ; C6 vient après leurs retours, et porte sur le code ouvert.
 
-**Phase D, sur la VM** (selon la réponse de l'équipe infra) : `dev/plans/2026-10-26_deployment.md`.
+**Phase D, sur la VM** : la production y est installée depuis le 10 novembre, OTHU suit (`dev/plans/2026-10-26_deployment.md`).
 
 ## Ce qui reste à Lou
 
-- Rien pour la validation : dumps régénérés, fichiers d'import et fichiers déposés rapatriés. La VM dépend de la réponse de l'équipe infra.
+- Rien pour la validation : dumps régénérés, fichiers d'import et fichiers déposés rapatriés. Sur la VM, sa liste ([dev/test-kit/lou-checklist.md](../test-kit/lou-checklist.md)).
 
 ## Pour reprendre
 
@@ -57,9 +57,9 @@ L'ordre de l'audit, resserré autour de la barrière : ce qui demande de lire de
    - le groupe 6, l'administration (`run_admin`) : fichier joint à la création d'une fiche, remplacé, retiré (noms tirés au hasard par BDOH : comparer leur présence et leur extension, pas leur nom) ; couleurs changées et thème recompilé, comparé à l'ancien avec l'écart admis « Thèmes des observatoires » ; fiche d'une chronique qui a déjà des limites ; bassin modifié et retiré, cours d'eau retiré ; shapefile en gardant l'existant ;
    - le groupe 9, OTHU : `state_commands`, `run_state` (dont `invented.play` et `failed_computation_checks`, qui prennent la chaîne de calcul), `run_queue` et `run_imports` prennent leur premier résultat sans garde ; une base sans transformation ni conversion doit sauter ces cas au lieu de s'arrêter. Puis tous les modes sur `bdoh_othu`.
    Chaque groupe de cas s'écrit, se joue contre l'ancien, et voit sa faute (`mutants.py --only`) avant le suivant. Une nouvelle passe de couverture (`dev/coverage/README.md`) dira ensuite ce qui reste.
-2. **La carte de l'accueil**, dans une session à part, pendant l'attente de la VM (`ROADMAP.md`, « Modernisations »).
+2. **La carte de l'accueil**, dans une session à part, une fois le kit des essais envoyé (`ROADMAP.md`, « Modernisations ») : elle devait occuper l'attente de la VM, finie le 9 novembre, et la priorité reste de faire essayer l'identique (Lou, 3 novembre).
 3. **La liste de Lou** : [dev/test-kit/lou-checklist.md](../test-kit/lou-checklist.md), ce que la machine ne juge pas et que Lou essaie sur la VM, avant les gestionnaires.
-4. **La VM**, en suivant `dev/deploy/README.md`. Les fichiers déposés de la production (logos, images) y sont déballés depuis le 10 novembre ; OTHU n'en a pas.
+4. **OTHU sur la VM**, en suivant `dev/deploy/README.md`, comme la production. OTHU n'a pas de fichiers déposés.
 
 **C3, les cas à ajouter**, tirés de la passe de couverture du 6 novembre (listes dans `../bdoh_reference/coverage/`, Suivi) et de l'usage réel compté dans `historique` de la base complète. Dans l'ordre : ce qui écrit, puis ce qui se lit.
 
@@ -82,7 +82,7 @@ Pour repartir de zéro depuis les dumps, en 35 min (mesure du 4 novembre) :
 ```
 make stop && make reference-stop
 docker rm bdoh-app bdoh-db bdoh-dns bdoh-reference-app bdoh-reference-worker bdoh-reference-db bdoh-reference-dns bdoh-reference-app-17
-rm -rf ../bdoh_reference/postgres ../bdoh_reference/postgres-17-debian
+rm -rf ../bdoh_reference/postgres ../bdoh_reference/postgres-18-ubuntu
 make db
 make db DUMP=../bdoh_reference/bdoh-othu-2026-10-21-anon.dump BASE=bdoh_othu
 make db-small
