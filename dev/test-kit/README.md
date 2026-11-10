@@ -16,6 +16,8 @@ make test-kit ARGS="--site https://… --site-othu https://… --deadline 'diman
 ## Tranché (Lou, 10 novembre)
 
 1. L'objet : « BDOH rouvre : ce qu'il me faut pour {observatoire} », sans durée, qu'on ne maîtrise pas.
-2. La date limite : une semaine, le dimanche 15 novembre ; elle s'allonge si des problèmes sérieux apparaissent.
+2. La date limite : une semaine après l'envoi, qui attend la carte de l'accueil (Lou, 10 novembre : les gestionnaires l'essaient aussi) ; elle s'allonge si des problèmes sérieux apparaissent.
 3. Les destinataires : les gestionnaires de l'observatoire et de ses sites, son contact, le responsable et les gestionnaires de données Theia (ce que tire `contacts.py`). Lou relit la liste avant d'envoyer.
 4. Sans réponse : une relance, puis `estvisible` fait foi, et c'est noté au suivi ; la Licence Ouverte s'applique alors sans validation explicite. Le message le dit.
+
+Le message commence par « Bonjour », dit que « normalement ça colle », donne l'identifiant et le mot de passe d'accès au site sur deux lignes, et prévient que c'est la vraie base : une modification destructrice se signale, pour repartir à l'ouverture sur le dump propre (Lou, 10 novembre).

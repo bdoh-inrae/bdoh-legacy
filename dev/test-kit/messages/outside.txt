@@ -1,8 +1,8 @@
 Objet : BDOH rouvre : ce qu'il me faut pour {observatoire}
 
-Salut,
+Bonjour,
 
-BDOH a été porté sur une version à jour. Mêmes pages, mêmes formats, mêmes données : tout a été comparé à l'ancien, et ça colle.
+BDOH a été porté sur une version à jour. Mêmes pages, mêmes formats, mêmes données : tout a été comparé à l'ancien, et normalement ça colle.
 
 Deux changements :
 - plus de mot de passe : à votre prochaine visite, saisissez votre adresse, vous recevrez un lien par mail ;

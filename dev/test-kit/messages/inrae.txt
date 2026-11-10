@@ -1,8 +1,8 @@
 Objet : BDOH rouvre : ce qu'il me faut pour {observatoire}
 
-Salut,
+Bonjour,
 
-BDOH a été porté sur une version à jour. Mêmes pages, mêmes formats, mêmes données : tout a été comparé à l'ancien, et ça colle.
+BDOH a été porté sur une version à jour. Mêmes pages, mêmes formats, mêmes données : tout a été comparé à l'ancien, et normalement ça colle.
 
 Deux changements :
 - plus de mot de passe, on se connecte par un lien reçu par mail ;
@@ -12,7 +12,11 @@ Il me faut deux choses de votre part avant le {date} :
 
 1. Le tableau joint. {comptes}
 
-2. Le site, sous VPN : {site}, mot de passe d'accès [à compléter]. Faites ce que vous faites d'habitude, un import, un export. Ce que vous y écrivez reste : ce site deviendra le vrai BDOH. Ne me dites que ce qui cloche.
+2. Le site d'essai, sous VPN : {site}
+   identifiant : test
+   mot de passe : [à compléter]
+   C'est l'accès au site d'essai ; ensuite, on se connecte à BDOH comme d'habitude, avec son adresse.
+   Faites ce que vous faites d'habitude, un import, un export. C'est la vraie base de données : ce que vous y écrivez reste, ce site deviendra le vrai BDOH. Si vous faites une modification destructrice (une suppression, un import qui écrase des mesures), dites-le-moi : on repartira à l'ouverture sur le dump propre. Pour le reste, ne me dites que ce qui cloche.
 
 {onglet}
 

@@ -169,6 +169,37 @@ cmd_apache() {
     echo "Site en ligne sur le port $port, derrière le mot de passe d'accès."
 }
 
+# Une ligne du .env remplacée, la valeur lue sur l'entrée standard : rien ne passe par la ligne de commande,
+# et un caractère spécial de la valeur ne compte pas pour le shell. La ligne doit exister, une fois.
+env_set() {
+    php -r '$k = $argv[1]; $v = stream_get_contents(STDIN);
+        $t = preg_replace_callback("/^" . preg_quote($k, "/") . "=.*$/m", fn() => "$k=$v", file_get_contents(".env"), 1, $n);
+        if ($n !== 1) { fwrite(STDERR, "$k introuvable dans .env : aucun changement\n"); exit(1); }
+        file_put_contents(".env", $t);' "$1"
+}
+
+# Les courriels d'une instance, dans cet ordre, pour qu'aucun ne parte ailleurs que chez Lou : l'adresse
+# où tout part pendant les essais (MAILER_DIVERT_TO), puis le relais de l'infra, avec le compte de
+# l'ancienne production, dont l'identifiant et le mot de passe se lisent au clavier, le mot de passe sans
+# s'afficher, et s'écrivent encodés dans MAILER_DSN. Le relais se donne à la commande : le dépôt ne le nomme pas.
+cmd_mail() {
+    instance
+    [[ -n ${RELAIS:-} ]] || die "Préciser RELAIS= : le relais de courrier, hôte:port"
+    if [[ -n ${RENVOI:-} ]]; then
+        printf '%s' "$RENVOI" | env_set MAILER_DIVERT_TO
+    fi
+    grep -q '^MAILER_DIVERT_TO=.' .env || die "Préciser RENVOI= : l'adresse où partent les courriels pendant les essais"
+    local user pass
+    read -rp 'Identifiant du relais : ' user
+    read -rsp 'Mot de passe du relais : ' pass; echo
+    printf '%s\n%s\n%s' "$RELAIS" "$user" "$pass" | php -r '[$r, $u, $p] = explode("\n", stream_get_contents(STDIN), 3);
+        echo "smtp://" . rawurlencode($u) . ":" . rawurlencode($p) . "@" . $r;' | env_set MAILER_DSN
+    unset user pass
+    # La file lit .env à son démarrage
+    systemctl try-restart "bdoh-job-worker@$NOM" || true
+    echo "MAILER_DIVERT_TO et MAILER_DSN écrits. Puis : sudo make vm-mail-test NOM=$NOM TO=…"
+}
+
 # Avant la file de tâches, qui enverra les courriels des tâches restées en attente dans le dump : ce
 # courriel doit arriver à MAILER_DIVERT_TO, et à personne d'autre.
 cmd_mail_test() {
@@ -222,5 +253,5 @@ cmd_status() {
 }
 
 [[ $(id -u) == 0 ]] || die "En root : sudo make vm-…"
-[[ $# -eq 1 && $(type -t "cmd_${1//-/_}") == function ]] || die "Étapes : deps env build db apache mail-test worker backup update status"
+[[ $# -eq 1 && $(type -t "cmd_${1//-/_}") == function ]] || die "Étapes : deps env build db apache mail mail-test worker backup update status"
 "cmd_${1//-/_}"; exit

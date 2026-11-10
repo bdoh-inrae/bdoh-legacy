@@ -22,7 +22,7 @@ ENCORE = docker run --rm --network none --user $(HOST_UID):$(HOST_GID) -e HOME=/
 	-v $(CURDIR):/var/www/bdoh bdoh-app node_modules/.bin/encore
 DB_CONTAINER = $(if $(filter new,$(SERVER)),bdoh-db,bdoh-reference-db)
 
-.PHONY: help app-install assets start stop composer phpstan browser-check anonymize db db-small inspect fingerprint migrate reference-app reference-start reference-stop reference-base reference-17-start mail-start worker-start test-kit test-contacts vm-deps vm-env vm-build vm-db vm-apache vm-mail-test vm-worker vm-backup vm-update vm-status
+.PHONY: help app-install assets start stop composer phpstan browser-check anonymize db db-small inspect fingerprint migrate reference-app reference-start reference-stop reference-base reference-17-start mail-start worker-start test-kit test-contacts vm-deps vm-env vm-build vm-db vm-apache vm-mail vm-mail-test vm-worker vm-backup vm-update vm-status
 
 help: ## Liste les commandes
 	@grep -E '^[a-z0-9-]+:.*## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*## "} {printf "  %-19s %s\n", $$1, $$2}'
@@ -120,6 +120,9 @@ vm-db: ## VM : restaure le dump brut, migrations et contrôles : sudo make vm-db
 
 vm-apache: ## VM : le site, derrière le mot de passe des essais : sudo make vm-apache NOM=prod
 	NOM=$(NOM) $(VM) apache
+
+vm-mail: ## VM : les courriels, l'adresse de renvoi puis le relais : sudo make vm-mail NOM=prod RELAIS=hôte:port RENVOI=adresse
+	NOM=$(NOM) RELAIS=$(RELAIS) RENVOI=$(RENVOI) $(VM) mail
 
 vm-mail-test: ## VM : un courriel d'essai, qui doit arriver à MAILER_DIVERT_TO : sudo make vm-mail-test NOM=prod TO=…
 	NOM=$(NOM) TO=$(TO) $(VM) mail-test

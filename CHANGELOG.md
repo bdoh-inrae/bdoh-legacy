@@ -15,6 +15,7 @@ Deux bogues de l'ancien BDOH corrigés, que les testeurs verront : les lacunes d
 ### Ajouté
 
 - Un essai du navigateur de plus : les lacunes du graphique à la hauteur que demande le serveur, d'une période à l'autre.
+- Les courriels d'une instance de la VM se règlent par une cible du Makefile (`make vm-mail`) : l'adresse de renvoi des essais, puis le relais, dont l'identifiant et le mot de passe se lisent au clavier.
 - Des cas de plus dans la comparaison, pour l'administration : fichiers joints remplacés et retirés, thème d'un observatoire recompilé après un changement de couleurs, fiche d'une chronique qui a déjà des limites, bassin et cours d'eau supprimés ; et les shapefiles importés en gardant l'existant.
 
 ## 0.3.3 - 2026-11-10

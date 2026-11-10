@@ -42,10 +42,13 @@ sudo make vm-env NOM=prod ADRESSE=…
 sudo make vm-build NOM=prod
 ```
 
-`vm-env` crée le rôle PostgreSQL de l'instance et son `.env`, avec des secrets tirés au hasard ; il refuse si `.env` existe. `MAILER_DSN` y vaut `null://null` : rien ne part. Compléter ensuite les courriels, dans cet ordre, pour qu'aucun ne puisse partir ailleurs que chez Lou :
-- `MAILER_DIVERT_TO`, l'adresse de Lou pendant les essais (`sudo nano .env`) ;
-- `MAILER_DSN` : le relais de l'INRAE, avec le compte de l'ancienne production, comme elle (port 587, STARTTLS). L'identifiant et le mot de passe s'y écrivent encodés (`rawurlencode`), par une commande d'une ligne qui les lit au clavier sans afficher le mot de passe ; Lou les recopie elle-même de l'ancien serveur ;
-- `MAILER_ALLOWED_RECIPIENTS`, vide pour les essais de Lou ; la ligne de `allowed-recipients.env` (`dev/test-kit/README.md`) quand les gestionnaires essaient, pour que chacun reçoive ses propres liens.
+`vm-env` crée le rôle PostgreSQL de l'instance et son `.env`, avec des secrets tirés au hasard ; il refuse si `.env` existe. `MAILER_DSN` y vaut `null://null` : rien ne part. Les courriels se règlent ensuite par `vm-mail`, qui écrit dans cet ordre, pour qu'aucun ne puisse partir ailleurs que chez Lou, l'adresse de renvoi des essais (`MAILER_DIVERT_TO`), puis le relais de l'INRAE avec le compte de l'ancienne production, comme elle (port 587, STARTTLS). Il demande l'identifiant et le mot de passe au clavier, sans afficher le second, que Lou recopie de l'ancien serveur, et les écrit encodés dans `MAILER_DSN` :
+
+```
+sudo make vm-mail NOM=prod RELAIS=hôte:587 RENVOI=adresse-de-Lou
+```
+
+Reste `MAILER_ALLOWED_RECIPIENTS` (`sudo nano .env`) : vide pour les essais de Lou ; la ligne de `allowed-recipients.env` (`dev/test-kit/README.md`) quand les gestionnaires essaient, pour que chacun reçoive ses propres liens.
 
 Le site relit `.env` à chaque requête : pas de cache à vider. La file de tâches, elle, le lit à son démarrage : après un changement, `sudo systemctl restart bdoh-job-worker@prod` (sinon, elle le reprend à sa relance d'heure en heure).
 

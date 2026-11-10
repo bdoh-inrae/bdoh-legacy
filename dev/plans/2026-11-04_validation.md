@@ -56,7 +56,7 @@ L'ordre de l'audit, resserré autour de la barrière : ce qui demande de lire de
 1. **C3**, la liste plus bas. Faits le 6 novembre : groupes 1 à 5, 7 et 8 ; le 10 novembre : groupe 6 (Suivi). Reste :
    - le groupe 9, OTHU : `state_commands`, `run_state` (dont `invented.play` et `failed_computation_checks`, qui prennent la chaîne de calcul), `run_queue` et `run_imports` prennent leur premier résultat sans garde ; une base sans transformation ni conversion doit sauter ces cas au lieu de s'arrêter. Puis tous les modes sur `bdoh_othu`.
    Chaque groupe de cas s'écrit, se joue contre l'ancien, et voit sa faute (`mutants.py --only`) avant le suivant. Une nouvelle passe de couverture (`dev/coverage/README.md`) dira ensuite ce qui reste.
-2. **La carte de l'accueil**, dans une session à part, une fois le kit des essais envoyé (`ROADMAP.md`, « Modernisations ») : elle devait occuper l'attente de la VM, finie le 9 novembre, et la priorité reste de faire essayer l'identique (Lou, 3 novembre).
+2. **La carte de l'accueil**, avant l'envoi du kit des essais, pour que les gestionnaires l'essaient (Lou, 10 novembre ; `ROADMAP.md`, « Modernisations »).
 3. **La liste de Lou** : [dev/test-kit/lou-checklist.md](../test-kit/lou-checklist.md), ce que la machine ne juge pas et que Lou essaie sur la VM, avant les gestionnaires.
 4. **OTHU sur la VM**, en suivant `dev/deploy/README.md`, comme la production. OTHU n'a pas de fichiers déposés.
 
