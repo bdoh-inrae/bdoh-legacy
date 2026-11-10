@@ -27,7 +27,7 @@ Puis le système, une version LTS à la fois, en redémarrant après chacune : `
 sudo apt-get install -y make git
 sudo git clone https://github.com/bdoh-inrae/bdoh-legacy /var/www/bdoh-prod
 cd /var/www/bdoh-prod
-sudo git -c advice.detachedHead=false checkout v0.3.4
+sudo git -c advice.detachedHead=false checkout v0.3.5
 sudo make vm-deps
 ```
 
@@ -111,7 +111,7 @@ Ensuite, la liste de Lou : [dev/test-kit/lou-checklist.md](../test-kit/lou-check
 ## Installer une nouvelle version
 
 ```
-sudo make vm-update NOM=prod V=v0.3.4
+sudo make vm-update NOM=prod V=v0.3.5
 ```
 
 Arrête la file, sauvegarde la base sous un nom à part (`/var/backups/bdoh/prod-avant-…`), passe au tag, reconstruit, applique les migrations entre deux contrôles, recharge Apache et relance la file. Les thèmes compilés se recompilent avec la nouvelle version. Pour revenir en arrière : la version précédente par la même commande, et, si les migrations ont touché la base, ce dump.

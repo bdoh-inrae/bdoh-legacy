@@ -54,6 +54,10 @@ class Session:
 
     def __init__(self, browser, label, only, results):
         self.context = browser.new_context(viewport={'width': 1400, 'height': 1000}, locale='fr-FR')
+        # Le fond de carte vient du plan de l'IGN, à l'extérieur : une image blanche le remplace. Les essais jugent les
+        # points de la carte, pas ce service, qui refuse parfois une tuile et retarde la fin du chargement des pages.
+        blank = c.png_pixel()
+        self.context.route('https://data.geopf.fr/**', lambda route: route.fulfill(status=200, content_type='image/png', body=blank))
         self.page = self.context.new_page()
         self.label, self.only, self.results, self.problems = label, only, results, []
         self.link = None

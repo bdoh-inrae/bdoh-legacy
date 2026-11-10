@@ -133,7 +133,7 @@ vm-worker: ## VM : lance la file de tâches (MAILER_DIVERT_TO rempli) : sudo mak
 vm-backup: ## VM : la sauvegarde quotidienne : sudo make vm-backup NOM=prod
 	NOM=$(NOM) $(VM) backup
 
-vm-update: ## VM : installe une version, base sauvegardée avant : sudo make vm-update NOM=prod V=v0.3.4
+vm-update: ## VM : installe une version, base sauvegardée avant : sudo make vm-update NOM=prod V=v0.3.5
 	NOM=$(NOM) V=$(V) $(VM) update
 
 vm-status: ## VM : version installée, services, réponse du site : sudo make vm-status NOM=prod

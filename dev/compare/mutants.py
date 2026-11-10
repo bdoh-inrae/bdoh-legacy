@@ -202,6 +202,12 @@ PHP = [
     ('partenaire : logo nommé sans son observatoire (ancien comportement)', 'admin', 'partenaire',
      SRC + 'BdohDataBundle/Entity/Partenaire.php',
      "return $this->observatoire !== null ? $this->observatoire->getSlug() . '_' . $prefix : $prefix;", 'return $prefix;'),
+    # La carte des stations
+    ('carte : latitude et longitude échangées', 'pages', '', STATIONS,
+     'round(ST_Y(ST_Transform(s.point, 4326))::numeric, 5)::text AS lat,\n       round(ST_X(',
+     'round(ST_X(ST_Transform(s.point, 4326))::numeric, 5)::text AS lat,\n       round(ST_Y('),
+    ('carte : les stations d’autres observatoires sur celle d’un observatoire', 'pages', '', STATIONS,
+     "'WHERE o.id = :observatoire'", "'WHERE o.id >= :observatoire'"),
     ('shapefile, garder : les stations qui ont un point déplacées', 'imports', 'shapefile', STATIONS,
      'si.observatoire_id = $currentObsId AND st.point IS NULL', 'si.observatoire_id = $currentObsId'),
     ('shapefile, garder : la liste des noms sans son type (piège de DBAL 4)', 'imports', 'shapefile',

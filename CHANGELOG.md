@@ -2,7 +2,9 @@
 
 Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/). Numéros de version : [SemVer](https://semver.org/lang/fr/).
 
-## Non publié
+## 0.3.5 - 2026-11-10
+
+La carte des stations, pour que les gestionnaires l'essaient.
 
 ### Ajouté
 
