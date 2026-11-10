@@ -1,5 +1,5 @@
 // Repris de l'ancien BDOH : même Encore, mêmes paquets (package-lock.json), mêmes fichiers compilés,
-// sous le Node de Debian 13 (make assets). Les fichiers de Sonata 3 et ceux des formulaires de
+// sous le Node de la distribution (make assets). Les fichiers de Sonata 3 et ceux des formulaires de
 // l'administration ne se compilent plus (dev/decisions.md, « JavaScript de l'administration »).
 const Encore = require('@symfony/webpack-encore');
 const LiveReloadPlugin = require('webpack-livereload-plugin');

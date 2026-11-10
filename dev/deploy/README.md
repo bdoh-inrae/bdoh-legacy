@@ -2,7 +2,7 @@
 
 Sur la VM, chaque instance est un clone du dépôt (`/var/www/bdoh-prod`, `/var/www/bdoh-othu`), et chaque étape une cible du Makefile, lancée en root dans ce dossier : `sudo make vm-… NOM=prod`. Les commandes elles-mêmes sont dans [config/deploy/vm.sh](../../config/deploy/vm.sh), les fichiers qu'elles installent à côté ; ce guide dit l'ordre, et ce qu'il faut regarder entre deux. Le pourquoi des choix : [dev/plans/2026-10-26_deployment.md](../plans/2026-10-26_deployment.md) et `dev/decisions.md` (« Déploiement par `git clone` et Makefile »).
 
-Écrit pour Ubuntu 26.04 (PHP 8.5, PostgreSQL 18, PostGIS 3.6). La liste des paquets et la construction (`vm-build`) ont été essayées le 10 novembre dans l'image `ubuntu:26.04` ; le reste s'éprouve à la première installation : corriger ici, et noter le temps de chaque étape.
+Écrit pour Ubuntu 26.04 (PHP 8.5, PostgreSQL 18, PostGIS 3.6), et suivi de bout en bout le 10 novembre pour installer la production (`dev/plans/2026-10-26_deployment.md`, Suivi). Restent à éprouver : la restauration d'une sauvegarde, la section 5, et `vm-update`. Ce qui accroche se corrige ici.
 
 Aucune étape ne supprime une base, et aucune ne restaure dans une base qui existe. Une erreur s'arrête et se lit : ne pas relancer à l'aveugle.
 
@@ -27,7 +27,7 @@ Puis le système, une version LTS à la fois, en redémarrant après chacune : `
 sudo apt-get install -y make git
 sudo git clone https://github.com/bdoh-inrae/bdoh-legacy /var/www/bdoh-prod
 cd /var/www/bdoh-prod
-sudo git -c advice.detachedHead=false checkout v0.3.2
+sudo git -c advice.detachedHead=false checkout v0.3.3
 sudo make vm-deps
 ```
 

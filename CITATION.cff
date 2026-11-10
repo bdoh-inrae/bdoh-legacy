@@ -4,7 +4,7 @@ type: software
 title: "BDOH : Base de Données des Observatoires Hydrologiques"
 abstract: >-
   Application web de gestion, de consultation et d'export des chroniques de mesures
-  des observatoires hydrologiques, portée vers Symfony 7.4 et PHP 8.4.
+  des observatoires hydrologiques, portée vers Symfony 7.4 et PHP 8.4 et 8.5.
 license: AGPL-3.0-or-later
 repository-code: "https://github.com/bdoh-inrae/bdoh-legacy"
 authors:

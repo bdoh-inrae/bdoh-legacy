@@ -69,7 +69,7 @@ Les choix techniques du portage, avec leur raison : ce qu'un prochain Claude dé
   - `implode()` n'accepte plus ses arguments à l'envers ; `get_class(null)` lève une erreur ; les comparaisons non strictes (`==`) ont changé de sens en PHP 8.
   - Symfony Mailer refuse un courriel sans destinataire, quand Swiftmailer n'envoyait rien (`DeferredMailer`).
   - Symfony 7 ne lit plus les annotations en commentaire (`@Assert…`) : seules comptent les contraintes en attributs PHP.
-  - Les arrondis de PHP 8.4 (« Nombres d'un export », plus haut).
+  - Les arrondis de PHP 8.4 et 8.5 (« Nombres d'un export », plus haut).
   - Les messages flash s'affichent en HTML (toastr) : une saisie citée s'échappe.
   - Le routeur passe avant le pare-feu : une route que le pare-feu traite en POST doit accepter POST.
   - Symfony 2 rendait une commande non interactive quand son entrée n'était pas un terminal ; Symfony 7 ne le fait plus : la file passe `--no-interaction` (sinon `interact()` écrit dans la sortie de la tâche).

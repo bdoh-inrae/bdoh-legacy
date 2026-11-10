@@ -4,5 +4,5 @@ FROM bdoh-app
 
 USER root
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends php8.4-pcov \
+    && apt-get install -y --no-install-recommends php8.5-pcov \
     && rm -rf /var/lib/apt/lists/*

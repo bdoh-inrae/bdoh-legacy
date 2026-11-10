@@ -1,6 +1,6 @@
 {
     "name": "bdoh-inrae/bdoh-legacy",
-    "description": "BDOH, la Base de Données des Observatoires Hydrologiques, portée vers Symfony 7.4 et PHP 8.4",
+    "description": "BDOH, la Base de Données des Observatoires Hydrologiques, portée vers Symfony 7.4 et PHP 8.4 et 8.5",
     "type": "project",
     "license": "AGPL-3.0-or-later",
     "minimum-stability": "stable",

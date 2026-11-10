@@ -2,7 +2,7 @@
   "@context": "https://w3id.org/codemeta/3.0",
   "@type": "SoftwareSourceCode",
   "name": "BDOH",
-  "description": "Base de Données des Observatoires Hydrologiques : application web de gestion, de consultation et d'export des chroniques de mesures, portée vers Symfony 7.4 et PHP 8.4.",
+  "description": "Base de Données des Observatoires Hydrologiques : application web de gestion, de consultation et d'export des chroniques de mesures, portée vers Symfony 7.4 et PHP 8.4 et 8.5.",
   "codeRepository": "https://github.com/bdoh-inrae/bdoh-legacy",
   "license": "https://spdx.org/licenses/AGPL-3.0-or-later",
   "programmingLanguage": [
@@ -11,9 +11,9 @@
     "SQL"
   ],
   "softwareRequirements": [
-    "PHP 8.4",
+    "PHP 8.4 ou 8.5",
     "Symfony 7.4",
-    "PostgreSQL 17",
+    "PostgreSQL 17 ou 18",
     "PostGIS 3"
   ],
   "dateCreated": "2012",

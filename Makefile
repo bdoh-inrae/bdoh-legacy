@@ -121,7 +121,7 @@ vm-db: ## VM : restaure le dump brut, migrations et contrôles : sudo make vm-db
 vm-apache: ## VM : le site, derrière le mot de passe des essais : sudo make vm-apache NOM=prod
 	NOM=$(NOM) $(VM) apache
 
-vm-mail-test: ## VM : un courriel d'essai, qui doit arriver à MAILER_DIVERT_TO : sudo make vm-mail-test NOM=prod
+vm-mail-test: ## VM : un courriel d'essai, qui doit arriver à MAILER_DIVERT_TO : sudo make vm-mail-test NOM=prod TO=…
 	NOM=$(NOM) TO=$(TO) $(VM) mail-test
 
 vm-worker: ## VM : lance la file de tâches (MAILER_DIVERT_TO rempli) : sudo make vm-worker NOM=prod
@@ -130,7 +130,7 @@ vm-worker: ## VM : lance la file de tâches (MAILER_DIVERT_TO rempli) : sudo mak
 vm-backup: ## VM : la sauvegarde quotidienne : sudo make vm-backup NOM=prod
 	NOM=$(NOM) $(VM) backup
 
-vm-update: ## VM : installe une version, base sauvegardée avant : sudo make vm-update NOM=prod V=v0.3.2
+vm-update: ## VM : installe une version, base sauvegardée avant : sudo make vm-update NOM=prod V=v0.3.3
 	NOM=$(NOM) V=$(V) $(VM) update
 
 vm-status: ## VM : version installée, services, réponse du site : sudo make vm-status NOM=prod
