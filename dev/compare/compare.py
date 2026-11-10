@@ -335,20 +335,24 @@ class NoRedirect(urllib.request.HTTPRedirectHandler):
 class Client:
     """Un navigateur sans JavaScript, connecté ou non, qui ne suit pas les redirections."""
 
-    linked = {}  # seconde du dernier lien de connexion créé, par compte
+    linked = {}  # échéance du dernier lien de connexion servi, par compte
 
     def __init__(self, side, email, slug, password=PASSWORD):
         self.side = side
         self.jar = jar = http.cookiejar.CookieJar()
         self.opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(jar), NoRedirect)
         if email and side.login_link:
-            # Un lien créé par la console, comme celui du courriel. Deux liens d'un même compte créés
-            # dans la même seconde sont le même lien, qui ne sert qu'une fois : on attend la suivante.
-            while int(time.time()) == Client.linked.get(email):
-                time.sleep(0.1)
-            Client.linked[email] = int(time.time())
-            r = subprocess.run([*side.console, 'security:users:login-link', email, slug, '--env=prod'],
-                               capture_output=True, text=True)
+            # Un lien créé par la console, comme celui du courriel. Deux liens d'un même compte de même échéance,
+            # à la seconde, sont le même lien, qui ne sert qu'une fois : on en redemande un tant que c'est le cas.
+            # L'échéance se lit dans le lien : la console la calcule un peu après qu'on l'a lancée.
+            while True:
+                r = subprocess.run([*side.console, 'security:users:login-link', email, slug, '--env=prod'],
+                                   capture_output=True, text=True)
+                expires = urllib.parse.parse_qs(urllib.parse.urlsplit(html.unescape(r.stdout.strip())).query).get('expires')
+                if r.returncode or expires != Client.linked.get(email):
+                    break
+                time.sleep(0.5)
+            Client.linked[email] = expires
             status, headers = self.follow_login_link(r.stdout.strip()) if r.returncode == 0 else (None, {})
         elif email:
             self.get(f'/{slug}/login')
@@ -2109,23 +2113,51 @@ def shape_cases(base, slug):
                                ST_MakeLine(ST_Translate(point, -300, 0), ST_Translate(point, 300, 0)) AS geom
                           FROM ({first}) x""",
     }
-    SHAPES.mkdir(parents=True, exist_ok=True)
-    cases = []
-    for target, sql in queries.items():
-        name = f'{target.lower()}s'
-        subprocess.run(['docker', 'exec', 'bdoh-app', 'pgsql2shp', '-f', f'/var/www/bdoh/var/compare-shapes/{name}',
-                        '-h', 'db', '-u', 'bdoh', base, ' '.join(sql.split())], check=True, capture_output=True)
-        archive = io.BytesIO()
-        with zipfile.ZipFile(archive, 'w') as z:
-            for ext in ('shp', 'shx', 'dbf', 'prj'):
-                if (SHAPES / f'{name}.{ext}').exists():
-                    z.write(SHAPES / f'{name}.{ext}', f'{name}.{ext}')
-        cases.append((f'shapefile, {target}', target, f'{name}.zip', archive.getvalue()))
+    cases = [(f'shapefile, {target}', target, f'{target.lower()}s.zip', shapefile(base, f'{target.lower()}s', sql))
+             for target, sql in queries.items()]
     empty = io.BytesIO()
     with zipfile.ZipFile(empty, 'w') as z:
         z.writestr('lisezmoi.txt', 'pas de shapefile')
     cases.append(('shapefile, archive sans shapefile', 'station', 'vide.zip', empty.getvalue()))
     return cases
+
+
+def shapefile(base, name, sql):
+    """L'archive d'un shapefile que pgsql2shp tire d'une requête sur la base."""
+    SHAPES.mkdir(parents=True, exist_ok=True)
+    subprocess.run(['docker', 'exec', 'bdoh-app', 'pgsql2shp', '-f', f'/var/www/bdoh/var/compare-shapes/{name}',
+                    '-h', 'db', '-u', 'bdoh', base, ' '.join(sql.split())], check=True, capture_output=True)
+    archive = io.BytesIO()
+    with zipfile.ZipFile(archive, 'w') as z:
+        for ext in ('shp', 'shx', 'dbf', 'prj'):
+            if (SHAPES / f'{name}.{ext}').exists():
+                z.write(SHAPES / f'{name}.{ext}', f'{name}.{ext}')
+    return archive.getvalue()
+
+
+def shape_keep_cases(base, slug):
+    """Les mêmes imports, joués ensuite en gardant l'existant : les stations de l'observatoire déplacées de vingt
+    mètres, qui ne doivent pas bouger, et l'une de ses stations sans point, qui doit en recevoir un ; le bassin et
+    le cours d'eau d'essai déplacés, qui doivent rester, et un nouveau de chaque, qui doit s'ajouter. La liste des
+    noms existants passe en paramètre de la requête (BassinRepository, CoursEauRepository) : DBAL 4 la lit autrement
+    que DBAL 2."""
+    of_slug = f"""FROM station s JOIN stations_sites ss ON ss.station_id = s.id JOIN siteexperimental se ON se.id = ss.site_id
+                   JOIN observatoire o ON o.id = se.observatoire_id WHERE o.slug = '{slug}'"""
+    first = f"SELECT s.code, s.point {of_slug} AND s.point IS NOT NULL ORDER BY s.code LIMIT 1"
+    queries = {
+        'station': f"""SELECT s.code, ST_Translate(s.point, 20, 20) AS geom {of_slug} AND s.point IS NOT NULL
+                       UNION ALL
+                       SELECT x.code, (SELECT ST_Translate(point, 50, 50) FROM ({first}) f) FROM (
+                         SELECT s.code {of_slug} AND s.point IS NULL ORDER BY s.code LIMIT 1) x""",
+        'bassin': f"""SELECT nom::varchar AS nom, code AS code_exu, ST_Buffer(point, size, 4) AS geom FROM ({first}) x,
+                        (VALUES ('Bassin essai', 800), ('Bassin essai 2', 300)) AS b(nom, size)""",
+        'coursEau': f"""SELECT toponyme::varchar AS toponyme, hydro::varchar AS code_hydro, 2 AS classifica,
+                               ST_MakeLine(ST_Translate(point, -span, 10), ST_Translate(point, span, 10)) AS geom
+                          FROM ({first}) x, (VALUES ('Cours essai', 'Z0000000', 400), ('Cours essai 2', 'Z0000001', 200))
+                               AS c(toponyme, hydro, span)""",
+    }
+    return [(f'shapefile en gardant l’existant, {target}', target, f'{target.lower()}s-garder.zip',
+             shapefile(base, f'{target.lower()}s-garder', sql)) for target, sql in queries.items()]
 
 
 def real_import_cases(base):
@@ -2377,8 +2409,8 @@ def run_imports(args):
                 report.add(f'import {title}', play_bareme('ancien', slug, content),
                            play_bareme('nouveau', slug, content))
 
-        def play_shape(name, slug, target, filename, content):
-            """Un import de shapefile (deux étapes), en écrasant l'existant."""
+        def play_shape(name, slug, target, filename, content, import_type='overwriteExisting'):
+            """Un import de shapefile (deux étapes), en écrasant l'existant, ou en le gardant."""
             side = sides[name][0]
             client = client_for(name, slug)
             ajax = {'X-Requested-With': 'XMLHttpRequest'}
@@ -2388,7 +2420,7 @@ def run_imports(args):
             log = ['== étape 2', *step_lines(side.url, *response)]
             if response[0] == 200 and json.loads(response[2]).get('action') == 'step2':
                 response = client.get(f'/{slug}/admin/shape/import/step3', urllib.parse.urlencode(
-                    {'shapeImportType': 'overwriteExisting'}).encode(), ajax)
+                    {'shapeImportType': import_type}).encode(), ajax)
                 log += ['== étape 3', *step_lines(side.url, *response)]
             # Le chemin du fichier téléversé, propre à chaque installation
             return [re.sub(r'/[\w/.-]*/imports/shape/[\w.-]*', '<fichier>', line) for line in log]
@@ -2488,6 +2520,9 @@ def run_imports(args):
             for title, target, filename, content in shape_cases(template, slug):
                 report.add(f'import {title}', play_shape('ancien', slug, target, filename, content),
                            play_shape('nouveau', slug, target, filename, content))
+            for title, target, filename, content in shape_keep_cases(template, slug):
+                report.add(f'import {title}', play_shape('ancien', slug, target, filename, content, 'keepExisting'),
+                           play_shape('nouveau', slug, target, filename, content, 'keepExisting'))
         # De vrais fichiers : l'ancien et le nouveau, puis où chacun est arrivé, sans rien lire de leurs valeurs
         real_cases = real_import_cases(template) if args.only in 'fichiers réels' else []
         reached, touched = [], set()
@@ -3294,26 +3329,61 @@ PDF = b'%PDF-1.4\n1 0 obj << /Type /Catalog >> endobj\ntrailer << /Root 1 0 R >>
 GIF = b'GIF89a\x01\x00\x01\x00\x80\x00\x00\x00\x00\x00\xff\xff\xff!\xf9\x04\x01\x00\x00\x00\x00,\x00\x00\x00\x00\x01\x00\x01\x00\x00\x02\x02D\x01\x00;'
 
 
+# Ce que l'administration écrit à côté du code : les fichiers joints, et les thèmes compilés des observatoires
+WRITTEN_DIRS = ['uploads', 'css/themes']
+
+
 @contextlib.contextmanager
 def attached_files(base):
     """Un fichier de remplacement (une image GIF d'un pixel, ou un PDF vide pour les conditions
     d'utilisation, dont le formulaire vérifie le type) pour chaque fichier joint de la base qui manque,
-    dans les deux instances, le temps du bloc."""
-    created = []
+    dans les deux instances, le temps du bloc. À la fin, les dossiers que l'administration écrit
+    (WRITTEN_DIRS) redeviennent ce qu'ils étaient : ce qu'elle a téléversé part, ce qu'elle a effacé
+    revient, et un thème recompilé aux couleurs d'une copie de la base reprend celles d'avant."""
+    before = {}
+    for root in WEB_ROOTS:
+        for folder in WRITTEN_DIRS:
+            for target in (root / folder).rglob('*'):
+                if target.is_file():
+                    before[target] = target.read_bytes()
     for path, in query(base, ATTACHED_FILES, NEW_SERVER):
         for root in WEB_ROOTS:
             target = root / path
             if not target.exists():
                 target.parent.mkdir(parents=True, exist_ok=True)
                 target.write_bytes(PDF if path.endswith('.pdf') else GIF)
-                created.append(target)
     try:
         yield
     finally:
-        for target in created:
-            target.unlink(missing_ok=True)
-            with contextlib.suppress(OSError):  # le dossier, s'il est vide
-                target.parent.rmdir()
+        for root in WEB_ROOTS:
+            for folder in WRITTEN_DIRS:
+                for target in sorted((root / folder).rglob('*'), reverse=True):
+                    if target.is_file() and target not in before:
+                        target.unlink()
+                    elif target.is_dir():
+                        with contextlib.suppress(OSError):  # le dossier, s'il est vide
+                            target.rmdir()
+        for target, content in before.items():
+            if not target.is_file() or target.read_bytes() != content:
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_bytes(content)
+
+
+NAMED_COLORS = {'white': '#ffffff', 'black': '#000000'}
+
+
+def css_lines(text):
+    """Une feuille de style, une règle par ligne, sous une écriture commune : less.php 5.5 écrit autrement
+    que less.php 1.7 la même règle (espaces, casse et forme courte des couleurs, zéro avant la virgule,
+    « white » pour #fff ; dev/differences.md, « Thèmes des observatoires »)."""
+    text = re.sub(r'/\*.*?\*/', '', text, flags=re.S)
+    text = re.sub(r'\s+', ' ', text)
+    text = re.sub(r' ?([:;,>{}()]) ?', r'\1', text).replace(';}', '}')
+    text = re.sub(r'#[0-9A-Fa-f]{3,8}\b', lambda m: m.group(0).lower(), text)
+    text = re.sub(r'#([0-9a-f])([0-9a-f])([0-9a-f])\b', r'#\1\1\2\2\3\3', text)
+    text = re.sub(r'(?<![\w.])0\.(\d)', r'.\1', text)
+    text = re.sub(r'(?<=[:\s,(])(white|black)\b', lambda m: NAMED_COLORS[m.group(1)], text)
+    return [f'{m.group(1).strip()} {{{m.group(2)}}}' for m in re.finditer(r'([^{}]+)\{([^{}]*)\}', text)]
 
 
 def run_admin(args):
@@ -3402,6 +3472,24 @@ def run_admin(args):
             location = headers.get('Location', '').replace(side.url, '')
             return lines + (['== page suivante', *page_lines(side.url, *client.get(location))] if location else [])
 
+        def send_files(path, action, values, files, button, who=None):
+            """Comme send, avec des fichiers, en multipart/form-data : files, {fin du nom du champ : (nom, contenu)}."""
+            client = client_for(who or email, path.split('/')[1])
+            form = form_of(client, path, action)
+            if form.url is None:
+                return [f'pas de formulaire {action} : {path}']
+            values = {k: (form.choices(k)[:1] or [''])[0] if v is FIRST else v for k, v in values.items()}
+            fields = urllib.parse.parse_qsl(form.filled(values).decode(), keep_blank_values=True)
+            names = {key: next(n for n in sorted(form.names) if FormFields.match(n, key)) for key in files}
+            fields = [f for f in fields if f[0] not in names.values()]
+            if button and form.buttons:
+                fields.append((button if button in form.buttons else form.buttons[0], ''))
+            body, kind = multipart(fields, {names[key]: content for key, content in files.items()})
+            status, headers, _ = client.get(form.url, body, {'Content-Type': kind, 'Referer': side.url + path})
+            lines = redirect_lines(side.url, status, headers)
+            location = headers.get('Location', '').replace(side.url, '')
+            return lines + (['== page suivante', *page_lines(side.url, *client.get(location))] if location else [])
+
         for name, spec in admins.items():
             slug, cid = first(base, spec, slugs)
             root = f'/{slug}/admin/{name}'
@@ -3423,6 +3511,10 @@ def run_admin(args):
                     parts[f'{name} : suppression'] = send(f'{root}/{created}/delete', f'/{name}/{created}/delete',
                                                          {}, 'btn_delete')
         parts.update(other_writes(send, base, client_for(email, slugs[0]), slugs))
+        parts.update(file_writes(send, send_files, base, side, slugs[0]))
+        parts.update(theme_writes(send, base, side, client_for(email, slugs[0]), slugs[0]))
+        parts.update(limit_writes(send, base, client_for, slugs))
+        parts.update(geography_writes(send, base, side, client_for))
         time.sleep(2)  # les courriels du nouveau partent après la réponse (DeferredMailer)
         parts['courriels'] = [line.replace(side.url, '<site>') for line in mail_lines()]
         for name, spec in sorted(admins.items(), key=lambda item: item[1]['table']):
@@ -3440,7 +3532,7 @@ def run_admin(args):
         parts['état historique'] = state_lines(base, historique, ['historique'])['historique']
         parts['état des autres tables'] = other_tables_lines(base, {f[5:] for f in parts if f.startswith('état ')})
         if side.login_link:
-            checks.update(new_only(send, base, client_for))
+            checks.update(new_only(send, send_files, base, client_for))
         return parts
 
     def other_writes(send, base, client, slugs):
@@ -3489,6 +3581,137 @@ def run_admin(args):
                                   ('chronique inconnue', '?id=999999999')]:
                 status, headers, _ = client.get(f'/{slug}/admin/fillingrate{params}')
                 parts[f'taux de remplissage : {label}'] = redirect_lines(client.side.url, status, headers)
+        return parts
+
+    def recorded(base, table, column, oid):
+        """Le chemin qu'une fiche enregistre pour un fichier joint."""
+        return query(base, f"SELECT coalesce({column}, '<nul>') FROM {table} WHERE id = {oid}", NEW_SERVER)[0][0]
+
+    def file_writes(send, send_files, base, side, slug):
+        """Les fichiers joints (DocumentedEntityListener), au nom de l'administrateur : un partenaire créé avec son
+        logo, le logo remplacé par une image d'un autre type, retiré, puis le partenaire supprimé avec un logo ; le
+        logo d'un observatoire remplacé, sa photo secondaire retirée. Pour chacun, la page où il renvoie, le chemin
+        enregistré, et les fichiers sur le disque de l'instance : présents ou non, et leur empreinte."""
+        parts = {}
+        root = WEB_ROOTS[1] if side.login_link else WEB_ROOTS[0]
+
+        def files(*paths):
+            return [f'fichier {path} : ' + (f'présent, {hashlib.sha256((root / path).read_bytes()).hexdigest()[:16]}'
+                                            if path.startswith('uploads/') and (root / path).is_file() else 'absent')
+                    for path in paths]
+
+        if 'partenaire' in admins:
+            create = (f'/{slug}/admin/partenaire/create', '/partenaire/create')
+            values = dict(ADMINS['partenaire']['create'], **{'[nom]': 'Partenaire à logo'})
+            lines = send_files(*create, values, {'[pathLogo][new]': ('logo.gif', GIF)}, 'btn_create_and_edit')
+            pid = query(base, 'SELECT max(id) FROM partenaire', NEW_SERVER)[0][0]
+            first = recorded(base, 'partenaire', 'pathlogo', pid)
+            parts['fichiers joints : partenaire créé avec un logo'] = [*lines, f'chemin {first}', *files(first)]
+            edit = (f'/{slug}/admin/partenaire/{pid}/edit', f'/partenaire/{pid}/edit')
+            lines = send_files(*edit, {}, {'[pathLogo][new]': ('logo.png', png_pixel())}, 'btn_update_and_edit')
+            second = recorded(base, 'partenaire', 'pathlogo', pid)
+            parts['fichiers joints : logo remplacé par une image d’un autre type'] = [
+                *lines, f'chemin {second}', *files(first, second)]
+            lines = send(*edit, {'[pathLogo][current]': ''}, 'btn_update_and_edit')
+            parts['fichiers joints : logo retiré'] = [*lines, f"chemin {recorded(base, 'partenaire', 'pathlogo', pid)}",
+                                                      *files(second)]
+            send_files(*edit, {}, {'[pathLogo][new]': ('logo.gif', GIF)}, 'btn_update_and_edit')
+            third = recorded(base, 'partenaire', 'pathlogo', pid)
+            lines = send(f'/{slug}/admin/partenaire/{pid}/delete', f'/partenaire/{pid}/delete', {}, 'btn_delete')
+            parts['fichiers joints : partenaire supprimé avec son logo'] = [*lines, f'chemin avant {third}', *files(third)]
+        if 'observatoire' in admins:
+            oid = query(base, f"SELECT id FROM observatoire WHERE slug = '{slug}'", NEW_SERVER)[0][0]
+            edit = (f'/{slug}/admin/observatoire/{oid}/edit', f'/observatoire/{oid}/edit')
+            logo, photo = (recorded(base, 'observatoire', column, oid) for column in ('pathlogo', 'pathphotosecondaire'))
+            lines = send_files(*edit, {}, {'[pathLogo][new]': ('logo.gif', GIF)}, 'btn_update_and_edit')
+            new_logo = recorded(base, 'observatoire', 'pathlogo', oid)
+            parts['fichiers joints : logo d’un observatoire remplacé'] = [*lines, f'chemin {new_logo}', *files(logo, new_logo)]
+            lines = send(*edit, {'[pathPhotoSecondaire][current]': ''}, 'btn_update_and_edit')
+            parts['fichiers joints : photo secondaire d’un observatoire retirée'] = [
+                *lines, f"chemin {recorded(base, 'observatoire', 'pathphotosecondaire', oid)}", *files(photo)]
+        return parts
+
+    def theme_writes(send, base, side, client, slug):
+        """Les couleurs d'un observatoire changées : sa feuille de style se recompile (ObservatoireStylesheetListener,
+        CssManager). Elle se lit à l'adresse que donnent ses pages, règle par règle (css_lines)."""
+        if 'observatoire' not in admins:
+            return {}
+        oid = query(base, f"SELECT id FROM observatoire WHERE slug = '{slug}'", NEW_SERVER)[0][0]
+        lines = send(f'/{slug}/admin/observatoire/{oid}/edit', f'/observatoire/{oid}/edit',
+                     {'[couleurPrimaire]': '#12AB34', '[couleurSecondaire]': '#AB1234'}, 'btn_update_and_edit')
+        home = client.get(f'/{slug}/')[2].decode('utf-8', 'replace')
+        found = re.search(r'href="(/[^"]*css/themes/[^"?]+)', home)
+        if not found:
+            return {'observatoire : couleurs changées': lines, 'observatoire : thème recompilé': ['pas de feuille de thème']}
+        status, _, body = client.get(found.group(1))
+        return {'observatoire : couleurs changées': lines,
+                'observatoire : thème recompilé': [f'adresse {found.group(1)}', f'statut {status}',
+                                                    *css_lines(body.decode('utf-8', 'replace'))]}
+
+    def limit_writes(send, base, client_for, slugs):
+        """La fiche d'une chronique dont des mesures sont déjà des limites (Admin/Data/Chronique.php : la case des
+        limites forcée, ou seulement montrée pour une convertie), ouverte puis enregistrée telle quelle par
+        l'administrateur : une discontinue qui en a, une continue et une convertie dont une mesure le devient ici,
+        de la même façon dans les deux copies (la base réduite n'en a pas)."""
+        parts = {}
+        if not any(name.startswith('chronique') for name in admins):
+            return parts
+        in_slugs = ', '.join(f"'{s}'" for s in slugs)
+        limit = query(base, f"""SELECT q.id FROM qualite q JOIN observatoire o ON o.jeu_id = q.jeu_id
+                                 WHERE o.slug = '{slugs[0]}' AND q.ordre = 600 ORDER BY q.id LIMIT 1""", NEW_SERVER)
+        cases = {'discontinue': f"""c.dtype = 'discontinue' AND c.slug IN ({in_slugs}) AND EXISTS (
+                                     SELECT 1 FROM plage p JOIN qualite q ON q.id = p.qualite_id
+                                      WHERE p.chronique_id = c.id AND q.ordre IN (600, 700))"""}
+        if limit:
+            for dtype in ('continue', 'convertie'):
+                picked = query(base, CHRONIQUE_PICK.format(dtype=dtype).format(slug=slugs[0]), NEW_SERVER)[0][0] or 0
+                cases[dtype] = f"""c.dtype = '{dtype}' AND c.slug = '{slugs[0]}' AND c.id <> {picked}
+                                   AND EXISTS (SELECT 1 FROM mesure m WHERE m.chronique_id = c.id)"""
+        for dtype, where in cases.items():
+            rows = query(base, f'SELECT c.id, c.slug FROM ({CHRONIQUES}) c WHERE {where} ORDER BY c.id LIMIT 1', NEW_SERVER)
+            if not rows:
+                parts[f'chronique {dtype} qui a déjà des limites'] = ['aucun cas dans la base']
+                continue
+            cid, cslug = rows[0]
+            if dtype != 'discontinue':
+                query(base, f"""UPDATE mesure SET qualite_id = {limit[0][0]}
+                                 WHERE id = (SELECT min(id) FROM mesure WHERE chronique_id = {cid}) RETURNING 1""", NEW_SERVER)
+            path = f'/{cslug}/admin/chronique{dtype}/{cid}/edit'
+            client = client_for(accounts['administrateur'][0], cslug)
+            parts[f'chronique {dtype} qui a déjà des limites : page'] = page_lines(client.side.url, *client.get(path))
+            parts[f'chronique {dtype} qui a déjà des limites : enregistrée telle quelle'] = send(
+                path, f'/chronique{dtype}/{cid}/edit', {}, 'btn_update_and_edit')
+        return parts
+
+    def geography_writes(send, base, side, client_for):
+        """Un bassin modifié puis supprimé, un cours d'eau supprimé (l'administration n'en crée pas : ils viennent
+        des shapefiles), au nom d'un gestionnaire de leur observatoire, puis l'historique récent de celui-ci. Une
+        seconde entre deux écritures : l'historique les date à la seconde, et sa page ne trie que sur la date."""
+        parts = {}
+        rows = query(base, """SELECT o.slug, (SELECT min(id) FROM bassin WHERE observatoire_id = o.id),
+                                     (SELECT min(id) FROM courseau WHERE observatoire_id = o.id)
+                                FROM observatoire o WHERE EXISTS (SELECT 1 FROM bassin WHERE observatoire_id = o.id)
+                               ORDER BY o.id LIMIT 1""", NEW_SERVER)
+        if not rows or not ({'bassin', 'courseau'} & set(admins)):
+            return parts
+        slug, bassin, courseau = rows[0]
+        manager = query(base, f"""SELECT u.email FROM utilisateur u JOIN role r ON r.utilisateur_id = u.id
+                                   JOIN observatoire o ON o.id = r.observatoire_id
+                                  WHERE r.valeur = 'gestionnaire' AND o.slug = '{slug}' AND u.roleadmin IS NULL
+                                    AND (u.finacces IS NULL OR u.finacces > now()) ORDER BY u.id LIMIT 1""", NEW_SERVER)[0][0]
+        if 'bassin' in admins:
+            root = f'/{slug}/admin/bassin/{bassin}'
+            parts['bassin : édition, par un gestionnaire'] = send(f'{root}/edit', f'/bassin/{bassin}/edit',
+                                                                 {'[nom]': 'Bassin (essai)'}, 'btn_update_and_edit', who=manager)
+            time.sleep(1.1)
+            parts['bassin : suppression, par un gestionnaire'] = send(f'{root}/delete', f'/bassin/{bassin}/delete', {},
+                                                                     'btn_delete', who=manager)
+        if 'courseau' in admins and courseau:
+            time.sleep(1.1)
+            parts['cours d’eau : suppression, par un gestionnaire'] = send(
+                f'/{slug}/admin/courseau/{courseau}/delete', f'/courseau/{courseau}/delete', {}, 'btn_delete', who=manager)
+        lines = page_lines(side.url, *client_for(manager, slug).get(f'/{slug}/historique/recent'))
+        parts['bassin et cours d’eau : historique après les suppressions'] = today_lines(lines)
         return parts
 
     def account_rights(send, base, client_for):
@@ -3563,7 +3786,7 @@ def run_admin(args):
             ['conforme'] if rights_end_date(manager, manager_slug, got) == '2027-06-30' else ['date non enregistrée'])
         return results
 
-    def new_only(send, base, client_for):
+    def new_only(send, send_files, base, client_for):
         """Ce que seul le nouveau fait (dev/differences.md, dev/local/security.md) : chaque vérification
         rend « conforme » ou ce qui ne l'est pas. Après l'état des tables : ces écritures n'y comptent pas."""
         results = {}
@@ -3588,6 +3811,24 @@ def run_admin(args):
             status, _, _ = client.get(form.url, body, {'Content-Type': kind, 'Referer': client.side.url + path})
             results['nouveau seul : extension d’un fichier téléversé tirée de son contenu'] = (
                 ['conforme'] if status == 302 and logo().endswith('.gif') else [f'statut {status}, chemin : {logo()}'])
+            # Deux partenaires de même nom dans deux observatoires, chacun avec son logo du même type : chacun garde
+            # le sien (dev/differences.md, « Logos de partenaires de même nom »)
+            label = 'nouveau seul : logos de deux partenaires de même nom, dans deux observatoires, gardés chacun'
+            if len(slugs) > 1:
+                twins = []
+                for twin_slug, content in zip(slugs[:2], (GIF, GIF + b'\x00')):
+                    send_files(f'/{twin_slug}/admin/partenaire/create', '/partenaire/create',
+                               dict(ADMINS['partenaire']['create'], **{'[nom]': 'Partenaire jumeau'}),
+                               {'[pathLogo][new]': ('logo.gif', content)}, 'btn_create_and_edit')
+                    twin = query(base, 'SELECT max(id) FROM partenaire', NEW_SERVER)[0][0]
+                    twins.append((recorded(base, 'partenaire', 'pathlogo', twin), content))
+                own = [path.startswith(f'uploads/{twin_slug}_') for (path, _), twin_slug in zip(twins, slugs)]
+                kept = [(WEB_ROOTS[1] / path).is_file() and (WEB_ROOTS[1] / path).read_bytes() == content
+                        for path, content in twins]
+                results[label] = (['conforme'] if all(own) and all(kept)
+                                  else [f'chemins : {[path for path, _ in twins]}, fichiers gardés : {kept}'])
+            else:
+                results[label] = ['un seul observatoire pour ce compte']
         rows = query(base, f"""SELECT c.id, c.slug, c.station, c.code FROM ({CHRONIQUES}) c
                                  WHERE NOT c.estvisible ORDER BY c.id LIMIT 1""", NEW_SERVER)
         if rows:

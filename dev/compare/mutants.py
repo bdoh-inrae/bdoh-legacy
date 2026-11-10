@@ -14,6 +14,10 @@ Le verdict lit les fichiers d'écarts sans les montrer, et le rapport du mode. U
 ou il manque un cas. Un mode qui s'arrête en route ne prouve rien tant qu'on n'a pas lu pourquoi (un Apache de l'ancien tombé a déjà
 passé pour une faute vue) : il ne compte pas parmi les fautes vues, et le rapport donne sa dernière ligne d'erreur.
 
+Une faute s'écrit dans la logique du code : le lanceur ne vide pas le cache de Symfony, si bien qu'une faute dans ce
+qu'il compile (routes, services, configuration) ne s'appliquerait pas, et passerait pour non vue (essai du 10 novembre :
+une route de suppression retirée). De même pour les gabarits.
+
 Un seul lancement à la fois, sur un dépôt propre : il travaille sur les fichiers de src/. Le rapport, qui
 ne contient que le nom des fautes et des comptes, va dans ../bdoh_reference/compare/.
 """
@@ -43,6 +47,7 @@ CONTROLES = SRC + 'BdohAdminBundle/Importer/Controle/Manager.php'
 USERS = SRC + 'BdohSecurityBundle/Controller/UtilisateurController.php'
 PLAGES = SRC + 'BdohDataBundle/Entity/Repository/PlageRepository.php'
 TRANSFORMATIONS = SRC + 'BdohAdminBundle/Controller/TransformationController.php'
+DOCUMENTS = SRC + 'BdohDataBundle/Doctrine/Listener/DocumentedEntityListener.php'
 
 # (nom, mode, --only, fichier, texte, remplacement) ; le texte doit se trouver, et tous ses exemplaires changent
 PHP = [
@@ -179,6 +184,30 @@ PHP = [
     ('vider une période de plages : les plages à cheval gardées', 'state', '', PLAGES,
      "'((fin > :begin AND debut < :end) OR (debut = fin AND (debut = :begin OR fin = :end )))'",
      "'((debut >= :begin AND fin <= :end) OR (debut = fin AND (debut = :begin OR fin = :end )))'"),
+    # L'administration (C3, groupe 6)
+    ('fichier joint : l’ancien gardé quand on le remplace', 'admin', 'partenaire', DOCUMENTS,
+     '                if (!empty($old)) {\n                    $this->unlinkFile($old);\n                }\n                $this->uploadFile(',
+     '                $this->uploadFile('),
+    ('fichier joint : retiré sans effacer le fichier', 'admin', 'partenaire', DOCUMENTS,
+     '} elseif (empty($new)) {', '} elseif (false) {'),
+    ('thème : pas recompilé quand les couleurs changent', 'admin', 'observatoire',
+     SRC + 'BdohDataBundle/Doctrine/Listener/ObservatoireStylesheetListener.php',
+     "if (isset($changes['couleurPrimaire']) || isset($changes['couleurSecondaire'])) {", 'if (false) {'),
+    ('fiche d’une chronique : les limites de quantification ignorées', 'admin', 'chronique',
+     SRC + 'BdohAdminBundle/Admin/Data/Chronique.php',
+     "new Parameter('ordres', Qualite::$ordresLimites),", "new Parameter('ordres', [700]),"),
+    # Une route retirée ne s'appliquerait pas : le lanceur ne vide pas le cache de Symfony (en-tête)
+    ('bassin : la suppression notée comme une modification', 'admin', 'bassin', SRC + 'BdohAdminBundle/Admin/Data/Bassin.php',
+     "'historique.actions.BassinRemove',", "'historique.actions.BassinUpdate',"),
+    ('partenaire : logo nommé sans son observatoire (ancien comportement)', 'admin', 'partenaire',
+     SRC + 'BdohDataBundle/Entity/Partenaire.php',
+     "return $this->observatoire !== null ? $this->observatoire->getSlug() . '_' . $prefix : $prefix;", 'return $prefix;'),
+    ('shapefile, garder : les stations qui ont un point déplacées', 'imports', 'shapefile', STATIONS,
+     'si.observatoire_id = $currentObsId AND st.point IS NULL', 'si.observatoire_id = $currentObsId'),
+    ('shapefile, garder : la liste des noms sans son type (piège de DBAL 4)', 'imports', 'shapefile',
+     SRC + 'BdohDataBundle/Entity/Repository/BassinRepository.php',
+     '            $sqlParamsArray[] = $allBassinsNoms;\n            $sqlTypesArray[] = \\Doctrine\\DBAL\\ArrayParameterType::STRING;',
+     '            $sqlParamsArray[] = $allBassinsNoms;\n            $sqlTypesArray[] = \\Doctrine\\DBAL\\ParameterType::STRING;'),
 ]
 
 # (nom, mode, fonction SQL, texte, remplacement), ou (nom, mode, --only, fonction SQL, texte, remplacement) : une

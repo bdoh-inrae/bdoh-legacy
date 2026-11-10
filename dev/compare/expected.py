@@ -219,4 +219,12 @@ RULES = [
         "-Votre identifiant est l'adresse e-mail à laquelle vous recevez ce message et le mot de passe est «\xa0password\xa0», nous vous invitons à le changer dès votre première connexion.",
         "+Votre identifiant est l'adresse e-mail à laquelle vous recevez ce message. BDOH n'a pas de mot de passe\xa0: pour vous connecter, saisissez cette adresse sur la page de connexion, et BDOH vous enverra un lien de connexion.")),
     Rule('admin', 'état utilisateur', LINK, masks=((r'^(\{"id": 800, .*"mot de passe": )(?:true|false)', r'\1<lien>'),)),
+    # Le logo d'un partenaire porte aussi le nom de son observatoire ; « nouveau seul : logos de deux partenaires de
+    # même nom » vérifie qu'il y est
+    Rule('admin', r'fichiers joints : (?:partenaire créé avec un logo|logo remplacé par une image d’un autre type|logo retiré'
+         r'|partenaire supprimé avec son logo)', 'Logos de partenaires de même nom',
+         masks=((r'uploads/[A-Z0-9-]+_(?=[A-Z0-9-]+-logo\.)', 'uploads/'),)),
+    # Les règles des boutons de la boîte à outils, que less.php 5.5 complète ; le reste de la feuille ne doit pas changer
+    Rule('admin', 'observatoire : thème recompilé', 'Thèmes des observatoires',
+         lines=(RX(r'[-+][^{]*\.toolbox-btns[^{]* \{.*\}'),), must=(RX(r'\+[^{]*\.toolbox-btns>a:focus.*'),)),
 ]

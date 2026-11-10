@@ -337,6 +337,25 @@ class Register(unittest.TestCase):
         self.assertEqual(self.verdict(rules, 'gestionnaire /DRAIX/LAVAL-AMONT/HT', ['T a'], ['T a', 'T Points de contrôle (?) : Aucun']), 'différents')
 
 
+class Stylesheets(unittest.TestCase):
+    """css_lines : less.php 1.7 et 5.5 écrivent autrement la même règle ; une autre valeur reste un écart."""
+
+    def test_same_rule_written_otherwise(self):
+        old = '.box legend {padding-left: 0.5em;color: #444;border: solid #fff 1px}\n.a > b{color:#46a9ab;}'
+        new = '.box legend{padding-left:.5em;color:#444444;border:solid white 1px}.a>b{color:#46A9AB}'
+        self.assertEqual(compare.css_lines(old), compare.css_lines(new))
+
+    def test_other_value_seen(self):
+        for name, old, new in [
+            ('couleur', '.a{color:#46a9ab}', '.a{color:#46a9ac}'),
+            ('nombre', '.a{padding:0.5em}', '.a{padding:0.6em}'),
+            ('blanc et noir', '.a{color:white}', '.a{color:black}'),
+            ('sélecteur', '.a>b{color:red}', '.a b{color:red}'),
+        ]:
+            with self.subTest(name):
+                self.assertNotEqual(compare.css_lines(old), compare.css_lines(new))
+
+
 class Fingerprints(unittest.TestCase):
     """L'empreinte de dev/reference/fingerprint.sql : le fichier est bien lu, et sûr pour les NULL."""
 

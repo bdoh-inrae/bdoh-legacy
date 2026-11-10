@@ -253,7 +253,12 @@ class Partenaire implements DocumentedEntityInterface
      */
     public function getDocumentFilePrefix()
     {
-        return IrsteaBdohDataBundle::slugify($this->nom);
+        // L'observatoire avec le nom : deux observatoires peuvent avoir un partenaire de même nom, qui partageaient
+        // le même fichier (dev/differences.md, « Logos de partenaires de même nom »). Le soulignement, qu'aucun slug
+        // ne contient, sépare les deux : le préfixe ne peut pas être celui d'un observatoire ou d'un autre partenaire.
+        $prefix = IrsteaBdohDataBundle::slugify($this->nom);
+
+        return $this->observatoire !== null ? $this->observatoire->getSlug() . '_' . $prefix : $prefix;
     }
 
     /**
