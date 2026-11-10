@@ -68,7 +68,7 @@ OTHU seulement : ses trois fonctions SQL, à aligner sur la production après co
 sudo make vm-apache NOM=prod
 ```
 
-Écrit le site Apache (`config/deploy/apache-site.conf`), demande le mot de passe d'accès des essais (compte `essais`), et recharge Apache. Le certificat est celui, auto-signé, du paquet `ssl-cert`, tant que l'infra n'en fournit pas.
+Écrit le site Apache (`config/deploy/apache-site.conf`), demande le mot de passe d'accès des essais (compte `test`, partagé avec les testeurs ; il se change par `sudo htpasswd /etc/apache2/bdoh-prod.htpasswd test`), et recharge Apache. Le certificat est celui, auto-signé, du paquet `ssl-cert`, tant que l'infra n'en fournit pas.
 
 ## 4. Une instance : courriels, file de tâches, sauvegardes
 

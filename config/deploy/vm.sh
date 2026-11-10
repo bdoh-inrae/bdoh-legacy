@@ -161,7 +161,7 @@ cmd_apache() {
     sed -e "s/@NOM@/$NOM/g" -e "s/@PORT@/$port/g" config/deploy/apache-site.conf \
         > "/etc/apache2/sites-available/bdoh-$NOM.conf"
     local access=/etc/apache2/bdoh-$NOM.htpasswd
-    [[ -f $access ]] || { echo "Mot de passe d'accès des essais, compte « essais » :"; htpasswd -c "$access" essais; }
+    [[ -f $access ]] || { echo "Mot de passe d'accès des essais, compte « test » :"; htpasswd -c "$access" test; }
     chgrp www-data "$access" && chmod 640 "$access"
     a2ensite -q "bdoh-$NOM"
     apache2ctl configtest
