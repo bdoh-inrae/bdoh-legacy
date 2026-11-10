@@ -51,7 +51,14 @@ sudo chown -R root:root /var/backups/bdoh-sources
 sudo make vm-db NOM=prod DUMP=/var/backups/bdoh-sources/….dump
 ```
 
-`vm-db` restaure le dump dans une base neuve (`--locale=en_US.UTF-8`), la donne au rôle de l'instance (`dev/reference/own-by-bdoh.sql`), applique les migrations entre deux contrôles, et pour la production déballe les logos et images (`bdoh-uploads-prod.tar.gz`). À lire à la fin : `inspect.sql` ne doit changer que sur la ligne « séquences en retard », qui passe à 0, et l'empreinte que sur les tables visées par les migrations.
+`vm-db` restaure le dump dans une base neuve (`--locale=en_US.UTF-8`), la donne au rôle de l'instance (`dev/reference/own-by-bdoh.sql`), applique les migrations entre deux contrôles, et pour la production déballe les logos et images (`bdoh-uploads-prod.tar.gz`). À lire à la fin : `inspect.sql` ne change que sur la ligne « séquences en retard », qui passe de 7 à 0 ; l'empreinte ne lit que les mesures (`dev/reference/fingerprint.sql`), que les migrations ne touchent pas : aucune chronique ne doit y être listée. C'est ce qu'a donné la production le 10 novembre.
+
+Si l'archive des logos n'était pas encore dans `/var/backups/bdoh-sources/`, la déballer ensuite, dans `/var/www/bdoh-prod` :
+
+```
+sudo tar -xzf /var/backups/bdoh-sources/bdoh-uploads-prod.tar.gz --strip-components=1 -C public web/uploads
+sudo chown -R www-data:www-data public/uploads
+```
 
 OTHU seulement : ses trois fonctions SQL, à aligner sur la production après comparaison (`ROADMAP.md`).
 

@@ -36,13 +36,16 @@ controle() {
     done
 }
 
-# Ce qu'ont changé les migrations : seulement la ligne « séquences en retard » d'inspect.sql, et
-# l'empreinte des seules tables qu'elles visent.
+# Ce qu'ont changé les migrations. inspect.sql : seulement la ligne « séquences en retard ». L'empreinte
+# ne lit que les quatre tables de mesures, qu'aucune migration ne touche : aucune chronique attendue.
 changes() {
+    local changed
     echo "--- inspect.sql, avant et après :"
     diff "/root/inspect-$NOM-avant.txt" "/root/inspect-$NOM-apres.txt" || true
-    echo "--- empreinte, tables changées :"
-    diff "/root/fingerprint-$NOM-avant.txt" "/root/fingerprint-$NOM-apres.txt" | cut -d'|' -f1-2 | sort -u || true
+    echo "--- empreinte des mesures, chroniques changées (attendu : aucune) :"
+    changed=$(diff "/root/fingerprint-$NOM-avant.txt" "/root/fingerprint-$NOM-apres.txt" \
+        | sed -n 's/^[<>] //p' | cut -d'|' -f1-2 | sort -u || true)
+    echo "${changed:-aucune}"
 }
 
 cmd_deps() {
@@ -146,6 +149,9 @@ cmd_db() {
     if [[ $NOM == prod && -f $sources/bdoh-uploads-prod.tar.gz ]]; then
         tar -xzf "$sources/bdoh-uploads-prod.tar.gz" --strip-components=1 -C public web/uploads
         chown -R www-data:www-data public/uploads
+        echo "Logos et images déballés : $(find public/uploads -type f | wc -l) fichiers."
+    elif [[ $NOM == prod ]]; then
+        echo "Pas de $sources/bdoh-uploads-prod.tar.gz : logos et images à déballer à part (dev/deploy/README.md)."
     fi
     echo "Base $base prête."
 }
