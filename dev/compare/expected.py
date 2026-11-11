@@ -44,6 +44,7 @@ def replaced(mode, case, why, status, *lines):
 OPEN = 'Ouverture des données'
 LINK = 'Connexion par lien, sans mot de passe'
 CONTACT = 'Adresse de contact'
+HOMES = 'Accueils autour de la carte'
 OLD_TERMS = "Pour pouvoir télécharger des données il faudra, une fois connecté, faire des demandes d'accès spécifiques sur les observatoires qui vous intéressent via le formulaire de demande d'accès aux données ou contacter un gestionnaire"
 NEW_TERMS = "Les données ouvertes se téléchargent sans compte. Pour accéder aux données fermées, il faudra, une fois connecté, faire des demandes d'accès spécifiques sur les observatoires qui vous intéressent via le formulaire de demande d'accès aux données ou contacter un gestionnaire"
 RIGHTS_NOTICE = "Conformément aux articles 39 et 40 de la loi Informatique et Libertés modifiée par la loi n° 2004-801 du 6 août 2004 relative à la protection des personnes physiques à l'égard des traitements de données à caractère personnel, vous disposez d'un droit d'accès et de rectification des données vous concernant. Pour toute demande de rectification veuillez vous adresser à : "
@@ -127,6 +128,23 @@ RULES = [
         RX(r'\+D div (?:data-fit-france= )?data-see-station=(?:Voir la station|See the station) data-stations=\[.*\]'),
         RX(r'\+T (?:Stations sans position, absentes de la carte : |Stations without a position, missing from the map: )\d+\.')),
         must=(RX(r'\+T (?:Carte des stations|Map of the stations)'),)),
+    # Les accueils organisés autour de la carte (2026-11-11). Le portail perd ses onglets au survol et les aperçus
+    # cachés des observatoires, qui redisent leur page : tout ce qu'il montrait part, et il n'ajoute que la carte,
+    # le titre « Observatoires » et une fiche par observatoire, que « nouveau seul : fiches des observatoires »
+    # vérifie une à une, avec la présentation, qui doit rester. Un observatoire garde son contenu : s'y ajoutent les
+    # boutons des sites sous la carte, et ses photos passent avant les listes.
+    Rule('pages', rf'{ROLE} /', HOMES, lines=(
+        RX(r'-.*'), '+L stylesheet /bundles/irsteabdohconsult/css/homes.css', RX(r'\+T Observato(?:ires|ries)'),
+        RX(rf'\+A {OBS}/home'), RX(r'\+D a data-map-observatoire=.+'), RX(r'\+G /uploads/\S+'), RX(r'\+T .+')),
+        must=('-S /assets/home.js', RX(r'\+D a data-map-observatoire=.+'))),
+    Rule('pages', rf'{ROLE} {OBS}/(?:home)?', HOMES, lines=(
+        '+L stylesheet /bundles/irsteabdohconsult/css/homes.css', '+S /bundles/irsteabdohconsult/js/read-more.js',
+        RX(r'\+I button button(?: disabled)?'), RX(r'\+D button data-map-site=\d+'), RX(r'\+T Sites ?: .+'),
+        RX(r'\+D li data-map-site=\d+'),
+        RX(r'\+D div data-read-less=(?:Réduire|Show less) data-read-more=(?:Lire la suite|Read more)'),
+        RX(r'[-+]D div data-interval=false data-ride=carousel'), RX(r'[-+]G /uploads/\S+ .+'), RX(r'[-+]A #photos'),
+        RX(r'[-+]D a data-slide=(?:prev|next)')),
+        must=('+S /bundles/irsteabdohconsult/js/read-more.js',)),
     Rule('pages', rf'{ROLE} {OBS}/contact', CONTACT, lines=(
         '-A mailto:bdoh.support@lists.irstea.fr', '+A mailto:bdoh.support@listes.inrae.fr',
         "-T Pour les demandes techniques concernant l'utilisation de BDOH veuillez contacter bdoh.support@lists.irstea.fr.",

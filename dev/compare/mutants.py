@@ -208,6 +208,11 @@ PHP = [
      'round(ST_X(ST_Transform(s.point, 4326))::numeric, 5)::text AS lat,\n       round(ST_Y('),
     ('carte : les stations d’autres observatoires sur celle d’un observatoire', 'pages', '', STATIONS,
      "'WHERE o.id = :observatoire'", "'WHERE o.id >= :observatoire'"),
+    # Les accueils autour de la carte
+    ('carte : une station dans un seul de ses sites', 'pages', '', STATIONS,
+     "string_agg(si.id::text, ',' ORDER BY si.id) AS sites", 'min(si.id)::text AS sites'),
+    ('portail : le texte entier dans la fiche d’un observatoire', 'pages', '', SRC + 'BdohBundle/Twig/BdohExtension.php',
+     'if (mb_strlen($text) <= $length) {', 'if (true) {'),
     ('shapefile, garder : les stations qui ont un point déplacées', 'imports', 'shapefile', STATIONS,
      'si.observatoire_id = $currentObsId AND st.point IS NULL', 'si.observatoire_id = $currentObsId'),
     ('shapefile, garder : la liste des noms sans son type (piège de DBAL 4)', 'imports', 'shapefile',

@@ -837,6 +837,7 @@ def run_pages(args):
                 report.add(f'{profile} {path}', *lines)
     if not args.only and not args.profile:
         map_checks(args.base, new, slug, report)
+        cards_checks(args.base, new, report)
     report.close()
 
 
@@ -867,6 +868,49 @@ def map_checks(base, side, slug, report):
         else:
             lines += map_sites_checks(base, obs, stations, body)
         report.add(f'nouveau seul : carte des stations, {path}', ['conforme'], lines or ['conforme'])
+
+
+def cards_checks(base, side, report):
+    """L'accueil du portail, que seul le nouveau a sous cette forme (2026-11-11, dev/differences.md, « Accueils autour
+    de la carte ») : la présentation reste, et chaque observatoire a sa fiche, dans l'ordre du menu, avec le lien vers
+    son accueil, son nom, le début de sa description en texte simple (240 caractères au plus, coupé à la fin d'un
+    mot) et le nombre de ses stations placées. Le registre admet tout ce que le portail perd : ce contrôle dit ce
+    qu'il doit garder et montrer."""
+    body = Client(side, None, None).get('/')[2].decode('utf-8', 'replace')
+    lines = []
+    if 'La Base de Données pour les Observatoires en Hydrologie (BDOH) a pour vocation' not in body:
+        lines.append('la présentation manque')
+    rows = query(base, r"""SELECT o.slug, o.nom, regexp_replace(coalesce(o.description, ''), '[\t\r\n]+', ' ', 'g'),
+                                 count(DISTINCT s.id) FILTER (WHERE s.point IS NOT NULL)
+                            FROM observatoire o LEFT JOIN siteexperimental si ON si.observatoire_id = o.id
+                            LEFT JOIN stations_sites ss ON ss.site_id = si.id LEFT JOIN station s ON s.id = ss.station_id
+                           GROUP BY o.id ORDER BY o.id""")
+    cards = re.findall(r'<a class="observatory-card" href="/([^/"]+)/home"\s+data-map-observatoire="([^"]*)">(.*?)</a>', body, re.S)
+    if sorted(c[0] for c in cards) != sorted(r[0] for r in rows):
+        lines.append(f'{len(cards)} fiches pour {len(rows)} observatoires')
+    # Comme strip_tags, qui retire aussi les commentaires entiers, y compris ceux d'un texte collé depuis Word
+    plain = lambda text: re.sub(r'\s+', ' ', html.unescape(re.sub(r'<[^>]*>', '', re.sub(r'<!--.*?-->', '', text, flags=re.S)))).strip()
+    for slug, name, inside in cards:
+        row = next((r for r in rows if r[0] == slug), None)
+        if row is None:
+            continue
+        shown_name = re.search(r'observatory-card-name">([^<]*)<', inside)
+        text = re.search(r'observatory-card-text">(.*?)</span>', inside, re.S)
+        count = re.search(r'observatory-card-count">([^<]*)<', inside)
+        excerpt = plain(text.group(1)) if text else ''
+        description = plain(row[2].replace('<br', ' <br').replace('</p>', ' </p>').replace('</li>', ' </li>'))
+        problems = []
+        if html.unescape(name) != row[1] or not shown_name or html.unescape(shown_name.group(1)).strip() != row[1]:
+            problems.append('nom')
+        if len(excerpt) > 241 or not description.startswith(excerpt.rstrip('…').rstrip(' ,;:.')):
+            problems.append('texte')
+        number = re.search(r'\d+', count.group(1)) if count else None
+        wanted = int(row[3])
+        if not count or (int(number.group()) if number else {'Une': 1, 'One': 1}.get(count.group(1).split()[0], 0)) != wanted:
+            problems.append('nombre de stations')
+        if problems:
+            lines.append(f'{slug} : {", ".join(problems)}')
+    report.add('nouveau seul : fiches des observatoires, /', ['conforme'], lines or ['conforme'])
 
 
 def map_sites_checks(base, obs, stations, body):
