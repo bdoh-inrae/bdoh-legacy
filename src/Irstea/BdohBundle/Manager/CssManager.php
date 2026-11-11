@@ -133,11 +133,85 @@ class CssManager
     {
         $vars = $this->variables;
         if ($obs !== null) {
-            $vars['primaryColor'] = $obs->getCouleurPrimaire();
-            $vars['secondaryColor'] = $obs->getCouleurSecondaire();
+            $vars['primaryColor'] = $obs->getCouleurPrimaire() ?: $vars['primaryColor'];
+            $vars['secondaryColor'] = $obs->getCouleurSecondaire() ?: $vars['secondaryColor'];
         }
 
-        return $vars;
+        return array_merge($vars, self::palette($vars['primaryColor']));
+    }
+
+    /** L'ancienne couleur par défaut des observatoires, que la plupart ont gardée sans la choisir */
+    private const OLD_DEFAULT = '#003a80';
+    /** Le bleu pétrole de la charte d'INRAE (septembre 2020, p. 14), qui la remplace */
+    private const INRAE_PETROL = '#275662';
+
+    /**
+     * Les couleurs d'un thème, toutes tirées de la couleur primaire de l'observatoire (dev/decisions.md, « L'apparence
+     * se modernise, le visage reste ») : la couleur elle-même (primaryColor) ; inkColor, la même assombrie jusqu'au
+     * contraste de 4,5 sur blanc (WCAG 2, niveau AA), pour le texte, les liens, les barres et les boutons ; tintColor,
+     * très pâle, pour les fonds ; lineColor, pour les filets. L'ancienne couleur par défaut devient le bleu pétrole.
+     *
+     * @return array{primaryColor: string, inkColor: string, tintColor: string, lineColor: string}
+     */
+    public static function palette(string $color): array
+    {
+        $rgb = self::rgb($color) ?? self::rgb(self::INRAE_PETROL);
+        if (self::hex($rgb) === self::OLD_DEFAULT) {
+            $rgb = self::rgb(self::INRAE_PETROL);
+        }
+        $ink = $rgb;
+        while (self::contrast($ink, [255, 255, 255]) < 4.5) {
+            $ink = self::mix($ink, [0, 0, 0], 0.06);
+        }
+
+        return [
+            'primaryColor' => self::hex($rgb),
+            'inkColor'     => self::hex($ink),
+            'tintColor'    => self::hex(self::mix($rgb, [255, 255, 255], 0.9)),
+            'lineColor'    => self::hex(self::mix($rgb, [255, 255, 255], 0.6)),
+        ];
+    }
+
+    /** @return int[]|null [r, g, b], de « #rrggbb » ou « #rgb » */
+    private static function rgb(string $color): ?array
+    {
+        $hex = ltrim(trim($color), '#');
+        if (preg_match('/^[0-9a-f]{3}$/i', $hex)) {
+            $hex = $hex[0] . $hex[0] . $hex[1] . $hex[1] . $hex[2] . $hex[2];
+        }
+        if (!preg_match('/^[0-9a-f]{6}$/i', $hex)) {
+            return null;
+        }
+
+        return array_map('hexdec', str_split($hex, 2));
+    }
+
+    private static function hex(array $rgb): string
+    {
+        return '#' . implode('', array_map(fn ($v) => sprintf('%02x', (int) round($v)), $rgb));
+    }
+
+    /** $a mêlé de $b dans la proportion $t (0 : $a, 1 : $b) */
+    private static function mix(array $a, array $b, float $t): array
+    {
+        return array_map(fn ($x, $y) => $x * (1 - $t) + $y * $t, $a, $b);
+    }
+
+    /** Contraste de deux couleurs, selon WCAG 2 (de 1 à 21) */
+    private static function contrast(array $a, array $b): float
+    {
+        $luminance = function (array $rgb): float {
+            [$r, $g, $b] = array_map(function ($v) {
+                $v /= 255;
+
+                return $v <= 0.03928 ? $v / 12.92 : (($v + 0.055) / 1.055) ** 2.4;
+            }, $rgb);
+
+            return 0.2126 * $r + 0.7152 * $g + 0.0722 * $b;
+        };
+        [$light, $dark] = [max($luminance($a), $luminance($b)), min($luminance($a), $luminance($b))];
+
+        return ($light + 0.05) / ($dark + 0.05);
     }
 
     /**

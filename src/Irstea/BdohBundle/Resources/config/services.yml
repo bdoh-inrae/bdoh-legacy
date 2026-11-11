@@ -56,8 +56,10 @@ services:
                 # calcule plus hors de parenthèses)
                 math:        always
             -
-                primaryColor: "#003A80"
-                secondaryColor: "#009E00"
+                # Le portail, et les observatoires sans couleur : le bleu pétrole de la charte d'INRAE
+                # (CssManager::palette en tire les autres couleurs du thème)
+                primaryColor: "#275662"
+                secondaryColor: "#00a3a6"
             - "%kernel.debug%"
     irstea_bdoh.manager.css: '@Irstea\BdohBundle\Manager\CssManager'
 

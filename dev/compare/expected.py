@@ -251,7 +251,4 @@ RULES = [
     Rule('admin', r'fichiers joints : (?:partenaire créé avec un logo|logo remplacé par une image d’un autre type|logo retiré'
          r'|partenaire supprimé avec son logo)', 'Logos de partenaires de même nom',
          masks=((r'uploads/[A-Z0-9-]+_(?=[A-Z0-9-]+-logo\.)', 'uploads/'),)),
-    # Les règles des boutons de la boîte à outils, que less.php 5.5 complète ; le reste de la feuille ne doit pas changer
-    Rule('admin', 'observatoire : thème recompilé', 'Thèmes des observatoires',
-         lines=(RX(r'[-+][^{]*\.toolbox-btns[^{]* \{.*\}'),), must=(RX(r'\+[^{]*\.toolbox-btns>a:focus.*'),)),
 ]

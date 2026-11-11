@@ -3535,6 +3535,36 @@ def css_lines(text):
     return [f'{m.group(1).strip()} {{{m.group(2)}}}' for m in re.finditer(r'([^{}]+)\{([^{}]*)\}', text)]
 
 
+def palette(color):
+    """Les couleurs d'un thème tirées de sa couleur primaire, comme CssManager::palette, écrit à part pour le vérifier :
+    la couleur assombrie jusqu'au contraste de 4,5 sur blanc (WCAG 2), une teinte pâle, un filet."""
+    rgb = [int(color.lstrip('#')[i:i + 2], 16) for i in (0, 2, 4)]
+    if color.lower() == '#003a80':
+        rgb = [0x27, 0x56, 0x62]
+    mix = lambda a, b, t: [x * (1 - t) + y * t for x, y in zip(a, b)]
+    lin = lambda v: v / 12.92 if v <= 0.03928 else ((v + 0.055) / 1.055) ** 2.4
+    lum = lambda c: sum(k * lin(v / 255) for k, v in zip((0.2126, 0.7152, 0.0722), c))
+    ink = rgb
+    while (1.05) / (lum(ink) + 0.05) < 4.5:
+        ink = mix(ink, [0, 0, 0], 0.06)
+    hexa = lambda c: '#' + ''.join(f'{int(v + 0.5):02x}' for v in c)  # arrondi de PHP, au plus loin de zéro
+    return {'ink': hexa(ink), 'tint': hexa(mix(rgb, [255] * 3, 0.9)), 'line': hexa(mix(rgb, [255] * 3, 0.6))}
+
+
+def theme_verdict(rules, color):
+    """Ce qui manque à une feuille de thème (css_lines) pour appliquer la couleur choisie partout."""
+    want = palette(color)
+    expected = {'.navbar-default': f"background-color:{want['ink']}", '.navbar-inverse': f"background-color:{want['tint']}",
+                'h1,.sonata-bc h1': f"color:{want['ink']}", '.box': f"border:1px solid {want['line']}",
+                '#footer': f"background-color:{want['ink']}", 'a,.btn-link': f"color:{want['ink']}"}
+    found = {}
+    for rule in rules:
+        selector, _, body = rule.partition(' {')
+        found.setdefault(selector, []).append(body)
+    return [f'{selector} : {wanted} attendu' for selector, wanted in expected.items()
+            if not any(wanted in body for body in found.get(selector, []))]
+
+
 def run_admin(args):
     """L'administration (module 6), par l'ancien code sur le nouveau serveur et par le nouveau, chacun sur
     sa copie de BASE. Pour chaque administration portée (ADMINS), au nom d'un administrateur et d'un
@@ -3793,9 +3823,15 @@ def run_admin(args):
         if not found:
             return {'observatoire : couleurs changées': lines, 'observatoire : thème recompilé': ['pas de feuille de thème']}
         status, _, body = client.get(found.group(1))
+        # Le nouveau habille autrement (2026-11-11, dev/differences.md, « Habillage sur la charte d'INRAE ») : sa feuille
+        # ne se compare plus règle à règle à l'ancienne. Les deux se recompilent à la même adresse ; celle du nouveau
+        # applique les couleurs tirées de la couleur choisie.
+        verdict = ['conforme']
+        if side is SIDES['new']:
+            verdict = theme_verdict(css_lines(body.decode('utf-8', 'replace')), '#12AB34') or ['conforme']
         return {'observatoire : couleurs changées': lines,
-                'observatoire : thème recompilé': [f'adresse {found.group(1)}', f'statut {status}',
-                                                    *css_lines(body.decode('utf-8', 'replace'))]}
+                'observatoire : thème recompilé': [f'adresse {found.group(1)}', f'statut {status}'],
+                'nouveau seul : thème aux couleurs choisies': verdict}
 
     def limit_writes(send, base, client_for, slugs):
         """La fiche d'une chronique dont des mesures sont déjà des limites (Admin/Data/Chronique.php : la case des

@@ -2,22 +2,40 @@
 // -------------------------
 @userbarHeight: 30px;
 
+// Les couleurs d'un thème (dev/decisions.md, « L'apparence se modernise, le visage reste »). Le thème de chaque
+// observatoire les reçoit de CssManager::palette, toutes tirées de sa couleur primaire : inkColor pour le texte,
+// les liens, les barres et les boutons (contraste de 4,5 sur blanc) ; tintColor, très pâle, pour les fonds ;
+// lineColor pour les filets. Ici, celles du portail : le bleu pétrole de la charte d'INRAE.
+// -------------------------
+@primaryColor: #275662;
+@secondaryColor: #00a3a6;
+@inkColor: #275662;
+@tintColor: #e9eeef;
+@lineColor: #a9bbc0;
+
 // Redefinitions of Bootstrap variables
 // -------------------------
 
-@primaryColor: #003A80;
-@secondaryColor: #009EE0;
-
-@brand-primary: @primaryColor;
+@brand-primary: @inkColor;
 
 @gray: #444444;
 @gray-lighter: #e5e5e5;
 
-@text-color: @gray;
-@link-color: @secondaryColor;
+@text-color: #2b2f33;
+@link-color: @inkColor;
+@link-hover-color: darken(@inkColor, 10%);
 
-@font-size-base: 12px;
-@line-height-base: 18/12;
+// Polices : Raleway pour les titres, comme la charte d'INRAE ; Inter pour le texte, à la place d'Avenir Next Pro,
+// qui n'est pas libre. Servies par le site (public/fonts/, @font-face dans base.less), pas par Google.
+@font-family-sans-serif: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+@headings-font-family: "Raleway", @font-family-sans-serif;
+
+@font-size-base: 14px;
+@line-height-base: 1.5;
+
+@border-radius-base: 6px;
+@border-radius-large: 8px;
+@border-radius-small: 4px;
 
 // Grid
 @grid-columns: 24;
@@ -25,29 +43,32 @@
 
 // Headings
 
-@font-size-h1: 24px;
-@font-size-h2: 16px;
-@font-size-h3: 13px;
-@font-size-h4: 12px;
-@font-size-h5: 11px;
-@font-size-h6: 10px;
+@font-size-h1: 26px;
+@font-size-h2: 19px;
+@font-size-h3: 16px;
+@font-size-h4: 14px;
+@font-size-h5: 13px;
+@font-size-h6: 12px;
 
 @headings-font-weight: 700;
 
 // Navbar
-@navbar-height: 35px;
-@navbar-margin-bottom: 2px;
+@navbar-height: 40px;
+@navbar-margin-bottom: 6px;
+@navbar-border-radius: @border-radius-large;
 
-@navbar-default-bg: @primaryColor;
+@navbar-default-bg: @inkColor;
+@navbar-default-border: @inkColor;
 @navbar-default-link-color: white;
 @navbar-default-link-hover-color: white;
 @navbar-default-link-hover-bg: transparent;
 @navbar-default-link-active-color: white;
 @navbar-default-link-active-bg: transparent;
 
-@navbar-inverse-bg: @secondaryColor;
-@navbar-inverse-link-color: white;
-@navbar-inverse-link-hover-color: white;
+@navbar-inverse-bg: @tintColor;
+@navbar-inverse-border: @tintColor;
+@navbar-inverse-link-color: @inkColor;
+@navbar-inverse-link-hover-color: darken(@inkColor, 10%);
 @navbar-inverse-link-hover-bg: transparent;
-@navbar-inverse-link-active-color: white;
+@navbar-inverse-link-active-color: @inkColor;
 @navbar-inverse-link-active-bg: transparent;

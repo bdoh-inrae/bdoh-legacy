@@ -113,6 +113,9 @@ build() {
     npm ci --no-audit --no-fund
     NODE_OPTIONS=--openssl-legacy-provider node_modules/.bin/encore production
     mkdir -p var public/uploads public/css/themes
+    # Les thèmes compilés de la version précédente : CssManager ne recompile un thème que s'il manque, à la
+    # première page de chaque observatoire, avec les feuilles et les couleurs de cette version.
+    rm -f public/css/themes/*.css
     php bin/console assets:install public --env=prod --no-debug
     chown -R root:www-data . && chmod -R g-w,o-rwx .
     chown -R www-data:www-data var public/uploads public/css/themes

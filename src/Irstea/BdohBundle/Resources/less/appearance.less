@@ -1,0 +1,159 @@
+// SPDX-FileCopyrightText: The BDOH authors
+// SPDX-License-Identifier: AGPL-3.0-or-later
+//
+// L'habillage (2026-11-11 ; dev/decisions.md, « L'apparence se modernise, le visage reste ») : les polices de la
+// charte d'INRAE, les couleurs du thème appliquées partout, à plat, et des icônes d'un seul trait. Compilé dans le
+// thème de chaque observatoire (CssManager), qui reçoit ses couleurs de CssManager::palette : Bootstrap n'y est
+// importé qu'en référence, si bien que tout ce qui dépend de la couleur s'écrit ici.
+
+/******************************************************************************
+ * Polices, servies par le site (public/fonts/, licence SIL OFL) : variables, une seule par famille, alphabet
+ * latin (les mêmes tranches que Google Fonts) ; hors de ces caractères, la police du système prend le relais.
+ */
+@latin: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F,
+        U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+@font-face {
+    font-family: "Inter";
+    font-style: normal;
+    font-weight: 100 900;
+    font-display: swap;
+    src: url("/fonts/inter-latin-wght.woff2") format("woff2");
+    unicode-range: @latin;
+}
+@font-face {
+    font-family: "Raleway";
+    font-style: normal;
+    font-weight: 100 900;
+    font-display: swap;
+    src: url("/fonts/raleway-latin-wght.woff2") format("woff2");
+    unicode-range: @latin;
+}
+// Raleway écrit les chiffres en bas de casse par défaut (« 1983 » y danse) : des chiffres alignés
+h1, h2, h3, h4, h5, h6, .navbar {
+    font-variant-numeric: lining-nums;
+}
+.navbar {
+    font-family: @headings-font-family;
+}
+
+/******************************************************************************
+ * Couleurs : une seule par observatoire, déclinée
+ */
+a, .btn-link {
+    color: @inkColor;
+}
+a:hover, a:focus, .btn-link:hover, .btn-link:focus {
+    color: darken(@inkColor, 10%);
+}
+.navbar-default {
+    background-color: @inkColor;
+    border-color: @inkColor;
+}
+.navbar-inverse {
+    background-color: @tintColor;
+    border-color: @tintColor;
+    .navbar-nav > li > a, .navbar-text, .navbar-brand,
+    .navbar-nav > li > a:hover, .navbar-nav > li > a:focus,
+    .navbar-nav > .open > a, .navbar-nav > .open > a:hover, .navbar-nav > .open > a:focus {
+        color: @inkColor;
+        background-color: transparent;
+    }
+    .navbar-nav > .divider {
+        border-color: @lineColor;
+    }
+}
+.btn-primary, .btn-success {
+    &, &:hover, &:focus, &:active, &.active, &.disabled, &[disabled] {
+        color: white;
+        background-color: @inkColor;
+        border-color: @inkColor;
+    }
+    &:hover, &:focus {
+        background-color: darken(@inkColor, 8%);
+    }
+}
+.btn-info {
+    &, &:hover, &:focus, &:active, &.active, &.disabled, &[disabled] {
+        color: @inkColor;
+        background-color: white;
+        border-color: @inkColor;
+    }
+    &:hover, &:focus {
+        background-color: @tintColor;
+    }
+}
+.nav-pills > li.active > a {
+    &, &:hover, &:focus {
+        background-color: @inkColor;
+    }
+}
+.pagination > .active > a, .pagination > .active > span {
+    &, &:hover, &:focus {
+        background-color: @inkColor;
+        border-color: @inkColor;
+    }
+}
+.panel-default {
+    border-color: @lineColor;
+    > .panel-heading {
+        color: @inkColor;
+        background-color: @tintColor;
+        border-color: @lineColor;
+    }
+}
+.alert-info {
+    color: @text-color;
+    background-color: @tintColor;
+    border-color: @lineColor;
+}
+// Les puces des listes, au lieu d'une image de disque (observatoire/style.css)
+div.box ul li {
+    list-style-image: none;
+}
+div.box ul li::marker {
+    color: @lineColor;
+}
+
+/******************************************************************************
+ * Icônes : celles de Silk qui servent, remplacées par des symboles d'un seul trait (Material Symbols, Google,
+ * licence Apache 2.0, public/images/icons/), de la couleur du texte. Les classes fam-* restent : aucun gabarit ne
+ * change. Une icône absente de cette liste garde son image d'origine.
+ */
+.bdoh-icon(@name) {
+    background: currentColor none !important;
+    -webkit-mask-image: url("/images/icons/@{name}.svg");
+    mask-image: url("/images/icons/@{name}.svg");
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    mask-position: center;
+    -webkit-mask-size: contain;
+    mask-size: contain;
+    vertical-align: -3px;
+}
+.fam-pencil { .bdoh-icon(edit); }
+.fam-application-edit { .bdoh-icon(edit_note); }
+.fam-magnifier { .bdoh-icon(search); }
+.fam-zoom { .bdoh-icon(manage_search); }
+.fam-user, .fam-user-green { .bdoh-icon(person); }
+.fam-user-edit { .bdoh-icon(manage_accounts); }
+.fam-disconnect { .bdoh-icon(logout); }
+.fam-database-save { .bdoh-icon(download); }
+.fam-cut-red { .bdoh-icon(content_cut); }
+.fam-cog-error { .bdoh-icon(settings_alert); }
+.fam-lock { .bdoh-icon(lock); }
+.fam-help { .bdoh-icon(help); }
+.fam-brick, .fam-bricks { .bdoh-icon(extension); }
+.fam-chart-curve { .bdoh-icon(show_chart); }
+.fam-chart-pie { .bdoh-icon(donut_small); }
+.fam-book-open { .bdoh-icon(menu_book); }
+.fam-application-view-list { .bdoh-icon(list_alt); }
+.fam-information { .bdoh-icon(info); }
+.fam-error { .bdoh-icon(warning); }
+.fam-exclamation { .bdoh-icon(priority_high); }
+.fam-house { .bdoh-icon(home); }
+
+// Les mentions légales, écrites dans un titre (Core/mentionLegale.html.twig) : en police de texte
+#footer + div h3 {
+    font-family: @font-family-sans-serif;
+}

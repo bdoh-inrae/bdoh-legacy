@@ -1,11 +1,11 @@
-// From bootstrap
+// From bootstrap. Sans theme.less, ses dégradés : barres, boutons et blocs sont à plat (2026-11-11).
 @import (reference) "bootstrap.less";
-@import "theme.less";
 
 // BDOH custom
 @import "bdoh-variables.less";
 @import "consult.less";
 @import "measure-import.less";
+@import "appearance.less";
 
 /******************************************************************************
  * Overloads of bootstrap CSS properties
@@ -30,8 +30,8 @@ h1, h2, h3, h4, h5, h6 {
     }
 
     .accordion-heading {
-        border: 1px solid @primaryColor;
-        background-color: @gray-lighter;
+        border: 1px solid @lineColor;
+        background-color: @tintColor;
     }
 
     .accordion-inner {
@@ -80,7 +80,7 @@ h3.popover-title{
  * Generics
  */
 h1, .sonata-bc h1 {
-    color: @primaryColor;
+    color: @inkColor;
 }
 
 .td-center {
@@ -158,8 +158,8 @@ h1, .sonata-bc h1 {
 .box {
     margin-bottom:15px;
     padding: 1em;
-    border-radius: 5px;
-    border: 1px solid @primaryColor;
+    border-radius: @border-radius-large;
+    border: 1px solid @lineColor;
 
     legend {
         width: auto;
@@ -184,10 +184,15 @@ h1, .sonata-bc h1 {
  * Header
  */
 #header {
+    display: flex;
+    align-items: center;
     #logo {
         text-align: center;
         img {
-            height: 80px;
+            width: 100%;
+            height: auto;
+            max-height: 84px;
+            object-fit: contain;
         }
     }
 
@@ -247,7 +252,7 @@ h1, .sonata-bc h1 {
 
     h1 {
         margin-bottom: 1em;
-        border-bottom: 1px solid @primaryColor;
+        border-bottom: 1px solid @lineColor;
     }
 }
 
@@ -256,9 +261,8 @@ h1, .sonata-bc h1 {
  */
 #footer {
     padding: 0.5em;
-    border-radius: 0 0 15px 15px;
-    .box-shadow(0 2px 5px rgba(0, 0, 0, .50));
-    background-color: @primaryColor;
+    border-radius: @border-radius-large;
+    background-color: @inkColor;
 
     table#partenaires {
         border-collapse: separate;
@@ -266,8 +270,7 @@ h1, .sonata-bc h1 {
 
         td {
             .td-center;
-            border-radius: 5px;
-            .box-shadow(inset 0 0 5px #888);
+            border-radius: @border-radius-base;
             background-color: white;
             img {
                 height: 60px;
