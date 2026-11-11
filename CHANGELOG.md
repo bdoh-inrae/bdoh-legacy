@@ -2,16 +2,17 @@
 
 Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/). Numéros de version : [SemVer](https://semver.org/lang/fr/).
 
-## Non publié
+## 0.4.0 - 2026-11-11
 
 Une interface modernisée, sans changer les pages ni leurs adresses : les accueils organisés autour de la carte, un habillage sur la charte d'INRAE, et un graphique qu'on parcourt directement.
 
 ### Modifié
 
 - L'accueil du portail montre la carte de toutes les stations en tête, la présentation, puis une fiche par observatoire ; survoler une fiche allume ses stations sur la carte. La liste dont le survol remplaçait tout le panneau disparaît.
-- L'accueil d'un observatoire montre la carte de ses stations en bandeau, avec un bouton par site qui allume les siennes, puis la présentation et les photos, puis sites, paramètres et jeux de données côte à côte, leurs longues descriptions repliées. Sans station placée, plus de carte vide.
+- L'accueil d'un observatoire montre la carte de ses stations en bandeau, avec un bouton par site qui allume les siennes, puis la présentation, qui coule autour des photos, puis la recherche avancée en tête des listes : sites et jeux de données d'un côté, paramètres deux fois plus larges, sur deux colonnes, de l'autre, les longues descriptions repliées. Sans station placée, plus de carte vide.
+- La carte des stations a un fond plus doux, le plan de l'IGN atténué, avec le réseau hydrographique à l'échelle d'un observatoire ; elle se zoome en pinçant ou avec Ctrl et la molette, la molette seule faisant défiler la page.
 - L'habillage suit la charte d'INRAE : titres en Raleway, texte en Inter, plus grand ; toutes les couleurs d'un observatoire tirées de sa couleur principale et rendues lisibles au besoin, liens compris ; barres et blocs à plat ; icônes d'un seul trait ; logo d'INRAE plus grand. Les observatoires restés sur l'ancienne couleur par défaut, et le portail, prennent le bleu pétrole d'INRAE.
-- Le graphique d'une chronique s'affiche dès l'ouverture, sur sa dernière année. Les lacunes et les mesures invalides s'y dessinent en bandes pâles sur toute la hauteur, au lieu d'un trait rouge.
+- Le graphique d'une chronique s'affiche dès l'ouverture, sur sa dernière année, sur fond blanc, ses courbes dans des couleurs plus douces de la même famille que celles des qualités. Les lacunes et les mesures invalides s'y dessinent en bandes pâles sur toute la hauteur, au lieu d'un trait rouge.
 
 ### Ajouté
 

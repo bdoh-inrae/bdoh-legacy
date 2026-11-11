@@ -46,6 +46,16 @@ L'ordre de l'audit, resserré autour de la barrière : ce qui demande de lire de
 
 ## Pour reprendre
 
+État au 11 novembre, soir : l'interface modernisée est faite, vérifiée et publiée en 0.4.0 (`dev/plans/2026-11-11_interface.md`). La VM est encore à la 0.3.2. C3 : tout est fait sauf le groupe 9, OTHU, dont `state`, `queue`, `theia` et `pages` passent ; `accounts`, `admin`, `exports` et `imports` restent à adapter à la forme de la base (Suivi du 11 novembre). Dans l'ordre :
+
+1. **La VM à la 0.4.0** (Lou : `sudo make vm-update NOM=prod V=v0.4.0`), ce qui éprouve « Installer une nouvelle version » ; les thèmes s'y recompilent d'eux-mêmes. Puis Lou regarde l'interface et fait sa liste (`dev/test-kit/lou-checklist.md`), avec Claude, étape par étape.
+2. **C3, groupe 9** : adapter `accounts`, `admin`, `exports` et `imports` à OTHU, cas par cas (Suivi du 11 novembre), puis les rejouer sur `bdoh_othu`, et `dev/compare/use-base.sh bdoh_small` à la fin.
+3. **L'instance d'OTHU** sur la VM, ses trois fonctions SQL alignées sur la production après le groupe 9.
+4. **Le kit des gestionnaires**, revu avec Lou (`dev/test-kit/README.md`), avec les conditions d'utilisation d'ORACLE à revoir (`ROADMAP.md`).
+5. Pendant leurs essais : la passe de couverture, C4, C5, la relecture, puis C6.
+
+Ce qui suit est l'état du 10 novembre, gardé pour l'historique des étapes.
+
 État au 10 novembre, fin d'après-midi : version 0.3.5 publiée : deux bogues de l'ancien corrigés (lacunes du graphique, logos de partenaires de même nom) et la carte des stations, à installer sur la VM par `vm-update`, ce qui l'éprouve. C1 et C2 finis, les 47 fautes vues, les 62 étapes du navigateur passées en une seule passe, plus une depuis (Suivi). C3 : tous les groupes faits sauf le 9, OTHU. La VM est sous Ubuntu 26.04, la comparaison y est repassée sans écart, et la production y est installée, à la version 0.3.2. L'ancienne base du poste sous Debian (`postgres-17-debian`) est supprimée, avec les images Docker que plus rien n'emploie (oui de Lou). Ordre convenu avec Lou le 9 novembre : les retours des gestionnaires sont ce qui attendra le plus, donc l'installation passe devant, et le reste de la validation se poursuit pendant les essais.
 
 - **Le système de la VM**, puis **la comparaison sur Ubuntu 26.04** : faits le 10 novembre, sans écart (Suivi).
