@@ -144,11 +144,19 @@ def gap_bands_step(periods):
             except (PlaywrightError, ValueError):
                 return
             if isinstance(data, dict) and 'chronicles' in data:
+                # Les morceaux de lacunes : une série du serveur en porte plusieurs, séparés par des points vides
                 pieces = 0
                 for chronicle in data['chronicles']:
                     for serie in chronicle['series']:
-                        if serie['seriesFlag'] == 'gap' and any(v[0] is not None for v in serie['values']):
-                            pieces += 1
+                        if serie['seriesFlag'] != 'gap':
+                            continue
+                        inside = False
+                        for value in serie['values']:
+                            if value[0] is None:
+                                inside = False
+                            elif not inside:
+                                pieces += 1
+                                inside = True
                 sent.append(pieces)
 
         page.on('response', keep)
