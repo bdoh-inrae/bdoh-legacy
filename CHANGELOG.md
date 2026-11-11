@@ -2,6 +2,19 @@
 
 Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/). Numéros de version : [SemVer](https://semver.org/lang/fr/).
 
+## 0.4.1 - 2026-11-11
+
+Des retouches de l'interface, après le regard de Lou.
+
+### Modifié
+
+- L'accueil d'un observatoire revient à trois colonnes, sites, paramètres et jeux de données, tassées en haut, la recherche avancée gardée au-dessus.
+- La carte des stations zoome par niveaux entiers : entre deux, son fond était flou.
+
+### Corrigé
+
+- Les paragraphes vides d'une description d'observatoire ne creusent plus de grands blancs.
+
 ## 0.4.0 - 2026-11-11
 
 Une interface modernisée, sans changer les pages ni leurs adresses : les accueils organisés autour de la carte, un habillage sur la charte d'INRAE, et un graphique qu'on parcourt directement.

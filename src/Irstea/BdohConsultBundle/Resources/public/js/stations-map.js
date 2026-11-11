@@ -46,7 +46,7 @@
     const DIMMED = {radius: 5, weight: 1, color: '#ffffff', fillColor: '#9aa3ad', fillOpacity: 0.35};
 
     // Ctrl (⌘) et la molette, ou le pincement d'un pavé tactile, que le navigateur envoie comme une molette avec Ctrl :
-    // zoomer autour du curseur, par quarts de niveau. La molette seule laisse défiler la page, et montre comment zoomer.
+    // zoomer autour du curseur, d'un niveau entier, une fois le geste assez ample. La molette seule laisse défiler la page, et montre comment zoomer.
     function wheelZoom(map, element) {
         const hint = document.createElement('div');
         hint.className = 'stations-map-hint';
@@ -64,8 +64,8 @@
             ev.preventDefault();
             hint.classList.remove('shown');
             pending -= ev.deltaMode === 0 ? ev.deltaY / 100 : ev.deltaY;
-            if (Math.abs(pending) >= 0.25) {
-                const zoom = Math.min(Math.max(map.getZoom() + Math.max(-1, Math.min(1, pending)), map.getMinZoom()), map.getMaxZoom());
+            if (Math.abs(pending) >= 0.6) {
+                const zoom = Math.min(Math.max(map.getZoom() + Math.sign(pending), map.getMinZoom()), map.getMaxZoom());
                 map.setZoomAround(map.mouseEventToContainerPoint(ev), zoom);
                 pending = 0;
             }
@@ -84,7 +84,8 @@
     document.querySelectorAll('.stations-map').forEach((element) => {
         const stations = JSON.parse(element.dataset.stations);
         const observatories = new Set(stations.map((station) => station.observatoire));
-        const map = L.map(element, {scrollWheelZoom: false, zoomSnap: 0.25, zoomDelta: 0.5});
+        // Des niveaux de zoom entiers : entre deux, les tuiles agrandies deviennent floues
+        const map = L.map(element, {scrollWheelZoom: false});
         L.tileLayer(PLAN_IGN, {
             maxZoom: 18,
             className: 'stations-map-plan',

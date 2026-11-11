@@ -46,19 +46,19 @@
 /* Un observatoire : la présentation coule autour des photos, s'il y en a */
 .observatory-photos { float: right; width: 40%; margin: 4px 0 12px 20px; }
 #consult-observatoire > .tab-content::after { content: ""; display: block; clear: both; }
+/* Une description saisie dans l'éditeur laisse souvent des paragraphes vides, qui creusent de grands blancs */
+#consult-observatoire .tab-pane p:empty { display: none; }
 
-/* Puis la recherche avancée en tête ; les sites et les jeux de données d'un côté ; les paramètres, deux fois plus
-   larges, de l'autre, sur deux colonnes. L'ordre de la page ne change pas : seule la grille place les blocs. */
+/* Puis la recherche avancée en tête, et sites, paramètres et jeux de données sur trois colonnes, chacune tassée en
+   haut. L'ordre de la page ne change pas : seule la grille place les blocs. */
 .observatory-lists {
-    display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); gap: 10px; align-items: start; margin-top: 18px;
-    grid-template-areas: "search search" "sites parameters" "datasets parameters";
+    display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; align-items: start; margin-top: 18px;
+    grid-template-areas: "search search search" "sites parameters datasets";
 }
 .observatory-lists > .box { margin: 0; }
 .observatory-sites { grid-area: sites; }
 .observatory-parameters { grid-area: parameters; }
 .observatory-datasets { grid-area: datasets; }
-.observatory-parameters > ul { columns: 2; column-gap: 28px; }
-.observatory-parameters > ul > li { break-inside: avoid; }
 .observatory-search { grid-area: search; justify-self: end; }
 .observatory-search a {
     display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border: 1px solid currentColor; border-radius: 6px;
@@ -80,6 +80,5 @@
 @media (max-width: 991px) {
     .observatory-cards { grid-template-columns: minmax(0, 1fr); }
     .observatory-lists { grid-template-columns: minmax(0, 1fr); grid-template-areas: "search" "sites" "parameters" "datasets"; }
-    .observatory-parameters > ul { columns: 1; }
     .observatory-photos { float: none; width: auto; margin: 0 0 12px; }
 }

@@ -1,6 +1,6 @@
 # L'interface modernisée
 
-État : terminé le 2026-11-11, publié en 0.4.0 ; ouvert le même jour. Né du point « Les deux accueils autour de la carte » de `ROADMAP.md`, élargi par Lou le même jour. Les raisons : `dev/decisions.md`, « L'apparence se modernise, le visage reste ».
+État : en cours, ouvert le 2026-11-11 ; publié en 0.4.0, puis 0.4.1 après le second regard de Lou. Restent les points de « Pour reprendre ». Né du point « Les deux accueils autour de la carte » de `ROADMAP.md`, élargi par Lou le même jour. Les raisons : `dev/decisions.md`, « L'apparence se modernise, le visage reste ».
 
 ## Choix de Lou (2026-11-11)
 
@@ -33,6 +33,15 @@ Un lot à la fois, chacun comparé à part (`compare.py pages` et `make browser-
    - Affiché dès l'ouverture sur une période par défaut. Bande de toute la chronique, résumée par le serveur (minimum et maximum par tranche de temps) ; fenêtre qu'on glisse ou dont on tire les bords, clic pour recentrer, molette sur le graphique ; champs de dates synchronisés ; limite de 5 ans gardée pour le graphique du haut.
    - Lacunes en bandes pâles sur toute la hauteur.
    - Vérification : étapes du graphique et des lacunes de `make browser-check` revues ; la route de la bande, en « nouveau seul » dans `compare.py`.
+
+## Pour reprendre
+
+Retours de Lou du 11 novembre au soir, sur la 0.4.0 :
+
+1. **Faits en 0.4.1** : retour aux trois colonnes (sites, paramètres, jeux de données), tassées en haut, la recherche avancée gardée au-dessus ; les deux colonnes de paramètres coupaient mal les listes courtes, et la grille laissait des vides à gauche. Paragraphes vides des descriptions masqués (`p:empty`), d'où les grands blancs (TPG) : le reste des blancs vient de la saisie, à signaler aux gestionnaires au cas par cas. Carte nette : zoom par niveaux entiers, un niveau fractionnaire agrandissant les tuiles.
+2. **Le fond de carte** ne plaît pas encore à Lou : le plan de l'IGN atténué est terne ; le réseau hydrographique lui plaît. Piste : un fond de relief (`ELEVATION.ELEVATIONGRIDCOVERAGE.SHADOW`, estompage en gris, Géoplateforme) très clair, l'hydrographie par-dessus, et le plan de l'IGN en transparence pour les noms ; essayer deux ou trois mélanges en captures, et les montrer à Lou.
+3. **Le sélecteur de dates** du graphique est vieillot : un calendrier moderne, sans bibliothèque lourde (un champ `datetime-local`, ou un petit sélecteur), synchronisé avec la bande. Et l'avertissement « 5 ans maximum » devient obscur avec la bande : la limite tient pour le graphique du haut (les cumuls n'y sont pas réduits en nombre de points) ; la lever pour les autres échantillonnages, ou la dire autrement, dans la bande.
+4. **Feuilles de style en cache** après une mise à jour : `dev/plans/2026-10-26_deployment.md`, à faire avant l'ouverture.
 
 ## Suivi
 
