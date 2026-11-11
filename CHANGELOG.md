@@ -2,6 +2,21 @@
 
 Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/). Numéros de version : [SemVer](https://semver.org/lang/fr/).
 
+## Non publié
+
+Une interface modernisée, sans changer les pages ni leurs adresses : les accueils organisés autour de la carte, un habillage sur la charte d'INRAE, et un graphique qu'on parcourt directement.
+
+### Modifié
+
+- L'accueil du portail montre la carte de toutes les stations en tête, la présentation, puis une fiche par observatoire ; survoler une fiche allume ses stations sur la carte. La liste dont le survol remplaçait tout le panneau disparaît.
+- L'accueil d'un observatoire montre la carte de ses stations en bandeau, avec un bouton par site qui allume les siennes, puis la présentation et les photos, puis sites, paramètres et jeux de données côte à côte, leurs longues descriptions repliées. Sans station placée, plus de carte vide.
+- L'habillage suit la charte d'INRAE : titres en Raleway, texte en Inter, plus grand ; toutes les couleurs d'un observatoire tirées de sa couleur principale et rendues lisibles au besoin, liens compris ; barres et blocs à plat ; icônes d'un seul trait ; logo d'INRAE plus grand. Les observatoires restés sur l'ancienne couleur par défaut, et le portail, prennent le bleu pétrole d'INRAE.
+- Le graphique d'une chronique s'affiche dès l'ouverture, sur sa dernière année. Les lacunes et les mesures invalides s'y dessinent en bandes pâles sur toute la hauteur, au lieu d'un trait rouge.
+
+### Ajouté
+
+- Sous le graphique d'une chronique, une bande de toute la chronique, dont on glisse ou élargit la fenêtre pour choisir la période affichée ; Ctrl et la molette zooment sur le graphique.
+
 ## 0.3.5 - 2026-11-10
 
 La carte des stations, pour que les gestionnaires l'essaient.
