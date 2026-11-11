@@ -14,7 +14,8 @@ La base de la VM deviendra la production : un essai qui écrit se fait sur une c
 - [ ] Deux ou trois observatoires aux thèmes différents : couleurs, logo, mise en page, comme l'ancien.
 - [ ] Les boutons de la boîte à outils d'une page de chronique : ils ont désormais un contour et des couleurs au survol et au focus (`dev/differences.md`, « Thèmes des observatoires »). Ça passe ?
 - [ ] Le graphique d'une chronique continue, d'une discontinue et d'une calculée : zoom, choix de la période, points de contrôle.
-- [ ] Le visualiseur avec plusieurs chroniques. (Le site n'a pas de carte : elle est prévue à part, `ROADMAP.md`, « Modernisations ».)
+- [ ] Le visualiseur avec plusieurs chroniques.
+- [ ] La carte des stations, sur l'accueil du portail et sur celui de deux ou trois observatoires, dont un sans station placée : points, bulles, liens vers les stations, fond de l'IGN (`dev/differences.md`, « Carte des stations »).
 
 ## Les vrais courriels
 
