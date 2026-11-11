@@ -46,13 +46,14 @@ L'ordre de l'audit, resserré autour de la barrière : ce qui demande de lire de
 
 ## Pour reprendre
 
-État au 11 novembre, soir : l'interface modernisée est faite, vérifiée et publiée en 0.4.0 puis 0.4.1 ; ses derniers points (fond de carte, sélecteur de dates) sont dans `dev/plans/2026-11-11_interface.md`, « Pour reprendre », à faire quand le groupe 9 sera fini. La VM est encore à la 0.3.2. C3 : tout est fait sauf le groupe 9, OTHU, dont `state`, `queue`, `theia` et `pages` passent ; `accounts`, `admin`, `exports` et `imports` restent à adapter à la forme de la base (Suivi du 11 novembre). Dans l'ordre :
+État au 11 novembre, soir : l'interface modernisée est faite, vérifiée et publiée en 0.4.0 puis 0.4.1 ; ses derniers points (fond de carte, sélecteur de dates) sont dans `dev/plans/2026-11-11_interface.md`, « Pour reprendre », à faire quand le groupe 9 sera fini. La VM est encore à la 0.3.2, et y reste jusqu'à une seule grosse mise à jour, une fois l'interface finie et le groupe 9 passé : pas de mise à jour intermédiaire à la 0.4.1 (Lou, 11 novembre). C3 : tout est fait sauf le groupe 9, OTHU, dont `state`, `queue`, `theia` et `pages` passent ; `accounts`, `admin`, `exports` et `imports` restent à adapter à la forme de la base (Suivi du 11 novembre). Dans l'ordre :
 
-1. **La VM à la 0.4.1** (Lou : `sudo make vm-update NOM=prod V=v0.4.1`), ce qui éprouve « Installer une nouvelle version » ; les thèmes s'y recompilent d'eux-mêmes. Puis Lou regarde l'interface et fait sa liste (`dev/test-kit/lou-checklist.md`), avec Claude, étape par étape.
-2. **C3, groupe 9**, à finir en priorité pour converger (Lou, 11 novembre ; il ne tourne pas : ce sont des adaptations de l'outil, cas par cas) : adapter `accounts`, `admin`, `exports` et `imports` à OTHU, cas par cas (Suivi du 11 novembre), puis les rejouer sur `bdoh_othu`, et `dev/compare/use-base.sh bdoh_small` à la fin.
-3. **L'instance d'OTHU** sur la VM, ses trois fonctions SQL alignées sur la production après le groupe 9.
-4. **Le kit des gestionnaires**, revu avec Lou (`dev/test-kit/README.md`), avec les conditions d'utilisation d'ORACLE à revoir (`ROADMAP.md`).
-5. Pendant leurs essais : la passe de couverture, C4, C5, la relecture, puis C6.
+1. **C3, groupe 9**, à finir en priorité pour converger (Lou, 11 novembre ; il ne tourne pas : ce sont des adaptations de l'outil, cas par cas) : adapter `accounts`, `admin`, `exports` et `imports` à OTHU, cas par cas (Suivi du 11 novembre), puis les rejouer sur `bdoh_othu`, et `dev/compare/use-base.sh bdoh_small` à la fin.
+2. **Les derniers points de l'interface** (`dev/plans/2026-11-11_interface.md`, « Pour reprendre »), publiés dans une version.
+3. **La VM à cette version, en une fois** (Lou : `sudo make vm-update NOM=prod V=vX.Y.Z`), ce qui éprouve « Installer une nouvelle version » ; les thèmes s'y recompilent d'eux-mêmes. Puis Lou regarde l'interface et fait sa liste (`dev/test-kit/lou-checklist.md`), avec Claude, étape par étape.
+4. **L'instance d'OTHU** sur la VM, à la même version, ses trois fonctions SQL alignées sur la production.
+5. **Le kit des gestionnaires**, revu avec Lou (`dev/test-kit/README.md`), avec les conditions d'utilisation d'ORACLE à revoir (`ROADMAP.md`).
+6. Pendant leurs essais : la passe de couverture, C4, C5, la relecture, puis C6.
 
 Ce qui suit est l'état du 10 novembre, gardé pour l'historique des étapes.
 

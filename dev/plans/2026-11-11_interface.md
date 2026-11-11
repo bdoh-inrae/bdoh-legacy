@@ -36,6 +36,8 @@ Un lot à la fois, chacun comparé à part (`compare.py pages` et `make browser-
 
 ## Pour reprendre
 
+La VM ne passe pas à la 0.4.1 : elle prendra en une seule mise à jour la version qui finit ces points, après le groupe 9 de la validation (Lou, 11 novembre ; `dev/plans/2026-11-04_validation.md`, « Pour reprendre »).
+
 Retours de Lou du 11 novembre au soir, sur la 0.4.0 :
 
 1. **Faits en 0.4.1** : retour aux trois colonnes (sites, paramètres, jeux de données), tassées en haut, la recherche avancée gardée au-dessus ; les deux colonnes de paramètres coupaient mal les listes courtes, et la grille laissait des vides à gauche. Paragraphes vides des descriptions masqués (`p:empty`), d'où les grands blancs (TPG) : le reste des blancs vient de la saisie, à signaler aux gestionnaires au cas par cas. Carte nette : zoom par niveaux entiers, un niveau fractionnaire agrandissant les tuiles.
