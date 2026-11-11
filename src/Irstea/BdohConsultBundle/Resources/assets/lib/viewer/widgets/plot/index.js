@@ -100,8 +100,13 @@ define([
             constrainZoomTo: 'x',
             dblClickReset: true
         },
-        grid:{
-            shadow: false
+        // Fond blanc et quadrillage discret (2026-11-11), au lieu du fond crème de jqPlot
+        grid: {
+            shadow: false,
+            background: '#ffffff',
+            borderColor: '#cfd6dd',
+            borderWidth: 1,
+            gridLineColor: '#edf0f3'
         },
         series: []
     };

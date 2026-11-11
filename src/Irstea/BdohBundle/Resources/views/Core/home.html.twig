@@ -37,10 +37,12 @@
                 {% set placed = mapStations|filter(s => s.slug == obs.slug and s.lat is not null)|length %}
                 <a class="observatory-card" href="{{ path('bdoh_home', {'_observatoire' : obs.slug}) }}"
                    data-map-observatoire="{{ obs.nom }}">
-                    {% if obs.pathLogo %}
-                        <span class="observatory-card-logo"><img src="{{ asset(obs.pathLogo) }}" alt=""></span>
-                    {% endif %}
-                    <h3 class="observatory-card-name">{{ obs.nom }}</h3>
+                    <span class="observatory-card-head">
+                        <h3 class="observatory-card-name">{{ obs.nom }}</h3>
+                        {% if obs.pathLogo %}
+                            <img class="observatory-card-logo" src="{{ asset(obs.pathLogo) }}" alt="">
+                        {% endif %}
+                    </span>
                     <span class="observatory-card-text">
                         {{- (english ? obs.descriptionEn|default(obs.description) : obs.description)|excerpt -}}
                     </span>

@@ -10,9 +10,37 @@ define([
     // Les lacunes et les invalides, en bandes très pâles sur toute la hauteur (gap-band-renderer.js) : gris pour une
     // lacune, ambre pour une mesure invalide. La légende montre la même teinte, un peu plus soutenue.
     const BANDS = {
-        gap: {fill: 'rgba(110, 120, 130, 0.14)', legend: 'rgba(110, 120, 130, 0.45)'},
-        invalid: {fill: 'rgba(230, 140, 20, 0.16)', legend: 'rgba(230, 140, 20, 0.55)'}
+        gap: {fill: 'rgba(110, 120, 130, 0.07)', legend: 'rgba(110, 120, 130, 0.3)'},
+        invalid: {fill: 'rgba(230, 140, 20, 0.09)', legend: 'rgba(230, 140, 20, 0.4)'}
     };
+
+    // Les couleurs des qualités, réglées dans l'administration, sont souvent des couleurs pures (bleu, vert ou jaune
+    // vifs). Elles se dessinent dans la couleur la plus proche, par la teinte, d'une palette lisible sur blanc
+    // (Tableau 10) : chaque qualité garde sa famille de couleur, sans rien changer aux réglages. Un gris reste tel quel.
+    const PALETTE = [[0, [214, 39, 40]], [30, [255, 127, 14]], [58, [188, 189, 34]], [120, [44, 160, 44]],
+        [185, [23, 190, 207]], [210, [31, 119, 180]], [275, [148, 103, 189]], [330, [227, 119, 194]]];
+
+    function soften(r, g, b) {
+        const max = Math.max(r, g, b) / 255;
+        const min = Math.min(r, g, b) / 255;
+        const light = (max + min) / 2;
+        const sat = max === min ? 0 : (max - min) / (1 - Math.abs(2 * light - 1));
+        if (sat < 0.25 || light < 0.12 || light > 0.92) {
+            return [r, g, b];
+        }
+        const [R, G, B] = [r / 255, g / 255, b / 255];
+        let hue;
+        if (max === R) {
+            hue = 60 * (((G - B) / (max - min)) % 6);
+        } else if (max === G) {
+            hue = 60 * ((B - R) / (max - min) + 2);
+        } else {
+            hue = 60 * ((R - G) / (max - min) + 4);
+        }
+        hue = (hue + 360) % 360;
+        const distance = (h) => Math.min(Math.abs(h - hue), 360 - Math.abs(h - hue));
+        return PALETTE.reduce((best, entry) => (distance(entry[0]) < distance(best[0]) ? entry : best))[1];
+    }
 
     function BaseSerieConfig() {
     }
@@ -62,7 +90,8 @@ define([
     };
 
     BaseSerieConfig.prototype._getColor = function (serie, r, g, b) {
-        return this._formatColor(r, g, b, 1.0);
+        const [sr, sg, sb] = soften(r, g, b);
+        return this._formatColor(sr, sg, sb, 1.0);
     };
 
     BaseSerieConfig.prototype._formatColor = function (r, g, b, a) {

@@ -25,7 +25,7 @@
     <h2{{ (title ?? true) ? '' : ' class="sr-only"' }}>{{ 'map.title'|trans }}</h2>
     {% if placed is not empty %}
         <div class="stations-map" style="height: {{ height|default(420) }}px"{{ france|default(false) ? ' data-fit-france' : '' }}
-             data-see-station="{{ 'map.seeStation'|trans }}"
+             data-see-station="{{ 'map.seeStation'|trans }}" data-zoom-hint="{{ 'map.zoomHint'|trans }}"
              data-stations="{{ placed|json_encode }}"></div>
         {% if sites|default([]) is not empty %}
             <div class="stations-map-sites">

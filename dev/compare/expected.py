@@ -89,7 +89,7 @@ GONE_KEYS = """Bad credentials. | User account has expired. | Utilisateur.newPas
     resetting.request.submit | resetting.reset.submit | security.login_form.lostPassword | security.login_form.password
     security.utilisateur.edit.info.changePassword"""
 NEW_KEYS = """Error.file.cantWrite(%file%) | admin.sendJson.missingCredentials | export.exportMail.body(%link%, %days%)
-    legal.freeSoftware | legal.sourceCode | map.onMap | map.seeStation | map.sites | map.title | map.withoutPosition | overview.hint | overview.title | measure.export.busy | measure.export.licence | measure.export.status.download
+    legal.freeSoftware | legal.sourceCode | map.onMap | map.seeStation | map.sites | map.title | map.withoutPosition | map.zoomHint | overview.hint | overview.title | measure.export.busy | measure.export.licence | measure.export.status.download
     measure.export.status.expired | measure.export.status.failed | measure.export.status.finished(%days%)
     measure.export.status.running | measure.export.status.title | measure.export.status.waiting | measure.export.tooHeavy
     measure.export.tooMany | security.login_check.info(%email%) | security.login_check.submit
@@ -126,7 +126,8 @@ RULES = [
         '+L stylesheet /bundles/irsteabdohconsult/vendor/leaflet/leaflet.css',
         '+S /bundles/irsteabdohconsult/vendor/leaflet/leaflet.js', '+S /bundles/irsteabdohconsult/js/stations-map.js',
         RX(r'\+T (?:Carte des stations|Map of the stations)'),
-        RX(r'\+D div (?:data-fit-france= )?data-see-station=(?:Voir la station|See the station) data-stations=\[.*\]'),
+        RX(r'\+D div (?:data-fit-france= )?data-see-station=(?:Voir la station|See the station) data-stations=\[.*\]'
+           r' data-zoom-hint=(?:Ctrl \+ molette, ou pincer, pour zoomer|Ctrl \+ wheel, or pinch, to zoom)'),
         RX(r'\+T (?:Stations sans position, absentes de la carte : |Stations without a position, missing from the map: )\d+\.')),
         must=(RX(r'\+T (?:Carte des stations|Map of the stations)'),)),
     # Les accueils organisés autour de la carte (2026-11-11). Le portail perd ses onglets au survol et les aperçus

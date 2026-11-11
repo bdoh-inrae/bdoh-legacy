@@ -106,13 +106,13 @@ def chart_step(page):
     page.wait_for_load_state('networkidle')
 
 
-# Les lacunes du graphique, en bandes pâles sur toute la hauteur (gap-band-renderer.js, gris à 14 % d'opacité) :
+# Les lacunes du graphique, en bandes pâles sur toute la hauteur (gap-band-renderer.js, gris à 7 % d'opacité) :
 # les colonnes des canevas des séries dont le haut et le bas ont cette teinte, en suites contiguës ; et les pixels
 # rouges opaques, l'ancien trait des lacunes, qui ne doivent plus paraître.
 GAP_BANDS = """() => {
   let runs = 0, columns = 0, red = 0;
   const band = (d, i) => Math.abs(d[i] - 110) < 8 && Math.abs(d[i + 1] - 120) < 8 && Math.abs(d[i + 2] - 130) < 8
-      && d[i + 3] > 15 && d[i + 3] < 80;
+      && d[i + 3] > 8 && d[i + 3] < 80;
   for (const c of document.querySelectorAll('.graph canvas.jqplot-series-canvas')) {
     const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
     let inside = false;
@@ -121,7 +121,8 @@ GAP_BANDS = """() => {
       if (on) { columns++; if (!inside) runs++; }
       inside = on;
     }
-    for (let i = 0; i < d.length; i += 4) if (d[i] > 200 && d[i + 1] < 60 && d[i + 2] < 60 && d[i + 3] > 200) red++;
+    // le rouge pur de l'ancien trait ; une qualité rouge se dessine désormais en rouge adouci (214, 39, 40)
+    for (let i = 0; i < d.length; i += 4) if (d[i] > 245 && d[i + 1] < 20 && d[i + 2] < 20 && d[i + 3] > 200) red++;
   }
   return {runs, columns, red};
 }"""

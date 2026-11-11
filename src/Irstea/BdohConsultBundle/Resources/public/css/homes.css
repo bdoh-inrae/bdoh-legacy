@@ -6,8 +6,16 @@
  * observatoire (Observatoire/show.html.twig). Feuille simple, sans compilation, comme la carte.
  */
 
-/* La carte et sa légende */
+/* La carte et sa légende. Le plan de l'IGN adouci : moins de couleur, un peu plus clair ; le réseau hydrographique
+   reste net par-dessus. */
 .stations-map-box .stations-map { border-radius: 6px; }
+.stations-map-plan { filter: saturate(0.3) brightness(1.06) contrast(0.92); }
+.stations-map-hint {
+    position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 1000; pointer-events: none;
+    padding: 6px 12px; border-radius: 6px; background: rgba(43, 47, 51, 0.8); color: #fff; opacity: 0; transition: opacity .2s;
+}
+.stations-map-hint.shown { opacity: 1; }
+@media (prefers-reduced-motion: reduce) { .stations-map-hint { transition: none; } }
 .stations-map-sites { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 10px; }
 .stations-map-site {
     border: 1px solid #c9d1dc; border-radius: 14px; background: #fff; padding: 2px 11px; line-height: 1.5;
@@ -29,15 +37,33 @@
 .observatory-card:hover, .observatory-card:focus, .observatory-card.map-lit {
     border-color: currentColor; background: #f6f8fb; color: inherit; text-decoration: none;
 }
-.observatory-card-logo img { max-height: 36px; max-width: 140px; }
+.observatory-card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+.observatory-card-logo { max-height: 32px; max-width: 110px; object-fit: contain; }
 .observatory-card-name { margin: 0; font-size: 16px; }
 .observatory-card-text { flex: 1; color: #555; }
 .observatory-card-count { color: #777; font-size: 11px; }
 
-/* Un observatoire : sites, paramètres et jeux de données côte à côte */
-.observatory-lists { display: flex; align-items: flex-start; gap: 10px; }
-.observatory-lists > .box { flex: 1 1 0; min-width: 0; margin-top: 0; }
-.observatory-search { display: flex; justify-content: flex-end; margin-bottom: 12px; }
+/* Un observatoire : la présentation coule autour des photos, s'il y en a */
+.observatory-photos { float: right; width: 40%; margin: 4px 0 12px 20px; }
+#consult-observatoire > .tab-content::after { content: ""; display: block; clear: both; }
+
+/* Puis la recherche avancée en tête ; les sites et les jeux de données d'un côté ; les paramètres, deux fois plus
+   larges, de l'autre, sur deux colonnes. L'ordre de la page ne change pas : seule la grille place les blocs. */
+.observatory-lists {
+    display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); gap: 10px; align-items: start; margin-top: 18px;
+    grid-template-areas: "search search" "sites parameters" "datasets parameters";
+}
+.observatory-lists > .box { margin: 0; }
+.observatory-sites { grid-area: sites; }
+.observatory-parameters { grid-area: parameters; }
+.observatory-datasets { grid-area: datasets; }
+.observatory-parameters > ul { columns: 2; column-gap: 28px; }
+.observatory-parameters > ul > li { break-inside: avoid; }
+.observatory-search { grid-area: search; justify-self: end; }
+.observatory-search a {
+    display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border: 1px solid currentColor; border-radius: 6px;
+}
+.observatory-search a:hover, .observatory-search a:focus { text-decoration: none; }
 .observatory-lists li[data-map-site].map-lit > strong { text-decoration: underline; }
 
 /* Les longues descriptions, repliées à quelques lignes (read-more.js) */
@@ -53,5 +79,7 @@
 
 @media (max-width: 991px) {
     .observatory-cards { grid-template-columns: minmax(0, 1fr); }
-    .observatory-lists { display: block; }
+    .observatory-lists { grid-template-columns: minmax(0, 1fr); grid-template-areas: "search" "sites" "parameters" "datasets"; }
+    .observatory-parameters > ul { columns: 1; }
+    .observatory-photos { float: none; width: auto; margin: 0 0 12px; }
 }

@@ -201,6 +201,7 @@ $map = [
     'map.title'           => 'Carte des stations',
     'map.seeStation'      => 'Voir la station',
     'map.withoutPosition' => 'Stations sans position, absentes de la carte : %count%.',
+    'map.zoomHint'        => 'Ctrl + molette, ou pincer, pour zoomer',
     'map.onMap'           => '{0}Aucune station placée sur la carte|{1}Une station sur la carte|]1,Inf[%count% stations sur la carte',
     'map.sites'           => 'Sites :',
     'readMore'            => 'Lire la suite',

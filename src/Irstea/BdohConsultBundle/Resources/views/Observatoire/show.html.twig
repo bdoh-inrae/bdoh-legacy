@@ -100,8 +100,9 @@
 
 {#
  # L'accueil d'un observatoire : la carte de ses stations en bandeau, avec un bouton par site qui allume les siennes ;
- # la présentation (ou les partenaires) et les photos ; puis sites, paramètres et jeux de données côte à côte, leurs
- # longues descriptions repliées (read-more.js). Les blocs restent où ils sont : seul le contenu des onglets change.
+ # la présentation (ou les partenaires), que le texte fait couler autour des photos ; puis la recherche avancée, les
+ # sites et les jeux de données d'un côté, les paramètres, deux fois plus larges, de l'autre (homes.css), les longues
+ # descriptions repliées (read-more.js). Les blocs restent où ils sont : seul le contenu des onglets change.
  #}
 {% block main %}
 <div id="consult-observatoire">
@@ -139,8 +140,21 @@
         {% include 'Core/stations-map.html.twig' with {stations: mapStations, sites: sites, title: false, height: 320} %}
     </div>
 
-    <!-- Variable part : presentation / partnership -->
-    <div class="col-md-{{ photos ? 15 : 24 }} tab-content">
+    <!-- Variable part : presentation / partnership, autour des photos -->
+    <div class="col-md-24 tab-content">
+
+        <!--  Photos -->
+        {% if photos %}
+            <div id="photos" class="box carousel slide observatory-photos" data-ride="carousel" data-interval="false">
+                <div class="carousel-inner">
+                    {{ macros.displaysPhoto(observatoire.pathPhotoPrincipale, true) }}
+                    {{ macros.displaysPhoto(observatoire.pathPhotoSecondaire) }}
+                </div>
+                <!-- Carousel nav -->
+                <a class="carousel-control left" href="#photos" data-slide="prev"><span class="glyphicon glyphicon-chevron-left carousel-control-button" aria-hidden="true"></span></a>
+                <a class="carousel-control right" href="#photos" data-slide="next"><span class="glyphicon glyphicon-chevron-right carousel-control-button" aria-hidden="true"></span></a>
+            </div>
+        {% endif %}
 
         <!-- First pill : presentation -->
         <div id="description" class="tab-pane active">
@@ -169,24 +183,9 @@
 
     </div>
 
-    <!--  Photos -->
-    {% if photos %}
-        <div class="col-md-9">
-            <div id="photos" class="box carousel slide" data-ride="carousel" data-interval="false">
-                <div class="carousel-inner">
-                    {{ macros.displaysPhoto(observatoire.pathPhotoPrincipale, true) }}
-                    {{ macros.displaysPhoto(observatoire.pathPhotoSecondaire) }}
-                </div>
-                <!-- Carousel nav -->
-                <a class="carousel-control left" href="#photos" data-slide="prev"><span class="glyphicon glyphicon-chevron-left carousel-control-button" aria-hidden="true"></span></a>
-                <a class="carousel-control right" href="#photos" data-slide="next"><span class="glyphicon glyphicon-chevron-right carousel-control-button" aria-hidden="true"></span></a>
-            </div>
-        </div>
-    {% endif %}
-
     <!-- Sites, paramètres et jeux de données, côte à côte -->
     <div class="col-md-24 observatory-lists" data-read-more="{{ 'readMore'|trans }}" data-read-less="{{ 'readLess'|trans }}">
-        <div class="box">
+        <div class="box observatory-sites">
             <!--  Sites experimentaux -->
             <h2>{{ 'SiteExperimental'|trans({}, 'entitiesPlurals') }}</h2>
             <ul>
@@ -201,7 +200,7 @@
             </ul>
         </div>
 
-        <div class="box">
+        <div class="box observatory-parameters">
             <!--  Types parametres -->
             <h2>{{ 'parametersStudied'|trans }}</h2>
             <ul>
@@ -214,16 +213,16 @@
             </ul>
         </div>
 
-        <div class="box">
+        <div class="box observatory-datasets">
             <!-- Jeu de données-->
             <h2>{{ 'dataSet'|trans }}</h2>
             {{ macros.makeDatasets(observatoire.datasets) }}
         </div>
-    </div>
 
-    <!-- Advanced search -->
-    <div class="col-md-24 observatory-search">
-        {{ richLink(path('bdoh_consult_advancedSearch'), 'advancedSearch'|trans, 'zoom', 'both') }}
+        <!-- Advanced search, en tête des listes (homes.css) -->
+        <div class="observatory-search">
+            {{ richLink(path('bdoh_consult_advancedSearch'), 'advancedSearch'|trans, 'zoom', 'both') }}
+        </div>
     </div>
 </div>
 {% endblock main %}
