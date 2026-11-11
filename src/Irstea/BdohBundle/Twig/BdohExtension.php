@@ -95,7 +95,26 @@ class BdohExtension extends AbstractExtension
     {
         return [
             'durationFormat' => new TwigFilter('durationFormat', [$this->durationFormater, 'format']),
+            'excerpt'        => new TwigFilter('excerpt', [$this, 'excerpt']),
         ];
+    }
+
+    /**
+     * Le début d'un texte mis en forme (la description d'un observatoire, écrite dans l'éditeur de l'administration),
+     * en texte simple : sans balises ni entités, les blancs réduits, coupé avant $length caractères, à la fin d'un mot.
+     * Pour les fiches de l'accueil du portail ; le texte entier reste sur la page de l'observatoire.
+     */
+    public function excerpt(?string $html, int $length = 240): string
+    {
+        $text = html_entity_decode(strip_tags(str_replace(['<br', '</p>', '</li>'], [' <br', ' </p>', ' </li>'], $html ?? '')), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $text = trim(preg_replace('/\s+/u', ' ', $text));
+        if (mb_strlen($text) <= $length) {
+            return $text;
+        }
+        $cut = mb_substr($text, 0, $length);
+        $space = mb_strrpos($cut, ' ');
+
+        return rtrim($space > $length / 2 ? mb_substr($cut, 0, $space) : $cut, ' ,;:.') . '…';
     }
 
     /**

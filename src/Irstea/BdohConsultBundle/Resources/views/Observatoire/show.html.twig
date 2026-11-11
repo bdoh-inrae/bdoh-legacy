@@ -10,12 +10,14 @@
     <script src="{{ asset('assets/consult/observatoire.js') }}"></script>
     <script src="{{ asset('bundles/irsteabdohconsult/vendor/leaflet/leaflet.js') }}"></script>
     <script src="{{ asset('bundles/irsteabdohconsult/js/stations-map.js') }}" defer></script>
+    <script src="{{ asset('bundles/irsteabdohconsult/js/read-more.js') }}" defer></script>
 {% endblock %}
 
 {% block stylesheets %}
     {{ parent() }}
     <link rel="stylesheet" href="{{ asset('assets/consult/observatoire.css') }}"/>
     <link rel="stylesheet" href="{{ asset('bundles/irsteabdohconsult/vendor/leaflet/leaflet.css') }}"/>
+    <link rel="stylesheet" href="{{ asset('bundles/irsteabdohconsult/css/homes.css') }}"/>
 {% endblock %}
 
 {# Makes 'partenaires' list #}
@@ -49,8 +51,7 @@
                 <a class='datasetLinkView' href="{{ path('bdoh_consult_dataset', {'dataset': dataset.uuid}) }}">
                     <strong>{{ i18nEntityLabel(dataset, 'titre', 'noDescription') }}</strong>
                 </a>
-                <br>
-                {{ i18nEntityLabel(dataset, 'description', 'noDescription') }}
+                <div class="read-more">{{ i18nEntityLabel(dataset, 'description', 'noDescription') }}</div>
             </li>
 
         {% else %}
@@ -97,11 +98,16 @@
 {% endblock %}
 
 
+{#
+ # L'accueil d'un observatoire : la carte de ses stations en bandeau, avec un bouton par site qui allume les siennes ;
+ # la présentation (ou les partenaires) et les photos ; puis sites, paramètres et jeux de données côte à côte, leurs
+ # longues descriptions repliées (read-more.js). Les blocs restent où ils sont : seul le contenu des onglets change.
+ #}
 {% block main %}
 <div id="consult-observatoire">
 
     {% set partenaireTab = ((not observatoire.partenaires is empty)) %}
-
+    {% set photos = observatoire.pathPhotoPrincipale or observatoire.pathPhotoSecondaire %}
 
     <!-- Menu for variable part -->
     <ul class="nav nav-pills pull-right">
@@ -128,8 +134,13 @@
         <small>{{ 'welcome'|trans }}</small>
     </h1>
 
+    <!-- Carte des stations, en bandeau -->
+    <div class="col-md-24">
+        {% include 'Core/stations-map.html.twig' with {stations: mapStations, sites: sites, title: false, height: 320} %}
+    </div>
+
     <!-- Variable part : presentation / partnership -->
-    <div class="col-md-11 tab-content">
+    <div class="col-md-{{ photos ? 15 : 24 }} tab-content">
 
         <!-- First pill : presentation -->
         <div id="description" class="tab-pane active">
@@ -158,27 +169,39 @@
 
     </div>
 
-    <!-- Carte des stations, sous la présentation -->
-    <div class="col-md-11">
-        {% include 'Core/stations-map.html.twig' with {stations: mapStations} %}
-    </div>
+    <!--  Photos -->
+    {% if photos %}
+        <div class="col-md-9">
+            <div id="photos" class="box carousel slide" data-ride="carousel" data-interval="false">
+                <div class="carousel-inner">
+                    {{ macros.displaysPhoto(observatoire.pathPhotoPrincipale, true) }}
+                    {{ macros.displaysPhoto(observatoire.pathPhotoSecondaire) }}
+                </div>
+                <!-- Carousel nav -->
+                <a class="carousel-control left" href="#photos" data-slide="prev"><span class="glyphicon glyphicon-chevron-left carousel-control-button" aria-hidden="true"></span></a>
+                <a class="carousel-control right" href="#photos" data-slide="next"><span class="glyphicon glyphicon-chevron-right carousel-control-button" aria-hidden="true"></span></a>
+            </div>
+        </div>
+    {% endif %}
 
-    <!-- Permanent part : lists -->
-    <div class="col-md-11 pull-right">
+    <!-- Sites, paramètres et jeux de données, côte à côte -->
+    <div class="col-md-24 observatory-lists" data-read-more="{{ 'readMore'|trans }}" data-read-less="{{ 'readLess'|trans }}">
         <div class="box">
             <!--  Sites experimentaux -->
             <h2>{{ 'SiteExperimental'|trans({}, 'entitiesPlurals') }}</h2>
             <ul>
                 {% for site in sites %}
-                    <li>
+                    <li data-map-site="{{ site.id }}">
                         <strong>
                             {{ countChroniquesBySite[site.id] != 0 ? advancedSearch_link('site', site.nom) : site.nom }}
-                        </strong><br/>
-                        {{ i18nEntityLabel(site, 'description', 'noDescription') }}
+                        </strong>
+                        <div class="read-more">{{ i18nEntityLabel(site, 'description', 'noDescription') }}</div>
                     </li>
                 {% endfor %}
             </ul>
+        </div>
 
+        <div class="box">
             <!--  Types parametres -->
             <h2>{{ 'parametersStudied'|trans }}</h2>
             <ul>
@@ -189,29 +212,18 @@
                 {# l'arbre des familles et des types #}
                 {{ macros.familyTree(familyTable, rootFamilies, false) }}
             </ul>
+        </div>
 
+        <div class="box">
             <!-- Jeu de données-->
             <h2>{{ 'dataSet'|trans }}</h2>
             {{ macros.makeDatasets(observatoire.datasets) }}
-
-            <!-- Advanced search -->
-            <div class="clearfix">
-                {{ richLink(path('bdoh_consult_advancedSearch'), 'advancedSearch'|trans, 'zoom', 'both') }}
-            </div>
         </div>
+    </div>
 
-        <!--  Photos -->
-        {% if observatoire.pathPhotoPrincipale or observatoire.pathPhotoSecondaire %}
-            <div id="photos" class="box carousel slide" data-ride="carousel" data-interval="false">
-                <div class="carousel-inner">
-                    {{ macros.displaysPhoto(observatoire.pathPhotoPrincipale, true) }}
-                    {{ macros.displaysPhoto(observatoire.pathPhotoSecondaire) }}
-                </div>
-                <!-- Carousel nav -->
-                <a class="carousel-control left" href="#photos" data-slide="prev"><span class="glyphicon glyphicon-chevron-left carousel-control-button" aria-hidden="true"></span></a>
-                <a class="carousel-control right" href="#photos" data-slide="next"><span class="glyphicon glyphicon-chevron-right carousel-control-button" aria-hidden="true"></span></a>
-            </div>
-        {% endif %}
+    <!-- Advanced search -->
+    <div class="col-md-24 observatory-search">
+        {{ richLink(path('bdoh_consult_advancedSearch'), 'advancedSearch'|trans, 'zoom', 'both') }}
     </div>
 </div>
 {% endblock main %}

@@ -1,0 +1,57 @@
+/*
+ * SPDX-FileCopyrightText: The BDOH authors
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ *
+ * Les deux accueils, autour de la carte des stations : celui du portail (Core/home.html.twig) et celui d'un
+ * observatoire (Observatoire/show.html.twig). Feuille simple, sans compilation, comme la carte.
+ */
+
+/* La carte et sa légende */
+.stations-map-box .stations-map { border-radius: 6px; }
+.stations-map-sites { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 10px; }
+.stations-map-site {
+    border: 1px solid #c9d1dc; border-radius: 14px; background: #fff; padding: 2px 11px; line-height: 1.5;
+}
+.stations-map-site:hover, .stations-map-site:focus, .stations-map-site.map-lit, .stations-map-site[aria-pressed="true"] {
+    border-color: currentColor; background: #f3f6fa;
+}
+.stations-map-site[disabled] { color: #9aa0a6; }
+.stations-map-box p.text-muted { margin: 8px 0 0; }
+
+/* Le portail : la présentation, puis les fiches des observatoires */
+.portal-home > h2 { margin-top: 18px; }
+.portal-presentation { margin-bottom: 8px; }
+.observatory-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 8px 0 16px; }
+.observatory-card {
+    display: flex; flex-direction: column; gap: 6px; padding: 12px 14px;
+    border: 1px solid #d8dee6; border-radius: 8px; background: #fff; color: inherit;
+}
+.observatory-card:hover, .observatory-card:focus, .observatory-card.map-lit {
+    border-color: currentColor; background: #f6f8fb; color: inherit; text-decoration: none;
+}
+.observatory-card-logo img { max-height: 36px; max-width: 140px; }
+.observatory-card-name { margin: 0; font-size: 16px; }
+.observatory-card-text { flex: 1; color: #555; }
+.observatory-card-count { color: #777; font-size: 11px; }
+
+/* Un observatoire : sites, paramètres et jeux de données côte à côte */
+.observatory-lists { display: flex; align-items: flex-start; gap: 10px; }
+.observatory-lists > .box { flex: 1 1 0; min-width: 0; margin-top: 0; }
+.observatory-search { display: flex; justify-content: flex-end; margin-bottom: 12px; }
+.observatory-lists li[data-map-site].map-lit > strong { text-decoration: underline; }
+
+/* Les longues descriptions, repliées à quelques lignes (read-more.js) */
+.read-more { max-height: 6.2em; overflow: hidden; position: relative; }
+.read-more::after {
+    content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 1.6em;
+    background: linear-gradient(rgba(255, 255, 255, 0), #fff);
+}
+.read-more.read-more-open, .read-more.read-more-short { max-height: none; }
+.read-more.read-more-open::after, .read-more.read-more-short::after { display: none; }
+.read-more-toggle { padding: 0; margin-bottom: 4px; }
+@media print { .read-more { max-height: none; } .read-more::after, .read-more-toggle { display: none; } }
+
+@media (max-width: 991px) {
+    .observatory-cards { grid-template-columns: minmax(0, 1fr); }
+    .observatory-lists { display: block; }
+}

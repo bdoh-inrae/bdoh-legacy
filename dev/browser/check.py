@@ -220,9 +220,45 @@ def public_steps(s, station, chronique):
         assert expected and markers.count() == expected, f'{markers.count()} points dessinés pour {expected} stations'
         markers.first.click(force=True)
         visible(page, '.leaflet-popup-content a')
+        page.keyboard.press('Escape')
 
-    s.step('carte des stations de l’observatoire', f'/{SLUG}/', stations_map)
-    s.step('carte des stations du portail', '/', stations_map)
+    def map_legend(page, legend, belongs):
+        """Survoler un élément de la légende (le premier qui a des stations) allume ses stations, et elles seules ; le
+        quitter les rend toutes égales."""
+        stations = json.loads(page.locator('.stations-map').first.get_attribute('data-stations'))
+        markers = page.locator('.stations-map path.leaflet-interactive')
+        items = page.locator(legend)
+        item, wanted = next(((items.nth(i), n) for i in range(items.count())
+                             if (n := sum(belongs(items.nth(i), s) for s in stations))), (None, 0))
+        assert item is not None, f'{legend} : aucun élément qui ait des stations à allumer'
+        item.hover()
+        page.wait_for_timeout(200)
+        lit = page.locator('.stations-map path.leaflet-interactive[fill-opacity="1"]').count()
+        assert lit == wanted, f'{legend} : {lit} stations allumées pour {wanted}'
+        assert markers.count() - lit == page.locator('.stations-map path.leaflet-interactive[fill-opacity="0.35"]').count()
+        page.mouse.move(2, 2)
+        page.wait_for_timeout(200)
+        assert page.locator('.stations-map path.leaflet-interactive[fill-opacity="0.9"]').count() == markers.count(), \
+            'les stations restent allumées une fois la légende quittée'
+
+    def observatory_home(page):
+        stations_map(page)
+        map_legend(page, '.stations-map-site:not([disabled])',
+                   lambda item, s: int(item.get_attribute('data-map-site')) in s['sites'])
+        toggle = page.locator('.read-more-toggle').first
+        if toggle.count():
+            text = page.locator('.read-more:not(.read-more-short)').first
+            before = text.bounding_box()['height']
+            toggle.click()
+            assert text.bounding_box()['height'] > before, 'une description repliée ne se déplie pas'
+
+    def portal_home(page):
+        stations_map(page)
+        map_legend(page, '.observatory-card',
+                   lambda item, s: s['observatoire'] == item.get_attribute('data-map-observatoire'))
+
+    s.step('carte des stations de l’observatoire', f'/{SLUG}/', observatory_home)
+    s.step('carte des stations du portail', '/', portal_home)
 
     def complex_viewer(page):
         page.locator('.set-min').first.click()

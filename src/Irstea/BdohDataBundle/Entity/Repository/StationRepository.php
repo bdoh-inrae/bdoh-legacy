@@ -117,27 +117,37 @@ class StationRepository extends EntityRepository
     /**
      * Les stations pour la carte (templates/Core/stations-map.html.twig) : celles d'un observatoire, ou de tous, une
      * fois par observatoire, avec leur position en WGS 84 arrondie au mètre près (le point est en Lambert-93), ou
-     * sans position. La position d'une station est publique, même quand ses chroniques sont cachées.
+     * sans position, et les sites de l'observatoire où elles sont (leurs identifiants), que la carte allume ensemble.
+     * La position d'une station est publique, même quand ses chroniques sont cachées. Un code de station est unique
+     * dans un observatoire (vérifié sur les bases de la production et d'OTHU le 2026-11-11).
      *
-     * @return array<array{code: string, nom: string, slug: string, observatoire: string, lat: ?string, lon: ?string}>
+     * @return array<array{code: string, nom: string, slug: string, observatoire: string, lat: ?string, lon: ?string, sites: int[]}>
      */
     public function findForMap(?int $observatoireId = null): array
     {
         $where = $observatoireId !== null ? 'WHERE o.id = :observatoire' : '';
         $sql = <<<SQL
-SELECT DISTINCT ON (o.nom, s.code) s.code, s.nom, o.slug, o.nom AS observatoire,
+SELECT s.code, s.nom, o.slug, o.nom AS observatoire,
        round(ST_Y(ST_Transform(s.point, 4326))::numeric, 5)::text AS lat,
-       round(ST_X(ST_Transform(s.point, 4326))::numeric, 5)::text AS lon
+       round(ST_X(ST_Transform(s.point, 4326))::numeric, 5)::text AS lon,
+       string_agg(si.id::text, ',' ORDER BY si.id) AS sites
   FROM station s JOIN stations_sites ss ON ss.station_id = s.id
   JOIN siteexperimental si ON si.id = ss.site_id JOIN observatoire o ON o.id = si.observatoire_id
   $where
+ GROUP BY o.id, s.id
  ORDER BY o.nom, s.code
 SQL;
 
-        return $this->getEntityManager()->getConnection()->fetchAllAssociative(
+        $rows = $this->getEntityManager()->getConnection()->fetchAllAssociative(
             $sql,
             $observatoireId !== null ? ['observatoire' => $observatoireId] : []
         );
+        foreach ($rows as &$row) {
+            $row['sites'] = array_map('intval', explode(',', $row['sites']));
+        }
+        unset($row);
+
+        return $rows;
     }
 
     /**

@@ -3,25 +3,42 @@
  # SPDX-License-Identifier: AGPL-3.0-or-later
  #
  # La carte des stations (StationRepository::findForMap), dessinée par stations-map.js sur le plan de l'IGN :
- # celles qui ont une position ; les autres sont comptées dessous. La page charge Leaflet et stations-map.js.
+ # celles qui ont une position ; les autres sont comptées dessous. Sans aucune station placée, pas de carte vide :
+ # le compte seul. La page charge Leaflet et stations-map.js.
  # france : la vue s'ajuste aux stations de la France métropolitaine, et non à toutes ; celles qui sont placées
  # ailleurs, souvent par une erreur de saisie, restent dessinées.
+ # sites : les sites de l'observatoire, en boutons sous la carte, qui allument leurs stations (data-map-site).
+ # title : false garde le titre pour les lecteurs d'écran seulement ; height : la hauteur de la carte, en pixels.
  #}
 {# Une liste, et non un objet : filter garderait les clés d'origine, que json_encode écrirait #}
 {% set placed = [] %}
 {% for s in stations %}
     {% if s.lat is not null %}
         {% set placed = placed|merge([{
-            code: s.code, nom: s.nom, observatoire: s.observatoire, lat: s.lat, lon: s.lon,
+            code: s.code, nom: s.nom, observatoire: s.observatoire, lat: s.lat, lon: s.lon, sites: s.sites,
             url: path('bdoh_consult_station', {'_observatoire': s.slug, 'station': s.code})
         }]) %}
     {% endif %}
 {% endfor %}
-<div class="box">
-    <h2>{{ 'map.title'|trans }}</h2>
-    <div class="stations-map" style="height: 420px"{{ france|default(false) ? ' data-fit-france' : '' }}
-         data-see-station="{{ 'map.seeStation'|trans }}"
-         data-stations="{{ placed|json_encode }}"></div>
+<div class="box stations-map-box">
+    {# « default » prendrait false pour une valeur vide : ?? seul distingue false de l'absence #}
+    <h2{{ (title ?? true) ? '' : ' class="sr-only"' }}>{{ 'map.title'|trans }}</h2>
+    {% if placed is not empty %}
+        <div class="stations-map" style="height: {{ height|default(420) }}px"{{ france|default(false) ? ' data-fit-france' : '' }}
+             data-see-station="{{ 'map.seeStation'|trans }}"
+             data-stations="{{ placed|json_encode }}"></div>
+        {% if sites|default([]) is not empty %}
+            <div class="stations-map-sites">
+                <span class="text-muted">{{ 'map.sites'|trans }}</span>
+                {% for site in sites %}
+                    {% set count = placed|filter(s => site.id in s.sites)|length %}
+                    <button type="button" class="stations-map-site" data-map-site="{{ site.id }}"{{ count ? '' : ' disabled' }}>
+                        {{- site.nom }} · {{ count -}}
+                    </button>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endif %}
     {% if stations|length > placed|length %}
         <p class="text-muted">{{ 'map.withoutPosition'|trans({'%count%': stations|length - placed|length}) }}</p>
     {% endif %}

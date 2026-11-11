@@ -864,7 +864,35 @@ def map_checks(base, side, slug, report):
             inside = sum(41 <= float(s['lat']) <= 51.5 and -5.5 <= float(s['lon']) <= 10 for s in stations)
             if inside < 0.9 * len(stations):
                 lines.append(f'{inside} stations sur {len(stations)} en France métropolitaine')
+        else:
+            lines += map_sites_checks(base, obs, stations, body)
         report.add(f'nouveau seul : carte des stations, {path}', ['conforme'], lines or ['conforme'])
+
+
+def map_sites_checks(base, obs, stations, body):
+    """Sur la page d'un observatoire, la légende de la carte (2026-11-11, dev/plans/2026-11-11_interface.md) : les sites
+    de chaque station dessinée, que la carte allume ensemble, et sous la carte un bouton par site avec le nombre de ses
+    stations placées, éteint quand il n'en a aucune. Sans station placée, ni carte ni boutons."""
+    of = """FROM siteexperimental si JOIN observatoire o ON o.id = si.observatoire_id
+              LEFT JOIN stations_sites ss ON ss.site_id = si.id LEFT JOIN station s ON s.id = ss.station_id"""
+    lines = []
+    wanted = dict(query(base, f"""SELECT s.code, string_agg(si.id::text, ',' ORDER BY si.id) {of}
+                                   WHERE o.slug = '{obs}' AND s.point IS NOT NULL GROUP BY s.code"""))
+    shown = {s['code']: ','.join(map(str, s['sites'])) for s in stations}
+    if shown != wanted:
+        lines.append(f'sites des stations : {sum(shown.get(c) != w for c, w in wanted.items())} différents sur {len(wanted)}')
+    counts = query(base, f"""SELECT si.id, count(DISTINCT s.id) FILTER (WHERE s.point IS NOT NULL) {of}
+                              WHERE o.slug = '{obs}' GROUP BY si.id ORDER BY si.id""")
+    buttons = {i: (n, off) for i, off, n in re.findall(
+        r'data-map-site="(\d+)"(\s+disabled)?>[^<]*· (\d+)</button>', body)}
+    if not stations:
+        if buttons or 'class="stations-map"' in body:
+            lines.append('une carte ou des boutons de site sans aucune station placée')
+    elif {i: n for i, (n, _) in buttons.items()} != dict(counts):
+        lines.append(f'boutons des sites : {len(buttons)} pour {len(counts)} sites, ou des nombres qui diffèrent')
+    elif any(bool(off) != (n == '0') for n, off in buttons.values()):
+        lines.append('un bouton de site allumé sans station, ou éteint avec')
+    return lines
 
 
 def run_exports(args):

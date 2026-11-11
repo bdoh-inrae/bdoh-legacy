@@ -1,76 +1,51 @@
 {% extends 'layout.html.twig' %}
-{% from 'macros.html.twig' import i18nEntityLabel, doi_list, logo, logoObservatoire %}
 
 {% block title %}{{ 'accueilObservatoires'|trans }}{% endblock title %}
 
 {% block javascripts %}
     {{ parent() }}
-    <script src="{{ asset('assets/home.js') }}"></script>
     <script src="{{ asset('bundles/irsteabdohconsult/vendor/leaflet/leaflet.js') }}"></script>
     <script src="{{ asset('bundles/irsteabdohconsult/js/stations-map.js') }}" defer></script>
 {% endblock javascripts %}
 
 {% block stylesheets %}
     {{ parent() }}
-    <link rel="stylesheet" href="{{ asset('assets/home.css') }}"  type="text/css"/>
     <link rel="stylesheet" href="{{ asset('bundles/irsteabdohconsult/vendor/leaflet/leaflet.css') }}" type="text/css"/>
+    <link rel="stylesheet" href="{{ asset('bundles/irsteabdohconsult/css/homes.css') }}" type="text/css"/>
 {% endblock stylesheets %}
 
+{#
+ # L'accueil du portail : la carte de toutes les stations en tête, la présentation, puis une fiche par observatoire.
+ # Survoler une fiche allume ses stations sur la carte (stations-map.js, data-map-observatoire) ; rien ne bouge.
+ # Le texte entier de chaque observatoire est sur sa page ; la fiche n'en montre que le début, en texte simple.
+ #}
 {% block main %}
     <h1>{{ 'home.title'|trans }}</h1>
 
-    <div>
-        <ul class="nav nav-tabs tabs-left col-md-6">
-            <li class="active" href="#accueil" data-hover-tab="true">
-                <a href="#">{{ 'presentation'|trans }}</a>
-            </li>
-            {% for obs in allObservatoires() %}
-                <li href="#{{ obs.slug }}" data-hover-tab="true">
-                    <a href="{{ path('bdoh_home', {'_observatoire' : obs.slug}) }}">{{ obs.nom }}</a>
-                </li>
-            {% endfor %}
-        </ul>
-        <div class="tab-content col-md-18">
-            <div class="tab-pane active" id="accueil">
-                <div class="row" style="margin:0 10px">
-                    <div class="col-md-16">
-                        <h1>{{ 'presentation'|trans }}</h1>
-                        <div>
-                            {{ 'accueilMessage'|trans|replace({"\n": "<br />"})|raw }}
-                        </div><!--
-                        <div class="alert alert-info" style="text-align:center;margin:25px 0 0;padding:5px;">
-                            {{ 'survolez'|trans }}
-                        </div>-->
-                    </div>
-                    <div class="col-md-8 text-center pull-right">
-                        {{ logo('Irstea', logo_short_link_parameters) }}
-                    </div>
-                </div>
-                <div class="row" style="margin:0 10px">
-                    <div class="col-md-24">
-                        {% include 'Core/stations-map.html.twig' with {stations: mapStations, france: true} %}
-                    </div>
-                </div>
-            </div>
+    <div class="col-md-24 portal-home">
+        {% include 'Core/stations-map.html.twig' with {stations: mapStations, france: true, title: false, height: 440} %}
 
+        <h2>{{ 'presentation'|trans }}</h2>
+        <div class="portal-presentation">
+            {{ 'accueilMessage'|trans|replace({"\n": "<br />"})|raw }}
+        </div>
+
+        <h2>{{ 'Observatoire'|trans({}, 'entitiesPlurals') }}</h2>
+        {% set english = app.session.get('_locale')|slice(0, 2) == 'en' %}
+        <div class="observatory-cards">
             {% for obs in allObservatoires() %}
-                <div class="tab-pane centPC" id="{{ obs.slug }}">
-                    <div class="row" style="margin:0 10px">
-                        <div class="col-md-18">
-                            <h1>{{ obs.nom }}</h1>
-                            <div class="description">
-                                {{ i18nEntityLabel(obs, 'description', 'noDescription') }}
-                                {{ doi_list(obs.dois) }}
-                            </div>
-                        </div>
-                        <div class="col-md-6 text-center pull-right">
-                            <p>{{ logoObservatoire(obs) }}</p>
-                            <a class="btn btn-success" href="{{ path('bdoh_home', {'_observatoire' : obs.slug}) }}">
-                                {{ 'enSavoirPlus'|trans }}
-                            </a>
-                        </div>
-                    </div>
-                </div>
+                {% set placed = mapStations|filter(s => s.slug == obs.slug and s.lat is not null)|length %}
+                <a class="observatory-card" href="{{ path('bdoh_home', {'_observatoire' : obs.slug}) }}"
+                   data-map-observatoire="{{ obs.nom }}">
+                    {% if obs.pathLogo %}
+                        <span class="observatory-card-logo"><img src="{{ asset(obs.pathLogo) }}" alt=""></span>
+                    {% endif %}
+                    <h3 class="observatory-card-name">{{ obs.nom }}</h3>
+                    <span class="observatory-card-text">
+                        {{- (english ? obs.descriptionEn|default(obs.description) : obs.description)|excerpt -}}
+                    </span>
+                    <span class="observatory-card-count">{{ 'map.onMap'|trans({'%count%': placed}) }}</span>
+                </a>
             {% endfor %}
         </div>
     </div>

@@ -87,7 +87,7 @@ GONE_KEYS = """Bad credentials. | User account has expired. | Utilisateur.newPas
     resetting.request.submit | resetting.reset.submit | security.login_form.lostPassword | security.login_form.password
     security.utilisateur.edit.info.changePassword"""
 NEW_KEYS = """Error.file.cantWrite(%file%) | admin.sendJson.missingCredentials | export.exportMail.body(%link%, %days%)
-    legal.freeSoftware | legal.sourceCode | map.seeStation | map.title | map.withoutPosition | measure.export.busy | measure.export.licence | measure.export.status.download
+    legal.freeSoftware | legal.sourceCode | map.onMap | map.seeStation | map.sites | map.title | map.withoutPosition | measure.export.busy | measure.export.licence | measure.export.status.download
     measure.export.status.expired | measure.export.status.failed | measure.export.status.finished(%days%)
     measure.export.status.running | measure.export.status.title | measure.export.status.waiting | measure.export.tooHeavy
     measure.export.tooMany | security.login_check.info(%email%) | security.login_check.submit
@@ -96,7 +96,7 @@ NEW_KEYS = """Error.file.cantWrite(%file%) | admin.sendJson.missingCredentials |
     security.login_link.mail.hello | security.login_link.mail.notYou | security.login_link.mail.title
     security.login_link.sent(%email%) | security.tooManyRequests | security.utilisateur.edit.emailChanged(%email%)
     security.utilisateur.edit.info.changeEmail | security.utilisateur.newMailUtilisateur.body.confirm
-    security.utilisateur.newMailUtilisateur.body.confirmLater"""
+    security.utilisateur.newMailUtilisateur.body.confirmLater | readLess | readMore"""
 CHANGED_KEYS = """accueilMessage | measure.export.help-content | measure.export.job_queued(%job_id%) | measure.export.underway
     security.besoin.create.title | security.login_form.connectTo | security.utilisateur.create.info.isTheFirstStep
     security.utilisateur.create.info.yourIdentifier | security.utilisateur.create.isCompleted
