@@ -18,11 +18,12 @@ define(['./base'], (BaseSerieConfig) => {
     SingleGraphSerieConfig.prototype._applySerieType = function (options, serie) {
         _super._applySerieType.call(this, options, serie);
 
-        // couleur des lignes (en fonction du style)
-        options.color = this._getColor(serie, serie.style.color[0], serie.style.color[1], serie.style.color[2]);
-
-        // épaisseur des lignes (en fonction du style)
-        options.lineWidth = serie.style.thickness;
+        // couleur et épaisseur des lignes (en fonction du style), sauf pour les lacunes et les invalides, en bandes
+        // de leur teinte à elles (base.js)
+        if (serie.type !== 'invalid' && serie.type !== 'gap') {
+            options.color = this._getColor(serie, serie.style.color[0], serie.style.color[1], serie.style.color[2]);
+            options.lineWidth = serie.style.thickness;
+        }
 
         // marqueurs des bornes des plages des discontinues (en fonction du style)
         if (serie.type !== 'invalid' && serie.type !== 'gap' &&

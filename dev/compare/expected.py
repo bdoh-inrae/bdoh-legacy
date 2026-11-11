@@ -45,6 +45,7 @@ OPEN = 'Ouverture des données'
 LINK = 'Connexion par lien, sans mot de passe'
 CONTACT = 'Adresse de contact'
 HOMES = 'Accueils autour de la carte'
+GRAPH = "Graphique d'une chronique"
 OLD_TERMS = "Pour pouvoir télécharger des données il faudra, une fois connecté, faire des demandes d'accès spécifiques sur les observatoires qui vous intéressent via le formulaire de demande d'accès aux données ou contacter un gestionnaire"
 NEW_TERMS = "Les données ouvertes se téléchargent sans compte. Pour accéder aux données fermées, il faudra, une fois connecté, faire des demandes d'accès spécifiques sur les observatoires qui vous intéressent via le formulaire de demande d'accès aux données ou contacter un gestionnaire"
 RIGHTS_NOTICE = "Conformément aux articles 39 et 40 de la loi Informatique et Libertés modifiée par la loi n° 2004-801 du 6 août 2004 relative à la protection des personnes physiques à l'égard des traitements de données à caractère personnel, vous disposez d'un droit d'accès et de rectification des données vous concernant. Pour toute demande de rectification veuillez vous adresser à : "
@@ -88,7 +89,7 @@ GONE_KEYS = """Bad credentials. | User account has expired. | Utilisateur.newPas
     resetting.request.submit | resetting.reset.submit | security.login_form.lostPassword | security.login_form.password
     security.utilisateur.edit.info.changePassword"""
 NEW_KEYS = """Error.file.cantWrite(%file%) | admin.sendJson.missingCredentials | export.exportMail.body(%link%, %days%)
-    legal.freeSoftware | legal.sourceCode | map.onMap | map.seeStation | map.sites | map.title | map.withoutPosition | measure.export.busy | measure.export.licence | measure.export.status.download
+    legal.freeSoftware | legal.sourceCode | map.onMap | map.seeStation | map.sites | map.title | map.withoutPosition | overview.hint | overview.title | measure.export.busy | measure.export.licence | measure.export.status.download
     measure.export.status.expired | measure.export.status.failed | measure.export.status.finished(%days%)
     measure.export.status.running | measure.export.status.title | measure.export.status.waiting | measure.export.tooHeavy
     measure.export.tooMany | security.login_check.info(%email%) | security.login_check.submit
@@ -145,6 +146,10 @@ RULES = [
         RX(r'[-+]D div data-interval=false data-ride=carousel'), RX(r'[-+]G /uploads/\S+ .+'), RX(r'[-+]A #photos'),
         RX(r'[-+]D a data-slide=(?:prev|next)')),
         must=('+S /bundles/irsteabdohconsult/js/read-more.js',)),
+    # La bande de toute la chronique, sous son graphique : un élément de plus sur la page d'une chronique, que le
+    # JavaScript remplit (« nouveau seul : bande de toute la chronique » vérifie sa route)
+    Rule('pages', rf'{ROLE} {OBS}/[^/ ]+/[^/ ]+', GRAPH, lines=(
+        RX(rf'\+D div data-hint=.+ data-title=.+ data-url={OBS}/chronique/\d+/overview'),)),
     Rule('pages', rf'{ROLE} {OBS}/contact', CONTACT, lines=(
         '-A mailto:bdoh.support@lists.irstea.fr', '+A mailto:bdoh.support@listes.inrae.fr',
         "-T Pour les demandes techniques concernant l'utilisation de BDOH veuillez contacter bdoh.support@lists.irstea.fr.",

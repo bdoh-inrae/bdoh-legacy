@@ -17,6 +17,11 @@ define(['./base'], (BaseSerieConfig) => {
         return _super._getColor.call(this, serie, r, g, b);
     };
 
+    // Plusieurs chroniques sur un graphique : les bandes de chacune dans sa couleur, pour qu'on sache de laquelle
+    MultiGraphSerieConfig.prototype._bandFill = function (serie) {
+        return this._formatColor(serie.measures.color[0], serie.measures.color[1], serie.measures.color[2], 0.12);
+    };
+
     MultiGraphSerieConfig.prototype._applySerieType = function (options, serie) {
         _super._applySerieType.call(this, options, serie);
 

@@ -131,6 +131,11 @@ define([
                 return this._submittedDateRange;
             },
 
+            // La période que montre le graphique : les dates choisies, puis chaque zoom dans le graphique
+            observeGraphDateRange() {
+                return this._graphDateRange;
+            },
+
             getSelectedDateRange() {
                 return this._selectedDateRange;
             }

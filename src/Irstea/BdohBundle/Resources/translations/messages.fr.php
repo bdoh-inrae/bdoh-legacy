@@ -205,6 +205,8 @@ $map = [
     'map.sites'           => 'Sites :',
     'readMore'            => 'Lire la suite',
     'readLess'            => 'Réduire',
+    'overview.title'      => 'Toute la chronique',
+    'overview.hint'       => 'Glisser la fenêtre ou tirer ses bords ; Ctrl + molette sur le graphique pour zoomer',
 ];
 
 return array_merge($errors, $observatoire, $dates, $various, $legal, $map);

@@ -106,29 +106,31 @@ def chart_step(page):
     page.wait_for_load_state('networkidle')
 
 
-# Les lignes rouges des séries du graphique, en valeurs de l'axe des y, et l'écart admis : un trait de 5 pixels
-RED_ROWS = """() => {
-  const ticks = Array.from(document.querySelectorAll('.jqplot-yaxis-tick')).map(t => {
-      const r = t.getBoundingClientRect(); return [parseFloat(t.textContent.replace(',', '.')), r.top + r.height / 2]; })
-      .filter(t => !isNaN(t[0]));
-  if (ticks.length < 2) return null;
-  const [v0, y0] = ticks[0], [v1, y1] = ticks[ticks.length - 1];
-  const value = y => v0 + (y - y0) * (v1 - v0) / (y1 - y0);
-  const values = new Set();
-  for (const c of document.querySelectorAll('canvas.jqplot-series-canvas')) {
-    const r = c.getBoundingClientRect(), d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
-    for (let y = 0; y < c.height; y++) for (let x = 0; x < c.width; x++) {
-      const i = (y * c.width + x) * 4;
-      if (d[i] > 200 && d[i + 1] < 60 && d[i + 2] < 60 && d[i + 3] > 200) values.add(value(r.top + y * r.height / c.height));
+# Les lacunes du graphique, en bandes pâles sur toute la hauteur (gap-band-renderer.js, gris à 14 % d'opacité) :
+# les colonnes des canevas des séries dont le haut et le bas ont cette teinte, en suites contiguës ; et les pixels
+# rouges opaques, l'ancien trait des lacunes, qui ne doivent plus paraître.
+GAP_BANDS = """() => {
+  let runs = 0, columns = 0, red = 0;
+  const band = (d, i) => Math.abs(d[i] - 110) < 8 && Math.abs(d[i + 1] - 120) < 8 && Math.abs(d[i + 2] - 130) < 8
+      && d[i + 3] > 15 && d[i + 3] < 80;
+  for (const c of document.querySelectorAll('.graph canvas.jqplot-series-canvas')) {
+    const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
+    let inside = false;
+    for (let x = 0; x < c.width; x++) {
+      const on = band(d, (1 * c.width + x) * 4) && band(d, ((c.height - 2) * c.width + x) * 4);
+      if (on) { columns++; if (!inside) runs++; }
+      inside = on;
     }
+    for (let i = 0; i < d.length; i += 4) if (d[i] > 200 && d[i + 1] < 60 && d[i + 2] < 60 && d[i + 3] > 200) red++;
   }
-  return {values: Array.from(values), tolerance: Math.abs(v1 - v0) * 0.03};
+  return {runs, columns, red};
 }"""
 
 
-def gap_heights_step(periods):
-    """Les lacunes se dessinent à la hauteur que demande le serveur, à chaque période affichée l'une après l'autre :
-    l'ancien graphique la reprenait du premier affichage de la page (dev/differences.md, « Lacunes du graphique »)."""
+def gap_bands_step(periods):
+    """Les lacunes se dessinent en bandes pâles sur toute la hauteur du graphique, à chaque période affichée l'une après
+    l'autre, et plus en trait rouge (dev/differences.md, « Graphique d'une chronique ») : pour chaque période où le
+    serveur envoie des lacunes, au moins une bande, et pas plus que de morceaux de lacunes."""
     def check(page):
         visible(page, '#fillingRates')
         sent = []
@@ -141,8 +143,12 @@ def gap_heights_step(periods):
             except (PlaywrightError, ValueError):
                 return
             if isinstance(data, dict) and 'chronicles' in data:
-                sent.append({v[1] for chronicle in data['chronicles'] for serie in chronicle['series']
-                             if serie['seriesFlag'] in ('gap', 'invalid') for v in serie['values'] if v[0] is not None})
+                pieces = 0
+                for chronicle in data['chronicles']:
+                    for serie in chronicle['series']:
+                        if serie['seriesFlag'] == 'gap' and any(v[0] is not None for v in serie['values']):
+                            pieces += 1
+                sent.append(pieces)
 
         page.on('response', keep)
         try:
@@ -154,15 +160,36 @@ def gap_heights_step(periods):
                 page.locator('a.submit.validated').first.click()
                 page.wait_for_load_state('networkidle')
                 page.wait_for_timeout(1500)
-                drawn = page.evaluate(RED_ROWS)
-                assert sent and drawn and drawn['values'], f'{start} au {end} : pas de lacune à comparer'
-                wanted = sent[-1]
-                off = [v for v in drawn['values'] if not any(abs(v - w) <= drawn['tolerance'] for w in wanted)]
-                assert not off, (f'{start[:10]} au {end[:10]} : lacunes demandées à {sorted(wanted)},'
-                                 f' dessinées aussi entre {min(off):.4g} et {max(off):.4g}')
+                drawn = page.evaluate(GAP_BANDS)
+                assert sent and sent[-1], f'{start} au {end} : pas de lacune à comparer'
+                assert drawn['runs'] >= 1, f'{start[:10]} au {end[:10]} : {sent[-1]} morceaux de lacunes, aucune bande'
+                assert drawn['runs'] <= sent[-1], (f'{start[:10]} au {end[:10]} : {drawn["runs"]} bandes pour'
+                                                   f' {sent[-1]} morceaux de lacunes')
+                assert not drawn['red'], f'{start[:10]} au {end[:10]} : un trait rouge, l’ancien dessin des lacunes'
         finally:
             page.remove_listener('response', keep)
     return check
+
+
+def overview_step(page):
+    """Le graphique s'affiche dès l'ouverture, avec dessous la bande de toute la chronique ; glisser sa fenêtre change
+    la période du graphique (dev/differences.md, « Graphique d'une chronique »)."""
+    visible(page, '.graph canvas', timeout=60000)
+    visible(page, '.graph-overview canvas')
+    page.wait_for_load_state('networkidle')
+    fields = page.locator('input[placeholder="JJ/MM/AAAA HH:MM:SS"]')
+    before = (fields.nth(0).input_value(), page.locator('.graph-overview-range').inner_text())
+    assert before[0], 'le graphique ne s’ouvre pas sur une période'
+    area = page.locator('.graph-overview-area').bounding_box()
+    page.locator('.graph-overview-handle.left').hover()
+    page.mouse.down()
+    page.mouse.move(area['x'] + area['width'] * 0.6, area['y'] + area['height'] / 2, steps=8)
+    page.mouse.up()
+    page.wait_for_load_state('networkidle')
+    page.wait_for_timeout(1000)
+    after = (fields.nth(0).input_value(), page.locator('.graph-overview-range').inner_text())
+    assert after[0] != before[0] and after[1] != before[1], f'la fenêtre tirée ne change pas la période : {before} → {after}'
+    visible(page, '.graph canvas')
 
 
 # Une chronique visible dont les lacunes de 2024 tombent dans deux mois au moins, et dont le mois de la première a des
@@ -210,6 +237,7 @@ def public_steps(s, station, chronique):
     s.step('page de la station', f'/{SLUG}/station/{station}', lambda p: visible(p, 'text=Caractéristiques'))
 
     s.step('chronique, taux de remplissage et graphique', f'/{SLUG}/{station}/{chronique}', chart_step)
+    s.step('chronique, graphique dès l’ouverture et bande de toute la chronique', f'/{SLUG}/{station}/{chronique}', overview_step)
 
     def stations_map(page):
         visible(page, '.stations-map')
@@ -495,8 +523,8 @@ def main():
             slug, station, code, first, last = gaps[0]
             periods = [(month(int(first)), month(int(first), last=True)), (month(1), month(12, last=True)),
                        (month(int(last)), month(int(last), last=True))]
-            anonymous.step('graphique, lacunes à leur hauteur d’une période à l’autre', f'/{slug}/{station}/{code}',
-                           gap_heights_step(periods))
+            anonymous.step('graphique, lacunes en bandes d’une période à l’autre', f'/{slug}/{station}/{code}',
+                           gap_bands_step(periods))
         managing = signed_in('gestionnaire', manager)
         chronique_page = f'/{SLUG}/{station_code}/{chronique_code}'
         public_steps(managing, station_code, chronique_code)

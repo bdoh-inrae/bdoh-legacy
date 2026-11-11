@@ -205,6 +205,8 @@ $map = [
     'map.sites'           => 'Sites:',
     'readMore'            => 'Read more',
     'readLess'            => 'Show less',
+    'overview.title'      => 'The whole time series',
+    'overview.hint'       => 'Drag the window or its edges; Ctrl + wheel on the chart to zoom',
 ];
 
 return array_merge($errors, $observatoire, $dates, $various, $legal, $map);

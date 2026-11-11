@@ -2,9 +2,17 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 define([
     'jquery',
-    '../cumulative-serie-renderer'
-], ($, CumulativeSerieRenderer) => {
+    '../cumulative-serie-renderer',
+    '../gap-band-renderer'
+], ($, CumulativeSerieRenderer, GapBandRenderer) => {
     'use strict';
+
+    // Les lacunes et les invalides, en bandes très pâles sur toute la hauteur (gap-band-renderer.js) : gris pour une
+    // lacune, ambre pour une mesure invalide. La légende montre la même teinte, un peu plus soutenue.
+    const BANDS = {
+        gap: {fill: 'rgba(110, 120, 130, 0.14)', legend: 'rgba(110, 120, 130, 0.45)'},
+        invalid: {fill: 'rgba(230, 140, 20, 0.16)', legend: 'rgba(230, 140, 20, 0.55)'}
+    };
 
     function BaseSerieConfig() {
     }
@@ -35,14 +43,11 @@ define([
         // couleur des lignes (par défaut)
         options.color = this._formatColor(0, 0, 255); // bleu #0000FF
         if (serie.type === 'invalid' || serie.type === 'gap') {
-            options.color = this._formatColor(255, 0, 0); // rouge #FF0000
+            options.color = BANDS[serie.type].legend;
         }
 
         // épaisseur des lignes (par défaut)
         options.lineWidth = 1;
-        if (serie.type === 'invalid' || serie.type === 'gap') {
-            options.lineWidth = 5;
-        }
 
         // marqueurs des bornes des plages des discontinues (par défaut)
         if (serie.type !== 'invalid' && serie.type !== 'gap' &&
@@ -68,7 +73,20 @@ define([
         );
     };
 
+    BaseSerieConfig.prototype._bandFill = function (serie) {
+        return BANDS[serie.type].fill;
+    };
+
     BaseSerieConfig.prototype._applyRendererType = function (options, serie) {
+        if (serie.type === 'invalid' || serie.type === 'gap') {
+            $.extend(options, {
+                renderer: GapBandRenderer,
+                rendererOptions: {fill: this._bandFill(serie)},
+                showMarker: false,
+                shadow: false
+            });
+            return;
+        }
         if (serie.type !== 'invalid' &&
             serie.type !== 'gap' &&
             serie.type !== 'controlPoints' &&

@@ -572,6 +572,58 @@ SQL;
     }
 
     /**
+     * Toute une chronique, résumée pour la bande sous son graphique (dev/plans/2026-11-11_interface.md, lot 3) : de sa
+     * première à sa dernière date, $buckets tranches de même durée, et dans chacune le minimum et le maximum de ses
+     * valeurs valides (ni lacune, ni invalide : qualités d'ordre 100 et 200, comme le graphique). Une tranche sans
+     * valeur valide n'est pas rendue. Les mesures d'une continue, calculée ou convertie ; le début des plages d'une
+     * discontinue.
+     *
+     * Le coût d'une lecture au hasard est abaissé pour cette seule requête : à sa valeur par défaut (4), pensée pour des
+     * disques à plateaux, PostgreSQL parcourt toute la table des mesures plutôt que son index pour une grosse chronique
+     * (18 s au lieu de 1,9 s pour 2,4 millions de mesures ; dev/plans/2026-10-26_deployment.md, « Coût d'une lecture
+     * au hasard »).
+     *
+     * @return array{begin: ?int, end: ?int, step: ?float, buckets: list<array{int, float, float}>} dates en millisecondes
+     */
+    public function getOverview(Chronique $chronique, int $buckets = 1000): array
+    {
+        [$table, $date] = $chronique instanceof ChroniqueDiscontinue ? ['plage', 'debut'] : ['mesure', 'date'];
+        $connection = $this->getEntityManager()->getConnection();
+        $id = $chronique->getId();
+        $bounds = $connection->fetchAssociative(
+            "SELECT extract(epoch FROM min($date))::float8 AS b, extract(epoch FROM max($date))::float8 AS e
+               FROM $table WHERE chronique_id = :id",
+            ['id' => $id]
+        );
+        if ($bounds === false || $bounds['b'] === null) {
+            return ['begin' => null, 'end' => null, 'step' => null, 'buckets' => []];
+        }
+        $begin = (float) $bounds['b'];
+        $span = max((float) $bounds['e'] - $begin, 1.0);
+        $step = $span / $buckets;
+
+        $rows = $connection->transactional(function ($connection) use ($table, $date, $id, $begin, $step, $buckets) {
+            $connection->executeStatement('SET LOCAL random_page_cost = 1.1');
+
+            return $connection->fetchAllNumeric(
+                "SELECT least(floor((extract(epoch FROM t.$date)::float8 - :begin) / :step)::int, :last) AS i,
+                        min(t.valeur) AS lo, max(t.valeur) AS hi
+                   FROM $table t JOIN qualite q ON q.id = t.qualite_id
+                  WHERE t.chronique_id = :id AND q.ordre NOT IN (100, 200) AND t.valeur IS NOT NULL
+                  GROUP BY 1 ORDER BY 1",
+                ['begin' => $begin, 'step' => $step, 'last' => $buckets - 1, 'id' => $id]
+            );
+        });
+
+        return [
+            'begin'   => (int) round($begin * 1000),
+            'end'     => (int) round(($begin + $span) * 1000),
+            'step'    => $step * 1000,
+            'buckets' => array_map(fn ($row) => [(int) $row[0], (float) $row[1], (float) $row[2]], $rows),
+        ];
+    }
+
+    /**
      * @param array          $chroniquesAndRights
      * @param \DateTime|null $beginDate
      * @param \DateTime|null $endDate

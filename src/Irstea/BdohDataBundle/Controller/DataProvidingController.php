@@ -52,6 +52,23 @@ class DataProvidingController extends Controller
     }
 
     /**
+     * Toute la chronique, résumée en tranches (ChroniqueRepository::getOverview), pour la bande sous son graphique.
+     * Les mêmes droits que ses mesures.
+     */
+    public function getChroniqueOverviewAction($id): Response
+    {
+        $chronique = $this->getBdohRepo('Chronique')->find((int) $id);
+        if ($chronique === null) {
+            throw new NotFoundHttpException();
+        }
+        if (!$this->isGranted('CONSULT_TIMESERIES', $chronique)) {
+            throw new ForbiddenException();
+        }
+
+        return $this->renderJson($this->getBdohRepo('Chronique')->getOverview($chronique));
+    }
+
+    /**
      * @param Request $request
      *
      * @return array

@@ -838,6 +838,7 @@ def run_pages(args):
     if not args.only and not args.profile:
         map_checks(args.base, new, slug, report)
         cards_checks(args.base, new, report)
+        overview_checks(args.base, new, report)
     report.close()
 
 
@@ -911,6 +912,53 @@ def cards_checks(base, side, report):
         if problems:
             lines.append(f'{slug} : {", ".join(problems)}')
     report.add('nouveau seul : fiches des observatoires, /', ['conforme'], lines or ['conforme'])
+
+
+def overview_checks(base, side, report):
+    """La bande de toute la chronique, que seul le nouveau a (2026-11-11, dev/differences.md, « Graphique d'une
+    chronique ») : pour une chronique visible de chaque sorte, sans compte, sa route rend de la première à la dernière
+    date de la chronique, en 1000 tranches au plus, et le plus petit et le plus grand de ses minimums et maximums
+    sont ceux des valeurs valides de la base (ni lacune, ni invalide) ; une chronique cachée répond 403."""
+    kinds = {'continue': ('mesure', 'date'), 'calculee': ('mesure', 'date'), 'discontinue': ('plage', 'debut')}
+    for dtype, (table, date) in kinds.items():
+        found = query(base, f"""SELECT o.slug, c.id,
+                                   round(1000 * extract(epoch FROM min(t.{date})))::bigint, round(1000 * extract(epoch FROM max(t.{date})))::bigint,
+                                   min(t.valeur) FILTER (WHERE q.ordre NOT IN (100, 200)), max(t.valeur) FILTER (WHERE q.ordre NOT IN (100, 200))
+                              FROM chronique c JOIN {table} t ON t.chronique_id = c.id JOIN qualite q ON q.id = t.qualite_id
+                              JOIN station s ON s.id = c.station_id JOIN stations_sites ss ON ss.station_id = s.id
+                              JOIN siteexperimental si ON si.id = ss.site_id JOIN observatoire o ON o.id = si.observatoire_id
+                             WHERE c.estvisible AND c.dtype = '{dtype}'
+                             GROUP BY o.slug, c.id HAVING count(*) FILTER (WHERE q.ordre NOT IN (100, 200)) > 0
+                             ORDER BY count(*) DESC, c.id LIMIT 1""")
+        if not found:
+            report.add(f'nouveau seul : bande de toute la chronique, {dtype}', [NO_CASE], [NO_CASE])
+            continue
+        slug, cid, first, last, low, high = found[0]
+        status, _, body = Client(side, None, slug).get(f'/{slug}/chronique/{cid}/overview')
+        problems = []
+        if status != 200:
+            problems.append(f'statut {status}')
+        else:
+            data = json.loads(body)
+            buckets = data['buckets']
+            if abs(data['begin'] - int(first)) > 1 or abs(data['end'] - int(last)) > 1:
+                problems.append('bornes')
+            if not 0 < len(buckets) <= 1000 or any(not 0 <= b[0] < 1000 for b in buckets):
+                problems.append(f'{len(buckets)} tranches')
+            elif (min(b[1] for b in buckets), max(b[2] for b in buckets)) != (float(low), float(high)):
+                problems.append('minimum ou maximum')
+        report.add(f'nouveau seul : bande de toute la chronique, {dtype}', ['conforme'],
+                   [f'non conforme : {", ".join(problems)}'] if problems else ['conforme'])
+    hidden = query(base, """SELECT o.slug, c.id FROM chronique c JOIN station s ON s.id = c.station_id
+                              JOIN stations_sites ss ON ss.station_id = s.id JOIN siteexperimental si ON si.id = ss.site_id
+                              JOIN observatoire o ON o.id = si.observatoire_id
+                             WHERE NOT c.estvisible ORDER BY c.id LIMIT 1""")
+    if hidden:
+        status = Client(side, None, hidden[0][0]).get(f'/{hidden[0][0]}/chronique/{hidden[0][1]}/overview')[0]
+        report.add('nouveau seul : bande d’une chronique cachée, sans compte', ['conforme'],
+                   ['conforme'] if status == 403 else [f'non conforme : statut {status}'])
+    else:
+        report.add('nouveau seul : bande d’une chronique cachée, sans compte', [NO_CASE], [NO_CASE])
 
 
 def map_sites_checks(base, obs, stations, body):
