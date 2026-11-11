@@ -15,6 +15,7 @@ La base de la VM deviendra la production : un essai qui écrit se fait sur une c
 - [ ] Les boutons de la boîte à outils d'une page de chronique : ils ont désormais un contour et des couleurs au survol et au focus (`dev/differences.md`, « Thèmes des observatoires »). Ça passe ?
 - [ ] Le graphique d'une chronique continue, d'une discontinue et d'une calculée : zoom, choix de la période, points de contrôle.
 - [ ] Le visualiseur avec plusieurs chroniques.
+- [ ] L'interface modernisée (0.4.0 et 0.4.1, `CHANGELOG.md`) : le portail et ses fiches, l'accueil de deux ou trois observatoires aux couleurs différentes, la page d'une chronique avec son graphique dès l'ouverture, la bande de toute la chronique (glisser, tirer, Ctrl + molette), et les lacunes en bandes. Recharger de force (Ctrl + Maj + R) après la mise à jour : le navigateur garde sinon les anciennes feuilles de style.
 - [ ] La carte des stations, sur l'accueil du portail et sur celui de deux ou trois observatoires, dont un sans station placée : points, bulles, liens vers les stations, fond de l'IGN (`dev/differences.md`, « Carte des stations »).
 
 ## Les vrais courriels
