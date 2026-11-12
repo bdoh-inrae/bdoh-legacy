@@ -17,7 +17,7 @@
 
 {% block breadcrumb %}
     <ul class="breadcrumb">
-        <li><a href="{{ path('bdoh_home') }}">{{ 'home'|trans }}</a></li>
+        {% from 'macros.html.twig' import breadcrumbRoot %}{{ breadcrumbRoot() }}
         <li class="active">{{ 'admin.shapeImport'|trans }}</li>
     </ul>
 {% endblock %}

@@ -93,7 +93,7 @@
 {% block breadcrumb %}
     <ul class="breadcrumb">
         {# Home #}
-        <li class="active">{{ 'home'|trans }}</li>
+        {% from 'macros.html.twig' import breadcrumbRoot %}{{ breadcrumbRoot(true) }}
     </ul>
 {% endblock %}
 

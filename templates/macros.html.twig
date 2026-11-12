@@ -220,3 +220,17 @@
         </ul>
     {% endif %}
 {% endmacro %}
+
+{#-
+ # Le début du fil d'Ariane (2026-11-12, Lou) : le portail de BDOH, puis l'observatoire de la page, au lieu de
+ # « Accueil », qui menait à l'accueil de l'observatoire sans dire lequel, et sans chemin vers le portail. here : la
+ # page est l'accueil de l'observatoire lui-même.
+ #}
+{%- macro breadcrumbRoot(here) -%}
+    <li><a href="{{ path('bdoh_all_home') }}">BDOH</a></li>
+    {%- if here %}
+    <li class="active">{{ currentObservatoire().nom }}</li>
+    {%- else %}
+    <li><a href="{{ path('bdoh_home') }}">{{ currentObservatoire().nom }}</a></li>
+    {%- endif -%}
+{%- endmacro -%}

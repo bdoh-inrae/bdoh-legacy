@@ -8,7 +8,7 @@
 
 {% block breadcrumb %}
     <ul class="breadcrumb">
-        <li><a href="{{ path('bdoh_home') }}">{% trans %}home{% endtrans %}</a></li>
+        {% from 'macros.html.twig' import breadcrumbRoot %}{{ breadcrumbRoot() }}
         <li class="active">{% trans %}job.title.list{% endtrans %}</li>
     </ul>
 {% endblock %}
