@@ -4,13 +4,19 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/). Numéros de v
 
 ## Non publié
 
-### Corrigé
+### Modifié
 
-- Sur la page des droits d'un compte, ses demandes d'accès s'affichent dans l'ordre où elles ont été faites : elles sortaient dans un ordre que changeait une mise à jour.
+- Le graphique d'une chronique n'a plus de limite de 5 ans, et son bouton « Exporter » n'est plus bloqué au-delà : on affiche toute une chronique. Au-delà de 5 ans, les cumuls s'additionnent par mois (« mm/mois »), et une période de plus de 50 000 mesures s'allège en une seule lecture, avec le même dessin, pics compris.
+- Dans les listes de chroniques et de stations, toute la ligne mène à sa fiche, et le survol le montre.
 
 ### Ajouté
 
+- À côté de chaque champ de date, un bouton ouvre le calendrier du navigateur ; la saisie au clavier reste.
 - La comparaison avec l'ancien BDOH passe aussi sur la base d'OTHU, dans tous ses modes : un cas que la base ne permet pas de jouer y est nommé, et les écarts admis prennent les identifiants de la base comparée.
+
+### Corrigé
+
+- Sur la page des droits d'un compte, ses demandes d'accès s'affichent dans l'ordre où elles ont été faites : elles sortaient dans un ordre que changeait une mise à jour.
 
 ## 0.4.1 - 2026-11-11
 
