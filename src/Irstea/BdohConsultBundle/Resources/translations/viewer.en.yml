@@ -40,14 +40,9 @@ selector:
 consult.help.range:
     too-small: Please select at least a one-day-long time range.
     too-big: Please select a time range less than 5 years.
-subsampledInfo(%num%): >+
-    Due to the high number of non-gap data (%num%), the data set has been subsampled.
-    Please select a narrower date range in order to avoid subsampling.
-subsampledInfoHelp(%num%): >+
-    Due to the high number of non-gap data (<span class="subsampledHelp">%num%</span>), the data set has been subsampled.
-    Please select a narrower date range in order to avoid subsampling.
-subsampledHelp: >+
-    The limit before subsampling is 50,000 points for instantaneous representations and 25,000 points for mean representations.
+subsampledInfo(%num%): 'Lightened display: out of %num% measures, the graph shows the highest and the lowest of each time slice. Narrow the period to see every measure.'
+subsampledInfoHelp(%num%): 'Lightened display: out of <span class="subsampledHelp">%num%</span> measures, the graph shows the highest and the lowest of each time slice. Narrow the period to see every measure.'
+subsampledHelp: 'Beyond 50,000 valid measures (25,000 for means), the graph is lightened: no peak is lost, and every change of quality shows.'
 chroniqueTitle(%station%, %typeParam%): >+
     Station: %station%<br/>Parameter: %typeParam%
 hideDisplayButton: Show/hide this time series
@@ -60,3 +55,12 @@ titleDataType:
     meanNext: Mean data sampling on next time step.
     cumulativePast: Cumulative data sampling on previous time step.
     cumulativeNext: Cumulative data sampling on next time step.
+
+overview.preset:
+    1w: '1 wk'
+    1m: '1 mo'
+    3m: '3 mo'
+    6m: '6 mo'
+    1y: '1 yr'
+    5y: '5 yr'
+    all: 'All'

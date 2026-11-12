@@ -2,7 +2,13 @@
 /* SPDX-License-Identifier: AGPL-3.0-or-later */
 /* La bande de toute la chronique, sous son graphique (index.js) */
 .graph-overview { margin: 4px 10px 12px 70px; user-select: none; }
-.graph-overview-head { display: flex; align-items: baseline; gap: 12px; margin-bottom: 4px; }
+.graph-overview-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; margin-bottom: 4px; }
+.graph-overview-presets { display: inline-flex; flex-wrap: wrap; gap: 2px; }
+.graph-overview-preset {
+    padding: 1px 7px; border: 1px solid transparent; border-radius: 4px; background: none; color: inherit;
+    font-size: 12px; line-height: 1.5;
+}
+.graph-overview-preset:hover, .graph-overview-preset:focus { border-color: #c9d1dc; background: #f3f5f7; }
 .graph-overview-title { font-weight: 600; }
 .graph-overview-range { font-variant-numeric: tabular-nums; }
 .graph-overview-hint { margin-left: auto; color: #6b7280; font-size: 12px; }
