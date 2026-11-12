@@ -82,14 +82,14 @@ EDIT_ACCOUNT = (
 )
 
 # Les traductions pour le JavaScript : les clés retirées, ajoutées et changées, une à une
-GONE_KEYS = """Bad credentials. | User account has expired. | Utilisateur.newPassword.mandatory | Utilisateur.oldPassword.mandatory
+GONE_KEYS = """Bad credentials. | User account has expired. | consult.help.chronique.selectionOfDatesRange | Utilisateur.newPassword.mandatory | Utilisateur.oldPassword.mandatory
     Utilisateur.password.badCurrent | Utilisateur.password.badRepetition | captcha | captcha.info | captcha.security
     export.exportMail.body | newPassword | newPasswordRepeat | oldPassword | password | resetting.check_email
     resetting.email.message | resetting.email.subject | resetting.flash.success | resetting.isCompleted
     resetting.password_already_requested | resetting.request.email | resetting.request.invalid_email
     resetting.request.submit | resetting.reset.submit | security.login_form.lostPassword | security.login_form.password
     security.utilisateur.edit.info.changePassword"""
-NEW_KEYS = """Error.file.cantWrite(%file%) | admin.sendJson.missingCredentials | export.exportMail.body(%link%, %days%)
+NEW_KEYS = """Error.file.cantWrite(%file%) | dateMonthShort | oneMonth | admin.sendJson.missingCredentials | export.exportMail.body(%link%, %days%)
     legal.freeSoftware | legal.sourceCode | map.onMap | map.seeStation | map.sites | map.title | map.withoutPosition | map.zoomHint | overview.hint | overview.title | measure.export.busy | measure.export.licence | measure.export.status.download
     measure.export.status.expired | measure.export.status.failed | measure.export.status.finished(%days%)
     measure.export.status.running | measure.export.status.title | measure.export.status.waiting | measure.export.tooHeavy
@@ -106,6 +106,10 @@ CHANGED_KEYS = """accueilMessage | measure.export.help-content | measure.export.
     security.utilisateur.newMailUtilisateur.body.step2 | security.utilisateur.newMailUtilisateur.body.step4
     technicalContact | utilisateur.newAccountMail.body"""
 
+
+# L'avertissement de la limite de 5 ans, retiré avec elle (2026-11-12)
+FIVE_YEARS = ("-T Attention : pour des raisons de performance vous ne pouvez sélectionner qu'un intervalle de dates de 5 ans maximum.",
+              '-T Warning: due to performance limitations please select a maximum time span of 5 years')
 
 def translation(sign, keys):
     """La ligne d'une de ces clés dans /translations/messages.js, quel qu'en soit le texte."""
@@ -196,7 +200,9 @@ RULES = [
     # La bande de toute la chronique, sous son graphique : un élément de plus sur la page d'une chronique, que le
     # JavaScript remplit (« nouveau seul : bande de toute la chronique » vérifie sa route)
     Rule('pages', rf'{ROLE} {OBS}/[^/ ]+/[^/ ]+', GRAPH, lines=(
-        RX(rf'\+D div data-hint=.+ data-title=.+ data-url={OBS}/chronique/\d+/overview'),)),
+        RX(rf'\+D div data-hint=.+ data-title=.+ data-url={OBS}/chronique/\d+/overview'), *FIVE_YEARS)),
+    # La limite de 5 ans du choix des dates part avec son avertissement, sur la page d'une chronique et dans le visualiseur
+    Rule('pages', rf'{ROLE} {OBS}/viewer', GRAPH, lines=FIVE_YEARS, must=FIVE_YEARS[:1]),
     Rule('pages', rf'{ROLE} {OBS}/contact', CONTACT, lines=(
         '-A mailto:bdoh.support@lists.irstea.fr', '+A mailto:bdoh.support@listes.inrae.fr',
         "-T Pour les demandes techniques concernant l'utilisation de BDOH veuillez contacter bdoh.support@lists.irstea.fr.",

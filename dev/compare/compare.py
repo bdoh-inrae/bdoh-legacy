@@ -852,6 +852,7 @@ def run_pages(args):
         map_checks(args.base, new, slug, report)
         cards_checks(args.base, new, report)
         overview_checks(args.base, new, report)
+        thinned_checks(args.base, new, report)
     report.close()
 
 
@@ -972,6 +973,57 @@ def overview_checks(base, side, report):
                    ['conforme'] if status == 403 else [f'non conforme : statut {status}'])
     else:
         report.add('nouveau seul : bande d’une chronique cachée, sans compte', [NO_CASE], [NO_CASE])
+
+
+def thinned_checks(base, side, report):
+    """Le graphique allégé d'une chronique, que le nouveau calcule autrement (2026-11-12, dev/differences.md, « Graphique
+    d'une chronique ») : pour la chronique continue visible qui a le plus de mesures valides en 2024, au-delà de
+    50 000, toute l'année, sans compte. La réponse se dit allégée et compte les mesures valides de la base ; ses points
+    valides sont de vraies mesures (date et valeur), 50 000 au plus ; la plus petite et la plus grande valeur valide de
+    l'année y sont : aucun pic ne se perd. Les points des lacunes et des invalides, qui raccordent les séries, ne se
+    vérifient que par leur date."""
+    label = 'nouveau seul : graphique allégé, pics et mesures de la base'
+    window = "m.date >= '2024-01-01' AND m.date <= '2025-01-01'"
+    found = query(base, f"""SELECT o.slug, c.id, count(*) FILTER (WHERE q.ordre NOT IN (100, 200))
+                              FROM chronique c JOIN echantillonnage e ON e.id = c.echantillonnage_id AND e.code = 'instantaneous'
+                              JOIN mesure m ON m.chronique_id = c.id AND {window} JOIN qualite q ON q.id = m.qualite_id
+                              JOIN station s ON s.id = c.station_id JOIN stations_sites ss ON ss.station_id = s.id
+                              JOIN siteexperimental si ON si.id = ss.site_id JOIN observatoire o ON o.id = si.observatoire_id
+                             WHERE c.estvisible AND c.dtype = 'continue'
+                             GROUP BY o.slug, c.id HAVING count(*) FILTER (WHERE q.ordre NOT IN (100, 200)) > 50000
+                             ORDER BY 3 DESC, c.id LIMIT 1""")
+    if not found:
+        report.add(label, [NO_CASE], [NO_CASE])
+        return
+    slug, cid, valid = found[0]
+    measures = {(round(1000 * float(epoch)), float(value)) for epoch, value in query(base, f"""
+        SELECT extract(epoch FROM m.date), m.valeur FROM mesure m JOIN qualite q ON q.id = m.qualite_id
+         WHERE m.chronique_id = {cid} AND {window} AND q.ordre NOT IN (100, 200) AND m.valeur IS NOT NULL""")}
+    dates = {when for when, _ in measures} | {round(1000 * float(epoch)) for epoch, in query(base, f"""
+        SELECT extract(epoch FROM m.date) FROM mesure m WHERE m.chronique_id = {cid} AND {window}""")}
+    status, _, body = Client(side, None, slug).get(
+        f'/{slug}/chronique/{cid}/measures?beginDate=2024-01-01T00:00:00Z&endDate=2025-01-01T00:00:00Z')
+    problems = []
+    if status != 200:
+        problems.append(f'statut {status}')
+    else:
+        data = json.loads(body)['chronicles'][0]
+        points = [(round(t), v) for s in data['series'] if s['seriesFlag'].startswith('valid_')
+                  for t, v in s['values'] if t is not None]
+        others = [round(t) for s in data['series'] if not s['seriesFlag'].startswith('valid_')
+                  for t, _ in s['values'] if t is not None]
+        values = [v for _, v in measures]
+        if not data['tooManyPoints'] or data['validMeasureCount'] != int(valid):
+            problems.append(f"allègement {data['tooManyPoints']}, {data['validMeasureCount']} mesures valides pour {valid}")
+        if not 0 < len(points) <= 50000:
+            problems.append(f'{len(points)} points valides')
+        if any(point not in measures for point in points):
+            problems.append(f'{sum(point not in measures for point in points)} points qui ne sont pas des mesures')
+        if any(when not in dates for when in others):
+            problems.append('raccords à une autre date que celles des mesures')
+        if points and (min(v for _, v in points), max(v for _, v in points)) != (min(values), max(values)):
+            problems.append('plus petite ou plus grande valeur absente')
+    report.add(label, ['conforme'], [f'non conforme : {", ".join(problems)}'] if problems else ['conforme'])
 
 
 def map_sites_checks(base, obs, stations, body):
