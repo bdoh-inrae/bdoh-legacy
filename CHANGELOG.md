@@ -4,6 +4,10 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/). Numéros de v
 
 ## Non publié
 
+## 0.5.0 - 2026-11-13
+
+Les favoris d'un compte et leurs étiquettes, la connexion depuis le portail, et la fin de l'interface modernisée : fil d'Ariane et barres rangées, ligne d'état du graphique, graphique sans limite de 5 ans, un seul symbole de chargement.
+
 ### Modifié
 
 - Le graphique d'une chronique n'a plus de limite de 5 ans, et son bouton « Exporter » n'est plus bloqué au-delà : on affiche toute une chronique. Au-delà de 5 ans, les cumuls s'additionnent par mois (« mm/mois »), et une période de plus de 50 000 mesures s'allège en une seule lecture, avec le même dessin, pics compris.
