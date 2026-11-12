@@ -2,6 +2,6 @@
 
 <!-- Navigation Menu for an anonymous user.
 ================================================== -->
-<li>{{ richLink(path('bdoh_security_login'), 'account.login'|trans, 'user', 'both') }}</li>
+<li>{{ richLink(path(accountRoute('login')), 'account.login'|trans, 'user', 'both') }}</li>
 <li class="navbar-text">{{ 'or'|trans }}</li>
-<li><a href="{{ path('bdoh_security_utilisateur_new') }}">{{ 'account.create'|trans }}</a></li>
+<li><a href="{{ path(accountRoute('new')) }}">{{ 'account.create'|trans }}</a></li>

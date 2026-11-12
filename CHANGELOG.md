@@ -14,11 +14,13 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/). Numéros de v
 - Les titres du portail et de l'accueil d'un observatoire perdent leurs guillemets.
 - Le pied de page s'allège : un filet, les logos sur une ligne, puis les mentions légales en petit.
 - L'avis d'un graphique allégé tient en une ligne grise, et l'astuce de saisie des dates passe dans la bulle des champs.
+- Après une mise à jour, le navigateur recharge les feuilles de style, les scripts et les images qui ont changé : leur adresse porte la date du fichier.
 
 ### Ajouté
 
 - À côté de chaque champ de date, un bouton ouvre le calendrier du navigateur ; la saisie au clavier reste.
 - La bande sous le graphique se cale d'un bouton sur une semaine, un, trois ou six mois, un ou cinq ans, ou toute la chronique.
+- Sur l'accueil de BDOH, on se connecte et on crée un compte sans choisir d'observatoire ; connecté, on l'est partout. Un compte créé ainsi ne prévient aucun gestionnaire.
 - La comparaison avec l'ancien BDOH passe aussi sur la base d'OTHU, dans tous ses modes : un cas que la base ne permet pas de jouer y est nommé, et les écarts admis prennent les identifiants de la base comparée.
 
 ### Corrigé

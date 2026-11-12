@@ -1,20 +1,21 @@
 {%- from 'macros.html.twig' import richLink %}
-{#-- User bar : la recherche avancée de l'observatoire à gauche, le compte à droite (2026-11-12, Lou). Sans
- # observatoire (le portail), ni l'une ni l'autre : les pages du compte ont l'adresse d'un observatoire.
+{#-- User bar : la recherche avancée de l'observatoire à gauche, le compte à droite (2026-11-12, Lou). Sur le portail,
+ # le compte seul, par ses pages sans observatoire (Security/AccountRoutes.php).
 ================================================== -#}
 <div id="userbar" class="navbar navbar-inverse">
-    {% if currentObservatoire() is not null %}
+    {% if currentObservatoire() is not null and currentObservatoire().hasChronique() %}
         <ul class="nav navbar-nav">
-            {% if currentObservatoire().hasChronique() %}
-                <li>{{ richLink(path('bdoh_consult_advancedSearch'), 'advancedSearch', 'zoom', 'both') }}</li>
-            {% endif %}
-        </ul>
-        <ul class="nav navbar-nav navbar-right">
-            {% include is_granted('ROLE_USER') ?
-               '@IrsteaBdohSecurity/UserBar/connected-menu.html.twig' :
-               '@IrsteaBdohSecurity/UserBar/anonymous-menu.html.twig'
-            %}
+            <li>{{ richLink(path('bdoh_consult_advancedSearch'), 'advancedSearch', 'zoom', 'both') }}</li>
         </ul>
     {% endif %}
+    <ul class="nav navbar-nav navbar-right">
+        {% if not is_granted('ROLE_USER') %}
+            {% include '@IrsteaBdohSecurity/UserBar/anonymous-menu.html.twig' %}
+        {% elseif currentObservatoire() is not null %}
+            {% include '@IrsteaBdohSecurity/UserBar/connected-menu.html.twig' %}
+        {% else %}
+            {% include '@IrsteaBdohSecurity/UserBar/portal-menu.html.twig' %}
+        {% endif %}
+    </ul>
 </div>
 {#-- END_User bar -#}

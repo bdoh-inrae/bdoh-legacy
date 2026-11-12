@@ -53,6 +53,10 @@ parameters:
             steps: [[1, 'day'], [1, 'month'], [1, 'year'], [1, 'event']]
 
 services:
+    # La date des fichiers servis dans leur adresse (framework.assets.version_strategy)
+    Irstea\BdohBundle\Asset\FileDateVersionStrategy:
+        arguments: ['%kernel.project_dir%/public']
+
     # Celui de Symfony, lu dans l'environnement : framework.mailer.envelope n'y accepte pas de variable.
     mailer.envelope_listener:
         class: Symfony\Component\Mailer\EventListener\EnvelopeListener

@@ -116,6 +116,8 @@ class Pages(unittest.TestCase):
             ('option', '<select><option value="1"></select>', '<select><option value="2"></select>'),
             ('attribut de données', '<div data-valeur="1"></div>', '<div data-valeur="2"></div>'),
             ('image', '<img src="/a.png">', '<img src="/b.png">'),
+            ('image datée, autre fichier', '<img src="/a.png?v=1">', '<img src="/b.png?v=1">'),
+            ('paramètre qui ressemble à la date', '<a href="/a?view=1">x</a>', '<a href="/a?view=2">x</a>'),
             ('formulaire', '<form action="/a"></form>', '<form action="/b"></form>'),
             ('script', '<script>var a = 1;</script>', '<script>var a = 2;</script>'),
         ]:
@@ -133,6 +135,10 @@ class Pages(unittest.TestCase):
             ('balisage', '<div class="a"><p>x</p></div>', '<section class="b"><p>x</p></section>'),
             ('empreinte d\'un fichier', '<script src="/assets/a.0123456789abcdef.js"></script>',
              '<script src="/assets/a.fedcba9876543210.js"></script>'),
+            ("date d'un fichier", '<link rel="stylesheet" href="/css/themes/A.min.css">',
+             '<link rel="stylesheet" href="/css/themes/A.min.css?v=1794485348">'),
+            ("date d'une image, avant son texte", '<img src="/uploads/A-logo.png" alt="A">',
+             '<img src="/uploads/A-logo.png?v=1794485348" alt="A">'),
             ('jeton CSRF', '<input type="hidden" name="_csrf_token" value="a">',
              '<input type="hidden" name="_csrf_token" value="b">'),
             ('câblage de Stimulus', '<div data-controller="a"></div>', '<div></div>'),
@@ -296,13 +302,13 @@ class Register(unittest.TestCase):
     def test_each_rule_says_why_in_the_differences(self):
         text = (Path(__file__).resolve().parent.parent / 'differences.md').read_text()
         for rule in [*compare.expected.RULES, *compare.expected.qjo_rules(['9', '936']), *compare.expected.account_rules(['800', '801', '802']),
-                     *compare.expected.admin_rules('800', ['1'], True)]:
+                     *compare.expected.admin_rules('800', ['1'], True), *compare.expected.portal_rules({'utilisateur': 'Camille Essai'})]:
             with self.subTest(rule.case):
                 self.assertIn(f'**{rule.why}', text)
 
     def test_each_rule_reads(self):
         for rule in [*compare.expected.RULES, *compare.expected.qjo_rules(['9', '936']), *compare.expected.account_rules(['800', '801', '802']),
-                     *compare.expected.admin_rules('800', ['1'], True)]:
+                     *compare.expected.admin_rules('800', ['1'], True), *compare.expected.portal_rules({'utilisateur': 'Camille Essai'})]:
             with self.subTest(rule.case):
                 re.compile(rule.case)
                 for pattern, _ in rule.masks:
@@ -393,6 +399,23 @@ class Register(unittest.TestCase):
         old = [*self.OLD_HEADER[:-4], 'T Contact', 'D div data-notices=[]']
         self.assertEqual(compare.expected.header(old)[-6:], ['A /', 'T BDOH', 'A /OBS/home', 'T Obs', 'T Contact',
                                                             'D div data-notices=[]'])
+
+    def test_the_portal_shows_the_account_and_nothing_else(self):
+        old = ['T BDOH', 'G /images/inrae_logo.svg Irstea', *self.LANG, *self.SELECTOR, 'T Présentation']
+        new = ['T BDOH', 'A /', 'T BDOH', *self.SELECTOR, *self.LANG]
+        portal = compare.expected.portal_rules({'utilisateur': 'Camille Essai'})
+        rules = [r for r in compare.expected.RULES if r.mode == 'pages'] + portal
+        guest = [*new, *(l[1:] for l in compare.expected.PORTAL_GUEST), 'T BDOH', 'T Présentation']
+        user = [*new, 'T Camille Essai', 'A /logout', 'T Déconnexion', 'T BDOH', 'T Présentation']
+        # La page d'erreur, sans observatoire comme le portail, et sans ses autres écarts (carte, fiches)
+        self.assertEqual(self.verdict(rules, 'anonyme /INCONNU/', old, guest), 'écarts admis')
+        self.assertEqual(self.verdict(rules, 'utilisateur /INCONNU/', old, user), 'écarts admis')
+        for name, case, lines in [('le nom d’un autre', 'utilisateur /INCONNU/', [l.replace('Camille Essai', 'Autre Nom') for l in user]),
+                                  ('le compte connecté sur une page anonyme', 'anonyme /INCONNU/', user),
+                                  ('un lien de plus', 'anonyme /INCONNU/', [*guest[:-1], 'A /ailleurs', 'T Présentation']),
+                                  ('l’inscription perdue', 'anonyme /INCONNU/', [l for l in guest if l not in ('A /user/new', 'T Créer un compte')])]:
+            with self.subTest(name):
+                self.assertEqual(self.verdict(rules, case, old, lines), 'différents')
 
     def test_moved_lines_count_only_with_a_named_list(self):
         # Une ligne déplacée, en plus d'un écart admis : seule une liste nommée (order) l'admet

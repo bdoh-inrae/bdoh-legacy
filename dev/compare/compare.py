@@ -468,6 +468,8 @@ QUERY = re.compile(r'(\S+?\?)([^\s#]*)')
 NORMALIZE = [
     (re.compile(r'(/assets/[\w/.-]+?)\.[0-9a-f]{8,20}(\.\w+)'), r'\1\2'),  # empreintes des fichiers
     (re.compile(r'(/bundles/[\w/.-]+)\?v=\d+'), r'\1'),  # version des fichiers des bundles
+    # La date des fichiers servis, que le nouveau met dans leur adresse (FileDateVersionStrategy) : toujours en dernier
+    (re.compile(r'(/[\w/.%-]+(?:\?[^\s]*?)?)[?&]v=\d+(?=\s|$)'), r'\1'),
     # Les fichiers propres aux pages de l'administration : compilés dans assets/admin/ par l'ancien,
     # servis tels quels par le nouveau depuis le bundle (dev/decisions.md)
     (re.compile(r'^(S|L stylesheet) /bundles/irsteabdohadmin/crud/'), r'\1 /assets/admin/crud/'),
@@ -861,6 +863,10 @@ def run_pages(args):
     slug = query(args.base, "SELECT slug FROM observatoire ORDER BY id LIMIT 1")[0][0]
     paths = [p for p in page_cases(args.base) if args.only in p]
     report = Report('pages')
+    # Le compte sur le portail, avec le nom de chaque compte connecté (expected.portal_rules)
+    report.rules += expected.portal_rules({profile: ' '.join(query(args.base, f"""SELECT prenom, nom FROM utilisateur
+                                                                          WHERE email = '{email}'""")[0])
+                                           for profile, email in profiles(args.base).items() if email})
     with concurrent.futures.ThreadPoolExecutor(args.jobs) as pool:
         for profile, email in profiles(args.base).items():
             if args.profile and profile != args.profile:
@@ -3328,6 +3334,51 @@ def run_accounts(args):
                                  WHERE email = '{manager}'""", NEW_SERVER)[0][0]
         check("le cookie reconnecte et note la connexion", status == 200 and recent == 't',
               f'statut {status}, date récente {recent}')
+
+        # Depuis le portail, sans observatoire (dev/differences.md, « Connexion et inscription depuis le portail ») :
+        # l'inscription crée le compte et son historique, sans observatoire, et son courriel porte un lien vers la
+        # connexion du portail ; ce lien y ramène, connecté partout, sans prévenir aucun gestionnaire ; la
+        # déconnexion du portail vaut partout ; une demande de lien depuis le portail y ramène aussi.
+        email, guest = 'compte-portail@example.invalid', Client(side, None, slug)
+        last = query(base, 'SELECT coalesce(max(id), 0) FROM historique', NEW_SERVER)[0][0]
+        form = form_of(guest, '/user/new')
+        status = guest.get('/user/new', form.filled({
+            '[email]': email, '[prenom]': 'Camille', '[nom]': 'Portail', '[organisme]': 'INRAE',
+            '[telephone]': '0102030405', '[adresse]': 'Lyon', '[categorie]': form.choices('[categorie]')[:1]}))[0]
+        logged = query(base, f"""SELECT count(*) FILTER (WHERE observatoire_id IS NULL), count(*) FROM historique
+                                 WHERE id > {last}""", NEW_SERVER)[0]
+        try:
+            link = mailed_link(email)
+        except RuntimeError:
+            link = ''
+        check('inscription depuis le portail', status == 302 and logged == ['1', '1'] and
+              urllib.parse.urlsplit(link).path == '/login_check',
+              f'statut {status}, historique sans observatoire {logged}, lien {urllib.parse.urlsplit(link).path or "absent"}')
+        before = len(mail_messages())
+        user = Client(side, None, slug)
+        status, headers = user.follow_login_link(link) if link else (0, {})
+        time.sleep(2)  # les courriels partent après la réponse (DeferredMailer)
+        sent = len(mail_messages()) - before
+        portal, home = page_lines(side.url, *user.get('/')), page_lines(side.url, *user.get(f'/{slug}/'))
+        check('connexion depuis le portail, partout, sans prévenir de gestionnaire',
+              status == 302 and headers.get('Location', '') in ('/', f'{side.url}/') and sent == 0
+              and {'T Camille Portail', 'A /logout'} <= set(portal) and f'A /{slug}/logout' in home,
+              f"statut {status} vers {headers.get('Location', '')}, {sent} courriel(s), portail "
+              f"{[l for l in portal if 'logout' in l or 'login' in l]}, observatoire {[l for l in home if 'logout' in l]}")
+        user.get('/logout')
+        home = page_lines(side.url, *user.get(f'/{slug}/'))
+        check('déconnexion depuis le portail, partout', f'A /{slug}/login' in home and f'A /{slug}/logout' not in home,
+              str([l for l in home if 'login' in l or 'logout' in l]))
+        asker = Client(side, None, slug)
+        token = dict(form_of(asker, '/login').fields).get('_csrf_token', '')
+        status, headers, _ = asker.get('/login', urllib.parse.urlencode({'email': manager, '_csrf_token': token}).encode())
+        try:
+            link = mailed_link(manager)
+        except RuntimeError:
+            link = ''
+        check('lien demandé depuis le portail', status == 302 and headers.get('Location', '').endswith('/login')
+              and urllib.parse.urlsplit(link).path == '/login_check',
+              f"statut {status} vers {headers.get('Location', '')}, lien {urllib.parse.urlsplit(link).path or 'absent'}")
 
         # Reconnecté par le cookie, une page refusée répond 403, sans renvoyer à la connexion
         plain = Client(side, NEW_EMAIL.replace('compte-essai', 'compte-html'), slug)

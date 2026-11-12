@@ -109,7 +109,7 @@ class BdohLogger
         Historique $historique,
         ?Utilisateur $author,
         \DateTime $date,
-        Observatoire $obs,
+        ?Observatoire $obs,
         $description = null
     ) {
         $historique->setAuteur($author);
@@ -278,7 +278,7 @@ class BdohLogger
     /**
      * @param Utilisateur  $author
      * @param \DateTime    $date
-     * @param Observatoire $obs
+     * @param Observatoire|null $obs le portail n'en a pas (inscription depuis le portail)
      * @param $action
      * @param Utilisateur $user
      * @param null        $description
@@ -286,7 +286,7 @@ class BdohLogger
     public function createHistoriqueAdministrationUtilisateur(
         Utilisateur $author,
         \DateTime $date,
-        Observatoire $obs,
+        ?Observatoire $obs,
         $action,
         Utilisateur $user,
         $description = null

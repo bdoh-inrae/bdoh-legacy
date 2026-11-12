@@ -32,7 +32,7 @@
         </div>
 
 
-        <form action="{{ path('bdoh_security_utilisateur_new') }}" method="post"
+        <form action="{{ path(accountRoute('new')) }}" method="post"
               class="form-horizontal" {% if form.vars.multipart %}enctype="multipart/form-data"{% endif %}>
 
             <!-- Login fields -->
@@ -56,7 +56,7 @@
 
             <div style="display:flex;margin-bottom:10px;">
                 <div>{{ submit('security.utilisateur.create.submit'|trans, 'btn btn-success') }}</div>
-                <div style="margin-left:15px;">{{ cancelForm('bdoh_home') }}</div>
+                <div style="margin-left:15px;">{{ cancelForm(accountRoute('home')) }}</div>
             </div>
         </form>
 

@@ -189,6 +189,22 @@ def header(lines):
             *crumb, *rest]
 
 
+PORTAL = 'Connexion et inscription depuis le portail'
+PORTAL_GUEST = ('+A /login', '+T Se connecter', '+T ou', '+A /user/new', '+T Créer un compte')
+
+
+def portal_rules(names):
+    """Le compte, dans la seconde barre des pages sans observatoire (le portail, la page d'erreur), que l'ancien n'y
+    montrait pas : les liens de connexion et d'inscription, ou, pour un compte connecté, son nom et la déconnexion.
+    `run_pages` les ajoute avec le nom de chaque compte de la passe ({profil: « Prénom Nom »}) : rien d'autre ne
+    s'ajoute à ces pages."""
+    rules = [Rule('pages', r'anonyme (?:/|/INCONNU/)', PORTAL, lines=PORTAL_GUEST, must=PORTAL_GUEST)]
+    for profile, name in names.items():
+        account = (f'+T {name}', '+A /logout', '+T Déconnexion')
+        rules.append(Rule('pages', rf'{re.escape(profile)} (?:/|/INCONNU/)', PORTAL, lines=account, must=account))
+    return rules
+
+
 QJO_DAYS = "Jours manquants d'un fichier QJO"
 
 
@@ -281,7 +297,7 @@ RULES = [
     # La limite de 5 ans du choix des dates part avec son avertissement, sur la page d'une chronique et dans le visualiseur
     Rule('pages', rf'{ROLE} {OBS}/viewer', GRAPH, lines=(*FIVE_YEARS, *DATE_TIP), must=FIVE_YEARS[:1]),
     # L'astuce de saisie des dates passe dans la bulle des champs, sur la recherche avancée aussi
-    Rule('pages', rf'{ROLE} {OBS}/nos-donnees', GRAPH, lines=DATE_TIP, must=DATE_TIP[:1]),
+    Rule('pages', rf'{ROLE} {OBS}/nos-donnees', GRAPH, lines=DATE_TIP),
     Rule('pages', rf'{ROLE} {OBS}/contact', CONTACT, lines=(
         '-A mailto:bdoh.support@lists.irstea.fr', '+A mailto:bdoh.support@listes.inrae.fr',
         "-T Pour les demandes techniques concernant l'utilisation de BDOH veuillez contacter bdoh.support@lists.irstea.fr.",
@@ -367,7 +383,7 @@ RULES = [
 
     # --- admin -------------------------------------------------------------------------------------
     # L'astuce de saisie des dates passe dans la bulle des champs, sur la page des barèmes aussi
-    Rule('admin', rf'{ROLE} {OBS}/admin/transformation', GRAPH, lines=DATE_TIP, must=DATE_TIP[:1]),
+    Rule('admin', rf'{ROLE} {OBS}/admin/transformation', GRAPH, lines=DATE_TIP),
     Rule('admin', rf'{ROLE} {OBS}/admin/utilisateur/export\?format=csv', "Export des listes de l'administration",
          lines=(RX(r'-statut (?:403|500)'), '+statut 404'), must=('+statut 404',)),
     Rule('admin', rf'gestionnaire {OBS}/admin/personnetheia/list', "Modifier le compte d'un autre, réservé aux administrateurs",

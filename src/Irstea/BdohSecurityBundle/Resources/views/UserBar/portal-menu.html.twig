@@ -1,0 +1,8 @@
+{% from 'macros.html.twig' import richLink %}
+
+<!-- Le compte connecté, sur le portail : son nom et la déconnexion ; ses autres entrées (modifier le compte,
+     administration) tiennent à un observatoire (2026-11-12)
+================================================== -->
+<li><p class="navbar-text"><i class="fam-user"></i>&ensp;{{ app.user }}</p></li>
+<li class="divider"></li>
+<li>{{ richLink(path('bdoh_portal_logout'), 'account.logout', 'disconnect', 'both') }}</li>

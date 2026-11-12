@@ -18,7 +18,7 @@
 
         <div class="well" style="margin-bottom:14px;">
             <p>{{ 'security.login_form.info'|trans }}</p>
-            <form action="{{ path('bdoh_security_login_send') }}" method="post">
+            <form action="{{ path(accountRoute('login_send')) }}" method="post">
                 <input type="hidden" name="_csrf_token" value="{{ csrf_token('login_link') }}"/>
 
                 <!-- Username -->
@@ -29,12 +29,12 @@
 
                 <div style="display:flex;">
                     <div>{{ submit('security.login_form.connectTo'|trans, 'btn btn-success') }}</div>
-                    <div style="margin-left:15px;">{{ cancelForm('bdoh_home') }}</div>
+                    <div style="margin-left:15px;">{{ cancelForm(accountRoute('home')) }}</div>
                 </div>
             </form>
         </div>
 
-        <p>{{ 'security.login_form.noAccount'|trans }} <a href="{{ path('bdoh_security_utilisateur_new') }}">{{ 'security.login_form.createAccount'|trans }}</a></p>
+        <p>{{ 'security.login_form.noAccount'|trans }} <a href="{{ path(accountRoute('new')) }}">{{ 'security.login_form.createAccount'|trans }}</a></p>
 
     </div>
 {% endblock main %}

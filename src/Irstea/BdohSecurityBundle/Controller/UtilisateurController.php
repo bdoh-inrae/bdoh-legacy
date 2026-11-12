@@ -16,6 +16,7 @@ use Irstea\BdohSecurityBundle\Entity\RoleChronique;
 use Irstea\BdohSecurityBundle\Entity\RoleObservatoire;
 use Irstea\BdohSecurityBundle\Entity\RoleSite;
 use Irstea\BdohSecurityBundle\Entity\Utilisateur;
+use Irstea\BdohSecurityBundle\Security\AccountRoutes;
 use Irstea\BdohSecurityBundle\Form\EditUtilisateurType;
 use Irstea\BdohSecurityBundle\Form\NewUtilisateurType;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
@@ -55,9 +56,10 @@ class UtilisateurController extends Controller
     #[Route('/new', name: 'bdoh_security_utilisateur_new', methods: ['GET', 'POST'])]
     public function newAction(Request $request, LoginLinkHandlerInterface $loginLinkHandler, RateLimiterFactoryInterface $signupIpLimiter)
     {
-        // si l'utilisateur est déjà identifié on le redirige sur la page d'édition de son compte
+        // si l'utilisateur est déjà identifié on le redirige sur la page d'édition de son compte (l'accueil, sur le
+        // portail, qui n'en a pas)
         if ($this->isGranted('ROLE_USER')) {
-            return $this->redirectToRoute('bdoh_security_utilisateur_edit');
+            return $this->redirectToRoute(AccountRoutes::name('edit', $this->getCurrentObservatoire()));
         }
 
         $user = new Utilisateur();
@@ -89,7 +91,8 @@ class UtilisateurController extends Controller
 
                 // Le courriel de bienvenue porte le premier lien de connexion, qui confirme l'adresse (créé sans
                 // la requête, qui ferait perdre au routeur l'observatoire courant). Les gestionnaires de
-                // l'observatoire sont prévenus à la première connexion (BdohAuthenticationHandler).
+                // l'observatoire sont prévenus à la première connexion (BdohAuthenticationHandler) ; ceux d'aucun, pour
+                // une inscription depuis le portail.
                 $messageUtilisateur = (new Email())
                     ->subject($this->get('translator')->trans('security.utilisateur.newMailUtilisateur.title'))
                     ->from('bdoh@inrae.fr')
@@ -115,7 +118,7 @@ class UtilisateurController extends Controller
                 // Redirects to login form, with a success message
                 $this->getSession()->getFlashBag()->add('success', $this->get('translator')->trans('security.utilisateur.create.isCompleted'));
 
-                return $this->redirect($this->generateUrl('bdoh_security_login'));
+                return $this->redirect($this->generateUrl(AccountRoutes::name('login', $this->getCurrentObservatoire())));
             }
         }
 

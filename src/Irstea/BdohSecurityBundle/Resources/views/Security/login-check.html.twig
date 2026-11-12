@@ -14,13 +14,13 @@
            l'analyser ne fait qu'afficher cette page. #}
         <div class="well" style="margin-bottom:14px;">
             <p>{{ 'security.login_check.info(%email%)'|trans({'%email%': link.user}) }}</p>
-            <form action="{{ path('bdoh_security_login_check') }}" method="post">
+            <form action="{{ path(accountRoute('login_check')) }}" method="post">
                 <input type="hidden" name="user" value="{{ link.user }}"/>
                 <input type="hidden" name="expires" value="{{ link.expires }}"/>
                 <input type="hidden" name="hash" value="{{ link.hash }}"/>
                 <div style="display:flex;">
                     <div>{{ submit('security.login_check.submit'|trans, 'btn btn-success') }}</div>
-                    <div style="margin-left:15px;">{{ cancelForm('bdoh_home') }}</div>
+                    <div style="margin-left:15px;">{{ cancelForm(accountRoute('home')) }}</div>
                 </div>
             </form>
         </div>

@@ -9,6 +9,7 @@ use Irstea\BdohBundle\Manager\CssManager;
 use Irstea\BdohBundle\Manager\ObservatoireManagerInterface;
 use Irstea\BdohBundle\Util\DurationFormater;
 use Irstea\BdohDataBundle\Entity\Observatoire;
+use Irstea\BdohSecurityBundle\Security\AccountRoutes;
 use Twig\Extension\AbstractExtension;
 use Twig\TwigFilter;
 use Twig\TwigFunction;
@@ -73,6 +74,8 @@ class BdohExtension extends AbstractExtension
         return [
             'round'               => new TwigFunction('round', 'round'),
             'themeCssFile'        => new TwigFunction('themeCssFile', [$this, 'getThemeCssFile']),
+            // La route d'une page du compte, d'un observatoire ou du portail (Security/AccountRoutes.php)
+            'accountRoute'        => new TwigFunction('accountRoute', fn (string $page) => AccountRoutes::name($page, $this->manager->getCurrent())),
             'currentObservatoire' => new TwigFunction('currentObservatoire', [$this->manager, 'getCurrent']),
             'allObservatoires'    => new TwigFunction('allObservatoires', [$this, 'getAllObservatoires']),
         ];

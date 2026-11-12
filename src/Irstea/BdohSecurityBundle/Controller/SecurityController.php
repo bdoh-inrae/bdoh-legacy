@@ -8,6 +8,7 @@ use Symfony\Component\Routing\Attribute\Route;
 use Irstea\BdohBundle\Controller\Controller;
 use Irstea\BdohBundle\Mailer\DeferredMailer;
 use Irstea\BdohSecurityBundle\Entity\Utilisateur;
+use Irstea\BdohSecurityBundle\Security\AccountRoutes;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Mime\Email;
 use Symfony\Component\RateLimiter\RateLimiterFactoryInterface;
@@ -29,9 +30,9 @@ class SecurityController extends Controller
     #[Route('/login', name: 'bdoh_security_login', methods: ['GET'])]
     public function loginAction(Request $request)
     {
-        // si l'utilisateur est déjà identifié on le redirige sur l'accueil de l'observatoire
+        // si l'utilisateur est déjà identifié on le redirige sur l'accueil de l'observatoire, ou du portail
         if ($this->isGranted('ROLE_USER')) {
-            return $this->redirectToRoute('bdoh_home');
+            return $this->redirectToRoute($this->accountRoute('home'));
         }
 
         $session = $request->getSession();
@@ -76,7 +77,7 @@ class SecurityController extends Controller
         if (!$this->isCsrfTokenValid('login_link', (string) $request->request->get('_csrf_token'))) {
             $flashes->add('error', $translator->trans('security.login_link.invalidForm'));
 
-            return $this->redirectToRoute('bdoh_security_login');
+            return $this->redirectToRoute($this->accountRoute('login'));
         }
 
         $ip = (string) $request->getClientIp();
@@ -84,12 +85,13 @@ class SecurityController extends Controller
             || !$loginLinkEmailLimiter->create(mb_strtolower($email) . '|' . $ip)->consume()->isAccepted()) {
             $flashes->add('error', $translator->trans('security.tooManyRequests'));
 
-            return $this->redirectToRoute('bdoh_security_login');
+            return $this->redirectToRoute($this->accountRoute('login'));
         }
 
         $user = $this->findUser($email);
         if (null !== $user) {
-            // Sans la requête, qui ferait perdre au routeur l'observatoire courant
+            // Sans la requête, qui ferait perdre au routeur l'observatoire courant. Le lien mène à la page de
+            // connexion du pare-feu de la requête : celle de l'observatoire, ou celle du portail
             $link = $loginLinkHandler->createLoginLink($user);
             $mailer->send(
                 (new Email())
@@ -106,7 +108,15 @@ class SecurityController extends Controller
         // L'adresse est échappée : les messages s'affichent en HTML (toastr)
         $flashes->add('success', $translator->trans('security.login_link.sent(%email%)', ['%email%' => htmlspecialchars($email)]));
 
-        return $this->redirectToRoute('bdoh_security_login');
+        return $this->redirectToRoute($this->accountRoute('login'));
+    }
+
+    /**
+     * La route d'une page du compte : celle de l'observatoire de la page, ou celle du portail (AccountRoutes).
+     */
+    private function accountRoute(string $page): string
+    {
+        return AccountRoutes::name($page, $this->getCurrentObservatoire());
     }
 
     /**
@@ -142,7 +152,7 @@ class SecurityController extends Controller
             'hash'    => (string) $request->query->get('hash'),
         ];
         if (in_array('', $link, true)) {
-            return $this->redirectToRoute('bdoh_security_login');
+            return $this->redirectToRoute($this->accountRoute('login'));
         }
 
         return $this->render('@IrsteaBdohSecurity/Security/login-check.html.twig', ['link' => $link]);

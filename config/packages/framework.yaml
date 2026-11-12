@@ -2,6 +2,11 @@
 framework:
     secret: '%env(APP_SECRET)%'
 
+    # L'adresse de chaque fichier servi porte sa date, pour qu'une mise à jour ne reste pas cachée derrière le cache
+    # du navigateur (FileDateVersionStrategy)
+    assets:
+        version_strategy: Irstea\BdohBundle\Asset\FileDateVersionStrategy
+
     # Comme l'ancien : sessions de PHP ; Debian les nettoie lui-même, d'où gc_probability à 0.
     session:
         handler_id: null

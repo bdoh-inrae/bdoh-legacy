@@ -8,7 +8,7 @@
 # Page title: a root plus optional extra text
 #}
 {% macro pageTitle(extraText) %}
-    BDOH - {{ currentObservatoire() }}{% if extraText %} - {{ extraText }}{% endif %}
+    BDOH{% if currentObservatoire() %} - {{ currentObservatoire() }}{% endif %}{% if extraText %} - {{ extraText }}{% endif %}
 {% endmacro pageTitle %}
 
 {##############################################################################}
@@ -216,9 +216,10 @@
  #}
 {%- macro breadcrumbRoot(here) -%}
     <li><a href="{{ path('bdoh_all_home') }}">BDOH</a></li>
-    {%- if here %}
+    {#- Une page du compte sur le portail n'a pas d'observatoire #}
+    {%- if currentObservatoire() and here %}
     <li class="active">{{ currentObservatoire().nom }}</li>
-    {%- else %}
+    {%- elseif currentObservatoire() %}
     <li><a href="{{ path('bdoh_home') }}">{{ currentObservatoire().nom }}</a></li>
     {%- endif -%}
 {%- endmacro -%}

@@ -10,6 +10,28 @@ observatoires:
     requirements:
         _observatoire: '[A-Z0-9_-]+'
 
+# Les pages du compte sur le portail, sans observatoire (Security/AccountRoutes.php), gardées par le pare-feu
+# « portal » de config/packages/security.yaml (2026-11-12, Lou)
+bdoh_portal_login:
+    path: /login
+    controller: Irstea\BdohSecurityBundle\Controller\SecurityController::loginAction
+    methods: [GET]
+bdoh_portal_login_send:
+    path: /login
+    controller: Irstea\BdohSecurityBundle\Controller\SecurityController::sendLoginLinkAction
+    methods: [POST]
+bdoh_portal_login_check:
+    path: /login_check
+    controller: Irstea\BdohSecurityBundle\Controller\SecurityController::checkLoginLinkAction
+    methods: [GET, POST]
+bdoh_portal_user_new:
+    path: /user/new
+    controller: Irstea\BdohSecurityBundle\Controller\UtilisateurController::newAction
+    methods: [GET, POST]
+bdoh_portal_logout:
+    path: /logout
+    methods: [GET]
+
 irstea_bdoh_main:
     resource: "@IrsteaBdohBundle/Controller/"
     type:     attribute

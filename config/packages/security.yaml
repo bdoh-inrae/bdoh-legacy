@@ -18,11 +18,39 @@ security:
             pattern:  ^/(_(profiler|wdt)|css|images|js)/
             security: false
 
+        # Les pages du compte sur le portail, sans observatoire (/login, /user/new… ; Security/AccountRoutes.php) :
+        # un pare-feu à elles, pour que le lien de connexion y revienne, du même contexte que le suivant, pour qu'on
+        # soit connecté partout (2026-11-12, Lou). Mêmes réglages que lui.
+        portal:
+            pattern:  ^/(login|login_check|logout|user/new)$
+            lazy:     true
+            provider: main
+            context:  bdoh
+            login_link:
+                check_route: bdoh_portal_login_check
+                check_post_only: true
+                signature_properties: [id, email]
+                lifetime: 900
+                max_uses: 1
+                used_link_cache: cache.app
+                login_path: bdoh_portal_login
+                failure_path: bdoh_portal_login
+                success_handler: irstea_bdoh_security.security.success_handler
+            remember_me:
+                secret: '%kernel.secret%'
+                lifetime: 2592000
+                always_remember_me: true
+                signature_properties: [email]
+            logout:
+                path:   bdoh_portal_logout
+                target: bdoh_all_home
+
         # Ouvert à tous (l'« anonymous » de Symfony 2)
         secured_area:
             pattern:  ^/
             lazy:     true
             provider: main
+            context:  bdoh
             # Une page protégée renvoie à la page de connexion, comme le faisait form_login
             entry_point: Irstea\BdohSecurityBundle\Security\LoginEntryPoint
             # Le lien est signé, valable 15 minutes et d'un seul usage ; il ouvre une page dont le bouton

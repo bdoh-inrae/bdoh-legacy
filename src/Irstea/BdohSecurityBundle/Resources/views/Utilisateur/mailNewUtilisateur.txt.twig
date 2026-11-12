@@ -3,7 +3,12 @@
 {{ 'security.utilisateur.newMailUtilisateur.body.confirm'|trans }} <a href="{{ loginLink|e }}">{{ loginLink|e }}</a><br/>
 {{ 'security.utilisateur.newMailUtilisateur.body.confirmLater'|trans }}<br/><br/>
 {{ 'security.utilisateur.newMailUtilisateur.body.step2'|trans|raw }}<br/><br/>
+{% if currentObservatoire() %}
 {{ 'askDataAccess'|trans }}{{ 'deux_points'|trans }} <a href="{{ url('bdoh_security_besoin_new') }}">{{ url('bdoh_security_besoin_new') }}</a><br/>
 {{ 'askManager'|trans }}{{ 'deux_points'|trans }} <a href="{{ url('bdoh_consult_contact') }}">{{ url('bdoh_consult_contact') }}</a><br/>
+{% else %}
+{#- Une inscription depuis le portail : la demande d'accès et les gestionnaires sont ceux d'un observatoire, qu'on y choisit #}
+{{ 'security.utilisateur.newMailUtilisateur.body.portal'|trans }}{{ 'deux_points'|trans }} <a href="{{ url('bdoh_all_home') }}">{{ url('bdoh_all_home') }}</a><br/>
+{% endif %}
 <h5>{{ 'security.utilisateur.newMailUtilisateur.body.step3'|trans|raw }}
 {{ 'security.utilisateur.newMailUtilisateur.body.step4'|trans|raw }}</h5>

@@ -57,7 +57,7 @@ class BdohAuthenticationHandler implements AuthenticationSuccessHandlerInterface
         if ($uri !== null) {
             $session->remove('_security.secured_area.target_path');
         } else {
-            $uri = $this->router->generate('bdoh_home');
+            $uri = $this->router->generate(AccountRoutes::name('home', $this->observatoireManager->getCurrent()));
         }
 
         return new RedirectResponse($uri);
@@ -66,7 +66,12 @@ class BdohAuthenticationHandler implements AuthenticationSuccessHandlerInterface
     private function notifyManagers(Utilisateur $user): void
     {
         $observatoire = $this->observatoireManager->getCurrent();
-        $managerMails = $observatoire ? $this->em->getRepository(Utilisateur::class)->getValidatorMails($observatoire) : [];
+        // Un compte créé depuis le portail ne prévient personne (Lou, 2026-11-12) : la demande d'accès prévient les
+        // gestionnaires de l'observatoire qu'elle vise
+        if (null === $observatoire) {
+            return;
+        }
+        $managerMails = $this->em->getRepository(Utilisateur::class)->getValidatorMails($observatoire);
         try {
             $this->mailer->send(
                 (new Email())
