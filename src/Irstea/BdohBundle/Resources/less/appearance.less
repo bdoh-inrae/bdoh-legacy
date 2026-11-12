@@ -163,12 +163,25 @@ div.box ul li::marker {
     font-family: @font-family-sans-serif;
 }
 
-// Une ligne de liste qui mène à sa fiche, une chronique ou une station (bdoh/row-links.js) : toute la ligne se clique,
-// et le survol le montre, dans la teinte pâle du thème
+// Une ligne de liste qui mène à sa fiche, une chronique ou une station (bdoh/row-links.js) : toute la ligne se clique.
+// Le survol fonce un peu son fond, quel qu'il soit (ligne blanche, rayée, en-tête de station) : toujours dans le même
+// sens. Sa loupe ne se voit plus, la ligne en tenant lieu ; elle reste le lien qu'on atteint au clavier, et se montre
+// alors.
 [data-row-link="yes"] {
     cursor: pointer;
 }
-[data-row-link="yes"]:hover,
+div[data-row-link="yes"]:hover,
 tr[data-row-link="yes"]:hover > td {
-    background-color: @tintColor;
+    background-image: linear-gradient(fade(@inkColor, 4%), fade(@inkColor, 4%));
+}
+a.row-link-view:not(:focus) {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
 }
