@@ -13,6 +13,7 @@ require('toastr/build/toastr.css');
 require('./toastr');
 require('./template-polyfill');
 require('./row-links');
+require('./favorite-star');
 require('./style.less');
 
 $(() => {

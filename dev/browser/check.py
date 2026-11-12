@@ -342,14 +342,16 @@ def open_data_steps(s, station, chronique, console, hidden):
         assert re.search(r'/mesure/export/\d+/\w+$', page.url), f'pas de page de suivi : {page.url}'
         c.drain(console, 'bdoh:jobs:run', BASE)
         page.reload(wait_until='networkidle')
+        # Le navigateur note un téléchargement comme une navigation abandonnée : seules les erreurs qu'il ajoute s'effacent
+        known = len(s.problems)
         with page.expect_download() as download:
             page.locator('a.btn-info').click()
         saved = OUT / 'export-sans-compte.zip'
         download.value.save_as(saved)
+        del s.problems[known:]
         names = zipfile.ZipFile(saved).namelist()
         assert any('Licence-Ouverte' in name for name in names), f'pas de licence dans le zip : {names}'
         assert any(name.endswith('.txt') for name in names), f'pas de données dans le zip : {names}'
-        s.problems.clear()  # le navigateur note un téléchargement comme une navigation abandonnée
 
     s.step('export sans compte, jusqu’au fichier', chronique_page, export_to_file)
 
@@ -548,6 +550,7 @@ def main():
         trip.follow_console_link = lambda page, email, slug: login_with_console(page, console, email, slug)
         email, newcomer = j.new_account(trip)
         j.closed_series(trip, email, newcomer)
+        j.favorites(trip, email, newcomer)
         j.manager_work(trip, managing, station_code, chronique_code, chronique_id, unite, quality)
         j.control_points(trip, managing, station_code, chronique_code, chronique_id, unite, quality)
 

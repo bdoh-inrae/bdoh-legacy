@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Les favoris d'un compte (dev/plans/2026-11-12_favorites.md, migrations/Version20261112200000.php). La colonne
+     created, que la base remplit, n'est pas lue par l'application. -->
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping http://doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+  <entity repository-class="Irstea\BdohSecurityBundle\Entity\Repository\FavoriteRepository" name="Irstea\BdohSecurityBundle\Entity\Favorite" table="favorite">
+    <unique-constraints>
+      <unique-constraint name="favorite_utilisateur_chronique_key" columns="utilisateur_id,chronique_id"/>
+    </unique-constraints>
+    <id name="id" type="integer" column="id">
+      <generator strategy="SEQUENCE"/>
+      <sequence-generator sequence-name="favorite_id_seq" allocation-size="1" initial-value="1"/>
+    </id>
+    <field name="labels" type="json" column="labels" nullable="false">
+      <options>
+        <option name="jsonb">true</option>
+      </options>
+    </field>
+    <many-to-one field="utilisateur" target-entity="Irstea\BdohSecurityBundle\Entity\Utilisateur" fetch="LAZY">
+      <join-columns>
+        <join-column name="utilisateur_id" referenced-column-name="id" nullable="false" on-delete="CASCADE"/>
+      </join-columns>
+    </many-to-one>
+    <many-to-one field="chronique" target-entity="Irstea\BdohDataBundle\Entity\Chronique" fetch="LAZY">
+      <join-columns>
+        <join-column name="chronique_id" referenced-column-name="id" nullable="false" on-delete="CASCADE"/>
+      </join-columns>
+    </many-to-one>
+  </entity>
+</doctrine-mapping>

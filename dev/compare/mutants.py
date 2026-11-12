@@ -48,6 +48,8 @@ USERS = SRC + 'BdohSecurityBundle/Controller/UtilisateurController.php'
 PLAGES = SRC + 'BdohDataBundle/Entity/Repository/PlageRepository.php'
 TRANSFORMATIONS = SRC + 'BdohAdminBundle/Controller/TransformationController.php'
 DOCUMENTS = SRC + 'BdohDataBundle/Doctrine/Listener/DocumentedEntityListener.php'
+FAVORITES = SRC + 'BdohSecurityBundle/Controller/FavoriteController.php'
+FAVORITE = SRC + 'BdohSecurityBundle/Entity/Favorite.php'
 
 # (nom, mode, --only, fichier, texte, remplacement) ; le texte doit se trouver, et tous ses exemplaires changent
 PHP = [
@@ -229,6 +231,28 @@ PHP = [
      SRC + 'BdohDataBundle/Entity/Repository/BassinRepository.php',
      '            $sqlParamsArray[] = $allBassinsNoms;\n            $sqlTypesArray[] = \\Doctrine\\DBAL\\ArrayParameterType::STRING;',
      '            $sqlParamsArray[] = $allBassinsNoms;\n            $sqlTypesArray[] = \\Doctrine\\DBAL\\ParameterType::STRING;'),
+    # Les favoris, et les constats de leur relecture (dev/plans/2026-11-12_favorites.md)
+    ('favoris : l’étiquette citée sans échappement dans le message (relecture)', 'accounts', '', FAVORITES,
+     "['%label%' => htmlspecialchars($label)]", "['%label%' => $label]"),
+    ('favoris : les identifiants envoyés pris tels quels (relecture)', 'accounts', '', FAVORITES,
+     "$repository->findSomeFor($user, self::ids($request->request->all('favorites')));",
+     "$repository->findSomeFor($user, array_map('intval', $request->request->all('favorites')));"),
+    ('favoris : une étiquette gardée avec ses caractères de contrôle (relecture)', 'accounts', '', FAVORITE,
+     "preg_replace('/[\\s\\p{Cc}]+/u', ' ', $label)", "preg_replace('/\\s+/u', ' ', $label)"),
+    ('favoris : la fenêtre d’export aux options de la première chronique (relecture)', 'accounts', '', FAVORITES,
+     '$samplings = null === $samplings ? $theseSamplings : array_intersect_key($samplings, $theseSamplings);',
+     '$samplings ??= $theseSamplings;'),
+    ('favoris : la fenêtre d’export aux options de la dernière chronique (relecture)', 'accounts', '', FAVORITES,
+     '$samplings = null === $samplings ? $theseSamplings : array_intersect_key($samplings, $theseSamplings);',
+     '$samplings = $theseSamplings;'),
+    ('favoris : les favoris d’un autre compte touchés (relecture)', 'accounts', '',
+     SRC + 'BdohSecurityBundle/Entity/Repository/FavoriteRepository.php',
+     "$this->findBy(['utilisateur' => $user, 'id' => $ids]);", "$this->findBy(['id' => $ids]);"),
+    ('favoris : une chronique d’un autre observatoire que la page acceptée (piège de findOneById)', 'accounts', '',
+     FAVORITES, "return $this->getBdohRepo('Chronique')->findOneById($id);",
+     "return $this->getBdohRepo('Chronique')->find($id) ?? throw new NoResultException();"),
+    ('favoris : une chronique cachée exportable sans droit', 'accounts', '', FAVORITES,
+     "if (!$this->isGranted('DOWNLOAD', $chronique)) {", 'if (false) {'),
 ]
 
 # (nom, mode, fonction SQL, texte, remplacement), ou (nom, mode, --only, fonction SQL, texte, remplacement) : une

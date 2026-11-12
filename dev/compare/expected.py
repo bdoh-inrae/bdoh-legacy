@@ -104,7 +104,14 @@ NEW_KEYS = """Error.file.cantWrite(%file%) | dateMonthShort | oneMonth | admin.s
     security.login_link.mail.hello | security.login_link.mail.notYou | security.login_link.mail.title
     security.login_link.sent(%email%) | security.tooManyRequests | security.utilisateur.edit.emailChanged(%email%)
     security.utilisateur.edit.info.changeEmail | security.utilisateur.newMailUtilisateur.body.confirm
-    security.utilisateur.newMailUtilisateur.body.confirmLater | readLess | readMore"""
+    security.utilisateur.newMailUtilisateur.body.confirmLater | readLess | readMore
+    favorite.menu | favorite.title | favorite.add | favorite.remove | favorite.intro | favorite.empty
+    favorite.checkAll | favorite.export | favorite.labels.title | favorite.labels.hint | favorite.labels.none
+    favorite.labels.name | favorite.labels.add | favorite.labels.remove | favorite.removeChecked
+    favorite.done.labelAdded(%label%) | favorite.done.labelRemoved(%label%) | favorite.done.removed
+    favorite.error.nothingChecked | favorite.error.noLabel | favorite.error.invalidForm
+    favorite.exportModal.notAllowed | favorite.exportModal.askAccess | favorite.exportModal.withoutMeasures
+    favorite.exportModal.nothing"""
 CHANGED_KEYS = """accueilMessage | measure.export.help-content | measure.export.job_queued(%job_id%) | measure.export.underway
     security.besoin.create.title | security.login_form.connectTo | security.utilisateur.create.info.isTheFirstStep
     security.utilisateur.create.info.yourIdentifier | security.utilisateur.create.isCompleted
@@ -208,6 +215,14 @@ def header(lines):
             *crumb, *rest]
 
 
+FAVORITES = 'Favoris et étiquettes'
+# L'entrée du menu du compte, sur toute page d'un compte connecté, et l'étoile d'une chronique, dans les pages de
+# consultation (dev/plans/2026-11-12_favorites.md) ; le reste se vérifie à part (« nouveau seul : favoris » dans accounts)
+FAVORITE_MENU = ('+A /favorites', '+T Mes favoris', '+T My favourites')
+FAVORITE_STAR = ('+I button button', RX(
+    rf'\+D button data-favorite={OBS}/favorites/\d+ data-favorite-on=[01] data-favorite-token=<jeton> '
+    r'data-title-off=(?:Ajouter aux favoris|Add to favourites) data-title-on=(?:Retirer des favoris|Remove from favourites)'))
+
 PORTAL = 'Connexion et inscription depuis le portail'
 PORTAL_GUEST = ('+A /login', '+T Se connecter', '+T ou', '+A /user/new', '+T Créer un compte')
 
@@ -279,6 +294,8 @@ RULES = [
     # L'en-tête et le début du fil d'Ariane, sur toute page du site, quel que soit le mode qui la compare : header()
     # les réécrit dans l'ancien, et la page doit alors être la même, sauf ce que d'autres règles admettent
     *(Rule(mode, r'.*', HEADER, rewrite=header) for mode in ('pages', 'admin', 'imports', 'accounts')),
+    *(Rule(mode, r'(?!anonyme ).*', FAVORITES, lines=FAVORITE_MENU) for mode in ('pages', 'admin', 'imports', 'accounts')),
+    Rule('pages', r'(?!anonyme ).*', FAVORITES, lines=FAVORITE_STAR),
 
     # --- pages -------------------------------------------------------------------------------------
     # La carte des stations, sur l'accueil du portail et sur celui d'un observatoire ; son contenu se vérifie à part

@@ -125,6 +125,43 @@ $various = [
     'userManual(%link%)'        => 'For more information about using BDOH you may read <a href="%link%">the BDOH documentaion</a>.',
     'technicalContact'          => 'For technical questions about using BDOH please contact <a href="mailto:bdoh.support@listes.inrae.fr">bdoh.support@listes.inrae.fr</a>.',
 
+    // A user's favourites and their labels (dev/plans/2026-11-12_favorites.md)
+    'favorite' => [
+        'menu'      => 'My favourites',
+        'title'     => 'My favourites',
+        'add'       => 'Add to favourites',
+        'remove'    => 'Remove from favourites',
+        'intro'     => 'The time series you starred, grouped by observatory. Tick some, then export them together: one export per observatory, whose link is sent by e-mail.',
+        'empty'     => 'No favourites yet: the star of a time series, on its page or in the lists, adds it here.',
+        'checkAll'  => 'Tick all',
+        'export'    => 'Export the selection',
+        'labels'    => [
+            'title'  => 'Labels',
+            'hint'   => 'Clicking a label ticks its favourites.',
+            'none'   => 'No labels: tick favourites, then name them to make a group.',
+            'name'   => 'Label',
+            'add'    => 'Label the ticked ones',
+            'remove' => 'Remove the label from the ticked ones',
+        ],
+        'removeChecked' => 'Remove the ticked ones from favourites',
+        'done'      => [
+            'labelAdded(%label%)'   => 'Label “%label%” added to the ticked favourites.',
+            'labelRemoved(%label%)' => 'Label “%label%” removed from the ticked favourites.',
+            'removed'               => '{1}One favourite removed.|]1,Inf[%count% favourites removed.',
+        ],
+        'error'     => [
+            'nothingChecked' => 'Tick some favourites first.',
+            'noLabel'        => 'Give the label a name.',
+            'invalidForm'    => 'The form has expired: please try again.',
+        ],
+        'exportModal' => [
+            'notAllowed'   => 'Without a right on these time series, they cannot be exported:',
+            'askAccess'    => 'Request access',
+            'withoutMeasures' => 'These time series have no measures:',
+            'nothing'      => 'None of the ticked time series can be exported.',
+        ],
+    ],
+
     'security' => [
         'login_form'      => [
             'connection'    => 'Sign in',

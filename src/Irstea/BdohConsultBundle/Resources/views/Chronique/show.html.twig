@@ -53,6 +53,8 @@
     <div id="consult-chronique">
 
         <div class="toolbox-btns pull-right">
+            {{ include('@IrsteaBdohSecurity/Favorite/_star.html.twig') }}
+
             {% if is_granted('EDIT', chronique) %}
                 {{ macros.chronique_edit(chronique) }}
             {% endif %}

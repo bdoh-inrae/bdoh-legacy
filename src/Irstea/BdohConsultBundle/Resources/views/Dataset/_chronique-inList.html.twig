@@ -27,6 +27,7 @@
     <div class="toolbox-btns pull-right">
         {# 'Chronique' is visible ? #}
         <span class="isvisible">{{ macros.chronique_isVisible(chronique) }}</span>
+        {{ include('@IrsteaBdohSecurity/Favorite/_star.html.twig') }}
         {% if is_granted('CONSULT_TIMESERIES', chronique) %}
             {{ macros.chronique_view(chronique) }}
         {% endif %}

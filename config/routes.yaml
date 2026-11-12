@@ -31,6 +31,12 @@ bdoh_portal_user_new:
 bdoh_portal_logout:
     path: /logout
     methods: [GET]
+# Les favoris d'un compte, qui traversent les observatoires (dev/plans/2026-11-12_favorites.md) ; l'étoile et la
+# fenêtre d'export sont sous l'adresse d'un observatoire (FavoriteController)
+bdoh_portal_favorites:
+    path: /favorites
+    controller: Irstea\BdohSecurityBundle\Controller\FavoriteController::listAction
+    methods: [GET, POST]
 
 irstea_bdoh_main:
     resource: "@IrsteaBdohBundle/Controller/"

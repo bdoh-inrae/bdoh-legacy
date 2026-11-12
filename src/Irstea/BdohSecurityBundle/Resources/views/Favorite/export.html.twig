@@ -1,0 +1,28 @@
+{#- La fenêtre d'export des favoris cochés d'un observatoire (FavoriteController::exportAction), que la page des
+    favoris insère et ouvre (security/favorites.js) : celle de la page d'une chronique (Modal/export.html.twig), pour
+    les chroniques qui s'exportent. Celles qui ne s'exportent pas sont nommées au-dessus ; sans aucune, il n'y a pas
+    de fenêtre, seulement ce message. -#}
+{% import '@IrsteaBdohConsult/macros.html.twig' as macros %}
+<div class="favorites-export-report" data-favorites-export-report>
+    {% if notAllowed is not empty %}
+        <div class="alert alert-warning">
+            {{ 'favorite.exportModal.notAllowed'|trans }}
+            {% for chronique in notAllowed %}{{ chronique }}{{ not loop.last ? ', ' }}{% endfor %}.
+            <a href="{{ path('bdoh_security_besoin_new') }}">{{ 'favorite.exportModal.askAccess'|trans }}</a>
+        </div>
+    {% endif %}
+    {% if withoutMeasures is not empty %}
+        <div class="alert alert-info">
+            {{ 'favorite.exportModal.withoutMeasures'|trans }}
+            {% for chronique in withoutMeasures %}{{ chronique }}{{ not loop.last ? ', ' }}{% endfor %}.
+        </div>
+    {% endif %}
+    {% if chroniques is empty %}
+        <div class="alert alert-danger">{{ 'favorite.exportModal.nothing'|trans }}</div>
+    {% endif %}
+</div>
+{% if chroniques is not empty %}
+    <div class="favorites-export-modal">
+        {{ macros.chroniques_export(chroniques, dateFirst, dateLast, exportSamplings, exportTimeSteps, null, true, 'both') }}
+    </div>
+{% endif %}

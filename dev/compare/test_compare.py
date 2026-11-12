@@ -239,6 +239,18 @@ class Register(unittest.TestCase):
         self.assertEqual(self.verdict([self.RULE], 'page a', ['T ancien'], ['T nouveau', 'T 3 points']), 'écarts admis')
         self.assertEqual(self.verdict([self.RULE], 'page a', ['T ancien', 'T x'], ['T nouveau', 'T y']), 'différents')
 
+    def test_the_report_names_the_rules_that_explain(self):
+        # Une règle de toute page (le menu des favoris) ne nomme pas un écart qu'une autre règle explique seule
+        broad = compare.expected.Rule('essai', r'.*', 'toute page', lines=('+A /favorites',))
+        old, new = ['T ancien'], ['T nouveau']
+        key, _, rounding = compare.classify(old, new)
+        self.assertEqual(compare.registered([broad, self.RULE], 'page a', key, old, new, False, rounding),
+                         ('écarts admis', [self.RULE]))
+        old, new = ['T ancien'], ['T nouveau', 'A /favorites']
+        key, _, rounding = compare.classify(old, new)
+        self.assertEqual(compare.registered([broad, self.RULE], 'page a', key, old, new, False, rounding),
+                         ('écarts admis', [broad, self.RULE]))
+
     def test_an_expression_covers_the_whole_line(self):
         self.assertEqual(self.verdict([self.RULE], 'page a', [], ['T 3 points de plus']), 'différents')
 

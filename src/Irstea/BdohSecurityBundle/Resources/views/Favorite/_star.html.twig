@@ -1,0 +1,10 @@
+{#- L'étoile d'une chronique, pour un compte connecté : un clic la met en favori ou l'en retire, sans quitter la page
+    (bdoh/favorite-star.js ; dev/plans/2026-11-12_favorites.md). -#}
+{%- if app.user -%}
+    {%- set on = is_favorite(chronique.id) -%}
+    <button type="button" class="btn-link favorite-star{{ on ? ' on' : '' }}" aria-pressed="{{ on ? 'true' : 'false' }}"
+            title="{{ (on ? 'favorite.remove' : 'favorite.add')|trans }}"
+            data-favorite="{{ path('bdoh_security_favorite_toggle', {'id': chronique.id}) }}"
+            data-favorite-on="{{ on ? 1 : 0 }}" data-favorite-token="{{ csrf_token('favorite') }}"
+            data-title-on="{{ 'favorite.remove'|trans }}" data-title-off="{{ 'favorite.add'|trans }}"><i class="fam-star"></i></button>
+{%- endif -%}

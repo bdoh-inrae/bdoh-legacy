@@ -22,6 +22,7 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/). Numéros de v
 - À côté de chaque champ de date, un bouton ouvre le calendrier du navigateur ; la saisie au clavier reste.
 - La bande sous le graphique se cale d'un bouton sur une semaine, un, trois ou six mois, un ou cinq ans, ou toute la chronique.
 - Sur l'accueil de BDOH, on se connecte et on crée un compte sans choisir d'observatoire ; connecté, on l'est partout. Un compte créé ainsi ne prévient aucun gestionnaire.
+- Les favoris d'un compte : une étoile sur la page d'une chronique et dans les listes la met en favori ; « Mes favoris », dans le menu du compte, les range par observatoire, leur pose des étiquettes, dont un clic coche le groupe, et exporte les cochés d'un coup, un export par observatoire, avec les rééchantillonnages que toutes permettent. Une migration ajoute leur table.
 - La comparaison avec l'ancien BDOH passe aussi sur la base d'OTHU, dans tous ses modes : un cas que la base ne permet pas de jouer y est nommé, et les écarts admis prennent les identifiants de la base comparée.
 
 ### Retiré

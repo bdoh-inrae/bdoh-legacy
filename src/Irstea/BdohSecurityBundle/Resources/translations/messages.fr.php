@@ -125,6 +125,43 @@ $various = [
     'userManual(%link%)'        => "Pour plus d'informations sur l'utilisation de BDOH vous pouvez consulter <a href=\"%link%\">la documentation de BDOH</a>.",
     'technicalContact'          => "Pour les demandes techniques concernant l'utilisation de BDOH veuillez contacter <a href=\"mailto:bdoh.support@listes.inrae.fr\">bdoh.support@listes.inrae.fr</a>.",
 
+    // Les favoris d'un compte et leurs étiquettes (dev/plans/2026-11-12_favorites.md)
+    'favorite' => [
+        'menu'      => 'Mes favoris',
+        'title'     => 'Mes favoris',
+        'add'       => 'Ajouter aux favoris',
+        'remove'    => 'Retirer des favoris',
+        'intro'     => "Les chroniques marquées d'une étoile, rangées par observatoire. Cochez-en, puis exportez-les ensemble : un export par observatoire, dont le lien arrive par courriel.",
+        'empty'     => "Aucun favori pour l'instant : l'étoile d'une chronique, sur sa page ou dans les listes, l'ajoute ici.",
+        'checkAll'  => 'Tout cocher',
+        'export'    => 'Exporter la sélection',
+        'labels'    => [
+            'title'  => 'Étiquettes',
+            'hint'   => 'Un clic sur une étiquette coche ses favoris.',
+            'none'   => "Aucune étiquette : cochez des favoris, puis donnez-leur un nom pour en faire un groupe.",
+            'name'   => 'Étiquette',
+            'add'    => 'Étiqueter les cochés',
+            'remove' => "Retirer l'étiquette des cochés",
+        ],
+        'removeChecked' => 'Retirer les cochés des favoris',
+        'done'      => [
+            'labelAdded(%label%)'   => "Étiquette «\u{a0}%label%\u{a0}» posée sur les favoris cochés.",
+            'labelRemoved(%label%)' => "Étiquette «\u{a0}%label%\u{a0}» retirée des favoris cochés.",
+            'removed'               => '{1}Un favori retiré.|]1,Inf[%count% favoris retirés.',
+        ],
+        'error'     => [
+            'nothingChecked' => "Cochez d'abord des favoris.",
+            'noLabel'        => "Donnez un nom à l'étiquette.",
+            'invalidForm'    => 'Le formulaire a expiré : recommencez.',
+        ],
+        'exportModal' => [
+            'notAllowed'   => "Sans droit sur ces chroniques, elles ne s'exportent pas :",
+            'askAccess'    => "Demander l'accès",
+            'withoutMeasures' => "Ces chroniques n'ont aucune mesure :",
+            'nothing'      => 'Aucune des chroniques cochées ne peut être exportée.',
+        ],
+    ],
+
     'security' => [
         'login_form'      => [
             'connection'    => 'Connexion',

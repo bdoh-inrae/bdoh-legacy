@@ -152,6 +152,63 @@ div.box ul li::marker {
 .fam-error { .bdoh-icon(warning); }
 .fam-exclamation { .bdoh-icon(priority_high); }
 .fam-house { .bdoh-icon(home); }
+.fam-star { .bdoh-icon(star); }
+// L'étoile des favoris (Favorite/_star.html.twig, bdoh/favorite-star.js) : vide et discrète, pleine une fois posée
+button.favorite-star {
+    padding: 0 3px;
+    border: 0;
+    background: none;
+    line-height: inherit;
+    color: lighten(@gray, 28%);
+    &:hover, &:focus {
+        color: @inkColor;
+    }
+    &.on {
+        color: @inkColor;
+        .fam-star { .bdoh-icon(star-fill); }
+    }
+    &[disabled] {
+        opacity: 0.5;
+    }
+}
+// La page des favoris (Favorite/list.html.twig) : les étiquettes et les actions sur les cochés en tête, puis un tableau
+// par observatoire. La fenêtre d'export s'y ouvre d'elle-même : le lien qui l'ouvre ailleurs ne s'y montre pas.
+#favorites {
+    .favorites-labels {
+        margin-bottom: 20px;
+        padding: 10px 15px;
+        background-color: @tintColor;
+        border-radius: @border-radius-base;
+    }
+    .favorites-label-list .btn {
+        margin: 0 4px 6px 0;
+    }
+    .favorites-actions {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 6px;
+        label {
+            margin: 0;
+        }
+        input[type="text"] {
+            width: auto;
+            min-width: 14em;
+        }
+    }
+    .favorites-group {
+        margin-bottom: 25px;
+        td .label {
+            font-weight: normal;
+        }
+    }
+    #favorites-export {
+        margin-top: 10px;
+        a[data-toggle="modal"][data-target^="#export-"] {
+            display: none;
+        }
+    }
+}
 // Le lien vers le site d'un observatoire, à côté du titre de son accueil : une icône qui n'était pas dans Silk
 .icon-external {
     .bdoh-icon(open_in_new);

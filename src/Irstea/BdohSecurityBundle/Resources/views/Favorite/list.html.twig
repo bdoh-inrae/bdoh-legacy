@@ -1,0 +1,114 @@
+{% extends '@IrsteaBdohSecurity/layout.html.twig' %}
+{% from 'macros.html.twig' import pageTitle, breadcrumbRoot, i18nEntityLabel %}
+{% import '@IrsteaBdohConsult/macros.html.twig' as macros %}
+
+{#- Les favoris d'un compte, rangés par observatoire, et leurs étiquettes (FavoriteController::listAction ;
+    dev/plans/2026-11-12_favorites.md). Ce qu'on fait aux cochés passe par le formulaire de la page ; l'export, un par
+    observatoire, par la fenêtre d'export de cet observatoire (security/favorites.js). -#}
+
+{% block title %}{{ pageTitle('favorite.title'|trans) }}{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script src="{{ asset('assets/security/favorites.js') }}"></script>
+{% endblock %}
+
+{% block breadcrumb %}
+    <ul class="breadcrumb">
+        {{ breadcrumbRoot(false) }}
+        <li class="active">{{ 'favorite.title'|trans }}</li>
+    </ul>
+{% endblock %}
+
+{% block main %}
+    <div id="favorites">
+        <h1>{{ 'favorite.title'|trans }}</h1>
+
+        {% if groups is empty %}
+            <p>{{ 'favorite.empty'|trans }}</p>
+        {% else %}
+            <p>{{ 'favorite.intro'|trans }}</p>
+
+            <form method="post" action="{{ path('bdoh_portal_favorites') }}" id="favorites-form">
+                <input type="hidden" name="_token" value="{{ csrf_token('favorites') }}"/>
+
+                <div class="favorites-labels">
+                    <h2>{{ 'favorite.labels.title'|trans }}</h2>
+                    {% if labels is empty %}
+                        <p class="help-block">{{ 'favorite.labels.none'|trans }}</p>
+                    {% else %}
+                        <p class="help-block">{{ 'favorite.labels.hint'|trans }}</p>
+                        <div class="favorites-label-list">
+                            {% for label, count in labels %}
+                                <button type="button" class="btn btn-default btn-sm" data-favorite-label="{{ label }}">{{ label }} <span class="badge">{{ count }}</span></button>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                    <div class="favorites-actions">
+                        <label for="favorites-label-name">{{ 'favorite.labels.name'|trans }}</label>
+                        <input type="text" id="favorites-label-name" name="label" maxlength="{{ labelMaxLength }}" class="form-control input-sm" list="favorites-label-names"/>
+                        <datalist id="favorites-label-names">
+                            {% for label in labels|keys %}<option value="{{ label }}"></option>{% endfor %}
+                        </datalist>
+                        <button type="submit" name="action" value="addLabel" class="btn btn-primary btn-sm">{{ 'favorite.labels.add'|trans }}</button>
+                        <button type="submit" name="action" value="removeLabel" class="btn btn-default btn-sm">{{ 'favorite.labels.remove'|trans }}</button>
+                        <button type="submit" name="action" value="remove" class="btn btn-default btn-sm">{{ 'favorite.removeChecked'|trans }}</button>
+                    </div>
+                </div>
+
+                {% for group in groups %}
+                    {% set observatoire = group.observatoire %}
+                    <div class="favorites-group">
+                        <h2><a href="{{ path('bdoh_home', {'_observatoire': observatoire.slug}) }}">{{ observatoire.nom }}</a></h2>
+                        <table class="table table-condensed table-hover">
+                            <thead>
+                                <tr>
+                                    <th><button type="button" class="btn-link" data-favorite-check-all>{{ 'favorite.checkAll'|trans }}</button></th>
+                                    <th>{{ 'station'|trans }}</th>
+                                    <th>{{ 'Chronique'|trans }}</th>
+                                    <th>{{ 'parametre'|trans }}</th>
+                                    <th>{{ 'begin'|trans }}</th>
+                                    <th>{{ 'end'|trans }}</th>
+                                    <th>{{ 'favorite.labels.title'|trans }}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for favorite in group.favorites %}
+                                    {% set chronique = favorite.chronique %}
+                                    <tr>
+                                        <td><input type="checkbox" name="favorites[]" value="{{ favorite.id }}" id="favorite-{{ favorite.id }}"
+                                                   data-chronique="{{ chronique.id }}" data-labels="{{ favorite.labels|json_encode }}"/></td>
+                                        <td><label for="favorite-{{ favorite.id }}">{{ chronique.station.nom }} ({{ chronique.station.code }})</label></td>
+                                        <td>
+                                            {#- Le lien seulement quand la page s'ouvre au compte : une chronique cachée sans droit répond 403 #}
+                                            {% if is_granted('CONSULT_TIMESERIES', chronique) %}
+                                                <a href="{{ path('bdoh_consult_chronique', {'_observatoire': observatoire.slug, 'station': chronique.station.code, 'chronique': chronique.code}) }}">{{ chronique.code }}</a>
+                                            {% else %}
+                                                {{ chronique.code }}
+                                            {% endif %}
+                                            {{ macros.chronique_isVisible(chronique) }}
+                                        </td>
+                                        <td>{{ i18nEntityLabel(chronique.parametre, 'nom', '') }}{% if chronique.unite %} ({{ chronique.unite.libelle }}){% endif %}</td>
+                                        <td>{{ chronique.dateDebutMesures ? chronique.dateDebutMesures|date('formatDate'|trans, false) : '-' }}</td>
+                                        <td>{{ chronique.dateFinMesures ? chronique.dateFinMesures|date('formatDate'|trans, false) : '-' }}</td>
+                                        <td>{% for label in favorite.labels %}<span class="label label-default">{{ label }}</span> {% endfor %}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                        <button type="button" class="btn btn-primary" data-favorites-export="{{ path('bdoh_security_favorites_export', {'_observatoire': observatoire.slug}) }}"
+                                data-nothing-checked="{{ 'favorite.error.nothingChecked'|trans }}">
+                            <i class="fam-database-save"></i>&ensp;{{ 'favorite.export'|trans }}
+                        </button>
+                    </div>
+                {% endfor %}
+            </form>
+
+            {#- La fenêtre d'export d'un observatoire, que la page demande à son adresse (FavoriteController::exportAction) :
+                hors du formulaire, la fenêtre ayant le sien. #}
+            <div id="favorites-export"></div>
+            {#- Le contenu du bouton « Aide » de la fenêtre d'export, comme sur la page d'une chronique #}
+            {% include '@IrsteaBdohConsult/Chronique/_export-help.html.twig' %}
+        {% endif %}
+    </div>
+{% endblock %}

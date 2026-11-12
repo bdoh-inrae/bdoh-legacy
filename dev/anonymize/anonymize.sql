@@ -86,6 +86,8 @@ INSERT INTO anon.rules VALUES
     ('bdoh', 'historique',           'outputunit',            'keep',     NULL),
     ('bdoh', 'historique',           'typeexport',            'keep',     NULL),
     ('bdoh', 'historique',           'timestep',              'keep',     NULL),
+    -- Les étiquettes des favoris d'un compte (« thèse Yzeron ») : texte libre, vidé (la colonne est NOT NULL).
+    ('bdoh', 'favorite',             'labels',                'replace',  $$'[]'$$),
 
     -- File de tâches : arguments, sorties et traces peuvent citer des personnes. Inutile aux tests.
     ('bdoh', 'jms_jobs',             '*',                     'truncate', NULL),

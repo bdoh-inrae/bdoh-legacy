@@ -41,6 +41,7 @@ import html
 import html.parser
 import http.cookiejar
 import io
+import itertools
 import json
 import os
 import random
@@ -301,9 +302,45 @@ def export_cases(base, draws=0, seed=1):
                     for step in steps:
                         window = month if (kind, step) in FINE_STEPS else period
                         cases.append([f'bdoh:export:{kind}', step, *window, cid, *options])
+    cases += several_export_cases(base, missing)
     if draws:
         cases += drawn_export_cases(base, draws, seed)
     return list(dict.fromkeys(map(tuple, cases))), missing  # un cas tiré deux fois ne se compare qu'une fois
+
+
+# Plusieurs chroniques d'un même observatoire dans un seul export, comme en demande la page des favoris
+# (dev/plans/2026-11-12_favorites.md) : la fenêtre n'y propose que les rééchantillonnages que toutes permettent, et,
+# avec une discontinue, que l'identique au format BDOH. L'interface de l'ancien ne le demandait plus, sa commande si.
+SEVERAL_KINDS = {'deux continues': [('identical', None, 'bdoh'), ('identical', None, 'qtvar'),
+                                    ('instantaneous', '60', 'bdoh'), ('mean', '7', 'bdoh'), ('cumulative', '7', 'bdoh')],
+                 'une continue et une discontinue': [('identical', None, 'bdoh')]}
+
+
+def several_export_cases(base, missing):
+    """Les exports de deux chroniques visibles d'un même observatoire, qui ont des mesures en 2024 : deux continues,
+    d'échantillonnages différents si la base en a, et une continue avec une discontinue. Ajoute à missing les sortes
+    que la base n'a pas."""
+    pairs = query(base, f"""
+        WITH c AS (
+            SELECT c.id, c.dtype, c.slug, coalesce(ch.echantillonnage_id, 0) AS ech
+              FROM ({CHRONIQUES}) c JOIN chronique ch ON ch.id = c.id
+             WHERE c.estvisible AND c.dtype IN ('continue', 'discontinue')
+               AND (EXISTS (SELECT 1 FROM mesure m WHERE m.chronique_id = c.id AND m.date >= '2024-01-01' AND m.date < '2025-01-01')
+                    OR EXISTS (SELECT 1 FROM plage p WHERE p.chronique_id = c.id AND p.fin >= '2024-01-01' AND p.debut < '2025-01-01')))
+        (SELECT a.id, b.id, 'deux continues' FROM c a JOIN c b ON b.slug = a.slug AND b.id > a.id
+          WHERE a.dtype = 'continue' AND b.dtype = 'continue' ORDER BY a.ech = b.ech, a.id, b.id LIMIT 1)
+        UNION ALL
+        (SELECT a.id, b.id, 'une continue et une discontinue' FROM c a JOIN c b ON b.slug = a.slug
+          WHERE a.dtype = 'continue' AND b.dtype = 'discontinue' ORDER BY a.id, b.id LIMIT 1)""")
+    found = {kind: ids for *ids, kind in pairs}
+    missing += [f'export de {kind}' for kind in SEVERAL_KINDS if kind not in found]
+    period = ['2024-01-01T00:00:00+00:00', '2025-01-01T00:00:00+00:00']
+    cases = []
+    for kind, ids in found.items():
+        for export, step, fmt in SEVERAL_KINDS[kind]:
+            cases.append([f'bdoh:export:{export}', *([step] if step else []), *period, *ids,
+                          '--format', fmt, '--timezone', "'+01:00'"])
+    return cases
 
 
 def drawn_export_cases(base, draws, seed):
@@ -445,7 +482,8 @@ class Extract(html.parser.HTMLParser):
             self.add('G', a.get('src', ''), a.get('alt', ''))
         elif tag == 'link':
             self.add('L', a.get('rel', ''), a.get('href', ''))
-        data = [f'{k}={v}' for k, v in sorted(a.items())
+        # Un jeton CSRF porté par un attribut (l'étoile des favoris) change d'une session à l'autre : sa présence compte
+        data = [f'{k}=' + ('<jeton>' if k.endswith('-token') and v else v) for k, v in sorted(a.items())
                 if k.startswith('data-') and not self.WIRING.match(k) and (k, v) != ('data-toggle', 'advanced-filter')]
         if data:
             self.add('D', tag, *data)
@@ -698,16 +736,25 @@ def classify(old, new, exact=False):
 
 
 def admitted(rules, old, new, exact=False):
-    """Ces règles du registre expliquent-elles tout l'écart entre deux suites de lignes ? Les réécritures de l'ancien
-    (`rewrite`) passent d'abord, puis les masques, puis les lignes admises."""
+    """Les règles du registre qui expliquent l'écart entre deux suites de lignes, si elles l'expliquent tout : celles
+    qui y servent, sans celles dont seul le motif couvre le nom du cas (une règle de toute page connectée n'explique
+    pas un courriel) ; une liste vide sinon. Les réécritures de l'ancien (`rewrite`) passent d'abord, puis les masques,
+    puis les lignes admises."""
+    used = []
     for rule in rules:
         if rule.rewrite:
-            old = rule.rewrite(old)
-    masks = [(re.compile(pattern), replacement) for rule in rules for pattern, replacement in rule.masks]
+            rewritten = rule.rewrite(old)
+            if rewritten != old:
+                used.append(rule)
+            old = rewritten
+    masks = [(rule, re.compile(pattern), replacement) for rule in rules for pattern, replacement in rule.masks]
 
     def masked(lines):
-        for pattern, replacement in masks:
-            lines = [pattern.sub(replacement, line) for line in lines]
+        for rule, pattern, replacement in masks:
+            done = [pattern.sub(replacement, line) for line in lines]
+            if done != lines:
+                used.append(rule)
+            lines = done
         return lines
 
     def found(wanted, line):
@@ -727,9 +774,15 @@ def admitted(rules, old, new, exact=False):
                 moved[line[0]][order_key(line[1:])] -= 1
             else:
                 unexplained.append(line)
-    allowed = [wanted for rule in rules for wanted in rule.lines]
-    return (all(any(found(wanted, line) for wanted in allowed) for line in unexplained)
-            and all(any(found(wanted, line) for line in changed) for rule in rules for wanted in rule.must))
+        if len(unexplained) < len(changed):
+            used += [rule for rule in rules if rule.order]
+    explaining = [next((rule for rule in rules for wanted in rule.lines if found(wanted, line)), None)
+                  for line in unexplained]
+    if None in explaining or not all(any(found(wanted, line) for line in changed)
+                                     for rule in rules for wanted in rule.must):
+        return []
+    used += explaining + [rule for rule in rules if rule.must]
+    return [rule for rule in rules if rule in used]  # dans l'ordre du registre, sans doublon
 
 
 def changed_values(rounding):
@@ -759,8 +812,10 @@ def registered(rules, name, key, old, new, exact=False, rounding=()):
     if key == 'même contenu, autre ordre':
         lists = [rule for rule in rules if rule.order]
         return (key, lists) if lists else ('différents', [])
-    if key == 'différents' and rules and admitted(rules, old, new, exact):
-        return 'écarts admis', rules
+    if key == 'différents' and rules:
+        explaining = admitted(rules, old, new, exact)
+        if explaining:
+            return 'écarts admis', explaining
     return key, []
 
 
@@ -1107,7 +1162,7 @@ def run_exports(args):
     cases, missing = export_cases(args.base, args.random, args.seed)
     cases = [c for c in cases if args.only in ' '.join(c)]
     report = Report('exports')
-    for name in (f'export d’une chronique {kind}' for kind in missing):
+    for name in (kind if kind.startswith('export ') else f'export d’une chronique {kind}' for kind in missing):
         if args.only in name:
             report.add(name, [NO_CASE], [NO_CASE])
     with contextlib.ExitStack() as stack:
@@ -3104,6 +3159,273 @@ ACCOUNT_QUERIES = {
 }
 
 
+FAVORITE_CHRONIQUES = """
+    SELECT DISTINCT o.slug, o.nom, c.id, s.code, c.code, c.estvisible, c.dtype, coalesce(e.code, '-')
+      FROM chronique c JOIN station s ON s.id = c.station_id JOIN stations_sites ss ON ss.station_id = s.id
+      JOIN siteexperimental si ON si.id = ss.site_id JOIN observatoire o ON o.id = si.observatoire_id
+      LEFT JOIN echantillonnage e ON e.id = c.echantillonnage_id
+     WHERE c.datedebutmesures IS NOT NULL AND c.datefinmesures IS NOT NULL ORDER BY 1, 3"""
+
+
+def favorite_checks(side, base):
+    """Les favoris et leurs étiquettes (dev/plans/2026-11-12_favorites.md), que seul le nouveau a, sur sa copie, après
+    la photo comparée à l'ancien : l'étoile, la page des favoris, les étiquettes, la fenêtre d'export et l'export d'une
+    sélection. Rend, pour chaque vérification, « conforme », ce qui ne l'est pas, ou « aucun cas dans la base »."""
+    results = {}
+
+    def check(name, ok, detail=''):
+        results[f'nouveau seul : favoris, {name}'] = ['conforme' if ok else f'non conforme : {detail}']
+
+    def none(*names):
+        for name in names:
+            results[f'nouveau seul : favoris, {name}'] = [NO_CASE]
+
+    q = lambda sql: query(base, sql, NEW_SERVER)
+    plain = [r[0] for r in q("""SELECT email FROM utilisateur u WHERE roleadmin IS NULL
+                                   AND (finacces IS NULL OR finacces > now()) AND email LIKE '%@example.invalid'
+                                   AND NOT EXISTS (SELECT 1 FROM role r WHERE r.utilisateur_id = u.id)
+                                 ORDER BY id LIMIT 2""")]
+    rows = q(FAVORITE_CHRONIQUES)
+    by_slug = {}
+    for row in rows:
+        by_slug.setdefault(row[0], []).append(row)
+    continuous = lambda rs: [r for r in rs if r[5] == 't' and r[6] == 'continue']
+    # Un observatoire qui a deux chroniques continues visibles ; de préférence aussi une cachée, une discontinue
+    # visible et deux échantillonnages, pour que chaque vérification ait son cas
+    candidates = [s for s, rs in by_slug.items() if len(continuous(rs)) >= 2]
+    candidates.sort(key=lambda s: (not any(r[5] == 'f' for r in by_slug[s]),
+                                   not any(r[5] == 't' and r[6] == 'discontinue' for r in by_slug[s]),
+                                   len({r[7] for r in continuous(by_slug[s])}) < 2))
+    if len(plain) < 2 or not candidates:
+        none('étoile', 'page', 'étiquettes', 'fenêtre d’export', 'export d’une sélection')
+        return results
+    slug = candidates[0]
+    visible = continuous(by_slug[slug])[:3]
+    hidden = next((r for r in by_slug[slug] if r[5] == 'f'), None)
+    other = next((r for s, rs in sorted(by_slug.items()) if s != slug for r in rs if r[5] == 't'), None)
+    discontinuous = next((r for r in by_slug[slug] if r[5] == 't' and r[6] == 'discontinue'), None)
+    page = lambda r: f'/{r[0]}/{r[3]}/{r[4]}'
+    count = lambda: int(q("SELECT count(*) FROM favorite")[0][0])
+    token_of = lambda body: (re.search(r'data-favorite-token="([^"]+)"', body) or [None, ''])[1]
+
+    client = Client(side, plain[0], slug)
+    star = lambda r, on, token, path=None, who=client: who.get(path or f'/{r[0]}/favorites/{r[2]}',
+                                                               urllib.parse.urlencode({'_token': token, 'on': on}).encode())
+    body = client.get(page(visible[0]))[2].decode('utf-8', 'replace')
+    token = token_of(body)
+    shown = lambda r: next((l for l in page_lines(side.url, *client.get(page(r)))
+                            if l.startswith(f'D button data-favorite=/{r[0]}/favorites/{r[2]} ')), '')
+
+    # L'étoile : posée, reposée sans doublon, retirée ; un état qui se lit sur la page
+    before = count()
+    steps = [star(visible[0], '1', token), star(visible[0], '1', token)]
+    on_page = shown(visible[0])
+    after_on = count()
+    steps.append(star(visible[0], '0', token))
+    check('étoile posée, reposée puis retirée',
+          [s[0] for s in steps] == [200, 200, 200] and [json.loads(s[2]) for s in steps] == [{'favorite': True}] * 2 + [{'favorite': False}]
+          and after_on == before + 1 and count() == before and 'data-favorite-on=1' in on_page,
+          f'statuts {[s[0] for s in steps]}, favoris {before}, {after_on}, {count()}, étoile : {on_page}')
+    status = star(visible[0], '1', 'faux')[0]
+    check('étoile sans jeton valide refusée', status == 403 and count() == before, f'statut {status}, favoris {count()}')
+    anonymous = Client(side, None, slug)
+    status, headers, body = anonymous.get(page(visible[0]))
+    redirect = anonymous.get('/favorites')
+    check('sans compte : ni étoile, ni page des favoris',
+          status == 200 and b'data-favorite=' not in body and redirect[0] == 302
+          and urllib.parse.urlsplit(redirect[1].get('Location', '')).path == '/login',
+          f"statut {status}, page des favoris : {redirect[0]} vers {redirect[1].get('Location', '')}")
+    if other:
+        status = star(other, '1', token, f'/{slug}/favorites/{other[2]}')[0]
+        check('chronique d’un autre observatoire que la page refusée', status == 404 and count() == before, f'statut {status}')
+    else:
+        none('chronique d’un autre observatoire que la page refusée')
+
+    # La page : rangée par observatoire (par nom), chaque chronique entre le titre du sien et le titre suivant. Les
+    # titres sont les dernières adresses d'accueil d'un observatoire : le menu des observatoires, plus haut, a les mêmes
+    starred = [*visible[:2], *([hidden] if hidden else []), *([other] if other else [])]
+    statuses = [star(r, '1', token)[0] for r in starred]
+    lines = page_lines(side.url, *client.get('/favorites'))
+    titles = [(i, l[2:].split('/')[1]) for i, l in enumerate(lines)
+              if re.fullmatch(r'A /[A-Z0-9_-]+/home', l)][-len({r[0] for r in starred}):]
+    heads = [s for _, s in titles]
+    bounds = [i for i, _ in titles] + [len(lines)]
+    row = lambda r: next((i for i, l in enumerate(lines) if l.startswith(f'D input data-chronique={r[2]} ')), -1)
+    placed = {r[2]: r[0] in heads and bounds[heads.index(r[0])] < row(r) < bounds[heads.index(r[0]) + 1] for r in starred}
+    names = {r[0]: r[1] for r in starred}
+    wanted = sorted(names, key=lambda s: names[s].casefold())
+    check('page rangée par observatoire', statuses == [200] * len(starred) and heads == wanted and all(placed.values()),
+          f'statuts {statuses}, observatoires {heads} au lieu de {wanted}, chroniques à leur place {placed}')
+
+    # Le lien d'un favori vers sa page, seulement si elle s'ouvre au compte : une chronique cachée sans droit répond 403.
+    # Avec un droit sur elle, son lien vient, sur la page des favoris qui n'a pas d'observatoire
+    linked = lambda r, lines: f'A {page(r)}' in lines
+    if hidden:
+        role = q(f"""INSERT INTO role (id, utilisateur_id, chronique_id, valeur, dtype)
+                     SELECT nextval('role_id_seq'), u.id, {hidden[2]}, 'utilisateur', 'chronique'
+                       FROM utilisateur u WHERE u.email = '{plain[0]}' RETURNING id""")[0][0]
+        granted = page_lines(side.url, *client.get('/favorites'))
+        q(f'DELETE FROM role WHERE id = {role}')
+        check('page : lien d’une chronique cachée seulement avec le droit de la consulter',
+              all(linked(r, lines) for r in starred if r is not hidden) and not linked(hidden, lines)
+              and linked(hidden, granted) and row(hidden) >= 0,
+              f'liens sans droit : {[r[2] for r in starred if linked(r, lines)]}, avec : {linked(hidden, granted)}')
+    else:
+        none('page : lien d’une chronique cachée seulement avec le droit de la consulter')
+
+    # Les étiquettes : posées sur les cochés (espaces resserrés), rangées, retirées ; chacune avec son nombre
+    favorites = dict((int(r[1]), int(r[0])) for r in q(
+        f"SELECT f.id, f.chronique_id FROM favorite f JOIN utilisateur u ON u.id = f.utilisateur_id WHERE u.email = '{plain[0]}'"))
+    first, second = favorites[int(visible[0][2])], favorites[int(visible[1][2])]
+    form_token = dict(form_of(client, '/favorites').fields).get('_token', '')
+    act = lambda who, action, ids, label='': who.get('/favorites', urllib.parse.urlencode(
+        [('_token', form_token if who is client else dict(form_of(who, '/favorites').fields).get('_token', '')),
+         ('action', action), ('label', label), *[('favorites[]', i) for i in ids]]).encode())
+    labels_of = lambda *ids: dict((int(r[0]), json.loads(r[1])) for r in q(
+        f"SELECT id, labels FROM favorite WHERE id IN ({', '.join(map(str, ids))})"))
+    act(client, 'addLabel', [first, second], '  Groupe   essai ')
+    act(client, 'addLabel', [second], 'b')
+    act(client, 'removeLabel', [first], 'Groupe essai')
+    labels = labels_of(first, second)
+    lines = page_lines(side.url, *client.get('/favorites'))
+    chips = [l for l in lines if l.startswith('D button data-favorite-label=')]
+    check('étiquettes posées, rangées et retirées',
+          form_token != '' and labels == {first: [], second: ['b', 'Groupe essai']}
+          and chips == ['D button data-favorite-label=b', 'D button data-favorite-label=Groupe essai'],
+          f'jeton {form_token!r}, étiquettes {labels}, boutons {chips}')
+
+    # Une étiquette qui contient du HTML : gardée telle quelle, mais échappée dans le message qui la cite, que toastr
+    # insère en HTML (dev/decisions.md, « Pièges ») ; la page la montre en texte
+    markup = '<img src=x onerror=alert(1)>'
+    status = act(client, 'addLabel', [first], markup)[0]
+    lines = page_lines(side.url, *client.get('/favorites'))
+    notice = next((l for l in lines if l.startswith('D div data-notices=')), '')
+    stored = labels_of(first)[first]
+    act(client, 'removeLabel', [first], markup)
+    check('étiquette en HTML échappée dans le message',
+          status == 302 and stored == [markup] and '&lt;img src=x onerror=alert(1)&gt;' in notice and '<img' not in notice
+          and f'D button data-favorite-label={markup}' in lines and not any(l.startswith('G x') for l in lines),
+          f'statut {status}, gardée {stored}, message {notice}')
+
+    # Ce que la page n'envoie pas, sans erreur du serveur : un identifiant au-delà des entiers de PostgreSQL, une
+    # étiquette qui a un caractère de contrôle (jsonb refuse le caractère nul), réduit à une espace
+    huge = '99999999999'
+    status_form = act(client, 'remove', [huge])[0]
+    status_export = client.get(f'/{slug}/favorites/export?' + urllib.parse.urlencode([('chroniques[]', huge)]))[0]
+    status_label = act(client, 'addLabel', [first], 'a\x00b\x07c')[0]
+    stored = labels_of(first)[first]
+    act(client, 'removeLabel', [first], 'a b c')
+    check('identifiant hors des entiers et étiquette à caractère de contrôle, sans erreur',
+          [status_form, status_export, status_label] == [302, 200, 302] and stored == ['a b c'] and labels_of(first)[first] == [],
+          f'statuts {[status_form, status_export, status_label]}, étiquettes {stored}')
+
+    # Un autre compte, qui a son propre favori, ne voit pas ceux-ci, et ne peut ni les étiqueter ni les retirer : son
+    # envoi, avec son propre jeton, n'atteint que le sien
+    stranger = Client(side, plain[1], slug)
+    stranger_token = token_of(stranger.get(page(visible[1]))[2].decode('utf-8', 'replace'))
+    star(visible[1], '1', stranger_token, who=stranger)
+    own = q(f"""SELECT f.id FROM favorite f JOIN utilisateur u ON u.id = f.utilisateur_id
+                 WHERE u.email = '{plain[1]}' AND f.chronique_id = {visible[1][2]}""")
+    own = int(own[0][0]) if own else None
+    seen = [l for l in page_lines(side.url, *stranger.get('/favorites')) if l.startswith('D input data-chronique=')]
+    stranger_form = dict(form_of(stranger, '/favorites').fields).get('_token', '')
+    before = labels_of(first, second)
+    act(stranger, 'addLabel', [first, second, *([own] if own else [])], 'intrus')
+    act(stranger, 'remove', [first, second])
+    after = labels_of(first, second)
+    check('favoris d’un autre compte invisibles et intouchables',
+          own is not None and stranger_form != '' and seen == [f'D input data-chronique={visible[1][2]} data-labels=[]']
+          and after == before and labels_of(own)[own] == ['intrus'],
+          f'favori propre {own}, jeton {stranger_form!r}, vus {seen}, avant {before}, après {after}, '
+          f"le sien {labels_of(own) if own else None}")
+
+    # La fenêtre d'export : les favoris exportables de l'observatoire, avec les rééchantillonnages et les pas que chacun
+    # permet sur sa propre page ; une chronique cachée sans droit et une chronique qui n'est pas un favori n'y sont pas
+    def modal_for(chosen):
+        fragment = client.get(f'/{slug}/favorites/export?' + urllib.parse.urlencode([('chroniques[]', r[2]) for r in chosen]))
+        modal = FormFields('/mesure/export')
+        modal.feed(fragment[2].decode('utf-8', 'replace'))
+        return fragment, modal
+
+    def common_options(chosen):
+        """Les types et les pas que la page de chacune propose ; sans pas commun, ni moyenne ni cumul."""
+        own = [form_of(client, page(r), '/mesure/export') for r in chosen]
+        common = lambda key: [v for v in own[0].choices(key) if all(v in f.choices(key) for f in own[1:])]
+        steps = common('meanCumulStep')
+        return [v for v in common('exportType') if steps or v not in ('mean', 'cumulative')], steps, own
+
+    outsider = visible[2] if len(visible) > 2 else None
+    fragment, modal = modal_for([*visible[:2], *([hidden] if hidden else []), *([outsider] if outsider else [])])
+    types, steps_, _ = common_options(visible[:2])
+    text = ' '.join(page_lines(side.url, *fragment))
+    check('fenêtre d’export : les favoris exportables, rééchantillonnages et pas communs',
+          fragment[0] == 200 and sorted(modal.choices('chroniques')) == sorted(r[2] for r in visible[:2])
+          and modal.choices('exportType') == types and modal.choices('meanCumulStep') == steps_
+          and (not hidden or f'{hidden[3]} / {hidden[4]}' in text),
+          f"statut {fragment[0]}, chroniques {modal.choices('chroniques')}, types {modal.choices('exportType')} "
+          f"au lieu de {types}, pas {modal.choices('meanCumulStep')} au lieu de {steps_}")
+    if not hidden:
+        none('fenêtre d’export : chronique cachée sans droit nommée')
+
+    # Deux favoris dont chacun permet une option que l'autre n'a pas (rééchantillonnage ou pas de temps, lus sur sa
+    # page) : la fenêtre n'offre que ce que les deux permettent, ce qui la distingue des options de l'une comme de
+    # l'autre, quel que soit l'ordre où le contrôleur les prend
+    def options(r):
+        own = form_of(client, page(r), '/mesure/export')
+        return set(own.choices('exportType')), set(own.choices('meanCumulStep'))
+    known = [(r, options(r)) for r in continuous(by_slug[slug])[:15]]
+    pair = next(([a, b] for (a, oa), (b, ob) in itertools.combinations(known, 2)
+                 if not (oa[0] <= ob[0] and oa[1] <= ob[1]) and not (ob[0] <= oa[0] and ob[1] <= oa[1])), None)
+    if pair:
+        for r in pair:
+            star(r, '1', token)
+        fragment, modal = modal_for(pair)
+        types, steps_, own = common_options(pair)
+        apart = [(f.choices('exportType'), f.choices('meanCumulStep')) for f in own]
+        check('fenêtre d’export : deux favoris d’options différentes, seules les options communes',
+              fragment[0] == 200 and sorted(modal.choices('chroniques')) == sorted(r[2] for r in pair)
+              and modal.choices('exportType') == types and modal.choices('meanCumulStep') == steps_
+              and all((types, steps_) != a for a in apart),
+              f"chroniques {modal.choices('chroniques')}, types {modal.choices('exportType')} au lieu de {types}, "
+              f"pas {modal.choices('meanCumulStep')} au lieu de {steps_}, options de chacune {apart}")
+    else:
+        none('fenêtre d’export : deux favoris d’options différentes, seules les options communes')
+
+    # Avec une discontinue : l'identique seul, au format BDOH seul, comme sur sa propre page
+    if discontinuous:
+        star(discontinuous, '1', token)
+        fragment, modal = modal_for([visible[0], discontinuous])
+        alone = form_of(client, page(discontinuous), '/mesure/export')
+        check('fenêtre d’export : avec une discontinue, l’identique au format BDOH',
+              fragment[0] == 200 and sorted(modal.choices('chroniques')) == sorted([visible[0][2], discontinuous[2]])
+              and modal.choices('exportType') == ['identical'] == alone.choices('exportType')
+              and modal.choices('exportFormat') == ['Bdoh'] == alone.choices('exportFormat')
+              and modal.choices('meanCumulStep') == [],
+              f"types {modal.choices('exportType')}, formats {modal.choices('exportFormat')}, "
+              f"pas {modal.choices('meanCumulStep')} ; sa page : {alone.choices('exportType')}, {alone.choices('exportFormat')}")
+    else:
+        none('fenêtre d’export : avec une discontinue, l’identique au format BDOH')
+
+    # L'export d'une sélection : la fenêtre envoie au même export que la page d'une chronique, une tâche pour les deux
+    fragment, modal = modal_for(visible[:2])
+    last = int(q('SELECT coalesce(max(id), 0) FROM jms_jobs')[0][0])
+    status, headers, _ = client.get(f'/{slug}/mesure/export', modal.filled({
+        'exportFormat': 'Bdoh', 'beginDate': '2024-01-01T00:00:00Z', 'endDate': '2024-02-01T00:00:00Z'}),
+        {'Referer': side.url + '/favorites'})
+    jobs = q(f'SELECT command, args FROM jms_jobs WHERE id > {last} ORDER BY id')
+    check('export d’une sélection : une tâche pour ces chroniques, retour à la page des favoris',
+          status == 302 and headers.get('Location', '').endswith('/favorites') and len(jobs) == 1
+          and jobs[0][0] == 'bdoh:export:identical'
+          and {r[2] for r in visible[:2]} <= {str(a) for a in json.loads(jobs[0][1])},
+          f"statut {status} vers {headers.get('Location', '')}, tâches {jobs}")
+
+    # Supprimés avec leur compte ou leur chronique
+    rules = sorted(r[0] for r in q("""SELECT confdeltype FROM pg_constraint
+                                       WHERE conrelid = 'bdoh.favorite'::regclass AND contype = 'f'"""))
+    check('supprimés avec leur compte ou leur chronique', rules == ['c', 'c'], f'règles {rules}')
+    return results
+
+
 def run_accounts(args):
     """Les parcours de comptes, par l'ancien code sur le nouveau serveur et par le nouveau, chacun sur sa
     copie de BASE : inscription (et ses refus), modification de son compte, demande d'accès,
@@ -3433,6 +3755,8 @@ def run_accounts(args):
         # La commande refuse un observatoire inconnu
         r = subprocess.run([*console, 'security:users:login-link', manager, 'INCONNU', '--env=prod'], capture_output=True)
         check("commande : observatoire inconnu refusé", r.returncode != 0, f'code {r.returncode}')
+
+        results.update(favorite_checks(side, base))
         return results
 
     sides, checks = {}, {}

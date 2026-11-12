@@ -194,14 +194,16 @@ def closed_series(trip, email, user):
         assert link, 'pas de lien dans le courriel'
         link = re.sub(r'^https?://[^/]+', trip.site, link[0])
         saved = trip.out / 'export-chronique-cachee.zip'
+        # Le navigateur note un téléchargement comme une navigation abandonnée : seules les erreurs qu'il ajoute s'effacent
+        known = len(user.problems)
         with page.expect_download() as download:
             page.evaluate('url => { window.location = url }', link)
         download.value.save_as(saved)
+        del user.problems[known:]
         names = zipfile.ZipFile(saved).namelist()
         assert any('ConditionsGeneralesUtilisation' in n for n in names), f'pas de conditions : {names}'
         assert not any('Licence-Ouverte' in n for n in names), f'licence ouverte sur une chronique cachée : {names}'
         user.link = link
-        user.problems.clear()
 
     user.step('avec le droit : la voir, cocher, exporter, recevoir le fichier', None, export_with_terms)
     boss.step('retirer le droit', right_page, lambda page: set_right(page, False))
@@ -216,6 +218,95 @@ def closed_series(trip, email, user):
 
     user.step('droit retiré : la chronique et le lien refusés', None, refused_again)
     boss.context.close()
+
+
+# --- Les favoris d'un compte ------------------------------------------------------------------------------
+
+def favorites(trip, email, user):
+    """Un compte met deux chroniques en favori, l'une sur sa page, l'autre dans la liste de sa station ; les retrouve
+    dans « Mes favoris », pose une étiquette qui coche son groupe, exporte les deux d'un coup, puis les retire
+    (dev/plans/2026-11-12_favorites.md)."""
+    rows = trip.rows(f"""SELECT st.code, ch.code, ch.id FROM chronique ch JOIN station st ON st.id = ch.station_id
+        JOIN stations_sites ss ON ss.station_id = st.id JOIN siteexperimental si ON si.id = ss.site_id
+        JOIN observatoire o ON o.id = si.observatoire_id
+        WHERE o.slug = '{trip.slug}' AND ch.estvisible AND ch.dtype = 'continue' AND ch.nbmesures BETWEEN 1 AND 20000
+          AND st.id IN (SELECT station_id FROM chronique WHERE estvisible AND dtype = 'continue' AND nbmesures BETWEEN 1 AND 20000
+                         GROUP BY station_id HAVING count(*) >= 2)
+        ORDER BY st.id, ch.id LIMIT 2""")
+    if len(rows) < 2:
+        return
+    (station, first, first_id), (_, second, second_id) = rows
+    slug = trip.slug
+    starred = lambda: {int(r[0]) for r in trip.rows(f"""SELECT f.chronique_id FROM favorite f
+        JOIN utilisateur u ON u.id = f.utilisateur_id WHERE u.email = '{email}'""")}
+
+    def star_twice(page):
+        page.goto(f'{trip.site}/{slug}/{station}/{first}', wait_until='networkidle')
+        page.locator(f'button[data-favorite$="/favorites/{first_id}"]').first.click()
+        visible(page, f'button.favorite-star.on[data-favorite$="/favorites/{first_id}"]')
+        page.goto(f'{trip.site}/{slug}/station/{station}', wait_until='networkidle')
+        page.locator(f'button[data-favorite$="/favorites/{second_id}"]').first.click()
+        visible(page, f'button.favorite-star.on[data-favorite$="/favorites/{second_id}"]')
+        assert starred() == {int(first_id), int(second_id)}, f'favoris en base : {starred()}'
+
+    user.step('favoris : une étoile sur la page d’une chronique, une dans la liste de sa station', None, star_twice)
+
+    def label_group(page):
+        boxes = page.locator('#favorites-form input[name="favorites[]"]')
+        assert boxes.count() == 2, f'{boxes.count()} favoris sur la page'
+        page.locator(f'#favorites-form input[data-chronique="{first_id}"]').check()
+        page.locator('#favorites-label-name').fill('parcours')
+        with page.expect_navigation(wait_until='networkidle'):
+            page.locator('#favorites-form button[value=addLabel]').click()
+        page.locator('[data-favorite-label="parcours"]').click()
+        checked = page.locator('#favorites-form input[name="favorites[]"]:checked')
+        assert checked.count() == 1 and checked.get_attribute('data-chronique') == first_id, 'l’étiquette ne coche pas son groupe'
+
+    user.step('favoris : la page, une étiquette qui coche son groupe', '/favorites', label_group)
+
+    def export_both(page):
+        page.locator('[data-favorite-check-all]').first.click()
+        page.locator('[data-favorites-export]').first.click()
+        visible(page, '.modal.in [name=exportFormat]')
+        chosen = page.locator('.modal.in select[name="chroniques[]"] option:checked')
+        assert chosen.count() == 2, f'{chosen.count()} chroniques dans la fenêtre'
+        page.locator('.modal.in .set-min').first.click()
+        page.locator('.modal.in .set-max').nth(1).click()
+        with page.expect_navigation(wait_until='networkidle', timeout=120000):
+            page.locator('.modal.in input[type=submit]').click()
+        assert page.url.endswith('/favorites'), f'retour à {page.url}'
+        trip.drain()
+        message = None
+        for _ in range(40):
+            message = next((m for m in c.mail_messages() if any(to['Address'] == email for to in m['To'])
+                            and 'xport' in m['Subject']), None)
+            if message:
+                break
+            time.sleep(0.25)
+        assert message, 'pas de courriel d’export'
+        full = c.last_mail(email)
+        link = re.search(r'https?://[^\s"<]+/mesure/export/\d+/\w+/file', full['HTML'] or full['Text'])
+        assert link, 'pas de lien dans le courriel'
+        saved = trip.out / 'export-favoris.zip'
+        # Le navigateur note un téléchargement comme une navigation abandonnée : seules les erreurs qu'il ajoute s'effacent
+        known = len(user.problems)
+        with page.expect_download() as download:
+            page.evaluate('url => { window.location = url }', re.sub(r'^https?://[^/]+', trip.site, link[0]))
+        download.value.save_as(saved)
+        del user.problems[known:]
+        names = [n for n in zipfile.ZipFile(saved).namelist() if n.endswith('.txt') and station in n]
+        assert len(names) == 2, f'fichiers de mesures : {names}'
+
+    user.step('favoris : exporter les deux d’un coup, recevoir le fichier', None, export_both)
+
+    def remove_all(page):
+        page.locator('[data-favorite-check-all]').first.click()
+        with page.expect_navigation(wait_until='networkidle'):
+            page.locator('#favorites-form button[value=remove]').click()
+        assert not starred(), f'favoris restés : {starred()}'
+        assert page.locator('#favorites-form').count() == 0, 'la page montre encore des favoris'
+
+    user.step('favoris : les retirer', '/favorites', remove_all)
 
 
 # --- Ce que fait un gestionnaire --------------------------------------------------------------------------
