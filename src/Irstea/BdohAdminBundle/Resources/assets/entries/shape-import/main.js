@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 const $ = require('jquery');
 require('jquery-form/jquery.form');
+const busy = require('@IrsteaBdohBundle/lib/busy');
 
 $.shapeImport = {
   id: '#shape-import',
@@ -41,7 +42,7 @@ $.shapeImport = {
 
     // Events
     this.form.submit(() => {
-      submitButton.button('loading');
+      busy.button(submitButton);
     });
 
     return submitButton;
@@ -59,7 +60,7 @@ $.shapeImport = {
     });
 
     cancelForm.submit(() => {
-      cancelButton.button('loading');
+      busy.button(cancelButton);
       submit.disable();
     });
 

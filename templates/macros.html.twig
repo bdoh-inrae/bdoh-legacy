@@ -74,6 +74,13 @@
 
 
 {##
+ # Le symbole de chargement (entries/bdoh/busy.less ; lib/busy.js a le même pour ce qu'il pose)
+ #}
+{% macro spinner() %}<svg class="bdoh-spinner" viewBox="0 0 50 50" aria-hidden="true"><circle cx="25" cy="25" r="20"/></svg>{% endmacro %}
+
+{##############################################################################}
+
+{##
  # A form button
  #}
 {% macro button(name, text, classes, loading) %}

@@ -2,8 +2,9 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 define([
     'jquery',
+    '@IrsteaBdohBundle/lib/busy',
     'jquery-form/jquery.form'
-], ($) => {
+], ($, busy) => {
 
     $.measureImport = {
         id: '#measure-import',
@@ -40,7 +41,7 @@ define([
 
             // Events
             this.form.submit(() => {
-                submitButton.button('loading');
+                busy.button(submitButton);
             });
 
             return submitButton;
@@ -58,7 +59,7 @@ define([
             });
 
             cancelForm.submit(() => {
-                cancelButton.button('loading');
+                busy.button(cancelButton);
                 submit.disable();
             });
 

@@ -1,3 +1,4 @@
+{% from 'macros.html.twig' import spinner %}
 <template id="cv-selector">
     <div class="selector modal container">
         <div class="modal-dialog">
@@ -16,7 +17,7 @@
                             <div class="stations">
                                 <h4>{% trans from "viewer" %}station{% endtrans %}</h4>
                                 <ul class="list" style="margin-bottom:9px;">
-                                    <div class="loading"><svg class="bdoh-spinner" viewBox="0 0 50 50" aria-hidden="true"><circle cx="25" cy="25" r="20"/></svg></div>
+                                    <div class="loading">{{ spinner() }}</div>
                                 </ul>
                             </div>
                         </div>

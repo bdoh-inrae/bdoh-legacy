@@ -85,7 +85,7 @@
                 <div class="modal-body" style="text-align:center;">
                     <h2>{{ 'measure.import.canTakeAWhile'|trans }}</h2>
                     <p>{{ 'measure.import.pleaseWait'|trans }}</p>
-                    <p><img src="{{ asset('/images/loader.gif') }}"/></p>
+                    {{ macros.spinner() }}
                 </div>
             </div><!-- /.modal-content -->
         </div><!-- /.modal-dialog -->

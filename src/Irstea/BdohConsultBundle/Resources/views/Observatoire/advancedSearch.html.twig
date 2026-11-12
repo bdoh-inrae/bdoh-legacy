@@ -1,6 +1,6 @@
 {% extends '@IrsteaBdohConsult/layout.html.twig' %}
 {% import '@IrsteaBdohConsult/macros.html.twig' as macros %}
-{% from 'macros.html.twig' import pageTitle, i18nEntityLabel, attachTooltip %}
+{% from 'macros.html.twig' import pageTitle, i18nEntityLabel, attachTooltip, spinner %}
 
 {% macro dateField(date) %}
     {%- if date %}
@@ -86,7 +86,7 @@
         <h1>{{ 'advancedSearch'|trans }}</h1>
 
         <div class="async">
-            <div class="waiting"><svg class="bdoh-spinner" viewBox="0 0 50 50" aria-hidden="true"><circle cx="25" cy="25" r="20"/></svg></div>
+            <div class="waiting">{{ spinner() }}</div>
             <div class="result">
                 <fieldset class="box">
                     <legend>{{ 'searchPeriod'|trans }}</legend>

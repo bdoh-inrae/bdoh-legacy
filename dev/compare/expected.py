@@ -381,6 +381,9 @@ RULES = [
         must=('+# Ignoring Licence-Ouverte-2.0-fr.pdf', '+# Ignoring Open-Licence-2.0-en.pdf')),
 
     # --- imports -----------------------------------------------------------------------------------
+    # Le symbole de chargement au lieu de l'image animée, dans les fenêtres d'attente des étapes de l'import (rien d'autre
+    # ne change) : « Symbole de chargement » dans dev/differences.md
+    Rule('imports', r'.*', 'Symbole de chargement', lines=('-G /images/loader.gif',)),
     Rule('imports', 'import station écrite en HTML', 'Corrections de sécurité', lines=(
         '-T Le code « INCONNUE » ne correspond à aucune station de cet observatoire',
         '+T Le code « <b>INCONNUE</b> » ne correspond à aucune station de cet observatoire')),

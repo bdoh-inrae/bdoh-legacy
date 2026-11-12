@@ -2,8 +2,9 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 define([
     'jquery',
+    '@IrsteaBdohBundle/lib/busy',
     './import'
-], ($) => {
+], ($, busy) => {
 
     $.baremeImport = {
         id: '#bareme-import',
@@ -41,7 +42,7 @@ define([
 
             // Events
             this.form.submit(() => {
-                submitButton.button('loading');
+                busy.button(submitButton);
             });
 
             return submitButton;
