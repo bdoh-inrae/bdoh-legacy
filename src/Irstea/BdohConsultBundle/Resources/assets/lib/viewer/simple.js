@@ -98,7 +98,7 @@ define([
                         (!controlePoints && !measures.checkpointsOnCumulative));
                 this.element
                     .find('.divNoticeSubsampledText')
-                    .html(Translator.trans('subsampledInfoHelp(%num%)', {'num':measures.validCount}, 'viewer'));
+                    .html(Translator.trans('subsampledInfoHelp(%num%)', {'num': Number(measures.validCount).toLocaleString(Translator.locale)}, 'viewer'));
                 this.element
                     .find('span.subsampledHelp')
                     .attr('title', Translator.trans('subsampledHelp', {}, 'viewer'))

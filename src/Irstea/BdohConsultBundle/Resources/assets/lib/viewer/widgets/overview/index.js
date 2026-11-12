@@ -5,17 +5,22 @@
 // le minimum et le maximum de ses valeurs valides par tranche de temps (route bdoh_data_chronique_overview), et une
 // fenêtre, la période du graphique, qu'on glisse, dont on tire les bords, ou qu'on recentre d'un clic. Au clavier :
 // flèches gauche et droite pour la déplacer, haut et bas pour l'élargir ou la resserrer. Ctrl (ou ⌘) et la molette sur
-// le graphique zooment autour du curseur ; la molette seule fait défiler la page, comme partout. La période passe par
-// le sélecteur de dates du graphique (setDateRange), dont la limite de 5 ans tient toujours.
+// le graphique zooment autour du curseur ; la molette seule fait défiler la page, comme partout. Des présélections
+// (une semaine à cinq ans, et toute la chronique) calent la fenêtre sur une durée, finissant où elle finit, comme le
+// fait Plotly. La période passe par le sélecteur de dates du graphique (setDateRange), sans limite de durée depuis le
+// 2026-11-12.
 define([
     'jquery',
     '@IrsteaBdohBundle/lib/moment',
+    'translator',
     './style.css'
-], ($, moment) => {
+], ($, moment, Translator) => {
     'use strict';
 
     const DAY = 864e5;
-    const MAX_SPAN = moment.duration(5, 'years').asMilliseconds();
+    // Les présélections : leur durée, et la clé de leur libellé (viewer.*.yml)
+    const PRESETS = [[1, 'week', '1w'], [1, 'month', '1m'], [3, 'months', '3m'], [6, 'months', '6m'], [1, 'year', '1y'],
+        [5, 'years', '5y']];
     const FORMAT = 'YYYY-MM-DDTHH:mm:ss[Z]';
     // La grille du graphique dans son cadre (simple.js : gridPadding.left 70 ; jqPlot : 10 à droite)
     const GRID_LEFT = 70;
@@ -41,7 +46,9 @@ define([
         }
         const head = el('div', 'graph-overview-head');
         const range = el('span', 'graph-overview-range');
-        head.append(el('span', 'graph-overview-title', box.dataset.title), range, el('span', 'graph-overview-hint', box.dataset.hint));
+        const presets = el('span', 'graph-overview-presets');
+        head.append(el('span', 'graph-overview-title', box.dataset.title), range, presets,
+            el('span', 'graph-overview-hint', box.dataset.hint));
         const area = el('div', 'graph-overview-area');
         const canvas = el('canvas');
         const shadeLeft = el('div', 'graph-overview-shade');
@@ -75,7 +82,7 @@ define([
         const toX = (t) => (t - begin) / (end - begin) * width();
         const toT = (x) => begin + x / width() * (end - begin);
         const clamp = (anchor) => {
-            const span = Math.min(Math.max(stop - start, DAY), MAX_SPAN, end - begin);
+            const span = Math.min(Math.max(stop - start, DAY), end - begin);
             if (anchor === 'stop') {
                 start = stop - span;
             } else {
@@ -152,9 +159,9 @@ define([
                 stop = drag.stop + dt;
                 clamp();
             } else if (drag.mode === 'left') {
-                start = Math.max(Math.min(drag.start + dt, stop - DAY), stop - MAX_SPAN, begin);
+                start = Math.max(Math.min(drag.start + dt, stop - DAY), begin);
             } else {
-                stop = Math.min(Math.max(drag.stop + dt, start + DAY), start + MAX_SPAN, end);
+                stop = Math.min(Math.max(drag.stop + dt, start + DAY), end);
             }
             place();
         });
@@ -187,6 +194,34 @@ define([
                 ev.preventDefault();
             }
         });
+
+        // Les présélections, une fois connue la durée de la chronique : celles qui sont plus courtes, puis « tout ». La
+        // fenêtre finit où elle finissait, sinon à la fin de la chronique, et commence au plus tôt à son début.
+        const setupPresets = () => {
+            const button = (label, choose) => {
+                const node = el('button', 'graph-overview-preset', label);
+                node.type = 'button';
+                node.addEventListener('click', () => {
+                    choose();
+                    clamp('stop');
+                    place();
+                    apply(0);
+                });
+                presets.append(node);
+            };
+            PRESETS.forEach(([count, unit, key]) => {
+                if (moment.duration(count, unit).asMilliseconds() < end - begin) {
+                    button(Translator.trans(`overview.preset.${key}`, {}, 'viewer'), () => {
+                        stop = stop === null ? end : stop;
+                        start = moment.utc(stop).subtract(count, unit).valueOf();
+                    });
+                }
+            });
+            button(Translator.trans('overview.preset.all', {}, 'viewer'), () => {
+                start = begin;
+                stop = end;
+            });
+        };
 
         // Ctrl (ou ⌘) et la molette sur le graphique : zoomer autour du curseur
         graph.addEventListener('wheel', (ev) => {
@@ -248,6 +283,7 @@ define([
             axisStart.textContent = day(begin);
             axisEnd.textContent = day(end);
             box.style.display = '';
+            setupPresets();
             draw(data);
             place();
             $(window).on('resize', () => {

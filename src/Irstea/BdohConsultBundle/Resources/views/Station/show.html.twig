@@ -72,7 +72,7 @@
 {% block breadcrumb %}
     <ul class="breadcrumb">
         {# Home #}
-        <li><a href="{{ path('bdoh_home') }}">{{ 'home'|trans }}</a></li>
+        {% from 'macros.html.twig' import breadcrumbRoot %}{{ breadcrumbRoot() }}
         {# Advanced search #}
         <li><a href="{{ path('bdoh_consult_advancedSearch') }}">{{ 'advancedSearch'|trans }}</a></li>
         {# Station #}

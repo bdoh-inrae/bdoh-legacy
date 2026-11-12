@@ -110,7 +110,7 @@ define([
                     .tooltip('fixTitle')
                     .toggle(item.samplingType === 'cumulative' && !!item.timeStep);
                 row.find('.downSampled')
-                    .attr('title', Translator.trans('subsampledInfo(%num%)', {'num':item.validCount}, 'viewer'))
+                    .attr('title', Translator.trans('subsampledInfo(%num%)', {'num': Number(item.validCount).toLocaleString(Translator.locale)}, 'viewer'))
                     .tooltip('fixTitle')
                     .toggle(item.downSampled);
                 row.find('.noDataOnRange')

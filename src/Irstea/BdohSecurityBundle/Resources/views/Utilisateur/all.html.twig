@@ -20,7 +20,7 @@
 {% block breadcrumb %}
     <ul class="breadcrumb">
         {# Home #}
-        <li><a href="{{ path('bdoh_home') }}">{{ 'home'|trans }}</a></li>
+        {% from 'macros.html.twig' import breadcrumbRoot %}{{ breadcrumbRoot() }}
         {# Edition of the logged user account #}
         <li class="active">{{ 'security.utilisateur.gestion'|trans }}</li>
     </ul>

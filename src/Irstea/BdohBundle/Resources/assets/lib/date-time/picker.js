@@ -240,7 +240,8 @@ const widget = $.widget('bdoh.dateTimePicker', rxWidget, {
                     inputGroup.toggleClass('has-error', status.showError);
                     const msg = status.showError ? status.format(Translator, format) : '';
                     el[0].setCustomValidity(msg);
-                    el.attr('title', msg);
+                    // La bulle du champ : l'erreur, sinon l'astuce de saisie (« 130495 »), qui n'est plus écrite sur la page
+                    el.attr('title', msg || Translator.trans('astuceDate', {}, 'messages'));
                 })
         );
 

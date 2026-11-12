@@ -82,3 +82,6 @@
     .observatory-lists { grid-template-columns: minmax(0, 1fr); grid-template-areas: "search" "sites" "parameters" "datasets"; }
     .observatory-photos { float: none; width: auto; margin: 0 0 12px; }
 }
+/* Les bulles des stations : Leaflet les écrit à 12 px, trop petit à côté du texte de la page ; 14 px était trop grand (Lou) */
+.stations-map .leaflet-popup-content { font-size: 13px; line-height: 1.45; margin: 10px 14px; }
+.stations-map .leaflet-popup-content strong { font-size: 14px; }

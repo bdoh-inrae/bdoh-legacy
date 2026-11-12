@@ -40,14 +40,9 @@ selector:
 consult.help.range:
     too-small: Veuillez sélectionnez un intervalle d'un jour minimum.
     too-big: Veuillez sélectionnez un intervalle de moins de 5 ans.
-subsampledInfo(%num%): >+
-    En raison du nombre élevé de mesures non lacunaires (%num%), la chronique a été sous-échantillonnée.
-    Veuillez sélectionner un intervalle de temps plus court pour éviter un sous-échantillonnage.
-subsampledInfoHelp(%num%): >+
-    En raison du nombre élevé de mesures non lacunaires (<span class="subsampledHelp">%num%</span>), la chronique a été sous-échantillonnée.
-    Veuillez sélectionner un intervalle de temps plus court pour éviter un sous-échantillonnage.
-subsampledHelp: >+
-    La limite de sous échantillonnage est de 50 000 points pour une représentation instantanée et de 25 000 points pour une représentation en moyennes.
+subsampledInfo(%num%): 'Affichage allégé : sur %num% mesures, le graphique montre la plus haute et la plus basse de chaque tranche de temps. Resserrez la période pour voir chaque mesure.'
+subsampledInfoHelp(%num%): 'Affichage allégé : sur <span class="subsampledHelp">%num%</span> mesures, le graphique montre la plus haute et la plus basse de chaque tranche de temps. Resserrez la période pour voir chaque mesure.'
+subsampledHelp: 'Au-delà de 50 000 mesures valides (25 000 en moyennes), le graphique est allégé : aucun pic ne se perd, et chaque changement de qualité se voit.'
 chroniqueTitle(%station%, %typeParam%): >+
     Station : %station%<br/>Paramètre : %typeParam%
 hideDisplayButton: Afficher/masquer la chronique
@@ -60,3 +55,12 @@ titleDataType:
     meanNext: Données de type moyenne sur pas de temps suivant.
     cumulativePast: Données de type cumul sur pas de temps précédent.
     cumulativeNext: Données de type cumul sur pas de temps suivant.
+
+overview.preset:
+    1w: '1 sem.'
+    1m: '1 mois'
+    3m: '3 mois'
+    6m: '6 mois'
+    1y: '1 an'
+    5y: '5 ans'
+    all: 'Tout'

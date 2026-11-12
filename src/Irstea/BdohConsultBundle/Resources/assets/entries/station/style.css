@@ -63,6 +63,16 @@ div.panel-collapse div.panel-body div.even:last-of-type,
 div.panel-collapse div.panel-body div.odd:last-of-type{
     margin-bottom:0;
 }
+/* Un panneau de chroniques : leurs boîtes vont d'un bord à l'autre, sans marge entre elles, et une boîte qu'on survole
+   (lignes cliquables, appearance.less) prend toute la zone (2026-11-12) */
+div.panel-collapse div.panel-body:has(> div.even, > div.odd){
+    padding:0;
+}
+div.panel-collapse div.panel-body:has(> div.even, > div.odd) > div.even,
+div.panel-collapse div.panel-body:has(> div.even, > div.odd) > div.odd{
+    margin:0;
+    padding:5px 15px 10px;
+}
 div.panel-collapse div.panel-body div.odd{
     background:#f0f0f0;
 }
