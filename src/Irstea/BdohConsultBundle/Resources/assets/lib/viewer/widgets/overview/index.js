@@ -47,8 +47,7 @@ define([
         const head = el('div', 'graph-overview-head');
         const range = el('span', 'graph-overview-range');
         const presets = el('span', 'graph-overview-presets');
-        head.append(el('span', 'graph-overview-title', box.dataset.title), range, presets,
-            el('span', 'graph-overview-hint', box.dataset.hint));
+        head.append(el('span', 'graph-overview-title', box.dataset.title), range, presets);
         const area = el('div', 'graph-overview-area');
         const canvas = el('canvas');
         const shadeLeft = el('div', 'graph-overview-shade');
@@ -65,7 +64,8 @@ define([
         const axisStart = el('span');
         const axisEnd = el('span');
         axis.append(axisStart, axisEnd);
-        box.append(head, area, axis);
+        // Les aides au maniement du graphique et de la bande, réunies en une ligne sous elle (2026-11-12, Lou)
+        box.append(head, area, axis, el('p', 'graph-hints', box.dataset.hint));
 
         const title = document.querySelector('h1');
         const color = (title && getComputedStyle(title).color) || '#275662';

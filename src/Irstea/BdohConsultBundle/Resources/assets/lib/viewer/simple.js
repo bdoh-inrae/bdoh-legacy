@@ -88,21 +88,14 @@ define([
                 this.element
                     .find('.divNoticeTimeStep')
                     .toggle(measures.samplingType === 'cumulative');
-                this.element
-                    .find('.divDummyFillerTitle')
-                    .toggle(measures.samplingType !== 'cumulative' &&
-                        (controlePoints || measures.checkpointsOnCumulative));
-                this.element
-                    .find('.divDummyFillerCheckpoints')
-                    .toggle(measures.samplingType === 'cumulative' &&
-                        (!controlePoints && !measures.checkpointsOnCumulative));
+                // L'allègement en peu de mots ; son explication dans la bulle du « i »
+                const count = Number(measures.validCount).toLocaleString(Translator.locale);
                 this.element
                     .find('.divNoticeSubsampledText')
-                    .html(Translator.trans('subsampledInfoHelp(%num%)', {'num': Number(measures.validCount).toLocaleString(Translator.locale)}, 'viewer'));
+                    .text(Translator.trans('subsampledShort(%num%)', {'num': count}, 'viewer'));
                 this.element
-                    .find('span.subsampledHelp')
-                    .attr('title', Translator.trans('subsampledHelp', {}, 'viewer'))
-                    .tooltip('fixTitle');
+                    .find('.divNoticeSubsampled .graph-info')
+                    .attr('title', `${Translator.trans('subsampledInfo(%num%)', {'num': count}, 'viewer')} ${Translator.trans('subsampledHelp', {}, 'viewer')}`);
                 this.element
                     .find('.divNoticeSubsampled')
                     .toggle(measures.downSampled);
@@ -112,8 +105,19 @@ define([
                 const left = this._measures.map((measures) => [measures]);
 
                 this.element
-                    .find('.graph-infos')
+                    .find('.graph-status')
                     .show();
+
+                // La légende, que jqPlot dessine sous le graphique à chaque tracé, passe dans la ligne d'état, à droite,
+                // toujours à la même place ; ses clics, qui masquent une série, la suivent.
+                const legendBox = this.element.find('.graph-legend')[0];
+                const graphBox = this.element.find('.graph')[0];
+                new MutationObserver(() => {
+                    const legend = graphBox.querySelector('table.jqplot-table-legend');
+                    if (legend) {
+                        legendBox.replaceChildren(legend);
+                    }
+                }).observe(graphBox, {childList: true, subtree: true});
 
                 this.element
                     .find('.graph')
@@ -130,7 +134,9 @@ define([
                             width: this.element.width(),
                             height: 520,
                             default: {
-                                gridPadding: { left: 70, bottom: 170 },
+                                // Sous la grille : les dates, inclinées, et le titre de l'axe ; la légende est dans la
+                                // ligne d'état
+                                gridPadding: { left: 70, bottom: 125 },
                                 axes: {
                                     xaxis: {
                                         tickOptions: {

@@ -207,7 +207,7 @@ $map = [
     'readMore'            => 'Lire la suite',
     'readLess'            => 'Réduire',
     'overview.title'      => 'Toute la chronique',
-    'overview.hint'       => 'Glisser la fenêtre ou tirer ses bords ; Ctrl + molette sur le graphique pour zoomer',
+    'overview.hint'       => 'Glisser la fenêtre de la bande, ou tirer ses bords · Ctrl + molette sur le graphique : zoomer · double-clic : revenir au zoom initial',
 ];
 
 return array_merge($errors, $observatoire, $dates, $various, $legal, $map);

@@ -41,7 +41,7 @@ consult.help.range:
     too-small: Please select at least a one-day-long time range.
     too-big: Please select a time range less than 5 years.
 subsampledInfo(%num%): 'Lightened display: out of %num% measures, the graph shows the highest and the lowest of each time slice. Narrow the period to see every measure.'
-subsampledInfoHelp(%num%): 'Lightened display: out of <span class="subsampledHelp">%num%</span> measures, the graph shows the highest and the lowest of each time slice. Narrow the period to see every measure.'
+subsampledShort(%num%): 'Lightened display, %num% measures'
 subsampledHelp: 'Beyond 50,000 valid measures (25,000 for means), the graph is lightened: no peak is lost, and every change of quality shows.'
 chroniqueTitle(%station%, %typeParam%): >+
     Station: %station%<br/>Parameter: %typeParam%
@@ -50,11 +50,11 @@ histogramTimeStepsIs(%ts%): Given the span of the currently<br>selected time ran
 timeSeriesNoMeasures: This time series does not have any<br>data on the selected time range.
 titleDataType:
     discontinuous:
-    instantaneous: Instantaneous data sampling.
-    meanPast: Mean data sampling on previous time step.
-    meanNext: Mean data sampling on next time step.
-    cumulativePast: Cumulative data sampling on previous time step.
-    cumulativeNext: Cumulative data sampling on next time step.
+    instantaneous: Instantaneous data sampling
+    meanPast: Mean data sampling on previous time step
+    meanNext: Mean data sampling on next time step
+    cumulativePast: Cumulative data sampling on previous time step
+    cumulativeNext: Cumulative data sampling on next time step
 
 overview.preset:
     1w: '1 wk'

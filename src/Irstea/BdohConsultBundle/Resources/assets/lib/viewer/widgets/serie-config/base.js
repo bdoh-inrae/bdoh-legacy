@@ -15,10 +15,11 @@ define([
     };
 
     // Les couleurs des qualités, réglées dans l'administration, sont souvent des couleurs pures (bleu, vert ou jaune
-    // vifs). Elles se dessinent dans la couleur la plus proche, par la teinte, d'une palette lisible sur blanc
-    // (Tableau 10) : chaque qualité garde sa famille de couleur, sans rien changer aux réglages. Un gris reste tel quel.
-    const PALETTE = [[0, [214, 39, 40]], [30, [255, 127, 14]], [58, [188, 189, 34]], [120, [44, 160, 44]],
-        [185, [23, 190, 207]], [210, [31, 119, 180]], [275, [148, 103, 189]], [330, [227, 119, 194]]];
+    // vifs). Elles se dessinent dans la couleur la plus proche, par la teinte, d'une palette lisible sur blanc et
+    // adoucie (Tableau 10 dans sa version de 2016, moins saturée ; le jaune, foncé pour qu'un trait fin se voie ; Lou,
+    // 2026-11-12) : chaque qualité garde sa famille de couleur, sans rien changer aux réglages. Un gris reste tel quel.
+    const PALETTE = [[0, [225, 87, 89]], [30, [242, 142, 43]], [52, [201, 169, 58]], [115, [89, 161, 79]],
+        [175, [118, 183, 178]], [210, [78, 121, 167]], [290, [176, 122, 161]], [335, [224, 123, 145]]];
 
     function soften(r, g, b) {
         const max = Math.max(r, g, b) / 255;

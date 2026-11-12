@@ -11,7 +11,33 @@
 .graph-overview-preset:hover, .graph-overview-preset:focus { border-color: #c9d1dc; background: #f3f5f7; }
 .graph-overview-title { font-weight: 600; }
 .graph-overview-range { font-variant-numeric: tabular-nums; }
-.graph-overview-hint { margin-left: auto; color: #6b7280; font-size: 12px; }
+/* Les aides au maniement, sous la bande, du gris et de la taille de la ligne d'état */
+.graph-hints { margin: 8px 0 0; text-align: right; color: #5d6b73; font-size: 13px; }
+
+/* La ligne d'état du graphique (Chronique/show.html.twig, simple.js) : ses indications d'une seule taille et d'une
+   seule couleur, séparées d'un point médian, et la légende à droite */
+.graph-status {
+    display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 4px 24px;
+    margin: 14px 10px 4px 70px; color: #5d6b73; font-size: 13px;
+}
+.graph-status-items { display: flex; flex-wrap: wrap; align-items: baseline; }
+.graph-status-items > span:not(:first-child)::before { content: "\00b7"; margin: 0 8px; color: #b4bec4; }
+.graph-status label { margin: 0 0 0 4px; font-weight: normal; }
+.graph-status input[type=checkbox] { margin: 0; vertical-align: -2px; }
+.graph-info {
+    display: inline-block; width: 15px; height: 15px; margin-left: 5px; border: 1px solid #9aa7ae; border-radius: 50%;
+    font-size: 10px; font-weight: 600; line-height: 13px; text-align: center; cursor: help;
+}
+.graph-info::before { content: "i"; }
+.graph-legend table.jqplot-table-legend {
+    position: static !important; margin: 0 !important; border: 0 !important; background: none !important;
+    font-size: 13px !important; color: inherit !important;
+}
+.graph-legend td.jqplot-table-legend { padding: 0 3px !important; border: 0 !important; }
+.graph-legend td.jqplot-table-legend-swatch { padding-left: 12px !important; }
+.graph-legend td.jqplot-table-legend-swatch:first-child { padding-left: 0 !important; }
+.graph-legend .jqplot-table-legend-swatch-outline { padding: 0 !important; border: 0 !important; }
+.graph-legend .jqplot-table-legend-swatch { width: 11px !important; height: 11px !important; border: 0 !important; }
 .graph-overview-area {
     position: relative; height: 64px; overflow: hidden; cursor: crosshair; touch-action: none;
     border: 1px solid #c9d1dc; border-radius: 6px; background: #fff;

@@ -47,8 +47,13 @@ $(document).on('mouseover', ROWS, function (event) {
     }
 });
 
+// Le texte sélectionné. Les pages d'une chronique et le visualiseur retirent window.getSelection (contournement hérité
+// d'un bogue de jqPlot, entries/chronique/index.js) : sans elle, rien n'est sélectionné, et un clic n'y lève plus
+// d'erreur (2026-11-12).
+const selectedText = () => (typeof window.getSelection === 'function' ? String(window.getSelection()) : '');
+
 $(document).on('click', ROWS, function (event) {
-    if ($(event.target).closest(INTERACTIVE).length || String(window.getSelection())) {
+    if ($(event.target).closest(INTERACTIVE).length || selectedText()) {
         return;
     }
     const link = viewLink(this);

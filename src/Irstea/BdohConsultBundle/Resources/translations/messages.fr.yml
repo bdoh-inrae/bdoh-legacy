@@ -34,11 +34,8 @@ consult:
         chronique:
             noGenealogie: Aucune généalogie
             notVisible: Cette chronique n'est pas publique
-            double-clic-unzoom: Pour revenir au niveau de zoom initial, double-cliquez sur le graphe.
             display-checkpoints: Afficher les points de contrôle
-            time-step-depends-on-span: >+
-                Pour changer le pas de temps de l'histogramme veuillez modifier
-                les dates de début et fin sélectionnées ci-dessus.
+            time-step-depends-on-span: Le pas des cumuls suit la durée de la période.
             no-data-to-plot: Pas de mesure à afficher dans cet intervalle de dates
             checkpointsOnCumulative: Les points de contrôle ne sont pas affichés sur les représentations en cumuls.
         station:

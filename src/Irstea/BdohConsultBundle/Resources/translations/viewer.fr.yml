@@ -41,7 +41,7 @@ consult.help.range:
     too-small: Veuillez sélectionnez un intervalle d'un jour minimum.
     too-big: Veuillez sélectionnez un intervalle de moins de 5 ans.
 subsampledInfo(%num%): 'Affichage allégé : sur %num% mesures, le graphique montre la plus haute et la plus basse de chaque tranche de temps. Resserrez la période pour voir chaque mesure.'
-subsampledInfoHelp(%num%): 'Affichage allégé : sur <span class="subsampledHelp">%num%</span> mesures, le graphique montre la plus haute et la plus basse de chaque tranche de temps. Resserrez la période pour voir chaque mesure.'
+subsampledShort(%num%): 'Affichage allégé, %num% mesures'
 subsampledHelp: 'Au-delà de 50 000 mesures valides (25 000 en moyennes), le graphique est allégé : aucun pic ne se perd, et chaque changement de qualité se voit.'
 chroniqueTitle(%station%, %typeParam%): >+
     Station : %station%<br/>Paramètre : %typeParam%
@@ -50,11 +50,11 @@ histogramTimeStepsIs(%ts%): Etant donnée la longueur de la plage<br>de temps s�
 timeSeriesNoMeasures: Cette chronique n'a pas de mesure<br>sur la période sélectionnée.
 titleDataType:
     discontinuous:
-    instantaneous: Données de type instantané.
-    meanPast: Données de type moyenne sur pas de temps précédent.
-    meanNext: Données de type moyenne sur pas de temps suivant.
-    cumulativePast: Données de type cumul sur pas de temps précédent.
-    cumulativeNext: Données de type cumul sur pas de temps suivant.
+    instantaneous: Données de type instantané
+    meanPast: Données de type moyenne sur pas de temps précédent
+    meanNext: Données de type moyenne sur pas de temps suivant
+    cumulativePast: Données de type cumul sur pas de temps précédent
+    cumulativeNext: Données de type cumul sur pas de temps suivant
 
 overview.preset:
     1w: '1 sem.'

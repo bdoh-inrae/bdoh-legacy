@@ -115,6 +115,12 @@ CHANGED_KEYS = """accueilMessage | measure.export.help-content | measure.export.
 DATE_TIP = ("-T Astuce : La date peut s'écrire en tapant seulement les chiffres (exemple : 130495 -> 13/04/1995). Si vous écrivez 1304 l'année en cours sera ajoutée automatiquement.",
             '-T Tip : You can write the date with the number(example : 130495 -> 13/04/1995). If you write 1304 the current year will be automatically add')
 
+# La ligne d'état du graphique (2026-11-12, Lou) : l'aide du double-clic rejoint les aides sous la bande, que le
+# JavaScript écrit, et l'avis du pas des cumuls tient en une phrase
+STATUS_LINE = ('-T Pour revenir au niveau de zoom initial, double-cliquez sur le graphe.',
+               "-T Pour changer le pas de temps de l'histogramme veuillez modifier les dates de début et fin sélectionnées ci-dessus.",
+               '+T Le pas des cumuls suit la durée de la période.')
+
 # L'avertissement de la limite de 5 ans, retiré avec elle (2026-11-12)
 FIVE_YEARS = ("-T Attention : pour des raisons de performance vous ne pouvez sélectionner qu'un intervalle de dates de 5 ans maximum.",
               '-T Warning: due to performance limitations please select a maximum time span of 5 years')
@@ -293,7 +299,8 @@ RULES = [
     # La bande de toute la chronique, sous son graphique : un élément de plus sur la page d'une chronique, que le
     # JavaScript remplit (« nouveau seul : bande de toute la chronique » vérifie sa route)
     Rule('pages', rf'{ROLE} {OBS}/[^/ ]+/[^/ ]+', GRAPH, lines=(
-        RX(rf'\+D div data-hint=.+ data-title=.+ data-url={OBS}/chronique/\d+/overview'), *FIVE_YEARS, *DATE_TIP)),
+        RX(rf'\+D div data-hint=.+ data-title=.+ data-url={OBS}/chronique/\d+/overview'), *FIVE_YEARS, *DATE_TIP,
+        *STATUS_LINE)),
     # La limite de 5 ans du choix des dates part avec son avertissement, sur la page d'une chronique et dans le visualiseur
     Rule('pages', rf'{ROLE} {OBS}/viewer', GRAPH, lines=(*FIVE_YEARS, *DATE_TIP), must=FIVE_YEARS[:1]),
     # L'astuce de saisie des dates passe dans la bulle des champs, sur la recherche avancée aussi
@@ -326,6 +333,10 @@ RULES = [
     # guillemets, le lien vers le site d'un observatoire
     Rule('pages', rf'{ROLE} /translations/messages\.js', HEADER, lines=(
         translation('-', 'dataAccess'), translation('[-+]', 'home.title'), translation(r'\+', 'observatoryWebsite'))),
+    # Les textes de la ligne d'état du graphique
+    Rule('pages', rf'{ROLE} /translations/messages\.js', GRAPH, lines=(
+        translation('-', 'consult.help.chronique.double-clic-unzoom'),
+        translation('[-+]', 'consult.help.chronique.time-step-depends-on-span'))),
     # Le courriel de bienvenue d'un compte créé depuis le portail
     Rule('pages', rf'{ROLE} /translations/messages\.js', PORTAL,
          lines=(translation(r'\+', 'security.utilisateur.newMailUtilisateur.body.portal'),)),

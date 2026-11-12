@@ -28,17 +28,18 @@ define([
                     new Rx.BehaviorSubject([])
                 ];
 
+                // Une couleur par chronique, de la palette adoucie de la page d'une chronique (Tableau 10 de 2016)
                 const colorGen = new $.jqplot.ColorGenerator([
-                    '#1f77b4',
-                    '#ff7f0e',
-                    '#2ca02c',
-                    '#d62728',
-                    '#9467bd',
-                    '#8c564b',
-                    '#e377c2',
-                    '#7f7f7f',
-                    '#bcbd22',
-                    '#17becf'
+                    '#4e79a7',
+                    '#f28e2b',
+                    '#e15759',
+                    '#76b7b2',
+                    '#59a14f',
+                    '#c9a93a',
+                    '#b07aa1',
+                    '#e07b91',
+                    '#9c755f',
+                    '#8f8a86'
                 ]);
 
                 const serialDisp = new Rx.SerialDisposable(Rx.Disposable.empty);
