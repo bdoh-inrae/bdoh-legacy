@@ -21,7 +21,7 @@
     margin: 14px 10px 4px 70px; color: #5d6b73; font-size: 13px;
 }
 .graph-status-items { display: flex; flex-wrap: wrap; align-items: baseline; }
-.graph-status-items > span:not(:first-child)::before { content: "\00b7"; margin: 0 8px; color: #b4bec4; }
+.graph-status-items > div:not(:first-child)::before { content: "\00b7"; margin: 0 8px; color: #b4bec4; }
 .graph-status label { margin: 0 0 0 4px; font-weight: normal; }
 .graph-status input[type=checkbox] { margin: 0; vertical-align: -2px; }
 .graph-info {
