@@ -131,7 +131,12 @@
     </div>
 
     <!-- Title -->
-    <h1>{{ 'open_quote'|trans }}{{ observatoire.nom }}{{ 'close_quote'|trans }}
+    {#- Le nom, sans guillemets (2026-11-12, Lou) #}
+    <h1>{{ observatoire.nom }}
+        {#- Le site de l'observatoire, auquel menait son logo en haut de page (2026-11-12, Lou) #}
+        {% if observatoire.lien and observatoire.lien != 'http://' %}
+            <a class="external-link" href="{{ observatoire.lien }}" title="{{ 'observatoryWebsite'|trans }}"><i class="icon-external" aria-hidden="true"></i><span class="sr-only">{{ 'observatoryWebsite'|trans }}</span></a>
+        {% endif %}
         <small>{{ 'welcome'|trans }}</small>
     </h1>
 

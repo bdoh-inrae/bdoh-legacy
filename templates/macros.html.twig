@@ -22,18 +22,6 @@
     {%- if url %}</a>{% endif %}
 {%- endmacro logo %}
 
-{# 
- # Display the
- #}
-{% macro logoObservatoire(obs) %}
-    {%- import _self as macros %}
-    {{- macros.logo(
-            obs ? obs.nom : 'Irstea',
-            obs and obs.pathLogo ? obs.pathLogo : '/images/inrae_logo.svg',
-            obs and obs.lien ? obs.lien : null
-        ) -}}
-{% endmacro logoObservatoire %}
-
 {##
  # Rich display of a link.
  #

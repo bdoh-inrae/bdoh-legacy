@@ -1,4 +1,4 @@
-{%- from 'macros.html.twig' import pageTitle, logoObservatoire %}
+{%- from 'macros.html.twig' import pageTitle %}
 
 <!DOCTYPE html>
 <html lang="{{ app.request.locale|split('_')[0] }}">
@@ -24,8 +24,11 @@
     {#-- Header
     ================================================== #}
     <div id="header" class="row">
-        <div id="logo" class="col-md-4">{{ logoObservatoire(currentObservatoire()) }}</div>
-        <div id="header-bars" class="col-md-20">
+        {#-- « BDOH », qui mène au portail, à la place du logo de l'observatoire ou d'INRAE (2026-11-12, Lou) : le lien
+         # vers le site de l'observatoire passe à côté du titre de son accueil, les logos restent dans ses fiches et
+         # dans le pied de page -#}
+        <div id="logo"><a class="bdoh-brand" href="{{ path('bdoh_all_home') }}">BDOH</a></div>
+        <div id="header-bars">
             {% include "Core/navigation-bar.html.twig" -%}
             {% include "Core/user-bar.html.twig" -%}
         </div>
@@ -50,14 +53,13 @@
     {#-- END_Main content #}
 
 
-    {#-- Footer
+    {#-- Footer : un filet, les logos, puis les mentions légales (2026-11-12, Lou)
     ================================================== #}
     <div id="footer">
         {% include "Core/partenaires.html.twig" %}
+        {% include "Core/mentionLegale.html.twig" %}
     </div>
     {#-- END_Footer #}
-
-    {% include "Core/mentionLegale.html.twig" %}
 </div>
 
 {% block body_tail -%}

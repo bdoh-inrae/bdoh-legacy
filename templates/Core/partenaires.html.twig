@@ -1,17 +1,14 @@
 {% from 'macros.html.twig' import logo %}
-{#-- 'Partenaires' line
+{#-- 'Partenaires' line : les logos sur une ligne, sous un filet (2026-11-12, Lou)
 ================================================== -#}
-<table id="partenaires">
-    <tr>
-        <td>{{ logo('Irstea', logo_long_link_parameters, 'https://www.inrae.fr/') }}</td>
-        {% if currentObservatoire() %}
-            {% for partenaire in currentObservatoire().partenaires %}
-                {% if partenaire.pathLogo %}
-                    <td>{{ logo(partenaire.nom, partenaire.pathLogo, partenaire.lien) }}</td>
-                {% endif %}
-            {% endfor %}
-
-        {%endif%}
-    </tr>
-</table>
+<div id="partenaires">
+    {{ logo('Irstea', logo_long_link_parameters, 'https://www.inrae.fr/') }}
+    {% if currentObservatoire() %}
+        {% for partenaire in currentObservatoire().partenaires %}
+            {% if partenaire.pathLogo %}
+                {{ logo(partenaire.nom, partenaire.pathLogo, partenaire.lien) }}
+            {% endif %}
+        {% endfor %}
+    {% endif %}
+</div>
 {#-- END_'Partenaires' line -#}

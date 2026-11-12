@@ -152,15 +152,17 @@ div.box ul li::marker {
 .fam-error { .bdoh-icon(warning); }
 .fam-exclamation { .bdoh-icon(priority_high); }
 .fam-house { .bdoh-icon(home); }
-
-// De l'air entre le logo et les barres de l'en-tête
-#header #logo {
-    padding-right: 20px;
+// Le lien vers le site d'un observatoire, à côté du titre de son accueil : une icône qui n'était pas dans Silk
+.icon-external {
+    .bdoh-icon(open_in_new);
+    display: inline-block;
+    width: 0.7em;
+    height: 0.7em;
+    vertical-align: 0;
 }
-
-// Les mentions légales, écrites dans un titre (Core/mentionLegale.html.twig) : en police de texte
-#footer + div h3 {
-    font-family: @font-family-sans-serif;
+h1 a.external-link {
+    margin-left: 0.15em;
+    font-size: 0.8em;
 }
 
 // Une ligne de liste qui mène à sa fiche, une chronique ou une station (bdoh/row-links.js) : toute la ligne se clique.
