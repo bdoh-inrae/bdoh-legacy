@@ -1,0 +1,34 @@
+// Une zone qui charge (lib/busy.js) : grisée et floutée, la même partout ; le voile apparaît en fondu, pour qu'un
+// chargement bref ne fasse pas clignoter la page. Il passe sous les fenêtres et les menus de Bootstrap (1030 et plus).
+.bdoh-busy {
+    position: relative;
+    cursor: progress;
+}
+
+.bdoh-busy-veil {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 1000;
+    background: rgba(226, 229, 233, .5);
+    -webkit-backdrop-filter: blur(3px);
+    backdrop-filter: blur(3px);
+    animation: bdoh-busy-in .2s ease-out both;
+}
+
+@keyframes bdoh-busy-in {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+// Le cadre des dates du graphique déborde du visualiseur de 5 px de chaque côté : le voile le couvre aussi
+#viewer > .bdoh-busy-veil {
+    left: -5px;
+    right: -5px;
+}

@@ -122,7 +122,6 @@ define([
                 status: {
                     icons: {
                         'default': 'glyphicon glyphicon-alert',
-                        'processing': 'glyphicon glyphicon-hourglass spinning',
                         'empty': 'glyphicon glyphicon',
                         'all-hidden': 'glyphicon glyphicon-eye-close',
                         'error': 'glyphicon glyphicon-fire'

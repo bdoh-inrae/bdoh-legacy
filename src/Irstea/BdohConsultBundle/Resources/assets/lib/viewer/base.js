@@ -9,10 +9,10 @@ define([
     'lodash',
     'translator',
     'rx',
+    '@IrsteaBdohBundle/lib/busy',
     // --
-    './widgets/progress-bar',
     '@IrsteaBdohBundle/lib/date-time/range-picker'
-], ($, MeasureRepository, AjaxQueue, createXAxisConfig, moment, _, Translator, Rx) => {
+], ($, MeasureRepository, AjaxQueue, createXAxisConfig, moment, _, Translator, Rx, busy) => {
     'use strict';
 
     return $.widget(
@@ -29,7 +29,7 @@ define([
                 this._setupDateRangePicker();
                 this._setupDateRangeSubjects();
                 this._setupRepositories();
-                this._setupProgressBar();
+                this._setupBusy();
                 this._setupXAxisConfig();
             },
 
@@ -113,10 +113,21 @@ define([
                     .shareReplay(1);
             },
 
-            _setupProgressBar() {
-                $('<div style="display:none"></div>')
-                    .progressBar({state: this._queue.observeState()})
-                    .appendTo(window.document.body);
+            // Le visualiseur grisé et flouté pendant qu'il charge, au lieu d'un voile sur toute la page (lib/busy.js) ;
+            // la file ne le montre qu'après une demi-seconde de chargement (services/ajax-queue.js). Elle dit la fin des
+            // requêtes, mais le tracé d'une longue chronique suit quelques centaines de millisecondes plus tard : le
+            // voile reste jusqu'à lui (widgets/graph.js, « graphdrawn »), ou une seconde et demie au plus.
+            _setupBusy() {
+                const element = this.element;
+                const drawn = Rx.Observable.fromEvent(element, 'graphdrawn');
+                this._queue.observeState()
+                    .pluck('show')
+                    .distinctUntilChanged()
+                    .flatMapLatest((show) => (show
+                        ? Rx.Observable.just(true)
+                        : Rx.Observable.merge(drawn, Rx.Observable.timer(1500)).first().map(() => false)))
+                    .distinctUntilChanged()
+                    .subscribe((on) => busy(element, on));
             },
 
             setDateRange(start, end, submit = false) {

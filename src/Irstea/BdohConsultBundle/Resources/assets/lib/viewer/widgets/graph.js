@@ -27,21 +27,12 @@ define([
             _create() {
                 const disposables = this._disposables = new Rx.CompositeDisposable();
 
-                const processing = new Rx.BehaviorSubject(false);
-                const startProcess = function () {
-                        processing.onNext(true);
-                    };
-                const endProcess = function () {
-                        processing.onNext(false);
-                    };
-
-                const xaxis = this.options.xaxis
-                        .do(startProcess);
+                // Pendant un chargement, le tracé précédent reste, grisé et flouté avec le visualiseur (base.js,
+                // _setupBusy), au lieu d'un message « Rafraîchissement en cours » à sa place
+                const xaxis = this.options.xaxis;
                 const yaxis = this.options.left
-                        .do(startProcess)
                         .map(this._prepareYAxis, this);
                 const y2axis = this.options.right
-                        .do(startProcess)
                         .map(this._prepareYAxis, this);
                 const series = Rx.Observable
                         .combineLatest(
@@ -50,7 +41,6 @@ define([
                                 return {yaxis: left, y2axis: right, config};
                             }
                         )
-                        .do(startProcess)
                         .map(this._prepareSeries, this);
                 const plot = this._plot = this.element.plot(this.options.plot);
 
@@ -73,19 +63,13 @@ define([
                             }
                         )
                         .debounce(100)
-                        .do(endProcess)
                         .catch((reason) => {
                             return Rx.Observable.of(['error', reason, null]);
                         })
                         .subscribe((data) => {
                             plot.plot('update', data[0], data[1], data[2]);
-                        }),
-
-                    processing
-                        .distinctUntilChanged()
-                        .filter(Rx.helpers.identity)
-                        .subscribe(() => {
-                            plot.plot('update', 'processing');
+                            // « graphdrawn » : le visualiseur garde son voile jusque-là (base.js, _setupBusy)
+                            this._trigger('drawn');
                         })
                 );
             },
