@@ -25,7 +25,7 @@ define([
             [1, 'hour'], [2, 'hour'], [6, 'hour'], [12, 'hour'],
             [1, 'day'], [2, 'day'], [5, 'day'], [10, 'day'],
             [1, 'month'], [2, 'month'], [6, 'month'],
-            [1, 'year']
+            [1, 'year'], [2, 'year'], [5, 'year'], [10, 'year']
         ],
         ([amount, unit]) => ({
             amount,
@@ -68,13 +68,18 @@ define([
         const interval = tickInterval(start, end, 10);
         const firstTick = start.utc().ceil(interval.amount, interval.unit);
         const ticks = [];
+        // Une date ronde à moins d'un quart d'intervalle d'un bord n'est pas écrite : verticales, leurs deux dates se
+        // chevaucheraient ; celle du bord reste
+        const apart = (a, b) => Math.abs(a.diff(b, 'minutes', true)) >= interval.duration / 4;
 
         if (start.isBefore(firstTick)) {
             ticks.push(start.valueOf())
         }
         const d = firstTick.clone();
         while (d.isBefore(end)) {
-            ticks.push(d.valueOf());
+            if ((d.isSame(start) || apart(d, start)) && apart(d, end)) {
+                ticks.push(d.valueOf());
+            }
             d.add(interval.amount, interval.unit)
         }
         ticks.push(end.valueOf());

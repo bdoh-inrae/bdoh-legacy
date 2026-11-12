@@ -1,8 +1,22 @@
 
+/* Un graphique sans tracé (sans chronique choisie, sans mesure, en erreur) : un cadre clair, le message en texte
+   discret, comme les indications de la ligne d'état, au lieu d'un bloc gris et d'une boîte d'alerte */
 .chart-state {
-    background: rgb(221, 221, 221);
-    border-radius: 6px;
+    border: 1px dashed #d5dbdf;
+    border-radius: 4px;
     position: relative;
+}
+
+.chart-state .chart-state-inner.alert {
+    background: none;
+    border: 0;
+    padding: 0;
+    color: #6b7c86;
+    text-align: center;
+}
+
+.chart-state .chart-state-inner.alert-danger {
+    color: #a94442;
 }
 
 .chart-state .chart-state-inner {
@@ -19,6 +33,13 @@
 .chart-processing {
     cursor: wait !important;
 }
+
+/* Le « i » des indications, dont la bulle dit le reste (ligne d'état d'une chronique, séries du visualiseur) */
+.graph-info {
+    display: inline-block; width: 15px; height: 15px; margin-left: 5px; border: 1px solid #9aa7ae; border-radius: 50%;
+    font-size: 10px; font-weight: 600; line-height: 13px; text-align: center; cursor: help;
+}
+.graph-info::before { content: "i"; }
 
 div#viewer .jqplot-axis,
 div#complex-viewer .jqplot-axis {
@@ -39,7 +60,6 @@ div#complex-viewer div.panels div[id^="chart"] {
     margin: 0 auto;
 }
 div#complex-viewer div.panels div#chart1 {
-    background-color: rgba(255,255,0,0.2);
     margin-top: -1px;
 }
 div#complex-viewer div.panel-container > div.panel.row:not(:first-of-type) {

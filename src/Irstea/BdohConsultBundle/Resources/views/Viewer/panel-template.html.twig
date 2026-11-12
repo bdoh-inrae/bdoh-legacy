@@ -36,11 +36,13 @@
         <td class="text-center">
             <button class="btn btm-xs toggle" title="{{ 'hideDisplayButton'|trans({}, 'viewer') }}"></button>
         </td>
+        {#- Le pas des cumuls et l'allègement, un « i » discret après le nom, dont la bulle dit le reste, comme la ligne
+         # d'état de la page d'une chronique ; une série sans mesure dans la période, un point d'exclamation #}
         <td>
-            <i class="fam-information infoTimeStep" style="display:none;margin-right:5px;"></i><i
-                class="fam-error downSampled" style="display:none;margin-right:5px;"></i><i
-                class="fam-exclamation noDataOnRange" style="display:none;margin-right:5px;"></i><span
-                class="title" style="cursor:default;"></span>
+            <span class="title" style="cursor:default;"></span><span
+                class="graph-info infoTimeStep" style="display:none;"></span><span
+                class="graph-info downSampled" style="display:none;"></span><i
+                class="fam-exclamation noDataOnRange" style="display:none;margin-left:5px;"></i>
         </td>
         <td>
             <div class="toolbox-btns">
