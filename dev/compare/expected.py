@@ -92,7 +92,8 @@ GONE_KEYS = """Bad credentials. | User account has expired. | consult.help.chron
     resetting.email.message | resetting.email.subject | resetting.flash.success | resetting.isCompleted
     resetting.password_already_requested | resetting.request.email | resetting.request.invalid_email
     resetting.request.submit | resetting.reset.submit | security.login_form.lostPassword | security.login_form.password
-    security.utilisateur.edit.info.changePassword"""
+    security.utilisateur.edit.info.changePassword | security.utilisateur.newAccountMail.body
+    security.utilisateur.newAccountMail.title"""
 NEW_KEYS = """Error.file.cantWrite(%file%) | dateMonthShort | oneMonth | admin.sendJson.missingCredentials | export.exportMail.body(%link%, %days%)
     legal.freeSoftware | legal.sourceCode | map.onMap | map.seeStation | map.sites | map.title | map.withoutPosition | map.zoomHint | overview.hint | overview.title | measure.export.busy | measure.export.licence | measure.export.status.download
     measure.export.status.expired | measure.export.status.failed | measure.export.status.finished(%days%)
@@ -109,6 +110,18 @@ CHANGED_KEYS = """accueilMessage | measure.export.help-content | measure.export.
     security.utilisateur.create.info.yourIdentifier | security.utilisateur.create.isCompleted
     security.utilisateur.newMailUtilisateur.body.step2 | security.utilisateur.newMailUtilisateur.body.step4
     technicalContact | utilisateur.newAccountMail.body"""
+
+
+def NO_MANAGER_MAIL(lines):
+    """Les courriels de l'ancien sans celui qui prévenait les gestionnaires d'une inscription (« nouvel utilisateur »),
+    que le nouveau n'envoie plus (2026-11-12, Lou) : le reste doit être le même."""
+    out, skip = [], False
+    for line in lines:
+        if line.startswith('Sujet : '):
+            skip = line == 'Sujet : BDOH : nouvel utilisateur'
+        if not skip:
+            out.append(line)
+    return out
 
 
 # L'astuce de saisie des dates, qui passe de la page à la bulle des champs (2026-11-12)
@@ -384,6 +397,7 @@ RULES = [
         '-D div data-notices={"success":["Votre compte BDOH a bien \\u00e9t\\u00e9 cr\\u00e9\\u00e9. Vous pouvez d\\u00e9sormais vous connecter."]}',
         '+D div data-notices={"success":["Votre compte BDOH a bien \\u00e9t\\u00e9 cr\\u00e9\\u00e9. Un e-mail vient de vous \\u00eatre envoy\\u00e9 : suivez le lien qu\'il contient pour confirmer votre adresse et vous connecter."]}')),
     Rule('accounts', 'modification du compte, téléphone trop court', LINK, lines=EDIT_ACCOUNT),
+    Rule('accounts', 'courriels', LINK, rewrite=NO_MANAGER_MAIL),
     Rule('accounts', 'courriels', LINK, lines=(
         f'-{OLD_TERMS} :', f'-T {OLD_TERMS} :', f'+{NEW_TERMS} :', f'+T {NEW_TERMS} :',
         '+Pour confirmer votre adresse et vous connecter, suivez ce lien, valable 15 minutes et une seule fois : <lien de connexion>',

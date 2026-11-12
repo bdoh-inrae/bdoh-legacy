@@ -24,6 +24,10 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/). Numéros de v
 - Sur l'accueil de BDOH, on se connecte et on crée un compte sans choisir d'observatoire ; connecté, on l'est partout. Un compte créé ainsi ne prévient aucun gestionnaire.
 - La comparaison avec l'ancien BDOH passe aussi sur la base d'OTHU, dans tous ses modes : un cas que la base ne permet pas de jouer y est nommé, et les écarts admis prennent les identifiants de la base comparée.
 
+### Retiré
+
+- La création d'un compte ne prévient plus les gestionnaires de l'observatoire par courriel ; une demande d'accès les prévient toujours. Le courriel de bienvenue au compte, qui porte le premier lien de connexion, reste.
+
 ### Corrigé
 
 - Sur la page des droits d'un compte, ses demandes d'accès s'affichent dans l'ordre où elles ont été faites : elles sortaient dans un ordre que changeait une mise à jour.

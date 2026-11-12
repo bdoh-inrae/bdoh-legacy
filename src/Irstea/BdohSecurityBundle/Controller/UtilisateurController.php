@@ -90,9 +90,8 @@ class UtilisateurController extends Controller
                 $em->flush();
 
                 // Le courriel de bienvenue porte le premier lien de connexion, qui confirme l'adresse (créé sans
-                // la requête, qui ferait perdre au routeur l'observatoire courant). Les gestionnaires de
-                // l'observatoire sont prévenus à la première connexion (BdohAuthenticationHandler) ; ceux d'aucun, pour
-                // une inscription depuis le portail.
+                // la requête, qui ferait perdre au routeur l'observatoire courant). Aucun courriel aux gestionnaires
+                // (Lou, 2026-11-12) : la demande d'accès les prévient.
                 $messageUtilisateur = (new Email())
                     ->subject($this->get('translator')->trans('security.utilisateur.newMailUtilisateur.title'))
                     ->from('bdoh@inrae.fr')

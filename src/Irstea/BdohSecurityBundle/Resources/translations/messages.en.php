@@ -63,12 +63,6 @@ You receive this e-mail because new rights have been assigned to you on BDOH.',
             ],
             'title' => ' BDOH: New rights',
         ],
-        'newAccountMail'               => [
-            'body'  => 'created an account on BDOH.
-
-You can assign him/her a role in your observatory from the following page:',
-            'title' => 'BDOH: new user',
-        ],
         'newMailUtilisateur'           => [
             'body'  => [
                 'hello'        => 'Hello',

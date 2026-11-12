@@ -63,12 +63,6 @@ Vous recevez cet e-mail car de nouveaux droits vous ont été attribués sur BDO
             ],
             'title' => ' BDOH : Nouveaux droits',
         ],
-        'newAccountMail'               => [
-            'body'  => 'a créé un compte sur BDOH.
-
-Vous pouvez lui attribuer un rôle sur votre observatoire deppuis la page suivante :',
-            'title' => 'BDOH : nouvel utilisateur',
-        ],
         'newMailUtilisateur'           => [
             'body'  => [
                 'hello'        => 'Bonjour',

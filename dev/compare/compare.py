@@ -752,6 +752,10 @@ def registered(rules, name, key, old, new, exact=False, rounding=()):
     # autres viennent d'abord, pour que le rapport nomme la plus précise
     rules = [rule for rule in rules if re.fullmatch(rule.case, name) and (not rule.rewrite or rule.rewrite(old) != old)]
     rules.sort(key=lambda rule: rule.rewrite is not None)
+    if key in ('identiques', 'à un arrondi près') and any(rule.rewrite for rule in rules):
+        # Une réécriture a reconnu dans l'ancien ce que le nouveau ne doit plus montrer : le même contenu que l'ancien est
+        # alors un écart (le courriel aux gestionnaires encore envoyé, l'en-tête de l'ancien gardé)
+        return 'différents', []
     if key == 'même contenu, autre ordre':
         lists = [rule for rule in rules if rule.order]
         return (key, lists) if lists else ('différents', [])
@@ -3222,8 +3226,7 @@ def run_accounts(args):
 
     def snapshot(side, base):
         """Les courriels et les tables de comptes d'une copie, après les parcours. Deux courriels d'une
-        même requête partent dans un ordre ou l'autre (l'ancien les met en file) ; le nouveau prévient
-        les gestionnaires à la première connexion, et non à l'inscription."""
+        même requête partent dans un ordre ou l'autre (l'ancien les met en file)."""
         mails = [LOGIN_LINK.sub('<lien de connexion>', line.replace(side.url, '<site>'))
                  for line in mail_lines(ordered=False)]
         return {'courriels': mails,

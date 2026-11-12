@@ -375,9 +375,24 @@ class Register(unittest.TestCase):
                                                       *new[new.index('T Créer un compte') + 1:]]),
             ("le fil sans l'observatoire", [*new[:-4], 'T Station', 'D div data-notices=[]']),
             ('la connexion perdue', [l for l in new if l not in self.ACCOUNT]),
+            ("l'en-tête de l'ancien gardé", self.OLD_HEADER),
         ]:
             with self.subTest(fault):
                 self.assertEqual(self.verdict(rules, name, self.OLD_HEADER, faulty), 'différents')
+
+    def test_no_more_mail_to_managers_and_nothing_else_lost(self):
+        rules = [r for r in compare.expected.RULES if r.mode == 'accounts']
+        welcome = ['Sujet : Bienvenue', 'De : BDOH <bdoh@inrae.fr>', 'À : <a@example.invalid>', 'Bonjour']
+        managers = ['Sujet : BDOH : nouvel utilisateur', 'De : BDOH <bdoh@inrae.fr>', 'À : <g@example.invalid>',
+                    'Camille Essai a créé un compte sur BDOH.', '', '<site>/OBS/user/right/a@example.invalid']
+        need = ["Sujet : BDOH : nouvelle demande d'accès", 'De : BDOH <bdoh@inrae.fr>', 'À : <g@example.invalid>', 'Camille']
+        old = [*need, *managers, *welcome]
+        self.assertEqual(self.verdict(rules, 'courriels', old, [*need, *welcome]), 'écarts admis')
+        for fault, faulty in [('le courriel encore envoyé', old),
+                              ('la demande d’accès perdue', welcome),
+                              ('la demande d’accès sans destinataire', [*need[:2], *need[3:], *welcome])]:
+            with self.subTest(fault):
+                self.assertEqual(self.verdict(rules, 'courriels', old, faulty), 'différents')
 
     def test_a_header_that_is_not_recognized_stays_as_it_was(self):
         for lines in (['T a', 'T b'], [l for l in self.OLD_HEADER if l != 'T English'],
