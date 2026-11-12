@@ -286,68 +286,28 @@ class ChroniqueContinueRepository extends ChroniqueRepository
 
         $chroniqueId = $chronique->getId();
 
-        // détermination des plages de qualités indentiques pour evaluer le
-        // nombre de points "valides" et la nécéssité d'un sous échantillonage
-        // avec récupération d'informations utiles pour le sous-échantillonnage
-
-        $sqlBoundaries = <<<SQL
-WITH flags(i, date, epochms, flag) AS (
-    SELECT
-        ROW_NUMBER() OVER () AS i,
-        date,
-        1000 * EXTRACT(EPOCH FROM m.date AT TIME ZONE 'UTC') AS epochms,
-        CASE q.ordre
-            WHEN 100 THEN 'gap'
-            WHEN 200 THEN 'invalid'
-            ELSE 'valid_' || q.code
-        END AS flag
-    FROM mesure m INNER JOIN qualite q ON (m.qualite_id = q.id)
-    WHERE
-        chronique_id = $chroniqueId
-        AND m.date >= (SELECT COALESCE(MAX(date), '$beginDate') FROM mesure WHERE chronique_id = $chroniqueId AND date <= '$beginDate')
-        AND m.date <= (SELECT COALESCE(MIN(date), '$endDate') FROM mesure WHERE chronique_id = $chroniqueId AND date >= '$endDate')
-    ORDER BY m.date ASC
-)
-SELECT * FROM (
-    SELECT
-        *,
-        COALESCE(flag <> LAG(flag) OVER(), true) AS debut,
-        COALESCE(flag <> LEAD(flag) OVER(), true) AS fin
-    FROM flags
-) f WHERE debut or fin
+        // La fenêtre lue : de la dernière mesure au plus tard au début à la première au plus tôt à la fin
+        $window = <<<SQL
+    m.chronique_id = $chroniqueId
+    AND m.date >= (SELECT COALESCE(MAX(date), '$beginDate') FROM mesure WHERE chronique_id = $chroniqueId AND date <= '$beginDate')
+    AND m.date <= (SELECT COALESCE(MIN(date), '$endDate') FROM mesure WHERE chronique_id = $chroniqueId AND date >= '$endDate')
 SQL;
+        $connection = $this->getEntityManager()->getConnection();
 
-        $boundariesStmt = $this->getEntityManager()->getConnection()->executeQuery($sqlBoundaries);
-        $boundaries = $boundariesStmt->fetchAllNumeric();
+        // Le nombre de mesures valides (ni lacune, ni invalide) dit s'il faut alléger. Un décompte, depuis le 2026-11-12 :
+        // l'ancien BDOH relevait d'abord chaque plage de qualité de la fenêtre, puis allégeait plage par plage, en relisant
+        // toutes les mesures une fois par plage (10 s pour les 25 ans d'une chronique à la minute, 2,4 millions de mesures)
+        $sqlCounts = <<<SQL
+SELECT count(*) FILTER (WHERE q.ordre NOT IN (100, 200)), extract(epoch FROM min(m.date)), extract(epoch FROM max(m.date))
+FROM mesure m INNER JOIN qualite q ON (m.qualite_id = q.id)
+WHERE $window
+SQL;
+        $counts = $connection->transactional(function ($connection) use ($sqlCounts) {
+            $connection->executeStatement('SET LOCAL random_page_cost = 1.1');
 
-        // le nombre de bornes
-        $nbBoundaries = \count($boundaries);
-
-        $boudariesData = [];
-        $nbValid = 0;
-        $spanValid = 0.0;
-        $dataIndex = 0;
-        foreach ($boundaries as $boundary) {
-            // récupération des données de la plage de qualité
-            list($i, $date, $epochms, $flag, $debut, $fin) = $boundary;
-            $epochms = (float) $epochms;
-            if ($debut) {
-                $boudariesData[$dataIndex] = [];
-                $boudariesData[$dataIndex]['i_debut'] = $i;
-                $boudariesData[$dataIndex]['date_debut'] = $date;
-                $boudariesData[$dataIndex]['epochms_debut'] = $epochms;
-            }
-            if ($fin) {
-                $boudariesData[$dataIndex]['i_fin'] = $i;
-                $boudariesData[$dataIndex]['date_fin'] = $date;
-                $boudariesData[$dataIndex]['epochms_fin'] = $epochms;
-                if ($flag !== 'invalid' && $flag !== 'gap') {
-                    $nbValid += $boudariesData[$dataIndex]['i_fin'] - $boudariesData[$dataIndex]['i_debut'] + 1;
-                    $spanValid += $boudariesData[$dataIndex]['epochms_fin'] - $boudariesData[$dataIndex]['epochms_debut'];
-                }
-                ++$dataIndex;
-            }
-        }
+            return $connection->fetchNumeric($sqlCounts);
+        });
+        $nbValid = (int) $counts[0];
 
         if ($nbValid <= $maxAllowedPoints) { // pas de sous-échantillonnage
             // toutes les mesures
@@ -364,42 +324,52 @@ SELECT
     END AS flag
 FROM mesure m INNER JOIN qualite q ON (m.qualite_id = q.id)
 WHERE
-    m.chronique_id = $chroniqueId
-    AND m.date >= (SELECT COALESCE(MAX(date), '$beginDate') FROM mesure WHERE chronique_id = $chroniqueId AND date <= '$beginDate')
-    AND m.date <= (SELECT COALESCE(MIN(date), '$endDate') FROM mesure WHERE chronique_id = $chroniqueId AND date >= '$endDate')
+$window
 ORDER BY m.date ASC
 SQL;
+            $mesures = $connection->executeQuery($sqlMesures)->iterateNumeric();
         } else { // on sous-échantillonne
-            // reduction du nombre de points max autorisés par le nombre de bornes
-            // (qui, elles, ne disparaissent pas pendant le sous échantillonnage)
-            $maxAllowedPointsRedux = \max($maxAllowedPoints - $nbBoundaries, 1);
-
-            // détermination de la durée d'échantillonnage de base sachant que l'on prend
-            // 2 points par echantillonnage (le min et le max pour chaque échantillonnage)
-            $baseSpliceSpan = $spanValid * 2.0 / (float) $maxAllowedPointsRedux;
-
-            // les données d'echantillonnage
-            $datesDebuts = [];
-            $datesFins = [];
-            $sliceSpans = [];
-            foreach ($boudariesData as $boudaryData) {
-                $datesDebuts[] = $boudaryData['date_debut'];
-                $datesFins[] = $boudaryData['date_fin'];
-                $span = $boudaryData['epochms_fin'] - $boudaryData['epochms_debut'];
-                $nbSlices = \max($span / $baseSpliceSpan, 1.0);
-                $sliceSpans[] = \max(\ceil($span / $nbSlices), 1.0) / 1000.0;
-            }
-            $datesDebuts = "'{" . \implode(',', $datesDebuts) . "}'";
-            $datesFins = "'{" . \implode(',', $datesFins) . "}'";
-            $sliceSpans = "'{" . \implode(',', $sliceSpans) . "}'";
-
-            // les mesures sous-echantillonnées
+            // En une lecture : la fenêtre en tranches de même durée, et dans chacune, pour chaque qualité, la plus petite
+            // et la plus grande valeur, à leur date (le premier et le dernier instant pour une lacune ou une invalide,
+            // sans valeur). Aucun pic ne se perd, et une qualité qui change se voit à la tranche près. Deux points par
+            // tranche et par qualité : $maxAllowedPoints / 2 tranches. Le coût d'une lecture au hasard est abaissé,
+            // comme pour la bande (ChroniqueRepository::getOverview).
+            $first = (float) $counts[1];
+            $slices = \max((int) ($maxAllowedPoints / 2), 1);
+            $slice = \max(((float) $counts[2] - $first) / $slices, 1.0);
+            $last = $slices - 1;
             $sqlMesures = <<<SQL
-SELECT * FROM bdoh_subsampled_instantaneous_all_series_measures_with_flag($chroniqueId, $datesDebuts, $datesFins, $sliceSpans)
+WITH m AS (
+    SELECT m.date, m.valeur, m.qualite_id AS qid, q.ordre, q.code,
+           LEAST(FLOOR((EXTRACT(EPOCH FROM m.date) - $first) / $slice)::INTEGER, $last) AS i
+    FROM mesure m INNER JOIN qualite q ON (m.qualite_id = q.id)
+    WHERE
+$window
+), g AS (
+    SELECT qid, ordre, code, MIN(date) AS d0, MAX(date) AS d1,
+           (ARRAY_AGG(date ORDER BY valeur ASC, date) FILTER (WHERE valeur IS NOT NULL))[1] AS dmin, MIN(valeur) AS vmin,
+           (ARRAY_AGG(date ORDER BY valeur DESC, date) FILTER (WHERE valeur IS NOT NULL))[1] AS dmax, MAX(valeur) AS vmax
+    FROM m GROUP BY i, qid, ordre, code
+)
+SELECT DISTINCT
+    1000 * EXTRACT(EPOCH FROM p.date AT TIME ZONE 'UTC') AS date,
+    p.valeur AS valeur,
+    g.qid AS qid,
+    g.ordre AS ordre,
+    CASE g.ordre
+        WHEN 100 THEN 'gap'
+        WHEN 200 THEN 'invalid'
+        ELSE 'valid_' || g.code
+    END AS flag
+FROM g CROSS JOIN LATERAL (VALUES (COALESCE(g.dmin, g.d0), g.vmin), (COALESCE(g.dmax, g.d1), g.vmax)) AS p(date, valeur)
+ORDER BY 1
 SQL;
-        }
+            $mesures = $connection->transactional(function ($connection) use ($sqlMesures) {
+                $connection->executeStatement('SET LOCAL random_page_cost = 1.1');
 
-        $mesures = $this->getEntityManager()->getConnection()->executeQuery($sqlMesures);
+                return $connection->fetchAllNumeric($sqlMesures);
+            });
+        }
 
         $series = [];
         /* $series = [
@@ -423,7 +393,7 @@ SQL;
         pareil pour lq vs lq -> lq et ld vs ld -> ld
         et v (800) vs lq/ld -> lq/ld (et pas éstimé) */
 
-        foreach ($mesures->iterateNumeric() as $mesure) {
+        foreach ($mesures as $mesure) {
             $lastValueNotAdded = false;
 
             // récupération des données de la mesure
