@@ -286,6 +286,10 @@ a.bdoh-brand {
         margin-bottom: 1em;
         border-bottom: 1px solid @lineColor;
     }
+    // Le sous-titre d'un titre (« Arc-Isère   Bienvenue ») : plus détaché du titre (2026-11-12, Lou)
+    h1 > small {
+        margin-left: 0.4em;
+    }
 }
 
 /******************************************************************************
@@ -310,9 +314,11 @@ a.bdoh-brand {
             max-width: 200px;
             object-fit: contain;
         }
-        // Celui d'INRAE, en tête : son image a de larges marges
+        // Celui d'INRAE, en tête : le bloc Marianne et INRAE, d'un seul fichier, a de larges marges et se lirait mal
+        // à la hauteur des autres (100 px, essayé par Lou)
         > :first-child img {
-            height: 64px;
+            height: 100px;
+            max-width: none;
         }
     }
 

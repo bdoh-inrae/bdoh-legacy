@@ -1,4 +1,4 @@
-{%- from 'macros.html.twig' import pageTitle %}
+{%- from 'macros.html.twig' import pageTitle, breadcrumbRoot %}
 
 <!DOCTYPE html>
 <html lang="{{ app.request.locale|split('_')[0] }}">
@@ -35,9 +35,17 @@
     </div>
     {#-- END_Header --#}
 
-    {#-- Breadcrumb
+    {#-- Breadcrumb : par défaut, son début, « BDOH », puis l'observatoire de la page s'il y en a un. Toute page en a
+     # un, pour que le contenu commence toujours au même endroit (2026-11-12, Lou).
     ================================================== #}
     {% block breadcrumb -%}
+    <ul class="breadcrumb">
+        {%- if currentObservatoire() %}
+        {{ breadcrumbRoot(false) }}
+        {%- else %}
+        <li class="active">BDOH</li>
+        {%- endif %}
+    </ul>
     {% endblock breadcrumb -%}
 
     {#-- Notice
