@@ -199,6 +199,8 @@ return [
     'dateDayShort'                     => 'd',
     'oneHour'                          => '1 hour',
     'oneDay'                           => '1 day',
+    'oneMonth'                         => '1 month',
+    'dateMonthShort'                   => 'month',
     'nSeconds(%n%)'                    => '%n% seconds',
     'jour'                             => 'day|days',
     'heure'                            => 'hour|hours',

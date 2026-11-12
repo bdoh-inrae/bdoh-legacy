@@ -34,9 +34,6 @@ consult:
         chronique:
             noGenealogie: Aucune généalogie
             notVisible: Cette chronique n'est pas publique
-            selectionOfDatesRange: >+
-                <b>Attention</b> : pour des raisons de performance vous ne pouvez sélectionner
-                qu'un intervalle de dates de <b>5 ans maximum</b>.
             double-clic-unzoom: Pour revenir au niveau de zoom initial, double-cliquez sur le graphe.
             display-checkpoints: Afficher les points de contrôle
             time-step-depends-on-span: >+

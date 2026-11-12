@@ -203,6 +203,8 @@ return [
     'dateDayShort'                     => 'j',
     'oneHour'                          => '1 heure',
     'oneDay'                           => '1 jour',
+    'oneMonth'                         => '1 mois',
+    'dateMonthShort'                   => 'mois',
     'nSeconds(%n%)'                    => '%n% secondes',
     'jour'                             => 'jour|jours',
     'heure'                            => 'heure|heures',

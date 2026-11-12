@@ -162,3 +162,13 @@ div.box ul li::marker {
 #footer + div h3 {
     font-family: @font-family-sans-serif;
 }
+
+// Une ligne de liste qui mène à sa fiche, une chronique ou une station (bdoh/row-links.js) : toute la ligne se clique,
+// et le survol le montre, dans la teinte pâle du thème
+[data-row-link="yes"] {
+    cursor: pointer;
+}
+[data-row-link="yes"]:hover,
+tr[data-row-link="yes"]:hover > td {
+    background-color: @tintColor;
+}

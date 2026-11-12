@@ -12,6 +12,7 @@ require('toastr/build/toastr.css');
 
 require('./toastr');
 require('./template-polyfill');
+require('./row-links');
 require('./style.less');
 
 $(() => {

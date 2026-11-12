@@ -39,7 +39,6 @@ define([
                     minDate: this.options.minDate,
                     maxDate: this.options.maxDate,
                     minInterval: moment.duration(1, 'day'),
-                    maxInterval: moment.duration(5, 'years'),
                     allowRangeOutOfBoundaries: this.options.allowRangeOutOfBoundaries
                 });
 
