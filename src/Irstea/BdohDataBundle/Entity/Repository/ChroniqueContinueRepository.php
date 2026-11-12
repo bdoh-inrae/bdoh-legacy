@@ -18,6 +18,12 @@ use Irstea\BdohSecurityBundle\Entity\Utilisateur;
 class ChroniqueContinueRepository extends ChroniqueRepository
 {
     /**
+     * Le pas « un mois » des cumuls d'une longue période, en secondes : le mois moyen du calendrier grégorien. Il sert
+     * à la largeur des barres ; les sommes se font, elles, par mois calendaire (seriesCumulativeSampling).
+     */
+    public const MONTH_TIME_STEP = 2629746;
+
+    /**
      * @return MesureRepositoryInterface
      */
     public function getMeasureRepo()
@@ -58,6 +64,12 @@ class ChroniqueContinueRepository extends ChroniqueRepository
             $oneMonthAfterStart = \date_modify(new \DateTime($startDate, new \DateTimeZone('UTC')), '+1 month');
             $lapse = strtotime($endDate) - $oneMonthAfterStart->getTimestamp();
             $timeStep = ($lapse > 0) ? 86400 : 3600;
+            // au-delà de 5 ans, la limite qu'avait l'affichage avant le 2026-11-12, le pas est d'un mois : des sommes
+            // par jour y feraient des milliers de barres d'un pixel
+            $fiveYearsAfterStart = \date_modify(new \DateTime($startDate, new \DateTimeZone('UTC')), '+5 years');
+            if (strtotime($endDate) > $fiveYearsAfterStart->getTimestamp()) {
+                $timeStep = self::MONTH_TIME_STEP;
+            }
         } else {
             $timeStep = 86400;
         }
@@ -584,6 +596,23 @@ SQL;
 SQL;
         }
 
+        // Les bornes du pas de chaque mesure : un nombre entier de pas depuis le début de la période, ou, au pas d'un
+        // mois, le mois calendaire (en UTC) qui la contient, la mesure du premier instant d'un mois comptant pour le
+        // mois d'avant en cumul « backward », comme au pas fixe
+        $origin = "'$beginDate'::TIMESTAMP WITHOUT TIME ZONE AT TIME ZONE 'UTC'";
+        $age = "EXTRACT(EPOCH FROM AGE(m.date AT TIME ZONE 'UTC', '$beginDate' AT TIME ZONE 'UTC'))";
+        if ($timeStep === self::MONTH_TIME_STEP) {
+            $month = $ahead
+                ? "date_trunc('month', m.date)"
+                : "(date_trunc('month', m.date - INTERVAL '1 microsecond') + INTERVAL '1 month')";
+            $stepAt = fn ($shift) => "1000 * EXTRACT(EPOCH FROM ($month + INTERVAL '$shift month') AT TIME ZONE 'UTC')";
+        } else {
+            $stepAt = fn ($shift) => "1000 * EXTRACT(EPOCH FROM ($origin + (INTERVAL '1 second' * (($math($age / $timeStep) + $shift) * $timeStep))))";
+        }
+        $stepBefore = $stepAt(-1);
+        $stepNow = $stepAt(0);
+        $stepAfter = $stepAt(1);
+
         $sqlCumuls = <<<SQL
 WITH qualites(qid, ordre, flag) AS (
     SELECT DISTINCT
@@ -599,15 +628,9 @@ WITH qualites(qid, ordre, flag) AS (
 ),
 mesures(stepbefore, step, stepafter, valeur, ordre) AS (
     SELECT
-        1000 * EXTRACT(EPOCH FROM ('$beginDate'::TIMESTAMP WITHOUT TIME ZONE AT TIME ZONE 'UTC' +
-            (INTERVAL '1 second' * (($math(EXTRACT(EPOCH FROM AGE(m.date AT TIME ZONE 'UTC',
-                '$beginDate' AT TIME ZONE 'UTC')) / $timeStep) - 1) * $timeStep)))) AS stepbefore,
-        1000 * EXTRACT(EPOCH FROM ('$beginDate'::TIMESTAMP WITHOUT TIME ZONE AT TIME ZONE 'UTC' +
-            (INTERVAL '1 second' * ($math(EXTRACT(EPOCH FROM AGE(m.date AT TIME ZONE 'UTC',
-                '$beginDate' AT TIME ZONE 'UTC')) / $timeStep) * $timeStep)))) AS step,
-        1000 * EXTRACT(EPOCH FROM ('$beginDate'::TIMESTAMP WITHOUT TIME ZONE AT TIME ZONE 'UTC' +
-            (INTERVAL '1 second' * (($math(EXTRACT(EPOCH FROM AGE(m.date AT TIME ZONE 'UTC',
-                '$beginDate' AT TIME ZONE 'UTC')) / $timeStep) + 1) * $timeStep)))) AS stepafter,
+        $stepBefore AS stepbefore,
+        $stepNow AS step,
+        $stepAfter AS stepafter,
         m.valeur::NUMERIC AS valeur,
         q.ordre AS ordre
     FROM mesure m INNER JOIN qualite q ON (m.qualite_id = q.id)

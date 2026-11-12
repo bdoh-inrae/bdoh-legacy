@@ -84,6 +84,9 @@ define([
                         case 86400:
                             readableTimeStep = Translator.trans('oneDay', {}, 'messages');
                             break;
+                        case 2629746:  // ChroniqueContinueRepository::MONTH_TIME_STEP
+                            readableTimeStep = Translator.trans('oneMonth', {}, 'messages');
+                            break;
                         default:
                             readableTimeStep = Translator.trans('nSeconds(%n%)', {'n':item.timeStep}, 'messages')
                     }

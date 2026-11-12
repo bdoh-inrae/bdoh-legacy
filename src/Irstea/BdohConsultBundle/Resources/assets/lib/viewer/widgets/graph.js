@@ -121,7 +121,8 @@ define([
                     [1, 's'],
                     [60, 'min'],
                     [3600, 'h'],
-                    [86400, Translator.trans('dateDayShort', {}, 'messages')]
+                    [86400, Translator.trans('dateDayShort', {}, 'messages')],
+                    [2629746, Translator.trans('dateMonthShort', {}, 'messages')]  // ChroniqueContinueRepository::MONTH_TIME_STEP
                 ];
                 let i = 0;
                 let iMin = i;
