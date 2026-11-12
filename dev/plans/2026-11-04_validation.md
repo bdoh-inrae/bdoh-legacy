@@ -46,13 +46,13 @@ L'ordre de l'audit, resserré autour de la barrière : ce qui demande de lire de
 
 ## Pour reprendre
 
-État au 12 novembre, nuit : C3 est fini, groupe 9 compris : tous les modes passent sur OTHU, et les quatre modes touchés redonnent leurs chiffres sur `bdoh_small` (Suivi du 12 novembre). La VM est encore à la 0.3.2, et y reste jusqu'à une seule grosse mise à jour, une fois l'interface finie : pas de mise à jour intermédiaire (Lou, 11 novembre). L'interface avance sur la branche `interface` (`dev/plans/2026-11-11_interface.md`, Suivi). Dans l'ordre :
+État au 12 novembre, fin d'après-midi : rien de neuf pour la validation ; l'interface et la connexion depuis le portail sont comparées dans tous les modes qu'elles touchent (`dev/plans/2026-11-11_interface.md`, Suivi). État au 12 novembre, nuit : C3 est fini, groupe 9 compris : tous les modes passent sur OTHU, et les quatre modes touchés redonnent leurs chiffres sur `bdoh_small` (Suivi du 12 novembre). La VM est encore à la 0.3.2, et y reste jusqu'à une seule grosse mise à jour, une fois l'interface finie : pas de mise à jour intermédiaire (Lou, 11 novembre). L'interface avance sur la branche `interface` (`dev/plans/2026-11-11_interface.md`, Suivi). Dans l'ordre :
 
 1. ~~C3, groupe 9~~ : fait le 12 novembre (Suivi).
-2. **Les derniers points de l'interface** (`dev/plans/2026-11-11_interface.md`, « Pour reprendre »), publiés dans une version.
+2. **Le panier de chroniques, puis une version** (`dev/plans/2026-11-11_interface.md`, « Pour reprendre ») : l'interface est faite le 12 novembre, sauf les indicateurs de chargement, qui peuvent attendre ; la connexion depuis le portail s'y est ajoutée.
 3. **La VM à cette version, en une fois** (Lou : `sudo make vm-update NOM=prod V=vX.Y.Z`), ce qui éprouve « Installer une nouvelle version » ; les thèmes s'y recompilent d'eux-mêmes. Puis Lou regarde l'interface et fait sa liste (`dev/test-kit/lou-checklist.md`), avec Claude, étape par étape.
 4. **L'instance d'OTHU** sur la VM, à la même version, ses trois fonctions SQL alignées sur la production.
-5. **Le kit des gestionnaires**, revu avec Lou (`dev/test-kit/README.md`), avec les conditions d'utilisation d'ORACLE à revoir (`ROADMAP.md`).
+5. **Le kit des gestionnaires**, revu avec Lou (`dev/test-kit/README.md`), avec les conditions d'utilisation d'ORACLE à revoir (`ROADMAP.md`) : envoi voulu la semaine du 16 novembre (Lou, 12 novembre).
 6. Pendant leurs essais : la passe de couverture, C4, C5, la relecture, puis C6.
 
 Ce qui suit est l'état du 10 novembre, gardé pour l'historique des étapes.
