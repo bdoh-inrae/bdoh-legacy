@@ -186,30 +186,7 @@ a.row-link-view:not(:focus) {
     border: 0;
 }
 
-// Le fil d'Ariane, « BDOH › Draix › Recherche avancée › … » (Core : macro breadcrumbRoot), dans la seconde barre, après
-// le choix d'un observatoire : aligné à gauche, il commence toujours au même endroit, et se lit en suivant la page
+// Le fil d'Ariane, « BDOH › Draix › Recherche avancée › … » (Core : macro breadcrumbRoot)
 .breadcrumb > li + li::before {
     content: "\203A\00a0";
-}
-#userbar {
-    display: flex;
-    flex-wrap: nowrap;
-    align-items: center;
-    @media (max-width: 767px) { flex-wrap: wrap; }
-    &::before, &::after { display: none; }
-    .navbar-right { margin-left: auto; margin-right: 0; }
-}
-.userbar-breadcrumb {
-    flex: 1 1 0;
-    min-width: 0;
-    padding-left: 4px;
-    border-left: 1px solid @lineColor;
-    .breadcrumb {
-        margin: 0;
-        padding: 4px 10px;
-        text-align: left;
-        font-size: 13px;
-        > li { white-space: nowrap; }
-        > .active { color: @text-color; }
-    }
 }

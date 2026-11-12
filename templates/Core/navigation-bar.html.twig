@@ -4,9 +4,6 @@
     {#-- Links
     ================================================== -#}
     <ul class="nav navbar-nav">
-        {% if not currentObservatoire() %}
-            <li><a href="{{ path('bdoh_all_home') }}">BDOH</a></li>
-        {% endif %}
         {% if currentObservatoire() %}
             <li><a href="{{ path('bdoh_home') }}">{{ currentObservatoire().nom }}</a></li>
             {% if currentObservatoire().hasChronique() %}
@@ -16,11 +13,13 @@
         {% endif %}
     </ul>
 
-    {#-- L'aide ; la langue est dans la seconde barre, avec le compte -#}
-    {% if currentObservatoire() %}
-        <ul class="nav navbar-nav navbar-right">
+    {#-- Contact and language(later) links  -#}
+    <ul class="nav navbar-nav navbar-right">
+        {% if currentObservatoire() %}
             <li><a href="{{ path('bdoh_consult_contact') }}"><small>{{ 'contactHelp'|trans }}</small></a></li>
-        </ul>
-    {% endif %}
+            <li class="divider"></li>
+        {% endif %}
+        {% include "@IrsteaBdohInternationalisation/select-lang.html.twig" %}
+    </ul>
 </nav>
 {#-- END_Navigation bar -#}

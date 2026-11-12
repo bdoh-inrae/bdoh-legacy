@@ -21,10 +21,6 @@
 <body>
 <div id="page" class="container">
 
-    {#-- Le fil d'Ariane, rendu ici pour se poser dans la seconde barre (Core/user-bar.html.twig), à gauche, où il
-         commence toujours au même endroit (2026-11-12, Lou) #}
-    {%- set breadcrumbHtml = block('breadcrumb') is defined ? block('breadcrumb')|trim : '' -%}
-
     {#-- Header
     ================================================== #}
     <div id="header" class="row">
@@ -36,9 +32,10 @@
     </div>
     {#-- END_Header --#}
 
-    {#-- Breadcrumb : défini ici pour les pages, rendu dans la seconde barre (breadcrumbHtml)
+    {#-- Breadcrumb
     ================================================== #}
-    {%- if false %}{% block breadcrumb %}{% endblock breadcrumb %}{% endif -%}
+    {% block breadcrumb -%}
+    {% endblock breadcrumb -%}
 
     {#-- Notice
     ================================================== #}
