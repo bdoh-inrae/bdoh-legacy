@@ -403,17 +403,18 @@ class Register(unittest.TestCase):
     def test_the_portal_shows_the_account_and_nothing_else(self):
         old = ['T BDOH', 'G /images/inrae_logo.svg Irstea', *self.LANG, *self.SELECTOR, 'T Présentation']
         new = ['T BDOH', 'A /', 'T BDOH', *self.SELECTOR, *self.LANG]
+        # La règle de l'en-tête et celles du portail seules : les autres écarts du portail (carte, fiches) ont leurs règles
         portal = compare.expected.portal_rules({'utilisateur': 'Camille Essai'})
-        rules = [r for r in compare.expected.RULES if r.mode == 'pages'] + portal
+        rules = [r for r in compare.expected.RULES if r.mode == 'pages' and r.rewrite] + portal
         guest = [*new, *(l[1:] for l in compare.expected.PORTAL_GUEST), 'T BDOH', 'T Présentation']
         user = [*new, 'T Camille Essai', 'A /logout', 'T Déconnexion', 'T BDOH', 'T Présentation']
-        # La page d'erreur, sans observatoire comme le portail, et sans ses autres écarts (carte, fiches)
-        self.assertEqual(self.verdict(rules, 'anonyme /INCONNU/', old, guest), 'écarts admis')
-        self.assertEqual(self.verdict(rules, 'utilisateur /INCONNU/', old, user), 'écarts admis')
-        for name, case, lines in [('le nom d’un autre', 'utilisateur /INCONNU/', [l.replace('Camille Essai', 'Autre Nom') for l in user]),
-                                  ('le compte connecté sur une page anonyme', 'anonyme /INCONNU/', user),
-                                  ('un lien de plus', 'anonyme /INCONNU/', [*guest[:-1], 'A /ailleurs', 'T Présentation']),
-                                  ('l’inscription perdue', 'anonyme /INCONNU/', [l for l in guest if l not in ('A /user/new', 'T Créer un compte')])]:
+        self.assertEqual(self.verdict(rules, 'anonyme /', old, guest), 'écarts admis')
+        self.assertEqual(self.verdict(rules, 'utilisateur /', old, user), 'écarts admis')
+        for name, case, lines in [('le nom d’un autre', 'utilisateur /', [l.replace('Camille Essai', 'Autre Nom') for l in user]),
+                                  ('le compte connecté sur une page anonyme', 'anonyme /', user),
+                                  ('un lien de plus', 'anonyme /', [*guest[:-1], 'A /ailleurs', 'T Présentation']),
+                                  ('l’inscription perdue', 'anonyme /', [l for l in guest if l not in ('A /user/new', 'T Créer un compte')]),
+                                  ("le compte sur la page d'erreur", 'anonyme /INCONNU/', guest)]:
             with self.subTest(name):
                 self.assertEqual(self.verdict(rules, case, old, lines), 'différents')
 

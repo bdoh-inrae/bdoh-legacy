@@ -8,6 +8,9 @@
             <li>{{ richLink(path('bdoh_consult_advancedSearch'), 'advancedSearch', 'zoom', 'both') }}</li>
         </ul>
     {% endif %}
+    {#- Une adresse inconnue répond 404 avant que le pare-feu ne tourne : sans observatoire, la page d'erreur ne sait pas
+     # qui est connecté, et ne montre pas le compte, comme l'ancien -#}
+    {% if currentObservatoire() is not null or exception is not defined %}
     <ul class="nav navbar-nav navbar-right">
         {% if not is_granted('ROLE_USER') %}
             {% include '@IrsteaBdohSecurity/UserBar/anonymous-menu.html.twig' %}
@@ -17,5 +20,6 @@
             {% include '@IrsteaBdohSecurity/UserBar/portal-menu.html.twig' %}
         {% endif %}
     </ul>
+    {% endif %}
 </div>
 {#-- END_User bar -#}

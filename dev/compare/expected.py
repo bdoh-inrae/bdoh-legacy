@@ -194,14 +194,14 @@ PORTAL_GUEST = ('+A /login', '+T Se connecter', '+T ou', '+A /user/new', '+T Cr�
 
 
 def portal_rules(names):
-    """Le compte, dans la seconde barre des pages sans observatoire (le portail, la page d'erreur), que l'ancien n'y
-    montrait pas : les liens de connexion et d'inscription, ou, pour un compte connecté, son nom et la déconnexion.
-    `run_pages` les ajoute avec le nom de chaque compte de la passe ({profil: « Prénom Nom »}) : rien d'autre ne
-    s'ajoute à ces pages."""
-    rules = [Rule('pages', r'anonyme (?:/|/INCONNU/)', PORTAL, lines=PORTAL_GUEST, must=PORTAL_GUEST)]
+    """Le compte, dans la seconde barre du portail, que l'ancien n'y montrait pas : les liens de connexion et
+    d'inscription, ou, pour un compte connecté, son nom et la déconnexion. `run_pages` les ajoute avec le nom de chaque
+    compte de la passe ({profil: « Prénom Nom »}) : rien d'autre ne s'ajoute à son en-tête. La page d'erreur d'une
+    adresse inconnue, sans observatoire, ne montre pas le compte, comme l'ancien."""
+    rules = [Rule('pages', r'anonyme /', PORTAL, lines=PORTAL_GUEST, must=PORTAL_GUEST)]
     for profile, name in names.items():
         account = (f'+T {name}', '+A /logout', '+T Déconnexion')
-        rules.append(Rule('pages', rf'{re.escape(profile)} (?:/|/INCONNU/)', PORTAL, lines=account, must=account))
+        rules.append(Rule('pages', rf'{re.escape(profile)} /', PORTAL, lines=account, must=account))
     return rules
 
 
@@ -326,6 +326,9 @@ RULES = [
     # guillemets, le lien vers le site d'un observatoire
     Rule('pages', rf'{ROLE} /translations/messages\.js', HEADER, lines=(
         translation('-', 'dataAccess'), translation('[-+]', 'home.title'), translation(r'\+', 'observatoryWebsite'))),
+    # Le courriel de bienvenue d'un compte créé depuis le portail
+    Rule('pages', rf'{ROLE} /translations/messages\.js', PORTAL,
+         lines=(translation(r'\+', 'security.utilisateur.newMailUtilisateur.body.portal'),)),
     Rule('pages', rf'{ROLE} {OBS}/dataset/[^/ ]+', 'Listes sans tri', order=True),
     Rule('pages', rf'{ROLE} {OBS}/nos-donnees', 'Listes sans tri', order=True),
 
