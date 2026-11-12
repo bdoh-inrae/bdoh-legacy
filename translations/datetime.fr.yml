@@ -30,3 +30,4 @@ buttons:
     set-min: Fixer la date au minimum.
     set-max: Fixer la date au maximum.
     reset: Effacer la date.
+    calendar: Choisir dans un calendrier.

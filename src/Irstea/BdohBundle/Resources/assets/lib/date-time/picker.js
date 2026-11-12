@@ -179,6 +179,37 @@ const widget = $.widget('bdoh.dateTimePicker', rxWidget, {
                 .subscribe(viewValueInput)
         );
 
+        // Le calendrier : il s'ouvre sur la date du champ, entre les bornes, et la date choisie s'écrit dans le champ,
+        // au format de la saisie. Les dates de BDOH sont en UTC, et celles du calendrier sans fuseau : lues comme UTC.
+        if (this._calendarButton) {
+            const calendar = this._calendarInput;
+            const local = 'YYYY-MM-DDTHH:mm:ss';
+            disposables.add(
+                inputGroup
+                    .onAsObservable('click', '.calendar')
+                    .flatMap(() => Rx.Observable.combineLatest(value, minDateBounded, maxDateBounded).first())
+                    .subscribe(([current, min, max]) => {
+                        calendar.val(current.isValid() ? current.format(local) : '');
+                        calendar.attr('min', min.isValid() ? min.format(local) : null);
+                        calendar.attr('max', max.isValid() ? max.format(local) : null);
+                        try {
+                            calendar[0].showPicker();
+                        } catch (error) {
+                            calendar[0].focus();
+                        }
+                    })
+            );
+            disposables.add(
+                calendar
+                    .onAsObservable('change')
+                    .map(() => moment.utc(calendar.val(), [local, 'YYYY-MM-DDTHH:mm'], true))
+                    .filter(_.method('isValid'))
+                    .do(() => pristine.onNext(false))
+                    .combineLatest(format, (date, format) => date.format(format))
+                    .subscribe(viewValueInput)
+            );
+        }
+
         // Click bouton reset
         disposables.add(
             inputGroup
@@ -378,6 +409,14 @@ const widget = $.widget('bdoh.dateTimePicker', rxWidget, {
         this._resetButton = mkButton('reset', 'remove').insertAfter(el);
         this._setMinButton = mkButton('set-min', 'fast-backward').insertBefore(el);
         this._setMaxButton = mkButton('set-max', 'fast-forward').insertAfter(el);
+        // Le calendrier du navigateur, en plus de la saisie (2026-11-12) : un champ datetime-local invisible, posé sur
+        // le bouton pour que le calendrier s'ouvre à côté. Sans showPicker (navigateurs anciens), pas de bouton.
+        if ('showPicker' in HTMLInputElement.prototype) {
+            this._calendarButton = mkButton('calendar', 'calendar').insertAfter(el);
+            this._calendarInput = $('<input type="datetime-local" step="1" tabindex="-1" aria-hidden="true">')
+                .css({position: 'absolute', left: 0, bottom: 0, width: '100%', height: '100%', opacity: 0, 'pointer-events': 'none'})
+                .appendTo(this._calendarButton.css('position', 'relative'));
+        }
     },
 
     _parse(val, format, shortFormat, strict) {

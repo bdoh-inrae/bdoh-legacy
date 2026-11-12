@@ -34,9 +34,6 @@ consult:
         chronique:
             noGenealogie: Empty
             notVisible: This time series is not public
-            selectionOfDatesRange: >+
-                <b>Warning</b>: due to performance limitations please select
-                a maximum time span of <b>5 years</b>
             double-clic-unzoom: To unzoom please double-click on the graph.
             display-checkpoints: Display checkpoints
             time-step-depends-on-span: >+
