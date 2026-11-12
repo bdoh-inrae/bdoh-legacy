@@ -15,6 +15,9 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/). Numéros de v
 - Le pied de page s'allège : un filet, les logos sur une ligne, puis les mentions légales en petit.
 - Autour du graphique d'une chronique, une ligne d'état, d'une seule taille et d'une seule couleur, réunit le type de données, les points de contrôle, le pas des cumuls, l'allègement et la légende ; les aides au maniement tiennent en une ligne sous la bande. L'astuce de saisie des dates passe dans la bulle des champs.
 - Les courbes et les barres des graphiques prennent une palette adoucie, de la même famille de couleurs.
+- Un seul symbole de chargement, un petit trait qui s'enroule, et seulement quand le chargement dure plus de 0,8 s : à la place du voile sombre et de la barre de progression du graphique, du « Rafraîchissement en cours » qui le vidait, et des sabliers de la recherche avancée et du visualiseur. Un graphique qui se met à jour pâlit légèrement jusqu'au nouveau tracé. Dans les imports, les boutons d'envoi gardent leur libellé au lieu de devenir « Chargement… », le symbole à côté, et les fenêtres d'attente le montrent au lieu d'une image animée.
+- Le visualiseur de plusieurs chroniques s'allège : un panneau vide est un cadre clair au lieu d'un bloc gris, l'axe des dates perd son fond jaune, et le pas des cumuls et l'allègement d'une série s'indiquent par un « i » discret après son nom.
+- L'axe des dates des graphiques n'écrit plus deux dates l'une sur l'autre à ses bords, et espace ses dates de 2, 5 ou 10 ans sur une longue période.
 - Après une mise à jour, le navigateur recharge les feuilles de style, les scripts et les images qui ont changé : leur adresse porte la date du fichier.
 
 ### Ajouté

@@ -1,6 +1,6 @@
 # Les favoris et leurs étiquettes
 
-État : en cours, ouvert le 2026-11-12 ; écrit, comparé, relu, constats de la relecture corrigés (Suivi) ; restent `make browser-check` et les fautes de `mutants.py` (« Pour reprendre »). Point « Favoris et étiquettes » de `ROADMAP.md`. La forme est celle que Lou a choisie le 12 novembre au soir ; ce fichier dit comment on la fait.
+État : terminé le 2026-11-12 : écrit, comparé, relu, constats de la relecture corrigés et leurs fautes vues, `make browser-check` passé (Suivi) ; part avec la 0.5.0. Point « Favoris et étiquettes » de `ROADMAP.md`. La forme est celle que Lou a choisie le 12 novembre au soir ; ce fichier dit comment on la fait.
 
 ## Ce que voit un compte
 
@@ -29,12 +29,12 @@
 
 1. [x] Migration, entité, dépôt ; appliquée à `bdoh_small`, `bdoh`, `bdoh_othu`, `bdoh_othu_small`, retour arrière essayé.
 2. [x] Contrôleur, gabarits, traductions, icônes, styles, JavaScript.
-3. [x] Cas de `compare.py` ; passes `accounts`, `pages`, `admin`, `imports` (Suivi). [ ] `make browser-check` (étapes écrites dans `dev/browser/journeys.py`, `favorites`, pas encore jouées).
-4. [x] Relecture faite, `dev/differences.md` et `CHANGELOG.md` écrits. [x] Ses constats, plus bas, chacun corrigé et éprouvé par un cas (Suivi du 12 novembre, nuit). [ ] Leurs fautes dans `mutants.py`, vues.
+3. [x] Cas de `compare.py` ; passes `accounts`, `pages`, `admin`, `imports` (Suivi). [x] `make browser-check` (`dev/browser/journeys.py`, `favorites`).
+4. [x] Relecture faite, `dev/differences.md` et `CHANGELOG.md` écrits. [x] Ses constats, plus bas, chacun corrigé et éprouvé par un cas (Suivi du 12 novembre, nuit). [x] Leurs fautes dans `mutants.py`, vues.
 
 ## Pour reprendre
 
-Restent : les fautes des favoris dans `mutants.py` (`--only favoris`), puis `make browser-check`, puis la version 0.5.0.
+Fait ; part avec la version 0.5.0.
 
 Les constats de la relecture du 12 novembre (un second Claude, en lecture seule), du plus grave au moins grave, tous corrigés le soir même ; ce qui les éprouve est entre crochets.
 
@@ -56,3 +56,6 @@ Ce que la relecture a vérifié et trouvé correct : filtrage par compte de tout
 
 - 2026-11-12, soir : écrit. Essai à la main sur une copie de `bdoh_small` : étoile, refus d'une chronique d'un autre observatoire (404), étiquettes, favoris d'un autre compte intouchés, chronique cachée sans droit nommée à part, fenêtre d'export (rééchantillonnages communs). `compare.py accounts` 44/0/0/17/0, dont les dix vérifications « nouveau seul : favoris », toutes conformes. Icônes `star` et `star-fill` de Material Symbols 0.48.1, prises sur jsDelivr après avoir vérifié que la même source redonne `search.svg` à l'identique. Les jetons CSRF portés par un attribut `data-*` se lisent `<jeton>` dans `compare.py`. Relecture par un second Claude lancée.
 - 2026-11-12, nuit : les onze constats corrigés, chacun éprouvé par une vérification de `compare.py accounts` (« Pour reprendre ») ; `compare.py accounts` 49/0/0/17/0 sur `bdoh_small`. Ce que la vérification des deux options a appris : les options d'export d'une chronique sont souvent les siennes, pas celles par défaut, et une paire prise au hasard a des options emboîtées (l'intersection est alors celle de l'une) ; la vérification cherche donc sur leurs pages une paire dont chacune a une option que l'autre n'a pas. En passant, le rapport de `compare.py` nommait pour chaque écart admis la première règle dont le motif couvre le cas, si bien que la règle du menu des favoris, qui vaut pour toute page connectée, nommait aussi les courriels et l'état des tables : `admitted` rend désormais les seules règles qui expliquent une ligne de l'écart (`test_compare.py`). Huit fautes des favoris ajoutées à `mutants.py`.
+- 2026-11-12, nuit : `mutants.py --only favoris`, 8 fautes vues sur 8, chacune par `compare.py accounts` (« différents ») : l'étiquette non échappée, les identifiants pris tels quels, les caractères de contrôle gardés, les options de la première ou de la dernière chronique, les favoris d'un autre compte touchés, une chronique d'un autre observatoire acceptée (`find` au lieu de `findOneById`), une chronique cachée exportable sans droit.
+- 2026-11-12, nuit : `make browser-check`, 73 étapes sur 73 sans erreur, dont les quatre des favoris (étoile sur la page et dans la liste d'une station, étiquette qui coche son groupe, export des deux reçu par courriel et ouvert, retrait) ; `compare.py pages` 543/0/0/1036/0.
+- 2026-11-13, nuit : la règle des étiquettes essayée sur une copie de `bdoh_small` du nouveau serveur, un favori étiqueté, `anonymize.sql` entier en une transaction : étiquettes vidées. L'essai a trouvé plus : le script refusait toute base du nouveau BDOH, faute de règle pour `doctrine_migration_versions.version` (la table des migrations de Doctrine Migrations 3, qui remplace `migration_versions`) ; classée « keep », le script va au bout (58 s).

@@ -195,6 +195,8 @@ INSERT INTO anon.rules VALUES
 
     -- Selon les bases, la table des migrations de Doctrine est dans le schéma public.
     ('public', 'migration_versions', 'version',               'keep',     NULL),
+    -- Celle du nouveau BDOH (Doctrine Migrations 3) : les noms des migrations, publics dans le dépôt.
+    ('bdoh', 'doctrine_migration_versions', 'version',        'keep',     NULL),
 
     -- Tables de PostGIS.
     ('public',   'spatial_ref_sys',  '*',                     'keep',     NULL),

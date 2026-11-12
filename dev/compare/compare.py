@@ -776,12 +776,13 @@ def admitted(rules, old, new, exact=False):
                 unexplained.append(line)
         if len(unexplained) < len(changed):
             used += [rule for rule in rules if rule.order]
-    explaining = [next((rule for rule in rules for wanted in rule.lines if found(wanted, line)), None)
-                  for line in unexplained]
-    if None in explaining or not all(any(found(wanted, line) for line in changed)
-                                     for rule in rules for wanted in rule.must):
+    # Chaque ligne restante, et les règles qui l'admettent : toutes servent, pour qu'une règle que couvre une plus large
+    # (l'accueil du portail admet toute ligne retirée) ne passe pas pour inutile
+    explaining = [[rule for rule in rules if any(found(wanted, line) for wanted in rule.lines)] for line in unexplained]
+    if not all(explaining) or not all(any(found(wanted, line) for line in changed)
+                                      for rule in rules for wanted in rule.must):
         return []
-    used += explaining + [rule for rule in rules if rule.must]
+    used += [rule for line_rules in explaining for rule in line_rules] + [rule for rule in rules if rule.must]
     return [rule for rule in rules if rule in used]  # dans l'ordre du registre, sans doublon
 
 

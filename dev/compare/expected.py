@@ -294,7 +294,7 @@ RULES = [
     # L'en-tête et le début du fil d'Ariane, sur toute page du site, quel que soit le mode qui la compare : header()
     # les réécrit dans l'ancien, et la page doit alors être la même, sauf ce que d'autres règles admettent
     *(Rule(mode, r'.*', HEADER, rewrite=header) for mode in ('pages', 'admin', 'imports', 'accounts')),
-    *(Rule(mode, r'(?!anonyme ).*', FAVORITES, lines=FAVORITE_MENU) for mode in ('pages', 'admin', 'imports', 'accounts')),
+    *(Rule(mode, r'(?!anonyme ).*', FAVORITES, lines=FAVORITE_MENU) for mode in ('pages', 'admin', 'accounts')),
     Rule('pages', r'(?!anonyme ).*', FAVORITES, lines=FAVORITE_STAR),
 
     # --- pages -------------------------------------------------------------------------------------
