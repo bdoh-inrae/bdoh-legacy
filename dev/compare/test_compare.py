@@ -307,7 +307,7 @@ class Register(unittest.TestCase):
                 re.compile(rule.case)
                 for pattern, _ in rule.masks:
                     re.compile(pattern)
-                self.assertTrue(rule.lines or rule.masks or rule.order)
+                self.assertTrue(rule.lines or rule.masks or rule.order or rule.rewrite)
 
     def test_a_faulty_export_is_not_admitted(self):
         # Une valeur fausse à côté de l'écart admis des licences : le mode échoue
@@ -337,6 +337,69 @@ class Register(unittest.TestCase):
         self.assertEqual(self.verdict(rules, name, ['T a'], ['T a', 'T Points de contrôle (?) : Aucun']), 'écarts admis')
         self.assertEqual(self.verdict(rules, name, ['T a'], ['T a', 'T Points de contrôle (?) : Aucun', 'T 3.5']), 'différents')
         self.assertEqual(self.verdict(rules, 'gestionnaire /DRAIX/LAVAL-AMONT/HT', ['T a'], ['T a', 'T Points de contrôle (?) : Aucun']), 'différents')
+
+    # L'en-tête d'une page de station, dans l'ancien, puis dans le nouveau (dev/differences.md, « En-tête, fil d'Ariane
+    # et pied de page ») : les mêmes liens, rangés autrement, « BDOH » à la place du logo, le fil qui le nomme
+    LANG = ['A #', 'D a data-toggle=dropdown', 'G /images/i18n/fr.png', 'T Français', 'A /select_lang/en',
+            'G /images/i18n/gb.png', 'T English']
+    ACCOUNT = ['A /OBS/login', 'T Se connecter', 'T ou', 'A /OBS/user/new', 'T Créer un compte']
+    SELECTOR = ['A #', 'D a data-toggle=dropdown', 'T Observatoires', 'A /?_observatoire=ALL', 'T Tous les observatoires',
+                'A /AUTRE/home', 'T Autre', 'A /OBS/home', 'T Obs']
+    OLD_HEADER = ['T BDOH - Obs - Station', 'L stylesheet /css/themes/OBS.min.css', 'A https://obs.example/',
+                  'G /uploads/OBS-logo.jpg Obs', 'A /OBS/home', 'T Obs', 'A /OBS/nos-donnees', 'T Consultation des données',
+                  'A /OBS/contact', 'T Aide', *LANG, *ACCOUNT, *SELECTOR, 'A /OBS/home', 'T Accueil', 'T Station',
+                  'D div data-notices=[]']
+    NEW_HEADER = ['T BDOH - Obs - Station', 'L stylesheet /css/themes/OBS.min.css', 'A /', 'T BDOH', *SELECTOR,
+                  'A /OBS/home', 'T Obs', 'A /OBS/contact', 'T Aide', *LANG, 'A /OBS/nos-donnees', 'T Recherche avancée',
+                  *ACCOUNT, 'A /', 'T BDOH', 'A /OBS/home', 'T Obs', 'T Station', 'D div data-notices=[]']
+
+    def test_the_header_moves_its_links_and_loses_none(self):
+        rules = [r for r in compare.expected.RULES if r.mode == 'pages']
+        name = 'anonyme /OBS/station/S'
+        self.assertEqual(compare.expected.header(self.OLD_HEADER), self.NEW_HEADER)
+        self.assertEqual(self.verdict(rules, name, self.OLD_HEADER, self.NEW_HEADER), 'écarts admis')
+        new = self.NEW_HEADER
+        for fault, faulty in [
+            ("l'aide perdue", [l for l in new if l not in ('A /OBS/contact', 'T Aide')]),
+            ('la recherche avancée perdue', [l for l in new if l not in ('A /OBS/nos-donnees', 'T Recherche avancée')]),
+            ('un lien de plus', [*new[:4], 'A /ailleurs', 'T Ailleurs', *new[4:]]),
+            ("l'ancien libellé gardé", [l if l != 'T Recherche avancée' else 'T Consultation des données' for l in new]),
+            ('le compte avant la recherche avancée', [*new[:new.index('A /OBS/nos-donnees')], *self.ACCOUNT,
+                                                      'A /OBS/nos-donnees', 'T Recherche avancée',
+                                                      *new[new.index('T Créer un compte') + 1:]]),
+            ("le fil sans l'observatoire", [*new[:-4], 'T Station', 'D div data-notices=[]']),
+            ('la connexion perdue', [l for l in new if l not in self.ACCOUNT]),
+        ]:
+            with self.subTest(fault):
+                self.assertEqual(self.verdict(rules, name, self.OLD_HEADER, faulty), 'différents')
+
+    def test_a_header_that_is_not_recognized_stays_as_it_was(self):
+        for lines in (['T a', 'T b'], [l for l in self.OLD_HEADER if l != 'T English'],
+                      [l for l in self.OLD_HEADER if l != 'A /?_observatoire=ALL']):
+            with self.subTest(len(lines)):
+                self.assertEqual(compare.expected.header(lines), lines)
+
+    def test_the_title_of_an_observatory_home(self):
+        # Le fil de l'accueil d'un observatoire : « Accueil », sans lien
+        old = [*self.OLD_HEADER[:-4], 'T Accueil', 'T « Obs » Bienvenue', 'D div data-notices=[]']
+        new = compare.expected.header(old)
+        self.assertEqual(new[-5:], ['T BDOH', 'T Obs', 'A https://obs.example/', "T Obs Site de l'observatoire Bienvenue",
+                                    'D div data-notices=[]'])
+        # Sans site, ni lien ni mention
+        old = [l for l in old if l != 'A https://obs.example/']
+        self.assertEqual(compare.expected.header(old)[-2:], ['T Obs Bienvenue', 'D div data-notices=[]'])
+
+    def test_a_page_without_breadcrumb_gets_its_beginning(self):
+        old = [*self.OLD_HEADER[:-4], 'T Contact', 'D div data-notices=[]']
+        self.assertEqual(compare.expected.header(old)[-6:], ['A /', 'T BDOH', 'A /OBS/home', 'T Obs', 'T Contact',
+                                                            'D div data-notices=[]'])
+
+    def test_moved_lines_count_only_with_a_named_list(self):
+        # Une ligne déplacée, en plus d'un écart admis : seule une liste nommée (order) l'admet
+        old, new = ['T ancien', 'T a', 'T b'], ['T nouveau', 'T b', 'T a']
+        self.assertEqual(self.verdict([self.RULE], 'page a', old, new), 'différents')
+        self.assertEqual(self.verdict([self.RULE, self.rule(order=True)], 'page a', old, new), 'écarts admis')
+        self.assertEqual(self.verdict([self.RULE, self.rule(order=True)], 'page a', old, ['T nouveau', 'T b', 'T c']), 'différents')
 
 
 class Stylesheets(unittest.TestCase):

@@ -10,6 +10,9 @@ test vérifie que ce titre existe. Elle admet :
   champ d'une ligne d'état et rien d'autre de cette ligne.
 - `must` : des lignes de diff qui doivent s'y trouver, sans quoi l'écart n'est pas celui qu'on admet.
 - `order` : les mêmes lignes dans un autre ordre. Sans cette règle, un autre ordre compte pour un écart.
+- `rewrite` : une fonction qui réécrit les lignes de l'ancien comme le nouveau doit les montrer, avant tout le reste :
+  pour un écart qui déplace des lignes, qu'une liste de lignes admettrait aussi perdues. Ce qu'elle ne reconnaît pas,
+  elle le rend tel quel, et l'écart se voit.
 
 Sans donnée : ni valeur de mesure, ni compte réel (les comptes cités sont ceux que créent les modes). Ce qui dépend
 des identifiants d'une base ne s'écrit pas ici en dur : `qjo_rules`, `account_rules` et `admin_rules` reçoivent ceux
@@ -34,6 +37,7 @@ class Rule:
     masks: tuple = ()
     must: tuple = ()
     order: bool = False
+    rewrite: object = None
 
 
 def replaced(mode, case, why, status, *lines):
@@ -107,6 +111,10 @@ CHANGED_KEYS = """accueilMessage | measure.export.help-content | measure.export.
     technicalContact | utilisateur.newAccountMail.body"""
 
 
+# L'astuce de saisie des dates, qui passe de la page à la bulle des champs (2026-11-12)
+DATE_TIP = ("-T Astuce : La date peut s'écrire en tapant seulement les chiffres (exemple : 130495 -> 13/04/1995). Si vous écrivez 1304 l'année en cours sera ajoutée automatiquement.",
+            '-T Tip : You can write the date with the number(example : 130495 -> 13/04/1995). If you write 1304 the current year will be automatically add')
+
 # L'avertissement de la limite de 5 ans, retiré avec elle (2026-11-12)
 FIVE_YEARS = ("-T Attention : pour des raisons de performance vous ne pouvez sélectionner qu'un intervalle de dates de 5 ans maximum.",
               '-T Warning: due to performance limitations please select a maximum time span of 5 years')
@@ -115,6 +123,70 @@ def translation(sign, keys):
     """La ligne d'une de ces clés dans /translations/messages.js, quel qu'en soit le texte."""
     names = [re.escape(key.strip()) for key in re.split(r'\||\n', keys) if key.strip()]
     return RX(rf'{sign}t\.add\("(?:{"|".join(names)})", ".*", "messages", "\w+"\);')
+
+
+HEADER = "En-tête, fil d'Ariane et pied de page"
+LANG_FLAG = re.compile(r'G /images/i18n/\w+\.png')
+DATA_LINK = {'T Consultation des données': 'T Recherche avancée', 'T See our data': 'T Advanced search'}
+CRUMB_HOME = ('T Accueil', 'T Home')
+OBS_TITLE = re.compile(r'T «\s*(.+?)\s*» (Bienvenue|Welcome)')
+
+
+def header(lines):
+    """L'en-tête d'une page de l'ancien, et le début de son fil d'Ariane, comme le nouveau doit les montrer
+    (2026-11-12, Lou) : « BDOH », qui mène au portail, à la place du logo de l'observatoire (dont le lien passe à côté
+    du titre de son accueil) ; dans la barre du haut, le choix d'un observatoire, l'observatoire de la page, l'aide et
+    la langue ; dans celle du dessous, « Recherche avancée » (l'ancien « Consultation des données ») puis le compte ;
+    le fil commence par « BDOH » puis l'observatoire, au lieu de « Accueil », et toute page en a un. Les mêmes liens,
+    déplacés : rien ne s'ajoute ni ne se perd qu'ici."""
+    def at(k, *wanted):
+        return all(0 <= k + i < len(lines) and (w(lines[k + i]) if callable(w) else lines[k + i] == w)
+                   for i, w in enumerate(wanted))
+    is_flag = LANG_FLAG.fullmatch
+    lang = next((k for k in range(len(lines)) if at(k, 'A #', 'D a data-toggle=dropdown', is_flag)), None)
+    if lang is None or not at(lang + 3, lambda l: l.startswith('T '), lambda l: l.startswith('A /select_lang/'), is_flag,
+                              lambda l: l.startswith('T ')):
+        return lines
+    # Avant la langue, de la fin vers le début : l'aide, la consultation des données, l'observatoire, puis le logo
+    k, found = lang, {}
+    for part, link, text in (('contact', rf'A {OBS}/contact', r'T .+'),
+                             ('data', rf'A {OBS}/nos-donnees', '|'.join(map(re.escape, DATA_LINK))),
+                             ('current', rf'A {OBS}/home', r'T .+')):
+        if k >= 2 and re.fullmatch(link, lines[k - 2]) and re.fullmatch(text, lines[k - 1]):
+            k -= 2
+            found[part] = lines[k:k + 2]
+    if k < 1 or not lines[k - 1].startswith('G '):
+        return lines
+    start = k - 2 if k >= 2 and lines[k - 2].startswith('A ') else k - 1
+    site = lines[start][2:] if start == k - 2 else None
+    # Après la langue : le compte, puis le choix d'un observatoire et la liste des observatoires
+    everything = next((m for m in range(lang + 7, len(lines)) if lines[m] == 'A /?_observatoire=ALL'), None)
+    if everything is None or not at(everything - 3, 'A #', 'D a data-toggle=dropdown'):
+        return lines
+    end = everything + 2
+    while at(end, lambda l: re.fullmatch(rf'A {OBS}/home', l), lambda l: l.startswith('T ') and l not in CRUMB_HOME):
+        end += 2
+    current = found.get('current')
+    if current and at(end, current[0], lambda l: l in CRUMB_HOME):
+        crumb, after = ['A /', 'T BDOH', *current], end + 2
+    elif current and at(end, lambda l: l in CRUMB_HOME):
+        crumb, after = ['A /', 'T BDOH', current[1]], end + 1
+    else:
+        crumb, after = (['A /', 'T BDOH', *current] if current else ['T BDOH']), end
+    data = found.get('data')
+    rest = lines[after:]
+    # Le titre de l'accueil d'un observatoire : sans guillemets, avec le lien vers son site
+    if current:
+        title = next((i for i, l in enumerate(rest) if (m := OBS_TITLE.fullmatch(l)) and f'T {m.group(1)}' == current[1]), None)
+        if title is not None:
+            m = OBS_TITLE.fullmatch(rest[title])
+            outward = site and site != 'http://'
+            label = " Site de l'observatoire" if outward else ''
+            rest = [*rest[:title], *([f'A {site}'] if outward else []),
+                    f'T {m.group(1)}{label} {m.group(2)}', *rest[title + 1:]]
+    return [*lines[:start], 'A /', 'T BDOH', *lines[everything - 3:end], *(current or []), *found.get('contact', []),
+            *lines[lang:lang + 7], *([data[0], DATA_LINK[data[1]]] if data else []), *lines[lang + 7:everything - 3],
+            *crumb, *rest]
 
 
 QJO_DAYS = "Jours manquants d'un fichier QJO"
@@ -169,10 +241,15 @@ def admin_rules(created, technical, stations_on_first_page):
 
 
 RULES = [
+    # L'en-tête et le début du fil d'Ariane, sur toute page du site, quel que soit le mode qui la compare : header()
+    # les réécrit dans l'ancien, et la page doit alors être la même, sauf ce que d'autres règles admettent
+    *(Rule(mode, r'.*', HEADER, rewrite=header) for mode in ('pages', 'admin', 'imports', 'accounts')),
+
     # --- pages -------------------------------------------------------------------------------------
     # La carte des stations, sur l'accueil du portail et sur celui d'un observatoire ; son contenu se vérifie à part
     # (« nouveau seul : carte des stations » dans le même mode)
-    Rule('pages', rf'{ROLE} (?:{OBS}/(?:home)?|/)', 'Carte des stations', lines=(
+    # (« /INCONNU/ » est l'observatoire inventé du cas 404, qui n'a pas d'accueil)
+    Rule('pages', rf'{ROLE} (?:(?!/INCONNU/){OBS}/(?:home)?|/)', 'Carte des stations', lines=(
         '+L stylesheet /bundles/irsteabdohconsult/vendor/leaflet/leaflet.css',
         '+S /bundles/irsteabdohconsult/vendor/leaflet/leaflet.js', '+S /bundles/irsteabdohconsult/js/stations-map.js',
         RX(r'\+T (?:Carte des stations|Map of the stations)'),
@@ -189,7 +266,7 @@ RULES = [
         RX(r'-.*'), '+L stylesheet /bundles/irsteabdohconsult/css/homes.css', RX(r'\+T Observato(?:ires|ries)'),
         RX(rf'\+A {OBS}/home'), RX(r'\+D a data-map-observatoire=.+'), RX(r'\+G /uploads/\S+'), RX(r'\+T .+')),
         must=('-S /assets/home.js', RX(r'\+D a data-map-observatoire=.+'))),
-    Rule('pages', rf'{ROLE} {OBS}/(?:home)?', HOMES, lines=(
+    Rule('pages', rf'{ROLE} (?!/INCONNU/){OBS}/(?:home)?', HOMES, lines=(
         '+L stylesheet /bundles/irsteabdohconsult/css/homes.css', '+S /bundles/irsteabdohconsult/js/read-more.js',
         RX(r'\+I button button(?: disabled)?'), RX(r'\+D button data-map-site=\d+'), RX(r'\+T Sites ?: .+'),
         RX(r'\+D li data-map-site=\d+'),
@@ -200,9 +277,11 @@ RULES = [
     # La bande de toute la chronique, sous son graphique : un élément de plus sur la page d'une chronique, que le
     # JavaScript remplit (« nouveau seul : bande de toute la chronique » vérifie sa route)
     Rule('pages', rf'{ROLE} {OBS}/[^/ ]+/[^/ ]+', GRAPH, lines=(
-        RX(rf'\+D div data-hint=.+ data-title=.+ data-url={OBS}/chronique/\d+/overview'), *FIVE_YEARS)),
+        RX(rf'\+D div data-hint=.+ data-title=.+ data-url={OBS}/chronique/\d+/overview'), *FIVE_YEARS, *DATE_TIP)),
     # La limite de 5 ans du choix des dates part avec son avertissement, sur la page d'une chronique et dans le visualiseur
-    Rule('pages', rf'{ROLE} {OBS}/viewer', GRAPH, lines=FIVE_YEARS, must=FIVE_YEARS[:1]),
+    Rule('pages', rf'{ROLE} {OBS}/viewer', GRAPH, lines=(*FIVE_YEARS, *DATE_TIP), must=FIVE_YEARS[:1]),
+    # L'astuce de saisie des dates passe dans la bulle des champs, sur la recherche avancée aussi
+    Rule('pages', rf'{ROLE} {OBS}/nos-donnees', GRAPH, lines=DATE_TIP, must=DATE_TIP[:1]),
     Rule('pages', rf'{ROLE} {OBS}/contact', CONTACT, lines=(
         '-A mailto:bdoh.support@lists.irstea.fr', '+A mailto:bdoh.support@listes.inrae.fr',
         "-T Pour les demandes techniques concernant l'utilisation de BDOH veuillez contacter bdoh.support@lists.irstea.fr.",
@@ -227,6 +306,10 @@ RULES = [
         RX(r"\+T Ces données sont utilisées à des fins scientifiques .*\.Les données ouvertes sont accessibles à tous, gratuitement et sans inscription, sous Licence Ouverte Etalab ; les données fermées le sont sur demande d'accès\."))),
     Rule('pages', rf'{ROLE} /translations/messages\.js', OPEN,
          lines=(translation('-', GONE_KEYS), translation(r'\+', NEW_KEYS), translation('[-+]', CHANGED_KEYS))),
+    # Les clés de l'en-tête : « Consultation des données » devenu « Recherche avancée », le titre du portail sans
+    # guillemets, le lien vers le site d'un observatoire
+    Rule('pages', rf'{ROLE} /translations/messages\.js', HEADER, lines=(
+        translation('-', 'dataAccess'), translation('[-+]', 'home.title'), translation(r'\+', 'observatoryWebsite'))),
     Rule('pages', rf'{ROLE} {OBS}/dataset/[^/ ]+', 'Listes sans tri', order=True),
     Rule('pages', rf'{ROLE} {OBS}/nos-donnees', 'Listes sans tri', order=True),
 
@@ -283,6 +366,8 @@ RULES = [
     # L'état des comptes que crée le mode : account_rules, avec les identifiants de la passe.
 
     # --- admin -------------------------------------------------------------------------------------
+    # L'astuce de saisie des dates passe dans la bulle des champs, sur la page des barèmes aussi
+    Rule('admin', rf'{ROLE} {OBS}/admin/transformation', GRAPH, lines=DATE_TIP, must=DATE_TIP[:1]),
     Rule('admin', rf'{ROLE} {OBS}/admin/utilisateur/export\?format=csv', "Export des listes de l'administration",
          lines=(RX(r'-statut (?:403|500)'), '+statut 404'), must=('+statut 404',)),
     Rule('admin', rf'gestionnaire {OBS}/admin/personnetheia/list', "Modifier le compte d'un autre, réservé aux administrateurs",

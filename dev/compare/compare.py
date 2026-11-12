@@ -30,6 +30,7 @@ make fingerprint. Bibliothèque standard seulement.
 """
 
 import argparse
+import collections
 import concurrent.futures
 import contextlib
 import datetime
@@ -647,6 +648,12 @@ def same_but_rounding(a, b):
     return True
 
 
+def order_key(line):
+    """Une ligne sous la forme qui juge l'ordre : le type de ligne (T, A…) reste en tête, les éléments d'une liste en
+    « ## » se trient."""
+    return line[:2] + '##'.join(sorted(line[2:].split('##'))) if '##' in line else line
+
+
 def compare(old, new, exact=False):
     """Écarts entre deux suites de lignes : (lignes de diff, paires de lignes à un arrondi près,
     ordre seul).
@@ -673,9 +680,7 @@ def compare(old, new, exact=False):
                     if same_but_rounding(old[i1 + k], new[j1 + k]):
                         rounding.append((old[i1 + k], new[j1 + k]))
                         new[j1 + k] = old[i1 + k]
-    # Le type de ligne (T, A…) reste en tête ; les éléments qui suivent se trient.
-    key = lambda line: line[:2] + '##'.join(sorted(line[2:].split('##'))) if '##' in line else line
-    sorted_old, sorted_new = sorted(map(key, old)), sorted(map(key, original))
+    sorted_old, sorted_new = sorted(map(order_key, old)), sorted(map(order_key, original))
     order_only = len(old) == len(new) and all(
         a == b or same_but_rounding(a, b) for a, b in zip(sorted_old, sorted_new))
     diff = list(difflib.unified_diff(old, new, 'ancien', 'nouveau', n=2, lineterm=''))
@@ -691,7 +696,11 @@ def classify(old, new, exact=False):
 
 
 def admitted(rules, old, new, exact=False):
-    """Ces règles du registre expliquent-elles tout l'écart entre deux suites de lignes ?"""
+    """Ces règles du registre expliquent-elles tout l'écart entre deux suites de lignes ? Les réécritures de l'ancien
+    (`rewrite`) passent d'abord, puis les masques, puis les lignes admises."""
+    for rule in rules:
+        if rule.rewrite:
+            old = rule.rewrite(old)
     masks = [(re.compile(pattern), replacement) for rule in rules for pattern, replacement in rule.masks]
 
     def masked(lines):
@@ -704,8 +713,20 @@ def admitted(rules, old, new, exact=False):
 
     diff = compare(masked(old), masked(new), exact)[0]
     changed = [line for line in diff[2:] if line[0] in '+-']  # ni les deux lignes de tête, ni le contexte
+    unexplained = changed
+    if any(rule.order for rule in rules):
+        # Une liste que l'ancien ne triait pas : une ligne déplacée, ou les mêmes éléments dans un autre ordre, ne
+        # compte pas ; le reste de l'écart doit être admis par ailleurs
+        removed = collections.Counter(order_key(line[1:]) for line in changed if line[0] == '-')
+        added = collections.Counter(order_key(line[1:]) for line in changed if line[0] == '+')
+        moved, unexplained = {'-': removed & added, '+': removed & added}, []
+        for line in changed:
+            if moved[line[0]][order_key(line[1:])]:
+                moved[line[0]][order_key(line[1:])] -= 1
+            else:
+                unexplained.append(line)
     allowed = [wanted for rule in rules for wanted in rule.lines]
-    return (all(any(found(wanted, line) for wanted in allowed) for line in changed)
+    return (all(any(found(wanted, line) for wanted in allowed) for line in unexplained)
             and all(any(found(wanted, line) for line in changed) for rule in rules for wanted in rule.must))
 
 
@@ -725,7 +746,10 @@ def registered(rules, name, key, old, new, exact=False, rounding=()):
     écart est admis. Aucune passe n'en a depuis que les exports passent à 15 chiffres (dev/decisions.md)."""
     if changed_values(rounding):
         return 'différents', []
-    rules = [rule for rule in rules if re.fullmatch(rule.case, name)]
+    # Une réécriture qui ne reconnaît rien (un courriel, l'état d'une table) ne compte pas parmi les règles du cas ; les
+    # autres viennent d'abord, pour que le rapport nomme la plus précise
+    rules = [rule for rule in rules if re.fullmatch(rule.case, name) and (not rule.rewrite or rule.rewrite(old) != old)]
+    rules.sort(key=lambda rule: rule.rewrite is not None)
     if key == 'même contenu, autre ordre':
         lists = [rule for rule in rules if rule.order]
         return (key, lists) if lists else ('différents', [])
@@ -808,6 +832,14 @@ class Report:
             slug = re.sub(r'[^\w.-]+', '_', name).strip('_')[:140]
             unique = hashlib.sha1(name.encode()).hexdigest()[:8]
             shown = [f'~ {a}\n~ {b}' for a, b in rounding[:20]]
+            # Un cas encore différent après la réécriture de l'ancien (rewrite) : ce qui reste, qu'on lirait mal dans le
+            # diff brut, où l'en-tête déplacé occupe tout
+            rewritten = old
+            for rule in self.rules:
+                if rule.rewrite and re.fullmatch(rule.case, name):
+                    rewritten = rule.rewrite(rewritten)
+            if key == 'différents' and rewritten != old:
+                shown += ['', "Après la réécriture de l'ancien (expected.py, rewrite) :", *compare(rewritten, new, exact)[0][2:]]
             (self.dir / f'{slug}.{unique}.diff').write_text('\n'.join([name, *diff, *shown, '']))
             self.summary.append(f"{key:<26} {name}" + (f'  ({len(rounding)} arrondis)' if rounding else '')
                                 + (f"  [{rules[0].why}]" if rules else ''))
@@ -3719,7 +3751,8 @@ def theme_verdict(rules, color):
     want = palette(color)
     expected = {'.navbar-default': f"background-color:{want['ink']}", '.navbar-inverse': f"background-color:{want['tint']}",
                 'h1,.sonata-bc h1': f"color:{want['ink']}", '.box': f"border:1px solid {want['line']}",
-                '#footer': f"background-color:{want['ink']}", 'a,.btn-link': f"color:{want['ink']}"}
+                '#footer': f"border-top:1px solid {want['line']}", 'a,.btn-link': f"color:{want['ink']}",
+                'a.bdoh-brand': f"color:{want['ink']}"}
     found = {}
     for rule in rules:
         selector, _, body = rule.partition(' {')

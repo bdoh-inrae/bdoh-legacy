@@ -8,10 +8,17 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/). Numéros de v
 
 - Le graphique d'une chronique n'a plus de limite de 5 ans, et son bouton « Exporter » n'est plus bloqué au-delà : on affiche toute une chronique. Au-delà de 5 ans, les cumuls s'additionnent par mois (« mm/mois »), et une période de plus de 50 000 mesures s'allège en une seule lecture, avec le même dessin, pics compris.
 - Dans les listes de chroniques et de stations, toute la ligne mène à sa fiche, et le survol le montre.
+- En haut à gauche, « BDOH » remplace le logo de l'observatoire et mène au portail ; le site de l'observatoire s'ouvre d'une icône à côté du titre de son accueil.
+- La barre du haut porte le choix d'un observatoire, celui qu'on consulte, l'aide et la langue ; celle du dessous, « Recherche avancée » (l'ancien « Consultation des données ») et le compte.
+- Le fil d'Ariane commence par « BDOH », puis l'observatoire, au lieu de « Accueil », et toute page en a un, le portail compris : le contenu commence toujours au même endroit.
+- Les titres du portail et de l'accueil d'un observatoire perdent leurs guillemets.
+- Le pied de page s'allège : un filet, les logos sur une ligne, puis les mentions légales en petit.
+- L'avis d'un graphique allégé tient en une ligne grise, et l'astuce de saisie des dates passe dans la bulle des champs.
 
 ### Ajouté
 
 - À côté de chaque champ de date, un bouton ouvre le calendrier du navigateur ; la saisie au clavier reste.
+- La bande sous le graphique se cale d'un bouton sur une semaine, un, trois ou six mois, un ou cinq ans, ou toute la chronique.
 - La comparaison avec l'ancien BDOH passe aussi sur la base d'OTHU, dans tous ses modes : un cas que la base ne permet pas de jouer y est nommé, et les écarts admis prennent les identifiants de la base comparée.
 
 ### Corrigé
