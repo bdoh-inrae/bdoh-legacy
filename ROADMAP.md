@@ -11,7 +11,7 @@ Priorité (Lou, 3 novembre) : stabiliser ce BDOH au plus près de l'ancien et le
 ## À faire
 
 - **Preuves de solidité** : la phase A est faite (`CHANGELOG.md`, 0.2.0), et le registre des écarts admis, avec lequel les 47 fautes remises dans le code sont vues (0.3.0), et la mesure de ce que la comparaison exécute (6 novembre). Reste, dans cet ordre ; l'avancée et le point de reprise sont dans [dev/plans/2026-11-04_validation.md](dev/plans/2026-11-04_validation.md), les raisons dans [dev/audits/2026-11-03_validation-plan.md](dev/audits/2026-11-03_validation-plan.md) :
-  1. élargir les cas d'après la couverture du 6 novembre et l'usage réel : reste l'adaptation des modes à la forme d'OTHU, puis une nouvelle passe de couverture ;
+  1. une nouvelle passe de couverture, l'élargissement des cas étant fini, OTHU compris (12 novembre) ;
   2. invariants (`E(I(E(x))) = E(x)`, relations sur les calculs) ;
   3. pannes provoquées : exécuteur tué, PostgreSQL redémarré, `/tmp` plein ;
   4. une relecture, en lecture seule, du code qui écrit et que la comparaison n'exécute toujours pas, et de ce qui a changé depuis la 0.3.0 ;

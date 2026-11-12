@@ -295,12 +295,14 @@ class Register(unittest.TestCase):
 
     def test_each_rule_says_why_in_the_differences(self):
         text = (Path(__file__).resolve().parent.parent / 'differences.md').read_text()
-        for rule in compare.expected.RULES:
+        for rule in [*compare.expected.RULES, *compare.expected.qjo_rules(['9', '936']), *compare.expected.account_rules(['800', '801', '802']),
+                     *compare.expected.admin_rules('800', ['1'], True)]:
             with self.subTest(rule.case):
                 self.assertIn(f'**{rule.why}', text)
 
     def test_each_rule_reads(self):
-        for rule in compare.expected.RULES:
+        for rule in [*compare.expected.RULES, *compare.expected.qjo_rules(['9', '936']), *compare.expected.account_rules(['800', '801', '802']),
+                     *compare.expected.admin_rules('800', ['1'], True)]:
             with self.subTest(rule.case):
                 re.compile(rule.case)
                 for pattern, _ in rule.masks:
@@ -325,7 +327,7 @@ class Register(unittest.TestCase):
         self.assertEqual(self.verdict(rules, name, old, ['code de sortie 0', '01/01/2024;1.500;v']), 'différents')
 
     def test_a_faulty_import_on_another_chronique_is_not_admitted(self):
-        rules = [r for r in compare.expected.RULES if r.mode == 'imports']
+        rules = [r for r in compare.expected.RULES if r.mode == 'imports'] + compare.expected.qjo_rules(['9', '936'])
         self.assertEqual(self.verdict(rules, 'état mesure', ['mesure\t9\t10\t111'], ['mesure\t9\t20\t222'], exact=True), 'écarts admis')
         self.assertEqual(self.verdict(rules, 'état mesure', ['mesure\t10\t10\t111'], ['mesure\t10\t20\t222'], exact=True), 'différents')
 
@@ -370,6 +372,18 @@ class Fingerprints(unittest.TestCase):
             self.assertNotIn('concat_ws', sql)
             self.assertIn('format(', sql)
             self.assertIn('float8send', sql)
+
+
+class WrittenZeros(unittest.TestCase):
+    """written_zeros : les zéros écrits « 0 » que le nouveau garde, sauf sous la qualité Absente (« 0 »)."""
+
+    def test_qjo(self):
+        content = 'DEC;.  6 13\n950;X;essai;\nQJO;X;20250901;0; ;0;\nQJO;X;20250902;0; ;5;\nQJO;X;20250903;0.000; ;5;\nQJO;X;20250904; ; ; ;\nFIN;\n'
+        self.assertEqual(compare.written_zeros({'format': 'Qjo', 'content': content.encode()}), 1)
+
+    def test_qtvar(self):
+        content = 'DEC;. 6 13\n950;X;essai;\n920;1;X;20251001;00:00;0;0;2;\n920;1;X;20251001;12:30;0;8;2;\n920;1;X;20251002;00:00;1.5;8;2;\nFIN;\n'
+        self.assertEqual(compare.written_zeros({'format': 'Qtvar', 'content': content.encode()}), 1)
 
 
 if __name__ == '__main__':

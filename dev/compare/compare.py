@@ -240,11 +240,16 @@ CUMUL_STEPS = ['5', '7', '8', '9', '10', '1', '3', '4']  # et 5, 15 et 30 minute
 FINE_STEPS = {('instantaneous', '5'), ('instantaneous', '15'), ('cumulative', '1'), ('cumulative', '3'), ('cumulative', '4')}
 # Les fuseaux des demandes réelles, le plus employé d'abord ; -05:00 n'est pas employé, mais reste un cas
 ZONES = ["'+00:00'", "'+01:00'", "'+02:00'", "'-03:00'", "'-04:00'", "'+06:00'", "'+10:00'"]
+# Les sortes de chroniques que tire export_cases ; « moyenne » vaut pour chacune de ses directions. Une base qui
+# n'en a pas (OTHU n'a que des continues) le dit dans le rapport, au lieu de jouer un cas sans chronique.
+EXPORT_KINDS = ['continue', 'calculee', 'convertie', 'discontinue', 'avant 1900', 'lacunes à -9999', 'moyenne',
+                'une seule mesure']
 
 
 def export_cases(base, draws=0, seed=1):
     """Exports en ligne de commande : chaque sorte de chronique, chaque format, chaque pas de temps employé ;
-    puis, si draws, autant d'exports tirés au hasard (graine seed) parmi les chroniques visibles."""
+    puis, si draws, autant d'exports tirés au hasard (graine seed) parmi les chroniques visibles.
+    Rend les cas, et les sortes de EXPORT_KINDS que la base n'a pas."""
     picked = query(base, f"""
         SELECT id, dtype FROM (
             SELECT c.id, c.dtype, row_number() OVER (PARTITION BY c.dtype ORDER BY c.id) AS n
@@ -261,10 +266,13 @@ def export_cases(base, draws=0, seed=1):
                 WHERE c.dtype = 'continue' AND c.estvisible AND e.code = 'mean'
                   AND EXISTS (SELECT 1 FROM mesure m WHERE m.chronique_id = c.id AND m.date >= '2024-01-01' AND m.date < '2025-01-01')
                 GROUP BY c.directionmesure)
+        -- Un agrégat sans GROUP BY rend une ligne même sans chronique : HAVING l'écarte
         UNION (SELECT min(c.id), 'une seule mesure' FROM chronique c
                 WHERE c.dtype = 'continue' AND c.estvisible
-                  AND (SELECT count(*) FROM mesure m WHERE m.chronique_id = c.id AND m.date >= '2024-01-01' AND m.date < '2025-01-01') = 1)
+                  AND (SELECT count(*) FROM mesure m WHERE m.chronique_id = c.id AND m.date >= '2024-01-01' AND m.date < '2025-01-01') = 1
+               HAVING count(*) > 0)
         ORDER BY 1""")
+    missing = [k for k in EXPORT_KINDS if not any(kind == k or kind.startswith(k + ', ') for _, kind in picked)]
     cases = []
     for cid, kind in picked:
         if kind == 'avant 1900':
@@ -294,7 +302,7 @@ def export_cases(base, draws=0, seed=1):
                         cases.append([f'bdoh:export:{kind}', step, *window, cid, *options])
     if draws:
         cases += drawn_export_cases(base, draws, seed)
-    return list(dict.fromkeys(map(tuple, cases)))  # un cas tiré deux fois ne se compare qu'une fois
+    return list(dict.fromkeys(map(tuple, cases))), missing  # un cas tiré deux fois ne se compare qu'une fois
 
 
 def drawn_export_cases(base, draws, seed):
@@ -362,8 +370,13 @@ class Client:
             raise RuntimeError(f'connexion refusée pour {email} sur {side.url}')
 
     def follow_login_link(self, url):
-        """Ouvre un lien de connexion, puis envoie le bouton de la page qu'il ouvre ; rend la réponse."""
+        """Ouvre un lien de connexion, puis envoie le bouton de la page qu'il ouvre ; rend la réponse. Son échéance
+        est notée pour son compte, qu'il vienne de la console ou d'un courriel : un lien de la console demandé dans la
+        même seconde serait le même, déjà servi (vu le 2026-11-12 après le lien du courriel de bienvenue)."""
         parts = urllib.parse.urlsplit(html.unescape(url))
+        params = urllib.parse.parse_qs(parts.query)
+        if 'user' in params:
+            Client.linked[params['user'][0]] = params.get('expires')
         path = f'{parts.path}?{parts.query}'
         form = FormFields(parts.path)
         form.feed(self.get(path)[2].decode('utf-8', 'replace'))
@@ -997,8 +1010,12 @@ def run_exports(args):
         # Le moment de l'export et le dossier temporaire changent à chaque fois.
         return [export_line(line) for line in lines if not line.startswith('# Printing ')]
 
-    cases = [c for c in export_cases(args.base, args.random, args.seed) if args.only in ' '.join(c)]
+    cases, missing = export_cases(args.base, args.random, args.seed)
+    cases = [c for c in cases if args.only in ' '.join(c)]
     report = Report('exports')
+    for name in (f'export d’une chronique {kind}' for kind in missing):
+        if args.only in name:
+            report.add(name, [NO_CASE], [NO_CASE])
     with contextlib.ExitStack() as stack:
         if args.inject_sql:
             # Une faute SQL (mutants.py), pour le nouveau seul, dans une copie : la base des cas reste intacte
@@ -1950,12 +1967,19 @@ def import_cases(base):
     période existante, pour écraser ou garder. Au format BDOH par plages : les plages de janvier 2024
     d'une chronique discontinue, décalées d'un an. Aux formats QJO et Qtvar, sur la chronique
     continue : des jours et des instants de septembre et d'octobre 2025, avec des jours manquants,
-    une valeur nulle et une valeur absente."""
+    une valeur nulle et une valeur absente.
+
+    Les cas refusés altèrent les premières mesures du fichier (valeur non numérique, valide sans valeur…) : elles
+    doivent être valides, avec une valeur, sans quoi le fichier passe (une invalide peut n'avoir pas de valeur,
+    et OTHU commence janvier 2024 par des invalides). Un fichier qui passe à tort recule la fin de la chronique,
+    et les imports qui gardent l'existant, QJO et Qtvar compris, n'écrivent plus rien."""
     cid, slug, station, code, unite = query(base, f"""
         SELECT c.id, c.slug, c.station, c.code, u.libelle FROM ({CHRONIQUES}) c
           JOIN chronique ch ON ch.id = c.id JOIN unite u ON u.id = ch.unite_id
-         WHERE c.dtype = 'continue' AND EXISTS (SELECT 1 FROM mesure m WHERE m.chronique_id = c.id
-               AND m.date >= '2024-01-01' AND m.date < '2024-01-15')
+         WHERE c.dtype = 'continue' AND (
+               SELECT count(*) = 12 AND bool_and(m.valeur IS NOT NULL AND q.ordre NOT IN (100, 200, 600, 700))
+                 FROM (SELECT * FROM mesure WHERE chronique_id = c.id AND date >= '2024-01-01' AND date < '2024-01-15'
+                        ORDER BY date LIMIT 12) m JOIN qualite q ON q.id = m.qualite_id)
          ORDER BY c.id LIMIT 1""", NEW_SERVER)[0]
 
     def measures(months):
@@ -2136,13 +2160,18 @@ def import_cases(base):
             cases.append({'name': name, 'format': 'Bdoh', 'type': 'keepExisting', 'cid': oid, 'slug': oslug,
                           'content': bdoh(lines, unit=ounite, st=ostation, ch=ocode)})
 
-    # QJO et Qtvar : qualités du jeu Hydro2 ; la station et la chronique se choisissent à l'import
-    hydro2 = ['0', '5', '8', '9']
+    # QJO et Qtvar : qualités du jeu Hydro2 que traduit le jeu de la chronique (JeuToJeu ; OTHU ne traduit pas « 0 », et un
+    # fichier qui l'emploie est refusé des deux côtés) ; la station et la chronique se choisissent à l'import
+    hydro2 = [code for code, in query(base, f"""
+        SELECT s.code FROM qualite s JOIN jeuqualite j ON j.id = s.jeu_id AND j.nom = 'Hydro2'
+          JOIN qualitejeuqualite x ON x.qualite_id = s.id
+          JOIN qualite t ON t.id = x.traduction_id AND t.jeu_id = bdoh_jeu_qualite_id({cid})
+         WHERE s.code IN ('0', '5', '8', '9') ORDER BY s.code""", NEW_SERVER)]
     days = [d for d in range(1, 21) if d not in (6, 7, 13)]  # des jours manquants
     qjo = ['DEC;.  6 13', f'950;{station};essai;0;0;0;0;essai;0;']
     for k, d in enumerate(days):
         value = '' if d == 9 else '0' if d == 10 else f'{1.5 * k:g}'
-        qjo.append(f'QJO;{station};202509{d:02d};{value}; ;{hydro2[k % 4] if value else " "};')
+        qjo.append(f'QJO;{station};202509{d:02d};{value}; ;{hydro2[k % len(hydro2)] if value else " "};')
     qjo.append('FIN;EXP-HYDRO;1;')
     cases.append({'name': 'QJO', 'format': 'Qjo', 'content': ('\n'.join(qjo) + '\n').encode(),
                   'type': 'keepExisting', 'cid': cid, 'slug': slug, 'station': station, 'chronique': code,
@@ -2151,7 +2180,7 @@ def import_cases(base):
     for k, d in enumerate(days):
         for hour in ('00:00', '12:30'):
             value = '' if (d, hour) == (9, '12:30') else '0' if d == 10 else f'{0.25 * k:g}'
-            qtvar.append(f'920;1;{station};202510{d:02d};{hour};{value};{hydro2[k % 4]};{1 if d == 14 else 2};')
+            qtvar.append(f'920;1;{station};202510{d:02d};{hour};{value};{hydro2[k % len(hydro2)]};{1 if d == 14 else 2};')
     qtvar.append('FIN;EXP-HYDRO;1;')
     cases.append({'name': 'Qtvar', 'format': 'Qtvar', 'content': ('\n'.join(qtvar) + '\n').encode(),
                   'type': 'keepExisting', 'cid': cid, 'slug': slug, 'station': station, 'chronique': code,
@@ -2212,17 +2241,20 @@ def import_cases(base):
 def controle_cases(base):
     """Les imports de points de contrôle : quelques mesures d'une chronique continue en janvier 2024,
     reprises en points de contrôle (valeur, qualité, minimum et maximum), puis sans bornes, avec un
-    commentaire ; puis deux lignes refusées, l'une sans qualité, l'autre avec un champ de trop."""
+    commentaire ; puis deux lignes refusées, l'une sans qualité, l'autre avec un champ de trop. Des mesures
+    qu'un point de contrôle peut reprendre : une valeur, et une qualité qui n'est ni une lacune, ni invalide,
+    ni une limite (Controle/Manager, allowedQualityCodes) ; OTHU commence janvier 2024 par des invalides."""
+    usable = """m.valeur IS NOT NULL AND m.date >= '2024-01-01' AND m.date < '2024-01-15'
+                AND m.qualite_id IN (SELECT id FROM qualite WHERE ordre NOT IN (100, 200, 600, 700))"""
     cid, slug, station, code, unite = query(base, f"""
         SELECT c.id, c.slug, c.station, c.code, u.libelle FROM ({CHRONIQUES}) c
           JOIN chronique ch ON ch.id = c.id JOIN unite u ON u.id = ch.unite_id
-         WHERE c.dtype = 'continue' AND EXISTS (SELECT 1 FROM mesure m WHERE m.chronique_id = c.id
-               AND m.date >= '2024-01-01' AND m.date < '2024-01-15')
+         WHERE c.dtype = 'continue' AND EXISTS (SELECT 1 FROM mesure m WHERE m.chronique_id = c.id AND {usable})
          ORDER BY c.id LIMIT 1""", NEW_SERVER)[0]
     rows = query(base, f"""
-        SELECT to_char(m.date + interval '1 hour', 'DD/MM/YYYY HH24:MI:SS'), coalesce(m.valeur, 0)::text, q.code
+        SELECT to_char(m.date + interval '1 hour', 'DD/MM/YYYY HH24:MI:SS'), m.valeur::text, q.code
           FROM mesure m JOIN qualite q ON q.id = m.qualite_id
-         WHERE m.chronique_id = {cid} AND m.date >= '2024-01-01' AND m.date < '2024-01-15'
+         WHERE m.chronique_id = {cid} AND {usable}
          ORDER BY m.date LIMIT 10""", NEW_SERVER)
     head = ['Station;Fuseau;Chronique;Unite', f'{station};UTC+01;{code};{unite}', 'DateHeure;Valeur;Qualite;Min;Max']
     full = [f'{d};{v};{q};{float(v) - 0.5:g};{float(v) + 0.5:g}' for d, v, q in rows]
@@ -2521,6 +2553,15 @@ def import_failure_checks(template, base, check):
           ['conforme'] if told and count() == before else [f'{before} mesures avant, {count()} après ; disque plein {"dit" if told else "tu"}', *log[-4:]])
 
 
+def written_zeros(case):
+    """Les lignes d'un fichier QJO ou Qtvar dont la valeur s'écrit exactement 0, sous une qualité autre que « 0 »
+    (Absente, qui fait une lacune des deux côtés) : le nouveau garde ces zéros, l'ancien en faisait des lacunes
+    (dev/differences.md, « Zéro importé »). Leur nombre dépend des qualités Hydro2 que traduit la base."""
+    value, quality = (3, 5) if case['format'] == 'Qjo' else (5, 6)
+    lines = [line.split(';') for line in case['content'].decode().splitlines()]
+    return sum(1 for f in lines if f[0] in ('QJO', '920') and f[value] == '0' and f[quality].strip() not in ('', '0'))
+
+
 def run_imports(args):
     """Chaque import, étape par étape, par l'ancien code sur le nouveau serveur et par le nouveau, chacun
     sur sa copie de BASE, au nom d'un gestionnaire de l'observatoire visé ; puis la file de tâches,
@@ -2534,6 +2575,10 @@ def run_imports(args):
         copy_base(template, base)
 
     report = Report('imports')
+    # L'état de la chronique des cas QJO et de ses filles, aux identifiants de cette base (expected.qjo_rules)
+    qjo_cid = next(c['cid'] for c in every_case if c['format'] == 'Qjo')
+    report.rules += expected.qjo_rules([qjo_cid, *(child for child, in query(
+        template, f'SELECT sortie_id FROM transformation WHERE entree_id = {qjo_cid}', NEW_SERVER))])
     with old_17_on(bases['ancien']) as old_console, new_on(bases['nouveau'], template) as new_console:
         sides = {'ancien': (SIDES['reference-17'], old_console, 'jms-job-queue:run'),
                  'nouveau': (SIDES['new'], new_console, 'bdoh:jobs:run')}
@@ -2756,30 +2801,34 @@ def run_imports(args):
             report.add(f'nouveau seul : fichiers réels, {table} écrites identiques à l’ancien', ['conforme'],
                        ['conforme' if prints[0] == prints[1] else f'non conforme : {len(prints[0])} et {len(prints[1])} chroniques'])
     # Ce que seul le nouveau fait aux formats QJO et Qtvar (dev/differences.md, « Zéro importé » et
-    # « Jours manquants ») : chaque cas, les mesures attendues, et combien de mesures diffèrent de l'ancien
-    hydro = {'QJO': (1, 'zéro écrit 0 gardé', "date >= '2025-09-09 12:00' AND date < '2025-09-10 12:00' AND valeur = 0", 1),
-             'Qtvar': (2, 'zéro écrit 0 gardé', "date >= '2025-10-10 00:00' AND date < '2025-10-11 00:00' AND valeur = 0", 2),
+    # « Jours manquants ») : chaque cas, combien de mesures diffèrent de l'ancien, et les mesures attendues. Aux deux
+    # premiers, les lignes écrites 0 (written_zeros) ; sur bdoh_small, une le 9 septembre et deux le 10 octobre.
+    by_name = {c['name']: c for c in every_case}
+    hydro = {'QJO': (written_zeros(by_name['QJO']), 'zéro écrit 0 gardé',
+                     "date >= '2025-09-09 12:00' AND date < '2025-09-10 12:00' AND valeur = 0", 1),
+             'Qtvar': (written_zeros(by_name['Qtvar']), 'zéro écrit 0 gardé',
+                       "date >= '2025-10-10 00:00' AND date < '2025-10-11 00:00' AND valeur = 0", 2),
              'QJO, trou de plus d’un mois': (31, 'trou de plus d’un mois comblé par des lacunes',
                                              "date >= '2022-03-01 12:00' AND date < '2022-04-14 12:00' AND valeur IS NULL", 44),
              'QJO, lignes dans le désordre': (11, 'lignes dans le désordre, aucune lacune ajoutée',
                                               "date >= '2021-05-19 00:00' AND date < '2021-06-20 00:00'", 2)}
     played = [c for c in cases if c['name'] in hydro]
     for case in played:
-        _, label, where, expected = hydro[case['name']]
+        _, label, where, wanted = hydro[case['name']]
         found = int(query(bases['nouveau'], f"SELECT count(*) FROM mesure WHERE chronique_id = {case['cid']} AND {where}",
                           NEW_SERVER)[0][0])
         report.add(f"nouveau seul : {label}, {case['name']}", ['conforme'],
-                   ['conforme' if found == expected else f'non conforme : {found} au lieu de {expected}'])
-    # Le registre masque l'empreinte des mesures de la chronique des cas QJO et de ses filles (QJO_CHRONIQUES, dans
-    # dev/compare/expected.py). Tous les imports au format BDOH y écrivent aussi : ce contrôle ligne à ligne les protège,
+                   ['conforme' if found == wanted else f'non conforme : {found} au lieu de {wanted}'])
+    # Le registre masque l'empreinte des mesures de la chronique des cas QJO et de ses filles (expected.qjo_rules).
+    # Tous les imports au format BDOH y écrivent aussi : ce contrôle ligne à ligne les protège,
     # et se joue donc à chaque passe, même quand --only écarte les cas QJO. Rien ne doit alors différer de l'ancien.
     rows = lambda base, chronique: {tuple(row) for row in query(base, f"""SELECT date, valeur, minimum, maximum, qualite_id FROM mesure
                                                                            WHERE chronique_id = {chronique}""", NEW_SERVER)}
     changed = lambda chronique: {row[0] for row in rows(bases['ancien'], chronique) ^ rows(bases['nouveau'], chronique)}
     hydro_cid = next(c['cid'] for c in every_case if c['name'] in hydro)
-    mother, expected = changed(hydro_cid), sum(hydro[c['name']][0] for c in played)
+    mother, wanted = changed(hydro_cid), sum(hydro[c['name']][0] for c in played)
     report.add('nouveau seul : seules ces mesures diffèrent de l’ancien', ['conforme'],
-               ['conforme' if len(mother) == expected else f'non conforme : {len(mother)} au lieu de {expected}'])
+               ['conforme' if len(mother) == wanted else f'non conforme : {len(mother)} au lieu de {wanted}'])
     # Ses filles recalculées : le registre admet leur empreinte, c'est ce contrôle qui les protège. Une fille ne diffère
     # qu'aux dates où sa mère diffère.
     for child, in query(bases['nouveau'], f"SELECT sortie_id FROM transformation WHERE entree_id = {hydro_cid}", NEW_SERVER):
@@ -3204,22 +3253,25 @@ def run_accounts(args):
         check("page refusée par le cookie : 403", status == 403, f'statut {status}')
 
         # Les rôles suivent l'observatoire : gestionnaire ici, pas ailleurs (un gestionnaire qui n'administre
-        # pas tous les observatoires)
-        local, = query(base, f"""
+        # pas tous les observatoires). OTHU n'a qu'un observatoire, dont les gestionnaires sont administrateurs.
+        local = query(base, f"""
             SELECT u.email FROM utilisateur u JOIN role r ON r.utilisateur_id = u.id
               JOIN observatoire o ON o.id = r.observatoire_id
              WHERE r.valeur = 'gestionnaire' AND o.slug = '{slug}' AND u.roleadmin IS NULL
-               AND (u.finacces IS NULL OR u.finacces > now()) ORDER BY u.id LIMIT 1""", NEW_SERVER)[0]
-        elsewhere, = query(base, f"""
+               AND (u.finacces IS NULL OR u.finacces > now()) ORDER BY u.id LIMIT 1""", NEW_SERVER)
+        elsewhere = local and query(base, f"""
             SELECT o.slug FROM observatoire o WHERE NOT EXISTS (
                 SELECT 1 FROM role r JOIN utilisateur u ON u.id = r.utilisateur_id
-                 WHERE u.email = '{local}' AND r.valeur = 'gestionnaire'
+                 WHERE u.email = '{local[0][0]}' AND r.valeur = 'gestionnaire'
                    AND (r.observatoire_id = o.id OR r.site_id IN (SELECT id FROM siteexperimental
                                                                    WHERE observatoire_id = o.id)))
-             ORDER BY o.id LIMIT 1""", NEW_SERVER)[0]
-        boss = Client(side, local, slug)
-        statuses = [boss.get(f'/{s}/admin/mesure/import')[0] for s in (slug, elsewhere, slug)]
-        check("les rôles suivent l'observatoire", statuses == [200, 403, 200], f'statuts {statuses}')
+             ORDER BY o.id LIMIT 1""", NEW_SERVER)
+        if elsewhere:
+            boss = Client(side, local[0][0], slug)
+            statuses = [boss.get(f'/{s}/admin/mesure/import')[0] for s in (slug, elsewhere[0][0], slug)]
+            check("les rôles suivent l'observatoire", statuses == [200, 403, 200], f'statuts {statuses}')
+        else:
+            results["nouveau seul : les rôles suivent l'observatoire"] = [NO_CASE]
 
         # Un compte créé en console ne prévient pas les gestionnaires à sa première connexion
         subprocess.run([*console, 'security:users:create', 'Dominique', 'Console', 'console@example.invalid',
@@ -3262,6 +3314,11 @@ def run_accounts(args):
                 checks = new_only_checks(side, console, base)
 
     report = Report('accounts')
+    # Les comptes créés, lus dans la copie de l'ancien (le nouveau change ensuite l'adresse du compte d'essai) : le
+    # compte d'essai, puis les deux comptes de la console
+    report.rules += expected.account_rules([row[0] for row in query('bdoh_accounts_old', f"""
+        SELECT id FROM utilisateur WHERE email IN ('{NEW_EMAIL}', 'admin-y@example.invalid', 'admin-non@example.invalid')
+         ORDER BY id""", NEW_SERVER)])
     for part in sides['ancien']:
         report.add(part, sides['ancien'][part], sides['nouveau'].get(part, []))
     for part, lines in checks.items():
@@ -3364,7 +3421,9 @@ ADMINS = {
                             ('lien en javascript', {'[lien]': 'javascript:alert(1)'})],
                    'create': {'[nom]': 'Partenaire d’essai', '[iso]': 'FR', '[estFinanceur]': '0',
                               '[typeFundings]': FIRST}},
+    # Un compte que l'administrateur peut modifier : pas un compte technique (OTHU en a dès son premier compte)
     'utilisateur': {'table': 'utilisateur', 'state': ACCOUNT_QUERIES['utilisateur'], 'nodelete': True,
+                    'pick': "SELECT min(id) FROM utilisateur WHERE roleadmin IS DISTINCT FROM 'TECH'",
                     'change': {'[telephone]': '0102030405'},
                     'create': {'[email]': 'compte-admin@example.invalid', '[prenom]': 'Camille', '[nom]': 'Essai',
                                '[organisme]': 'INRAE', '[categorie]': FIRST, '[telephone]': '0102030405',
@@ -3381,7 +3440,8 @@ def admin_profiles(base):
     administrateur fonctionnel, et un gestionnaire qui n'est que gestionnaire (celui de « pages » est
     aussi administrateur), sur un seul observatoire ; enfin un administrateur technique, à qui tout est
     permis, sur les observatoires du premier. Les bases de production n'en ont pas : run_admin donne ce
-    rôle, dans ses deux copies, au deuxième administrateur fonctionnel."""
+    rôle, dans ses deux copies, au deuxième administrateur fonctionnel. Une base dont les gestionnaires
+    d'observatoire sont tous administrateurs (OTHU) n'a pas de profil « gestionnaire »."""
     active = "(u.finacces IS NULL OR u.finacces > now())"
     tables = ['bassin', 'courseau', 'doi', 'partenaire', 'siteexperimental', 'dataset', 'bareme']
     richness = ' + '.join([*(f'(SELECT count(*) FROM {t} WHERE observatoire_id = o.id)' for t in tables),
@@ -3391,15 +3451,18 @@ def admin_profiles(base):
     slugs = [r[0] for r in query(base, f"""
         SELECT o.slug FROM observatoire o JOIN role r ON r.observatoire_id = o.id
          WHERE r.utilisateur_id = {uid} AND r.valeur = 'gestionnaire' ORDER BY {richness} DESC, o.id""", NEW_SERVER)]
-    manager, slug = query(base, f"""
+    managers = query(base, f"""
         SELECT u.email, o.slug FROM utilisateur u JOIN role r ON r.utilisateur_id = u.id
           JOIN observatoire o ON o.id = r.observatoire_id
          WHERE u.roleadmin IS NULL AND {active} AND r.valeur = 'gestionnaire' ORDER BY u.id, o.id LIMIT 1""",
-                          NEW_SERVER)[0]
+                     NEW_SERVER)
     tech, = query(base, f"""SELECT u.email FROM utilisateur u WHERE u.roleadmin = 'FCT' AND {active}
                              ORDER BY u.id OFFSET 1 LIMIT 1""", NEW_SERVER)[0]
-    return {'administrateur': (admin, slugs), 'gestionnaire': (manager, [slug]),
-            'administrateur technique': (tech, slugs)}
+    found = {'administrateur': (admin, slugs)}
+    if managers:
+        found['gestionnaire'] = (managers[0][0], [managers[0][1]])
+    found['administrateur technique'] = (tech, slugs)
+    return found
 
 
 # Une station de plusieurs sites, et un compte actif qui ne gère que l'un d'eux (ni les autres, ni
@@ -3653,6 +3716,8 @@ def run_admin(args):
                 clients[email, slug] = Client(side, email, slug)
             return clients[email, slug]
 
+        if 'gestionnaire' not in accounts:
+            parts['gestionnaire : pages de l’administration'] = [NO_CASE]
         for profile, (email, slugs) in accounts.items():
             client = client_for(email, slugs[0])
             parts[f'{profile} /{slugs[0]}/admin/dashboard'] = page_lines(side.url, *client.get(f'/{slugs[0]}/admin/dashboard'))
@@ -3798,7 +3863,9 @@ def run_admin(args):
                                ('sans jeton CSRF', {'paramConversion': '30'}, False)],
             }.items():
                 cid, cslug = converted(base, rule)
-                if cslug in slugs:
+                if not cid:
+                    parts[f'conversion, {rule}'] = [NO_CASE]
+                elif cslug in slugs:
                     for label, values, token in cases:
                         parts[f'conversion, {rule} : {label}'] = send(
                             f'/{cslug}/admin/conversion/{cid}', '/admin/conversion', values, None, token)
@@ -3925,13 +3992,16 @@ def run_admin(args):
                                      (SELECT min(id) FROM courseau WHERE observatoire_id = o.id)
                                 FROM observatoire o WHERE EXISTS (SELECT 1 FROM bassin WHERE observatoire_id = o.id)
                                ORDER BY o.id LIMIT 1""", NEW_SERVER)
-        if not rows or not ({'bassin', 'courseau'} & set(admins)):
+        if not ({'bassin', 'courseau'} & set(admins)):
             return parts
+        managers = rows and query(base, f"""SELECT u.email FROM utilisateur u JOIN role r ON r.utilisateur_id = u.id
+                                             JOIN observatoire o ON o.id = r.observatoire_id
+                                            WHERE r.valeur = 'gestionnaire' AND o.slug = '{rows[0][0]}' AND u.roleadmin IS NULL
+                                              AND (u.finacces IS NULL OR u.finacces > now()) ORDER BY u.id LIMIT 1""", NEW_SERVER)
+        if not managers:  # OTHU : ni bassin, ni gestionnaire qui ne soit qu'un gestionnaire
+            return {'bassin et cours d’eau, par un gestionnaire': [NO_CASE]}
         slug, bassin, courseau = rows[0]
-        manager = query(base, f"""SELECT u.email FROM utilisateur u JOIN role r ON r.utilisateur_id = u.id
-                                   JOIN observatoire o ON o.id = r.observatoire_id
-                                  WHERE r.valeur = 'gestionnaire' AND o.slug = '{slug}' AND u.roleadmin IS NULL
-                                    AND (u.finacces IS NULL OR u.finacces > now()) ORDER BY u.id LIMIT 1""", NEW_SERVER)[0][0]
+        manager = managers[0][0]
         if 'bassin' in admins:
             root = f'/{slug}/admin/bassin/{bassin}'
             parts['bassin : édition, par un gestionnaire'] = send(f'{root}/edit', f'/bassin/{bassin}/edit',
@@ -3954,7 +4024,7 @@ def run_admin(args):
         results = {}
         admin, (slug, *_) = accounts['administrateur']
         tech = accounts['administrateur technique'][0]
-        manager, (manager_slug,) = accounts['gestionnaire']
+        manager, (manager_slug,) = accounts.get('gestionnaire', ('', ['']))
         account = lambda email: query(base, f"SELECT id, coalesce(finacces::date::text, '') FROM utilisateur WHERE email = '{email}'",
                                       NEW_SERVER)[0]
         plain, plain_email = query(base, f"""SELECT id, email FROM utilisateur WHERE roleadmin IS NULL AND email <> '{manager}'
@@ -3975,22 +4045,26 @@ def run_admin(args):
             client.get(path, urllib.parse.urlencode([*kept, *date.items()]).encode(), {'Referer': client.side.url + path})
             return account(target_email)[1]
 
-        expected = {'gestionnaire sur un administrateur': (edit_status(manager, manager_slug, admin_id), 403),
-                    'gestionnaire sur un compte sans rôle': (edit_status(manager, manager_slug, plain), 403),
-                    'administrateur sur un compte sans rôle': (edit_status(admin, slug, plain), 200),
-                    'administrateur sur un compte technique': (edit_status(admin, slug, tech_id), 403),
-                    'compte technique sur un administrateur': (edit_status(tech, slug, admin_id), 200),
-                    'compte technique sur le sien': (edit_status(tech, slug, tech_id), 200)}
+        expected = {}
+        if manager:
+            expected = {'gestionnaire sur un administrateur': (edit_status(manager, manager_slug, admin_id), 403),
+                        'gestionnaire sur un compte sans rôle': (edit_status(manager, manager_slug, plain), 403)}
+        expected.update({'administrateur sur un compte sans rôle': (edit_status(admin, slug, plain), 200),
+                         'administrateur sur un compte technique': (edit_status(admin, slug, tech_id), 403),
+                         'compte technique sur un administrateur': (edit_status(tech, slug, admin_id), 200),
+                         'compte technique sur le sien': (edit_status(tech, slug, tech_id), 200)})
         results['nouveau seul : modifier le compte d’un autre'] = (
             [f'{name} : statut {got}, attendu {want}' for name, (got, want) in expected.items() if got != want]
             or ['conforme'])
 
         # Un envoi fabriqué, sans passer par la page refusée
-        path = f'/{manager_slug}/admin/utilisateur/{admin_id}/edit'
-        status = client_for(manager, manager_slug).get(path, b'x=1', {'Referer': SIDES['new'].url + path})[0]
-        email_after = query(base, f'SELECT email FROM utilisateur WHERE id = {admin_id}', NEW_SERVER)[0][0]
-        results['nouveau seul : envoi du formulaire d’un compte par un gestionnaire, refusé'] = (
-            ['conforme'] if status == 403 and email_after == admin else [f'statut {status}, adresse changée : {email_after != admin}'])
+        label = 'nouveau seul : envoi du formulaire d’un compte par un gestionnaire, refusé'
+        if manager:
+            path = f'/{manager_slug}/admin/utilisateur/{admin_id}/edit'
+            status = client_for(manager, manager_slug).get(path, b'x=1', {'Referer': SIDES['new'].url + path})[0]
+            email_after = query(base, f'SELECT email FROM utilisateur WHERE id = {admin_id}', NEW_SERVER)[0][0]
+            results[label] = (['conforme'] if status == 403 and email_after == admin
+                              else [f'statut {status}, adresse changée : {email_after != admin}'])
 
         # L'administrateur corrige une adresse
         new_email = 'adresse-corrigee@example.invalid'
@@ -4000,23 +4074,29 @@ def run_admin(args):
             ['conforme'] if got == new_email else ['adresse inchangée'])
 
         # Le gestionnaire crée toujours un compte, et revient à la liste
-        lines = send(f'/{manager_slug}/admin/utilisateur/create', '/utilisateur/create',
-                     {'[email]': 'cree-par-gestionnaire@example.invalid', '[prenom]': 'Camille', '[nom]': 'Essai',
-                      '[organisme]': 'INRAE', '[categorie]': FIRST, '[telephone]': '0102030405',
-                      '[adresse]': '1 rue de l’Essai'}, 'btn_create_and_edit', who=manager)
-        created = query(base, "SELECT count(*) FROM utilisateur WHERE email = 'cree-par-gestionnaire@example.invalid'", NEW_SERVER)[0][0]
-        next_status = next((line for line in lines if line.startswith('statut ')), '')
-        results['nouveau seul : un gestionnaire crée un compte'] = (
-            ['conforme'] if created == '1' and lines[0].startswith('statut 302') and '/utilisateur/list' in ' '.join(lines[:3]) and next_status
-            else [f'{created} compte, réponse : {lines[:3]}'])
+        if manager:
+            lines = send(f'/{manager_slug}/admin/utilisateur/create', '/utilisateur/create',
+                         {'[email]': 'cree-par-gestionnaire@example.invalid', '[prenom]': 'Camille', '[nom]': 'Essai',
+                          '[organisme]': 'INRAE', '[categorie]': FIRST, '[telephone]': '0102030405',
+                          '[adresse]': '1 rue de l’Essai'}, 'btn_create_and_edit', who=manager)
+            created = query(base, "SELECT count(*) FROM utilisateur WHERE email = 'cree-par-gestionnaire@example.invalid'", NEW_SERVER)[0][0]
+            next_status = next((line for line in lines if line.startswith('statut ')), '')
+            results['nouveau seul : un gestionnaire crée un compte'] = (
+                ['conforme'] if created == '1' and lines[0].startswith('statut 302') and '/utilisateur/list' in ' '.join(lines[:3]) and next_status
+                else [f'{created} compte, réponse : {lines[:3]}'])
 
         # La fin d'accès sur la page des droits
-        results['nouveau seul : fin d’accès d’un compte d’administration, refusée à un gestionnaire'] = (
-            ['conforme'] if rights_end_date(manager, manager_slug, admin) == '' else ['date enregistrée'])
+        if manager:
+            results['nouveau seul : fin d’accès d’un compte d’administration, refusée à un gestionnaire'] = (
+                ['conforme'] if rights_end_date(manager, manager_slug, admin) == '' else ['date enregistrée'])
         results['nouveau seul : fin d’accès d’un compte technique, refusée à un administrateur'] = (
             ['conforme'] if rights_end_date(admin, slug, tech) == '' else ['date enregistrée'])
-        results['nouveau seul : fin d’accès d’un compte sans rôle, gardée au gestionnaire'] = (
-            ['conforme'] if rights_end_date(manager, manager_slug, got) == '2027-06-30' else ['date non enregistrée'])
+        if manager:
+            results['nouveau seul : fin d’accès d’un compte sans rôle, gardée au gestionnaire'] = (
+                ['conforme'] if rights_end_date(manager, manager_slug, got) == '2027-06-30' else ['date non enregistrée'])
+        else:
+            # Sans gestionnaire qui ne soit qu'un gestionnaire (OTHU), ses vérifications ne se jouent pas
+            results['nouveau seul : comptes, ce que peut un gestionnaire'] = [NO_CASE]
         return results
 
     def new_only(send, send_files, base, client_for):
@@ -4061,7 +4141,8 @@ def run_admin(args):
                 results[label] = (['conforme'] if all(own) and all(kept)
                                   else [f'chemins : {[path for path, _ in twins]}, fichiers gardés : {kept}'])
             else:
-                results[label] = ['un seul observatoire pour ce compte']
+                results[label] = [NO_CASE]  # un seul observatoire pour ce compte (OTHU)
+        label = 'nouveau seul : chronique cachée, page et mesures refusées sans compte'
         rows = query(base, f"""SELECT c.id, c.slug, c.station, c.code FROM ({CHRONIQUES}) c
                                  WHERE NOT c.estvisible ORDER BY c.id LIMIT 1""", NEW_SERVER)
         if rows:
@@ -4069,16 +4150,19 @@ def run_admin(args):
             guest = Client(client_for(accounts['administrateur'][0], hslug).side, None, hslug)
             statuses = [guest.get(f'/{hslug}/{hstation}/{hcode}')[0],
                         guest.get(f'/{hslug}/chronique/{hid}/measures?beginDate=2000-01-01T00:00:00Z&endDate=2030-01-01T00:00:00Z')[0]]
-            results['nouveau seul : chronique cachée, page et mesures refusées sans compte'] = (
-                ['conforme'] if all(s in (401, 403) or s == 302 for s in statuses) else [f'statuts {statuses}'])
+            results[label] = ['conforme'] if all(s in (401, 403) or s == 302 for s in statuses) else [f'statuts {statuses}']
+        else:
+            results[label] = [NO_CASE]
         # Un observatoire entièrement caché : sans compte, aucune chronique n'est annoncée avec des mesures
+        label = 'nouveau seul : observatoire caché, aucune chronique annoncée avec des mesures'
         rows = query(base, f"""SELECT c.slug FROM ({CHRONIQUES}) c GROUP BY 1
                                  HAVING count(*) FILTER (WHERE c.estvisible) = 0 ORDER BY 1 LIMIT 1""", NEW_SERVER)
         if rows:
             guest = Client(client_for(accounts['administrateur'][0], rows[0][0]).side, None, rows[0][0])
             status, _, body = guest.get(f'/{rows[0][0]}/viewer/load?start=2000-01-01T00:00:00Z&end=2030-01-01T00:00:00Z')
-            results['nouveau seul : observatoire caché, aucune chronique annoncée avec des mesures'] = (
-                ['conforme'] if status == 200 and b'"hasMeasures":true' not in body else [f'statut {status}'])
+            results[label] = ['conforme'] if status == 200 and b'"hasMeasures":true' not in body else [f'statut {status}']
+        else:
+            results[label] = [NO_CASE]
         if 'personnetheia' in admins:
             # La base refuse la suppression (responsable d'un observatoire) : l'historique n'en dit rien
             label = 'nouveau seul : suppression refusée par la base, historique muet'
@@ -4097,7 +4181,7 @@ def run_admin(args):
         if 'utilisateur' in admins and 'station' in admins:
             # Les aides de Sonata demandent le droit du formulaire qui les appelle (dev/local/security.md)
             email, slugs = accounts['administrateur']
-            manager, (mslug,) = accounts['gestionnaire']
+            manager, (mslug,) = accounts.get('gestionnaire', ('', ['']))
             target = query(base, "SELECT id FROM utilisateur WHERE roleadmin = 'FCT' ORDER BY id LIMIT 1", NEW_SERVER)[0][0]
             code = 'irstea_bdoh_admin.admin.'
             helper = lambda who, slug, name, oid, field: client_for(who, slug).get(
@@ -4108,15 +4192,19 @@ def run_admin(args):
                 f'/{slug}/admin/core/get-short-object-description.html?' + urllib.parse.urlencode(
                     {'_sonata_admin': code + name, 'objectId': oid}))[0]
             slug, sid = first(base, admins['station'], slugs)
-            observed = {'champ du compte d’un autre, pour un gestionnaire': (helper(manager, mslug, 'utilisateur', target, 'email'), 403),
-                        'champ d’un compte, pour un administrateur': (helper(email, slug, 'utilisateur', target, 'email'), 200),
-                        'champ d’une station, pour un administrateur': (helper(email, slug, 'station', sid, 'nom'), 200),
-                        'description courte, pour un administrateur': (short(email, slug, 'station', sid), 200)}
+            observed = {}
+            if manager:
+                observed['champ du compte d’un autre, pour un gestionnaire'] = (helper(manager, mslug, 'utilisateur', target, 'email'), 403)
+            else:
+                results['nouveau seul : aides de Sonata, pour un gestionnaire'] = [NO_CASE]
+            observed.update({'champ d’un compte, pour un administrateur': (helper(email, slug, 'utilisateur', target, 'email'), 200),
+                             'champ d’une station, pour un administrateur': (helper(email, slug, 'station', sid, 'nom'), 200),
+                             'description courte, pour un administrateur': (short(email, slug, 'station', sid), 200)})
             # Ce que les formulaires d'un gestionnaire demandent : le bouton d'ajout d'un producteur, le choix d'un DOI
-            own = query(base, f"""SELECT c.id FROM ({CHRONIQUES}) c WHERE c.slug = '{mslug}' AND c.dtype = 'continue'
-                                    ORDER BY c.id LIMIT 1""", NEW_SERVER)
-            doi = query(base, f"""SELECT d.id FROM doi d JOIN observatoire o ON o.id = d.observatoire_id
-                                    WHERE o.slug = '{mslug}' ORDER BY d.id LIMIT 1""", NEW_SERVER)
+            own = manager and query(base, f"""SELECT c.id FROM ({CHRONIQUES}) c WHERE c.slug = '{mslug}' AND c.dtype = 'continue'
+                                                ORDER BY c.id LIMIT 1""", NEW_SERVER)
+            doi = manager and query(base, f"""SELECT d.id FROM doi d JOIN observatoire o ON o.id = d.observatoire_id
+                                                WHERE o.slug = '{mslug}' ORDER BY d.id LIMIT 1""", NEW_SERVER)
             if own:
                 observed['producteur d’une chronique, pour un gestionnaire'] = (helper(manager, mslug, 'chronique_continue', own[0][0], 'producteur'), 200)
             if doi:
@@ -4216,6 +4304,15 @@ def run_admin(args):
         sides['ancien'] = play(SIDES['reference-17'], bases['ancien'])
         sides['nouveau'] = play(SIDES['new'], bases['nouveau'])
     report = Report('admin')
+    # Ce que la base admet, lu dans les copies de l'ancien (expected.admin_rules) : comptes techniques propres à la base,
+    # station créée sur la première page de sa liste
+    created = query(bases['ancien'], "SELECT coalesce(max(id), 0) FROM utilisateur WHERE email = 'compte-admin@example.invalid'",
+                    NEW_SERVER)[0][0]
+    native = int(query(template, "SELECT count(*) FROM utilisateur WHERE roleadmin = 'TECH'", NEW_SERVER)[0][0])
+    technical = [row[0] for row in query(bases['ancien'], "SELECT id FROM utilisateur WHERE roleadmin = 'TECH' ORDER BY id",
+                                         NEW_SERVER)] if native else []
+    stations = int(query(template, 'SELECT count(*) FROM station', NEW_SERVER)[0][0])
+    report.rules += expected.admin_rules(created, technical, stations < 32)
     for part in sides['ancien']:
         report.add(part, sides['ancien'][part], sides['nouveau'].get(part, []))
     for part, lines in checks.items():

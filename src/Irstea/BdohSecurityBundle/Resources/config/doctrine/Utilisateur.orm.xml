@@ -22,6 +22,10 @@
       <cascade>
         <cascade-persist/>
       </cascade>
+      <!-- Les demandes d'accès d'un compte, dans l'ordre où elles ont été faites (dev/differences.md, « Listes sans tri ») -->
+      <order-by>
+        <order-by-field name="id" direction="ASC"/>
+      </order-by>
     </one-to-many>
     <one-to-many field="rolesObservatoire" target-entity="Irstea\BdohSecurityBundle\Entity\RoleObservatoire" mapped-by="utilisateur" fetch="LAZY">
       <cascade>

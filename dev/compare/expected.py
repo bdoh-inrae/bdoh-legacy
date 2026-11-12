@@ -11,9 +11,10 @@ test vérifie que ce titre existe. Elle admet :
 - `must` : des lignes de diff qui doivent s'y trouver, sans quoi l'écart n'est pas celui qu'on admet.
 - `order` : les mêmes lignes dans un autre ordre. Sans cette règle, un autre ordre compte pour un écart.
 
-Sans donnée : ni valeur de mesure, ni compte réel (les comptes cités sont ceux que créent les modes). Les règles
-ne servent qu'aux passes habituelles (dev/plans/2026-11-04_validation.md) : sur une autre base, les identifiants
-de chroniques ne sont plus les mêmes, et ces écarts se relisent.
+Sans donnée : ni valeur de mesure, ni compte réel (les comptes cités sont ceux que créent les modes). Ce qui dépend
+des identifiants d'une base ne s'écrit pas ici en dur : `qjo_rules`, `account_rules` et `admin_rules` reçoivent ceux
+de la passe, si bien que les règles valent sur bdoh_small comme sur OTHU (dev/decisions.md, « Un cas sans objet se
+dit à part »).
 """
 
 import re
@@ -112,11 +113,56 @@ def translation(sign, keys):
     return RX(rf'{sign}t\.add\("(?:{"|".join(names)})", ".*", "messages", "\w+"\);')
 
 
-# Les chroniques où les imports QJO écrivent, et leur fille calculée : les deux cas « QJO » de `imports` y changent
-# volontairement des mesures. Tous les imports de ce mode écrivent sur la 9 : ces règles y cacheraient une vraie faute,
-# sans « seules ces mesures diffèrent de l'ancien » et « chronique fille » (la 936), du même mode, qui les comparent
-# ligne à ligne.
-QJO_CHRONIQUES = '9|936'
+QJO_DAYS = "Jours manquants d'un fichier QJO"
+
+
+def qjo_rules(chroniques):
+    """L'état des chroniques où les imports QJO écrivent, et de leurs filles calculées : les cas « QJO » de `imports`
+    y changent volontairement des mesures. `run_imports` les ajoute avec les identifiants de sa passe (la 9 et sa fille
+    936 sur bdoh_small). Tous les imports de ce mode écrivent sur cette chronique : ces règles y cacheraient une vraie
+    faute, sans « seules ces mesures diffèrent de l'ancien » et « chronique fille », du même mode, qui les comparent
+    ligne à ligne."""
+    ids = '|'.join(chroniques)
+    return [
+        Rule('imports', 'état mesure', QJO_DAYS, masks=((rf'^(mesure\t(?:{ids})\t)\d+\t\d+$', r'\1<QJO>'),)),
+        Rule('imports', 'état tauxremplissage', QJO_DAYS, masks=((rf'^(tauxremplissage\t(?:{ids})\t\d+\t)\d+$', r'\1<QJO>'),)),
+        Rule('imports', 'état chronique', QJO_DAYS, masks=((rf'^(\{{"id": (?:{ids}), .*"nbmesures": )\d+', r'\1<QJO>'),)),
+    ]
+
+
+def account_rules(created):
+    """Les comptes que crée `accounts`, aux identifiants de la passe (800 à 802 sur bdoh_small, 20 à 22 sur OTHU) : le
+    compte d'essai, puis les comptes d'administration créés en console avec « y » et « non ». `run_accounts` les ajoute.
+    Le nouveau ne leur donne plus de mot de passe ; l'ancien donnait au dernier les droits de gestionnaire que seul
+    « y » doit donner."""
+    ids = '|'.join(created)
+    return [
+        Rule('accounts', 'utilisateur', LINK, masks=((rf'^(\{{"id": (?:{ids}), .*"mot de passe": )(?:true|false)', r'\1<lien>'),)),
+        Rule('accounts', 'role', "Création d'un compte d'administration en ligne de commande", lines=(
+            RX(r'-\{"dtype": "(?:chronique|site|observatoire)", "valeur": "gestionnaire", "site_id": (?:\d+|null), '
+               rf'"chronique_id": (?:\d+|null), "utilisateur_id": {created[-1]}, "observatoire_id": (?:\d+|null)\}}'),)),
+    ]
+
+
+def admin_rules(created, technical, stations_on_first_page):
+    """Ce que l'administration admet selon la base, avec ses identifiants (`run_admin` les ajoute) : le compte qu'elle
+    crée, sans mot de passe dans le nouveau (800 sur bdoh_small) ; pour une base qui a ses propres comptes techniques
+    (OTHU), les liens de modification de ces comptes, que le nouveau ne montre plus à un administrateur ; et, quand la
+    station créée tient sur la première page de la liste (32 stations, OTHU en a 25), son altitude, que l'ancien
+    arrondissait à 3 décimales."""
+    rules = [Rule('admin', 'état utilisateur', LINK,
+                  masks=((rf'^(\{{"id": {created}, .*"mot de passe": )(?:true|false)', r'\1<lien>'),))]
+    if technical:
+        ids = '|'.join(technical)
+        rules.append(Rule('admin', rf'administrateur {OBS}/admin/(?:utilisateur|personnetheia)/list'
+                                   r'|(?:utilisateur|personnetheia) : (?:création|suppression)',
+                          "Modifier le compte d'un autre, réservé aux administrateurs",
+                          lines=(RX(rf'-A {OBS}/admin/utilisateur/(?:{ids})/edit(?:\?.*)?'),)))
+    if stations_on_first_page:
+        rules.append(Rule('admin', 'station : création', 'Seuils de validité et coordonnées arrondis',
+                          lines=('-T 123.457', '+T 123.4567')))
+    return rules
+
 
 RULES = [
     # --- pages -------------------------------------------------------------------------------------
@@ -192,8 +238,8 @@ RULES = [
     Rule('imports', 'import valeur écrite en HTML', 'Corrections de sécurité', lines=(
         RX(r'-T Ligne 5 \(date = « [^»]* », valeur = « abc »\) : la valeur n.est pas de type numérique'),
         RX(r'\+T Ligne 5 \(date = « [^»]* », valeur = « <i>abc</i> »\) : la valeur n.est pas de type numérique'))),
-    Rule('imports', 'import QJO, trou de plus d’un mois', "Jours manquants d'un fichier QJO", lines=('-T 15', '+T 46')),
-    Rule('imports', 'import QJO, lignes dans le désordre', "Jours manquants d'un fichier QJO", lines=(
+    Rule('imports', 'import QJO, trou de plus d’un mois', QJO_DAYS, lines=('-T 15', '+T 46')),
+    Rule('imports', 'import QJO, lignes dans le désordre', QJO_DAYS, lines=(
         '-T Fin : 11/06/2021 23:00:00', '+T Fin : 31/05/2021 23:00:00', '-T 13', '+T 2')),
     replaced('imports', 'import barème, sans fichier', "Import d'un barème sans fichier", 200,
              '+action : "errors"', '+view :', '+T Format « Barème » :', '+T Erreurs :', "+T Le fichier n'a pu être chargé",
@@ -202,14 +248,9 @@ RULES = [
              '+action : "errors"', '+view :', '+T Format « Barème » :', '+T Erreurs :',
              '+T Le type MIME du fichier (« application/pdf ») est invalide',
              '+T Nouvel import', '+T Fermer', '+A javascript:void(0);', '+D button data-dismiss=modal', '+I button button'),
-    Rule('imports', 'état mesure', "Jours manquants d'un fichier QJO",
-         masks=((rf'^(mesure\t(?:{QJO_CHRONIQUES})\t)\d+\t\d+$', r'\1<QJO>'),)),
-    Rule('imports', 'état tauxremplissage', "Jours manquants d'un fichier QJO",
-         masks=((rf'^(tauxremplissage\t(?:{QJO_CHRONIQUES})\t\d+\t)\d+$', r'\1<QJO>'),)),
-    Rule('imports', 'état chronique', "Jours manquants d'un fichier QJO",
-         masks=((rf'^(\{{"id": (?:{QJO_CHRONIQUES}), .*"nbmesures": )\d+', r'\1<QJO>'),)),
+    # L'état des chroniques des imports QJO : qjo_rules, avec les identifiants de la passe.
     # Les deux lignes de l'historique des imports QJO qui changent : leur fin, et leur nombre de mesures
-    Rule('imports', 'état historique', "Jours manquants d'un fichier QJO", masks=(
+    Rule('imports', 'état historique', QJO_DAYS, masks=(
         (r'^(?=.*"debut": "(?:2022-02-28|2021-05-19)T23:00:00")(.*"nombremesures": )\d+', r'\1<QJO>'),
         (r'^(?=.*"debut": "(?:2022-02-28|2021-05-19)T23:00:00")(.*"fin": )"[^"]+"', r'\1<QJO>'),
         (r'^(?=.*"debut": "(?:2022-02-28|2021-05-19)T23:00:00")(.*Mesures : )\d+', r'\1<QJO>'),
@@ -233,9 +274,7 @@ RULES = [
         '+A <lien de connexion>', '+',
         f'-{RIGHTS_NOTICE}bdoh.support@lists.irstea.fr.', f'-T {RIGHTS_NOTICE}bdoh.support@lists.irstea.fr.',
         f'+{RIGHTS_NOTICE}bdoh.support@listes.inrae.fr.', f'+T {RIGHTS_NOTICE}bdoh.support@listes.inrae.fr.')),
-    Rule('accounts', 'utilisateur', LINK, masks=((r'^(\{"id": 80[0-2], .*"mot de passe": )(?:true|false)', r'\1<lien>'),)),
-    Rule('accounts', 'role', "Création d'un compte d'administration en ligne de commande", lines=(
-        RX(r'-\{"dtype": "(?:chronique|site|observatoire)", "valeur": "gestionnaire", "site_id": (?:\d+|null), "chronique_id": (?:\d+|null), "utilisateur_id": 802, "observatoire_id": (?:\d+|null)\}'),)),
+    # L'état des comptes que crée le mode : account_rules, avec les identifiants de la passe.
 
     # --- admin -------------------------------------------------------------------------------------
     Rule('admin', rf'{ROLE} {OBS}/admin/utilisateur/export\?format=csv', "Export des listes de l'administration",
@@ -251,7 +290,7 @@ RULES = [
     Rule('admin', 'courriels', LINK, lines=(
         "-Votre identifiant est l'adresse e-mail à laquelle vous recevez ce message et le mot de passe est «\xa0password\xa0», nous vous invitons à le changer dès votre première connexion.",
         "+Votre identifiant est l'adresse e-mail à laquelle vous recevez ce message. BDOH n'a pas de mot de passe\xa0: pour vous connecter, saisissez cette adresse sur la page de connexion, et BDOH vous enverra un lien de connexion.")),
-    Rule('admin', 'état utilisateur', LINK, masks=((r'^(\{"id": 800, .*"mot de passe": )(?:true|false)', r'\1<lien>'),)),
+    # L'état du compte qu'elle crée, et ce qui dépend de la base : admin_rules.
     # Le logo d'un partenaire porte aussi le nom de son observatoire ; « nouveau seul : logos de deux partenaires de
     # même nom » vérifie qu'il y est
     Rule('admin', r'fichiers joints : (?:partenaire créé avec un logo|logo remplacé par une image d’un autre type|logo retiré'
