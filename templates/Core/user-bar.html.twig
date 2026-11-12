@@ -1,16 +1,21 @@
-{#-- User bar
+{#-- User bar : à gauche, le choix d'un observatoire et le fil d'Ariane, qui commence toujours au même endroit ; à
+     droite, le compte et la langue (2026-11-12, Lou)
 ================================================== -#}
 <div id="userbar" class="navbar navbar-inverse">
-    {% if currentObservatoire() is not null %}
-        <ul class="nav navbar-nav">
+    <ul class="nav navbar-nav userbar-observatoires">
+        {% include "Core/observatoires-selector.html.twig" %}
+    </ul>
+    {% if breadcrumbHtml is defined and breadcrumbHtml %}
+        <nav class="userbar-breadcrumb">{{ breadcrumbHtml|raw }}</nav>
+    {% endif %}
+    <ul class="nav navbar-nav navbar-right">
+        {% if currentObservatoire() is not null %}
             {% include is_granted('ROLE_USER') ?
                '@IrsteaBdohSecurity/UserBar/connected-menu.html.twig' :
                '@IrsteaBdohSecurity/UserBar/anonymous-menu.html.twig'
             %}
-        </ul>
-    {% endif %}
-    <ul class="nav navbar-nav navbar-right">
-        {% include "Core/observatoires-selector.html.twig" %}
+        {% endif %}
+        {% include "@IrsteaBdohInternationalisation/select-lang.html.twig" %}
     </ul>
 </div>
 {#-- END_User bar -#}
