@@ -113,10 +113,11 @@ define([
                     .shareReplay(1);
             },
 
-            // Le visualiseur grisé et flouté pendant qu'il charge, au lieu d'un voile sur toute la page (lib/busy.js) ;
-            // la file ne le montre qu'après une demi-seconde de chargement (services/ajax-queue.js). Elle dit la fin des
-            // requêtes, mais le tracé d'une longue chronique suit quelques centaines de millisecondes plus tard : le
-            // voile reste jusqu'à lui (widgets/graph.js, « graphdrawn »), ou une seconde et demie au plus.
+            // Le symbole de chargement (lib/busy.js), au lieu d'un voile sombre sur toute la page et d'une barre : au milieu
+            // des graphiques affichés, qui pâlissent légèrement, ou seul à la place du premier tracé, avant lui. La
+            // file ne dit qu'il y a du travail qu'après une demi-seconde (services/ajax-queue.js), et sa fin à la fin des
+            // requêtes ; le tracé d'une longue chronique suit quelques centaines de millisecondes plus tard : le symbole
+            // reste jusqu'à lui (widgets/graph.js, « graphdrawn »), ou une seconde et demie au plus.
             _setupBusy() {
                 const element = this.element;
                 const drawn = Rx.Observable.fromEvent(element, 'graphdrawn');
@@ -127,7 +128,19 @@ define([
                         ? Rx.Observable.just(true)
                         : Rx.Observable.merge(drawn, Rx.Observable.timer(1500)).first().map(() => false)))
                     .distinctUntilChanged()
-                    .subscribe((on) => busy(element, on));
+                    .subscribe((on) => {
+                        if (this._busyZone) {
+                            busy(this._busyZone, false);
+                            this._busyZone = null;
+                        }
+                        if (on) {
+                            // Les graphiques qui ont un tracé pâlissent ; sinon, le symbole seul, là où viendra le premier
+                            const drawnGraphs = element.find('.graph').has('.jqplot-target');
+                            const firstGraph = element.find('.graph').first();
+                            this._busyZone = drawnGraphs.length ? drawnGraphs : (firstGraph.length ? firstGraph.show() : element);
+                            busy(this._busyZone, true, !drawnGraphs.length);
+                        }
+                    });
             },
 
             setDateRange(start, end, submit = false) {

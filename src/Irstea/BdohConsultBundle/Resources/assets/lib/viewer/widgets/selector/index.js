@@ -4,7 +4,6 @@ define([
     'jquery',
     'rx',
     'translator',
-    '@IrsteaBdohBundle/lib/busy',
     // --
     'jquery-ui/ui/widget',
     'jquery-ui/ui/widgets/selectable',
@@ -12,7 +11,7 @@ define([
     'jquery-ui/ui/widgets/droppable',
     'jquery-ui/ui/widgets/sortable',
     './style.css'
-], ($, Rx, Translator, busy) => {
+], ($, Rx, Translator) => {
 
     let selectorTemplate;
     (function () {
@@ -42,7 +41,7 @@ define([
                     element
                         .find('.stations .list')
                         .selectable({
-                            cancel: '.bdoh-busy-veil',
+                            cancel: '.loading',
                             filter: 'li.has-measures'
                         });
 
@@ -127,7 +126,6 @@ define([
             _setStations(stations) {
                 const list = this._stationList;
                 list.empty();
-                busy(list, false);
                 $.each(stations, (id, station) => {
                     $(`<li class="station"><strong>${station.name}</strong> - ${station.code}</li>`)
                         .toggleClass('has-measures', station.hasMeasures)

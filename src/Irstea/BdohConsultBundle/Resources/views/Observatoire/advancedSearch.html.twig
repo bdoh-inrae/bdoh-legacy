@@ -85,9 +85,8 @@
 
         <h1>{{ 'advancedSearch'|trans }}</h1>
 
-        {#- Grisé et flouté jusqu'à ce que le tableau soit prêt (advanced-search.js, lib/busy.js) #}
-        <div class="async bdoh-busy" aria-busy="true">
-            <div class="bdoh-busy-veil"></div>
+        <div class="async">
+            <div class="waiting"><svg class="bdoh-spinner" viewBox="0 0 50 50" aria-hidden="true"><circle cx="25" cy="25" r="20"/></svg></div>
             <div class="result">
                 <fieldset class="box">
                     <legend>{{ 'searchPeriod'|trans }}</legend>

@@ -15,9 +15,8 @@
                             </div>
                             <div class="stations">
                                 <h4>{% trans from "viewer" %}station{% endtrans %}</h4>
-                                {#- Grisée et floutée jusqu'à l'arrivée des stations (widgets/selector, lib/busy.js) #}
-                                <ul class="list bdoh-busy" aria-busy="true" style="margin-bottom:9px;">
-                                    <li class="bdoh-busy-veil"></li>
+                                <ul class="list" style="margin-bottom:9px;">
+                                    <div class="loading"><svg class="bdoh-spinner" viewBox="0 0 50 50" aria-hidden="true"><circle cx="25" cy="25" r="20"/></svg></div>
                                 </ul>
                             </div>
                         </div>

@@ -1,34 +1,66 @@
-// Une zone qui charge (lib/busy.js) : grisée et floutée, la même partout ; le voile apparaît en fondu, pour qu'un
-// chargement bref ne fasse pas clignoter la page. Il passe sous les fenêtres et les menus de Bootstrap (1030 et plus).
+// Le symbole de chargement, le même partout (lib/busy.js, et tel quel dans les gabarits) : un trait qui s'enroule en
+// tournant, à la manière de Material. Il n'apparaît qu'après 0,8 s : un chargement plus bref ne montre rien, une
+// animation en boucle distrayant plus qu'elle n'aide sous une seconde (Nielsen Norman Group, « Progress Indicators »).
+@bdoh-busy-delay: .8s;
+
+.bdoh-spinner {
+    display: block;
+    width: 36px;
+    height: 36px;
+    margin: 32px auto;
+    color: #5f707a;
+    opacity: 0;
+    animation: bdoh-spinner-turn 1.4s linear infinite, bdoh-spinner-in .3s @bdoh-busy-delay forwards;
+
+    circle {
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 4;
+        stroke-linecap: round;
+        animation: bdoh-spinner-dash 1.4s ease-in-out infinite;
+    }
+}
+
+// Un contenu affiché qui se met à jour : il pâlit légèrement quand le symbole apparaît, au milieu de lui
 .bdoh-busy {
     position: relative;
-    cursor: progress;
-}
 
-.bdoh-busy-veil {
-    position: absolute;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    left: 0;
-    z-index: 1000;
-    background: rgba(226, 229, 233, .5);
-    -webkit-backdrop-filter: blur(3px);
-    backdrop-filter: blur(3px);
-    animation: bdoh-busy-in .2s ease-out both;
-}
-
-@keyframes bdoh-busy-in {
-    from {
-        opacity: 0;
+    > :not(.bdoh-spinner) {
+        opacity: .55;
+        transition: opacity .3s @bdoh-busy-delay;
     }
+
+    > .bdoh-spinner {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        margin: -18px 0 0 -18px;
+    }
+}
+
+@keyframes bdoh-spinner-turn {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes bdoh-spinner-in {
     to {
         opacity: 1;
     }
 }
 
-// Le cadre des dates du graphique déborde du visualiseur de 5 px de chaque côté : le voile le couvre aussi
-#viewer > .bdoh-busy-veil {
-    left: -5px;
-    right: -5px;
+@keyframes bdoh-spinner-dash {
+    0% {
+        stroke-dasharray: 8, 150;
+        stroke-dashoffset: 0;
+    }
+    50% {
+        stroke-dasharray: 90, 150;
+        stroke-dashoffset: -35;
+    }
+    100% {
+        stroke-dasharray: 90, 150;
+        stroke-dashoffset: -124;
+    }
 }

@@ -1,0 +1,17 @@
+// La recherche avancée (Observatoire/advancedSearch.html.twig) : le symbole de chargement (busy.less) tant que le tableau
+// n'est pas prêt, à la place du contenu, caché jusque-là
+.async {
+    & > .result {
+        visibility: hidden;
+    }
+}
+
+.async.done {
+    & > .waiting {
+        display: none;
+    }
+
+    & > .result {
+        visibility: visible;
+    }
+}

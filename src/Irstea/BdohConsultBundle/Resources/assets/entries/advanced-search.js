@@ -7,7 +7,6 @@ const Translator = require('translator');
 require('@IrsteaBdohBundle/lib/date-time/range-picker');
 require('@IrsteaBdohBundle/lib/datatables');
 require('@IrsteaBdohBundle/lib/select2');
-const busy = require('@IrsteaBdohBundle/lib/busy');
 
 $(() => {
 
@@ -29,7 +28,7 @@ $(() => {
                     $table.draw();
                 });
 
-            busy($('.async'), false);
+            $('.async').addClass('done');
 
             // modification du label de la recherche par mots-clés pour insérer une bulle d'aide
             const searchLabel = document.querySelector('#main-table_filter > label').firstChild;

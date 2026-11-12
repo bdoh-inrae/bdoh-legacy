@@ -17,6 +17,17 @@
 }
 
 
+.selector .stations .loading {
+    position: absolute;
+    width: 100%;
+    height: 125px;
+    padding-top: 22px;
+}
+
+.selector .stations .loading .bdoh-spinner {
+    margin: 0 auto;
+}
+
 .selector .chronique {
     width: 385px;
 }
