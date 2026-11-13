@@ -2,7 +2,7 @@
 
 Sur la VM, chaque instance est un clone du dépôt (`/var/www/bdoh-prod`, `/var/www/bdoh-othu`), et chaque étape une cible du Makefile, lancée en root dans ce dossier : `sudo make vm-… NOM=prod`. Le code s'y lit par tous, comme sur GitHub (`make help`) ; seuls `.env` et `var/` sont fermés aux autres comptes que root et Apache (`vm-build`). Jusqu'à la 0.5.0 comprise, `vm-build` fermait tout le dossier : sur une instance construite par elles, `make` y va lui-même, `sudo make -C /var/www/bdoh-prod vm-… NOM=prod`, jusqu'à la mise à jour suivante. Les commandes elles-mêmes sont dans [config/deploy/vm.sh](../../config/deploy/vm.sh), les fichiers qu'elles installent à côté ; ce guide dit l'ordre, et ce qu'il faut regarder entre deux. Le pourquoi des choix : [dev/plans/2026-10-26_deployment.md](../plans/2026-10-26_deployment.md) et `dev/decisions.md` (« Déploiement par `git clone` et Makefile »).
 
-Écrit pour Ubuntu 26.04 (PHP 8.5, PostgreSQL 18, PostGIS 3.6), et suivi de bout en bout le 10 novembre pour installer la production (`dev/plans/2026-10-26_deployment.md`, Suivi). Restent à éprouver : la restauration d'une sauvegarde, la section 5, et `vm-update`. Ce qui accroche se corrige ici.
+Écrit pour Ubuntu 26.04 (PHP 8.5, PostgreSQL 18, PostGIS 3.6), et suivi de bout en bout le 10 novembre pour installer la production (`dev/plans/2026-10-26_deployment.md`, Suivi). `vm-update` est éprouvé le 13 novembre (0.3.2 vers 0.5.0). Restent à éprouver : la restauration d'une sauvegarde, et la section 5. Ce qui accroche se corrige ici.
 
 Aucune étape ne supprime une base, et aucune ne restaure dans une base qui existe. Une erreur s'arrête et se lit : ne pas relancer à l'aveugle.
 
