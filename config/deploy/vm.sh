@@ -254,6 +254,24 @@ cmd_update() {
     controle avant
     step "Passage à $V"
     git -c advice.detachedHead=false checkout --quiet "$V"
+    # Le script qui tourne est celui de la version d'avant, lu avant le checkout : la suite (construction,
+    # migrations, contrôles) est celle de la version installée, relancée depuis son propre fichier. Le
+    # passage de la 0.3.2 à la 0.5.0 a ainsi gardé les thèmes de la 0.3.2, que seule la 0.5.0 supprimait.
+    if grep -q '^cmd_update_installed()' "$0"; then
+        exec env UPDATE_WORKER="$was_active" UPDATE_SECONDS="$SECONDS" "$0" update-installed
+    fi
+    update_installed "$was_active"
+}
+
+cmd_update_installed() {
+    instance
+    [[ -n ${V:-} && -n ${UPDATE_WORKER:-} ]] || die "Étape interne de make vm-update"
+    SECONDS=${UPDATE_SECONDS:-0}
+    update_installed "$UPDATE_WORKER"
+}
+
+update_installed() {
+    local worker=bdoh-job-worker@$NOM was_active=$1
     build
     step "Migrations"
     console doctrine:migrations:migrate

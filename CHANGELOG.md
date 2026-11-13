@@ -4,6 +4,14 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/). Numéros de v
 
 ## Non publié
 
+### Modifié
+
+- Installation sur la VM : le code se lit par tous dans le dossier d'une instance, `.env` et `var/` restant fermés, et chaque étape longue s'annonce à l'heure.
+
+### Corrigé
+
+- Installation sur la VM : une mise à jour (`make vm-update`) poursuit, après le passage au tag, avec le script de la version qu'elle installe. Elle gardait celui de la version d'avant : le passage de la 0.3.2 à la 0.5.0 a ainsi laissé les thèmes des observatoires compilés par la 0.3.2, et le site sans sa nouvelle apparence.
+
 ## 0.5.0 - 2026-11-13
 
 Les favoris d'un compte et leurs étiquettes, la connexion depuis le portail, et la fin de l'interface modernisée : fil d'Ariane et barres rangées, ligne d'état du graphique, graphique sans limite de 5 ans, un seul symbole de chargement.
