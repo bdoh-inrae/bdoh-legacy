@@ -1,6 +1,6 @@
 # Installer BDOH sur la VM
 
-Sur la VM, chaque instance est un clone du dépôt (`/var/www/bdoh-prod`, `/var/www/bdoh-othu`), et chaque étape une cible du Makefile, lancée en root dans ce dossier : `sudo make vm-… NOM=prod`. Les commandes elles-mêmes sont dans [config/deploy/vm.sh](../../config/deploy/vm.sh), les fichiers qu'elles installent à côté ; ce guide dit l'ordre, et ce qu'il faut regarder entre deux. Le pourquoi des choix : [dev/plans/2026-10-26_deployment.md](../plans/2026-10-26_deployment.md) et `dev/decisions.md` (« Déploiement par `git clone` et Makefile »).
+Sur la VM, chaque instance est un clone du dépôt (`/var/www/bdoh-prod`, `/var/www/bdoh-othu`), et chaque étape une cible du Makefile, lancée en root dans ce dossier : `sudo make vm-… NOM=prod`. Une fois l'instance construite, le dossier n'est plus lisible que par root et Apache (`vm-build`) : le compte d'administration n'y entre plus, et `make` y va lui-même, `sudo make -C /var/www/bdoh-prod vm-… NOM=prod`. Les commandes elles-mêmes sont dans [config/deploy/vm.sh](../../config/deploy/vm.sh), les fichiers qu'elles installent à côté ; ce guide dit l'ordre, et ce qu'il faut regarder entre deux. Le pourquoi des choix : [dev/plans/2026-10-26_deployment.md](../plans/2026-10-26_deployment.md) et `dev/decisions.md` (« Déploiement par `git clone` et Makefile »).
 
 Écrit pour Ubuntu 26.04 (PHP 8.5, PostgreSQL 18, PostGIS 3.6), et suivi de bout en bout le 10 novembre pour installer la production (`dev/plans/2026-10-26_deployment.md`, Suivi). Restent à éprouver : la restauration d'une sauvegarde, la section 5, et `vm-update`. Ce qui accroche se corrige ici.
 
@@ -98,7 +98,7 @@ sudo runuser -u postgres -- dropdb bdoh_essai
 
 ## 5. Vérifier
 
-- `sudo make vm-status NOM=prod` : version, services, et l'accueil qui répond 401 (derrière le mot de passe d'accès).
+- `sudo make -C /var/www/bdoh-prod vm-status NOM=prod` : version, services, et l'accueil qui répond 401 (derrière le mot de passe d'accès).
 - L'accueil de chaque instance, dans un navigateur ; les logos sont là.
 - Un lien de connexion arrive sur une adresse INRAE et sur une adresse extérieure, et le bouton connecte. Une messagerie qui ouvre les liens pour les analyser ne doit pas le consommer.
 - Un courriel vers une adresse hors de la liste arrive à `MAILER_DIVERT_TO`, et pas à son destinataire.
@@ -111,7 +111,7 @@ Ensuite, la liste de Lou : [dev/test-kit/lou-checklist.md](../test-kit/lou-check
 ## Installer une nouvelle version
 
 ```
-sudo make vm-update NOM=prod V=v0.3.5
+sudo make -C /var/www/bdoh-prod vm-update NOM=prod V=v0.5.0
 ```
 
 Arrête la file, sauvegarde la base sous un nom à part (`/var/backups/bdoh/prod-avant-…`), passe au tag, reconstruit, applique les migrations entre deux contrôles, recharge Apache et relance la file. Les thèmes compilés se recompilent avec la nouvelle version. Pour revenir en arrière : la version précédente par la même commande, et, si les migrations ont touché la base, ce dump.
