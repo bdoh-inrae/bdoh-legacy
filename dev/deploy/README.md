@@ -1,8 +1,8 @@
 # Installer BDOH sur la VM
 
-Sur la VM, chaque instance est un clone du dépôt (`/var/www/bdoh-prod`, `/var/www/bdoh-othu`), et chaque étape une cible du Makefile, lancée en root dans ce dossier : `sudo make vm-… NOM=prod`. Le code s'y lit par tous, comme sur GitHub (`make help`) ; seuls `.env` et `var/` sont fermés aux autres comptes que root et Apache (`vm-build`). Jusqu'à la 0.5.0 comprise, `vm-build` fermait tout le dossier : sur une instance construite par elles, `make` y va lui-même, `sudo make -C /var/www/bdoh-prod vm-… NOM=prod`, jusqu'à la mise à jour suivante. Les commandes elles-mêmes sont dans [config/deploy/vm.sh](../../config/deploy/vm.sh), les fichiers qu'elles installent à côté ; ce guide dit l'ordre, et ce qu'il faut regarder entre deux. Le pourquoi des choix : [dev/plans/2026-10-26_deployment.md](../plans/2026-10-26_deployment.md) et `dev/decisions.md` (« Déploiement par `git clone` et Makefile »).
+Sur la VM, BDOH est un clone du dépôt (`/var/www/bdoh-prod`), et chaque étape une cible du Makefile, lancée en root dans ce dossier : `sudo make vm-… NOM=prod`. Le code s'y lit par tous, comme sur GitHub (`make help`) ; seuls `.env` et `var/` sont fermés aux autres comptes que root et Apache (`vm-build`). Jusqu'à la 0.5.0, `vm-build` fermait tout le dossier, et la mise à jour vers la 0.6.0 tourne encore avec son script : d'ici la mise à jour suivante, `make` y va lui-même, `sudo make -C /var/www/bdoh-prod vm-… NOM=prod`. Les commandes elles-mêmes sont dans [config/deploy/vm.sh](../../config/deploy/vm.sh), les fichiers qu'elles installent à côté ; ce guide dit l'ordre, et ce qu'il faut regarder entre deux. Le pourquoi des choix : [dev/plans/2026-10-26_deployment.md](../plans/2026-10-26_deployment.md) et `dev/decisions.md` (« Déploiement par `git clone` et Makefile »).
 
-Écrit pour Ubuntu 26.04 (PHP 8.5, PostgreSQL 18, PostGIS 3.6), et suivi de bout en bout le 10 novembre pour installer la production (`dev/plans/2026-10-26_deployment.md`, Suivi). `vm-update` est éprouvé le 13 novembre (0.3.2 vers 0.5.0). Restent à éprouver : la restauration d'une sauvegarde, et la section 5. Ce qui accroche se corrige ici.
+Écrit pour Ubuntu 26.04 (PHP 8.5, PostgreSQL 18, PostGIS 3.6), et suivi de bout en bout le 10 novembre pour installer la production (`dev/plans/2026-10-26_deployment.md`, Suivi). `vm-update` est éprouvé le 13 novembre (0.3.2 vers 0.5.0). Restent à éprouver : la fusion d'OTHU (section 2 bis), la restauration d'une sauvegarde, et la section 5. Ce qui accroche se corrige ici.
 
 Aucune étape ne supprime une base, et aucune ne restaure dans une base qui existe. Une erreur s'arrête et se lit : ne pas relancer à l'aveugle.
 
@@ -31,11 +31,11 @@ sudo git -c advice.detachedHead=false checkout v0.3.5
 sudo make vm-deps
 ```
 
-`vm-deps` installe les paquets (PHP, PostgreSQL, Apache, Node et Composer pour construire), les langues, les réglages de PostgreSQL (`config/deploy/postgresql.conf`), les modules d'Apache et le port 8443, les services de la file et des sauvegardes, et les dossiers des sauvegardes. Il dit à la fin si `/tmp` est un `tmpfs` : sur la VM, un volume ext4 de 8 Go ; un `tmpfs` serait à masquer (`systemctl mask tmp.mount`), les imports et les exports y écrivent.
+`vm-deps` installe les paquets (PHP, PostgreSQL, Apache, Node et Composer pour construire), les langues, les réglages de PostgreSQL (`config/deploy/postgresql.conf`), les modules d'Apache, les services de la file et des sauvegardes, et les dossiers des sauvegardes. Il dit à la fin si `/tmp` est un `tmpfs` : sur la VM, un volume ext4 de 8 Go ; un `tmpfs` serait à masquer (`systemctl mask tmp.mount`), les imports et les exports y écrivent.
 
-## 2. Une instance : le code et la base
+## 2. Le code et la base
 
-Pour la production (`NOM=prod`, port 443), puis de même pour OTHU (`NOM=othu`, port 8443, dans `/var/www/bdoh-othu`, cloné de la même façon). `ADRESSE` est l'adresse IP de la VM, ou son nom.
+Une seule instance, la production (`NOM=prod`, port 443) : OTHU y devient un observatoire (section 2 bis). `ADRESSE` est l'adresse IP de la VM, ou son nom.
 
 ```
 sudo make vm-env NOM=prod ADRESSE=…
@@ -68,9 +68,23 @@ sudo tar -xzf /var/backups/bdoh-sources/bdoh-uploads-prod.tar.gz --strip-compone
 sudo chown -R www-data:www-data public/uploads
 ```
 
-OTHU seulement : ses trois fonctions SQL, à aligner sur la production après comparaison (`ROADMAP.md`).
+## 2 bis. OTHU, un observatoire de la production
 
-## 3. Une instance : le site
+Une fois la production installée et à la version qui porte la fusion (0.6.0 ou après), le dump brut d'OTHU copié dans `/var/backups/bdoh-sources/` :
+
+```
+sudo make vm-merge-othu NOM=prod DUMP=/var/backups/bdoh-sources/bdoh-othu-2026-10-21.dump
+```
+
+À lancer dans `tmux` (une coupure du VPN arrêterait tout en route), hors de la sauvegarde de la nuit (vers 2 h). Ferme le site et arrête la file jusqu'à la fin, vérifie qu'il reste 60 Go libres, sauvegarde la base dans `/var/backups/bdoh-kept/`, que la sauvegarde de la nuit ne vide pas (`prod-avant-fusion-othu-…`, à supprimer à la main une fois les essais passés), restaure OTHU dans une base temporaire, la charge à part dans la production, puis la fond en une seule transaction (`dev/merge-othu/merge.sql`) : une erreur, et rien n'a changé. Le script vérifie l'empreinte de chaque chronique d'OTHU avant de valider, et dit ce qu'il a ajouté et rapproché : comptes, unités, paramètres, communes (`dev/plans/2026-11-13_othu-merge.md`). À lire ensuite : aucune chronique de la production dans l'empreinte changée. 48 minutes sur le poste avec les copies anonymisées, dont 39 pour la fusion elle-même (106 millions de mesures versées dans une table qui en a 257 millions) ; sans doute plus sur la VM. Ses trois fonctions SQL disparaissent avec sa base : les exports d'OTHU suivent celles de la production.
+
+Pour revenir en arrière, en 4 minutes sur le poste, tant que personne n'a écrit sur OTHU (un export n'y écrit rien) et que rien dans la production ne cite ce que la fusion a ajouté (un rôle donné à un ancien compte d'OTHU, par exemple) : sinon la commande le dit et ne change rien, et le retour se fait par la sauvegarde d'avant la fusion :
+
+```
+sudo make vm-unmerge-othu NOM=prod
+```
+
+## 3. Le site
 
 ```
 sudo make vm-apache NOM=prod
@@ -78,7 +92,7 @@ sudo make vm-apache NOM=prod
 
 Écrit le site Apache (`config/deploy/apache-site.conf`), demande le mot de passe d'accès des essais (compte `test`, partagé avec les testeurs ; il se change par `sudo htpasswd /etc/apache2/bdoh-prod.htpasswd test`), et recharge Apache. Le certificat est celui, auto-signé, du paquet `ssl-cert`, tant que l'infra n'en fournit pas.
 
-## 4. Une instance : courriels, file de tâches, sauvegardes
+## 4. Courriels, file de tâches, sauvegardes
 
 La file de tâches enverra aussitôt les courriels des tâches restées en attente dans le dump : un courriel d'essai d'abord, qui doit arriver à `MAILER_DIVERT_TO` et à personne d'autre. `vm-worker` refuse si `MAILER_DIVERT_TO` est vide : sans lui, `MAILER_ALLOWED_RECIPIENTS` est ignoré et tout part aux vrais destinataires.
 
@@ -99,7 +113,7 @@ sudo runuser -u postgres -- dropdb bdoh_essai
 ## 5. Vérifier
 
 - `sudo make vm-status NOM=prod` : version, services, et l'accueil qui répond 401 (derrière le mot de passe d'accès).
-- L'accueil de chaque instance, dans un navigateur ; les logos sont là.
+- L'accueil, dans un navigateur ; les logos sont là ; OTHU parmi les observatoires.
 - Un lien de connexion arrive sur une adresse INRAE et sur une adresse extérieure, et le bouton connecte. Une messagerie qui ouvre les liens pour les analyser ne doit pas le consommer.
 - Un courriel vers une adresse hors de la liste arrive à `MAILER_DIVERT_TO`, et pas à son destinataire.
 - Un export, un import, et un calcul qui se relance : `systemctl status bdoh-job-worker@prod`, et la page des tâches.
@@ -114,7 +128,7 @@ Ensuite, la liste de Lou : [dev/test-kit/lou-checklist.md](../test-kit/lou-check
 sudo make vm-update NOM=prod V=vX.Y.Z
 ```
 
-Chaque étape s'annonce à l'heure ; la sauvegarde et les deux contrôles de la base, muets, prennent quelques minutes chacun sur la base complète. Arrête la file, sauvegarde la base sous un nom à part (`/var/backups/bdoh/prod-avant-…`), passe au tag, puis laisse la suite au script de la version installée : il reconstruit, applique les migrations entre deux contrôles, recharge Apache et relance la file. Les thèmes compilés se recompilent avec la nouvelle version. Pour revenir en arrière : la version précédente par la même commande, et, si les migrations ont touché la base, ce dump.
+Chaque étape s'annonce à l'heure ; la sauvegarde et les deux contrôles de la base, muets, prennent quelques minutes chacun sur la base complète. Arrête la file, sauvegarde la base sous un nom à part (`/var/backups/bdoh-kept/prod-avant-…`, que la sauvegarde de la nuit ne vide pas ; jusqu'à la 0.6.0, `/var/backups/bdoh/`, vidé au bout de 8 jours), passe au tag, puis laisse la suite au script de la version installée : il reconstruit, applique les migrations entre deux contrôles, recharge Apache et relance la file. Les thèmes compilés se recompilent avec la nouvelle version. Pour revenir en arrière : la version précédente par la même commande, et, si les migrations ont touché la base, ce dump.
 
 ## À l'ouverture au public
 

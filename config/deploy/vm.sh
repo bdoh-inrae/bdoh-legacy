@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Installe et met à jour BDOH sur la VM (Ubuntu 26.04, sans Docker). Appelé par les cibles vm-… du
-# Makefile, en root, dans le dossier d'une instance : /var/www/bdoh-prod ou /var/www/bdoh-othu, chacun un
-# clone du dépôt. L'ordre des étapes et ce qu'il faut regarder entre deux : dev/deploy/README.md.
+# Makefile, en root, dans le dossier de l'instance : /var/www/bdoh-prod, un clone du dépôt. OTHU y est un
+# observatoire, fondu par vm-merge-othu (dev/plans/2026-11-13_othu-merge.md). L'ordre des étapes et ce qu'il faut regarder entre deux : dev/deploy/README.md.
 # Chaque étape s'arrête à la première erreur. Aucune ne supprime une base, ni ne restaure dans une base
 # qui existe déjà.
 #
@@ -10,7 +10,8 @@
 set -euo pipefail
 
 sources=/var/backups/bdoh-sources   # les dumps bruts et les fichiers déposés, copiés par Lou
-backups=/var/backups/bdoh           # les sauvegardes des bases (bdoh-backup@.timer, mises à jour)
+backups=/var/backups/bdoh           # les sauvegardes de chaque nuit, gardées 8 jours (bdoh-backup@.timer)
+kept=/var/backups/bdoh-kept         # celles d'avant une mise à jour ou la fusion, gardées jusqu'à ce qu'on les supprime
 
 die() { echo "$*" >&2; exit 1; }
 # Ce que fait le script, à l'heure : les étapes longues (sauvegarde, empreinte) n'écrivent rien d'elles-mêmes
@@ -19,11 +20,8 @@ pg() { runuser -u postgres -- psql -v ON_ERROR_STOP=1 "$@"; }
 console() { runuser -u www-data -- php bin/console --env=prod --no-interaction "$@"; }
 
 instance() {
-    case ${NOM:-} in
-        prod) port=443 ;;
-        othu) port=8443 ;;
-        *) die "Préciser l'instance : NOM=prod ou NOM=othu" ;;
-    esac
+    [[ ${NOM:-} == prod ]] || die "Préciser l'instance : NOM=prod"
+    port=443
     [[ $PWD == /var/www/bdoh-$NOM ]] || die "À lancer dans /var/www/bdoh-$NOM"
     base=bdoh_$NOM role=bdoh_$NOM
 }
@@ -65,7 +63,6 @@ cmd_deps() {
     systemctl restart postgresql
     a2enmod -q ssl headers
     a2dissite -q 000-default || true
-    grep -q '^Listen 8443' /etc/apache2/ports.conf || echo 'Listen 8443 https' >> /etc/apache2/ports.conf
     systemctl restart apache2
     install -m 644 config/deploy/bdoh-job-worker@.service config/deploy/bdoh-backup@.service \
         config/deploy/bdoh-backup@.timer /etc/systemd/system/
@@ -248,8 +245,9 @@ cmd_update() {
     systemctl is-active -q "$worker" && was_active=yes
     step "Arrêt de la file de tâches (elle reprend à la fin ; un arrêt en route la laisse arrêtée)"
     systemctl stop "$worker"
-    step "Sauvegarde de la base $base dans $backups (quelques minutes)"
-    runuser -u postgres -- pg_dump -Fc -f "$backups/$NOM-avant-$V-$(date +%F-%H%M).dump" "$base"
+    step "Sauvegarde de la base $base dans $kept (quelques minutes)"
+    install -d -m 750 -o postgres -g postgres "$kept"
+    runuser -u postgres -- pg_dump -Fc -f "$kept/$NOM-avant-$V-$(date +%F-%H%M).dump" "$base"
     step "Contrôle de la base avant les migrations (comptes et empreinte des mesures, quelques minutes)"
     controle avant
     step "Passage à $V"
@@ -285,6 +283,83 @@ update_installed() {
     step "Installée : $(git describe --tags --always), en $((SECONDS / 60)) min"
 }
 
+# La fusion d'OTHU dans la production (dev/plans/2026-11-13_othu-merge.md) : le dump brut d'OTHU restauré dans une
+# base temporaire, son schéma renommé othu et chargé à part dans la base de production, puis dev/merge-othu/merge.sql,
+# en une seule transaction. Site et file arrêtés pendant ce temps, pour que rien d'autre n'écrive dans la base ; base
+# sauvegardée avant, dans un dossier que la sauvegarde de la nuit ne vide pas. Aucune chronique de la production ne doit
+# changer. Une heure environ : à lancer dans tmux, une coupure du VPN arrêtant sinon tout en route.
+cmd_merge_othu() {
+    instance
+    [[ -f ${DUMP:-} ]] || die "Préciser DUMP= : le dump brut d'OTHU, dans $sources"
+    local worker=bdoh-job-worker@$NOM was_active=no tmp=bdoh_othu_fusion free
+    [[ -z $(pg -Atc "SELECT 1 FROM pg_database WHERE datname = '$tmp'") ]] \
+        || die "La base $tmp reste d'une fusion inachevée : sudo -u postgres dropdb $tmp, puis relancer"
+    [[ -z $(pg -d "$base" -Atc "SELECT 1 FROM pg_namespace WHERE nspname = 'othu'") ]] \
+        || die "Le schéma othu reste d'une fusion inachevée : sudo -u postgres psql -d $base -c 'DROP SCHEMA othu CASCADE', puis relancer"
+    [[ -z $(pg -d "$base" -Atc "SELECT 1 FROM pg_namespace WHERE nspname = 'fusion_othu'") ]] \
+        || die "OTHU est déjà fondu dans $base (schéma fusion_othu)"
+    # Au plus fort : la base temporaire, OTHU à part dans la production, ses mesures ajoutées, leur journal et la sauvegarde
+    free=$(df --output=avail -BG /var/lib/postgresql | tail -1 | tr -dc 0-9)
+    (( free >= 60 )) || die "Moins de 60 Go libres pour PostgreSQL ($free Go) : la fusion en demande autant au plus fort"
+    systemctl is-active -q "$worker" && was_active=yes
+    step "Site et file de tâches arrêtés jusqu'à la fin (le site rouvre même en cas d'échec ; la file, seulement en cas de succès)"
+    trap 'rm -f /var/lib/postgresql/othu.dump; systemctl start apache2' EXIT
+    systemctl stop apache2 "$worker"
+    step "Sauvegarde de la base $base dans $kept (quelques minutes)"
+    install -d -m 750 -o postgres -g postgres "$kept"
+    runuser -u postgres -- pg_dump -Fc -f "$kept/$NOM-avant-fusion-othu-$(date +%F-%H%M).dump" "$base"
+    step "Contrôle de la base avant la fusion (quelques minutes)"
+    controle avant
+    step "Restauration de $(basename "$DUMP") dans une base temporaire"
+    runuser -u postgres -- createdb -T template0 -E UTF8 --locale=en_US.UTF-8 "$tmp"
+    install -o postgres -m 600 "$DUMP" /var/lib/postgresql/othu.dump
+    # Sans index ni contraintes (post-data) : la fusion ne fait que lire ces tables
+    runuser -u postgres -- pg_restore -d "$tmp" --no-owner --no-privileges --section=pre-data --section=data \
+        -j 4 /var/lib/postgresql/othu.dump
+    pg -d "$tmp" -qc 'ALTER SCHEMA bdoh RENAME TO othu'
+    step "Chargement d'OTHU dans $base, à part (schéma othu)"
+    runuser -u postgres -- pg_dump -n othu --section=pre-data --section=data "$tmp" | pg -d "$base" -q
+    runuser -u postgres -- dropdb "$tmp"
+    step "Fusion (une seule transaction : une erreur, et aucune donnée n'a changé)"
+    if ! pg -d "$base" < dev/merge-othu/merge.sql; then
+        if [[ -n $(pg -d "$base" -Atc "SELECT 1 FROM pg_namespace WHERE nspname = 'fusion_othu'") ]]; then
+            die "La fusion est validée (schéma fusion_othu), seule sa fin a échoué : lire l'erreur. La file reste arrêtée."
+        fi
+        pg -d "$base" -qc 'DROP SCHEMA IF EXISTS othu CASCADE'
+        die "Fusion arrêtée : aucune donnée n'a changé dans $base (les compteurs d'identifiants ont avancé, sans effet). La file reste arrêtée."
+    fi
+    step "Contrôle de la base après la fusion (quelques minutes)"
+    controle apres
+    echo "--- inspect.sql, avant et après (les lignes d'OTHU s'ajoutent aux comptes) :"
+    diff "/root/inspect-$NOM-avant.txt" "/root/inspect-$NOM-apres.txt" || true
+    local changed
+    changed=$(comm -23 <(sort "/root/fingerprint-$NOM-avant.txt") <(sort "/root/fingerprint-$NOM-apres.txt") | cut -d'|' -f1-2)
+    echo "--- empreinte des mesures, chroniques de la production changées (attendu : aucune) :"
+    echo "${changed:-aucune}"
+    console cache:clear
+    [[ $was_active == yes ]] && systemctl start "$worker"
+    step "OTHU est un observatoire de la production, en $((SECONDS / 60)) min ; le site rouvre"
+}
+
+# Le retour arrière de la fusion, tant que personne n'a écrit sur OTHU (un export n'y écrit rien) et que rien dans la
+# production ne cite ce qu'elle a ajouté ; sinon il le dit sans rien changer, et le retour se fait par la sauvegarde
+# d'avant la fusion, dans $kept. Une sauvegarde d'abord, là aussi.
+cmd_unmerge_othu() {
+    instance
+    local worker=bdoh-job-worker@$NOM was_active=no
+    systemctl is-active -q "$worker" && was_active=yes
+    trap 'systemctl start apache2' EXIT
+    systemctl stop apache2 "$worker"
+    step "Sauvegarde de la base $base dans $kept (quelques minutes)"
+    install -d -m 750 -o postgres -g postgres "$kept"
+    runuser -u postgres -- pg_dump -Fc -f "$kept/$NOM-avant-retrait-othu-$(date +%F-%H%M).dump" "$base"
+    step "Retrait d'OTHU (une seule transaction)"
+    pg -d "$base" < dev/merge-othu/unmerge.sql || die "Retour arrière arrêté : rien n'a changé. La file reste arrêtée."
+    console cache:clear
+    [[ $was_active == yes ]] && systemctl start "$worker"
+    step "OTHU est retiré de la production ; le site rouvre"
+}
+
 cmd_status() {
     instance
     echo "Version : $(git describe --tags --always)"
@@ -293,5 +368,5 @@ cmd_status() {
 }
 
 [[ $(id -u) == 0 ]] || die "En root : sudo make vm-…"
-[[ $# -eq 1 && $(type -t "cmd_${1//-/_}") == function ]] || die "Étapes : deps env build db apache mail mail-test worker backup update status"
+[[ $# -eq 1 && $(type -t "cmd_${1//-/_}") == function ]] || die "Étapes : deps env build db apache mail mail-test worker backup update merge-othu unmerge-othu status"
 "cmd_${1//-/_}"; exit

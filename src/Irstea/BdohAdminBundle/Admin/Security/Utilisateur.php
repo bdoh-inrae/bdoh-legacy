@@ -79,8 +79,9 @@ class Utilisateur extends Admin
                 'choice_label'  => $categoryProperty,
                 'query_builder' => $categoryQueryBuilder,
             ])
-            ->add('telephone', TextType::class)
-            ->add('adresse', TextareaType::class, ['attr' => ['class' => 'col-md-10', 'style' => 'height: 80px;']]);
+            // Facultatifs, comme à l'inscription (dev/differences.md, « Données personnelles des comptes »)
+            ->add('telephone', TextType::class, ['required' => false])
+            ->add('adresse', TextareaType::class, ['required' => false, 'attr' => ['class' => 'col-md-10', 'style' => 'height: 80px;']]);
     }
 
     /**

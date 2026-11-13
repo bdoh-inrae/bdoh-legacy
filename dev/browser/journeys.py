@@ -480,7 +480,7 @@ def jobs_page(trip, admin_session):
 
 # Ce qu'un parcours automatique ne doit pas suivre : ce qui déconnecte, télécharge, ou agit par un simple lien
 NOT_FOLLOWED = re.compile(r'/logout|/select_lang|/fillingrate|/admin/observatoire/\d+/.*(?:send|theia)|/uploads/|/documents/|/mesure/export|'
-                          r'\.(?:pdf|zip|csv|png|jpe?g|gif|txt)(?:\?|$)|/conditions|/terms_of_use|/user_manual|/translations/|/delete|/batch')
+                          r'\.(?:pdf|zip|csv|png|jpe?g|gif|txt)(?:\?|$)|/conditions|/user_manual|/translations/|/delete|/batch')
 
 
 def crawl(s, site, start, label, limit):

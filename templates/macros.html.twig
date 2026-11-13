@@ -193,7 +193,8 @@
 {# Macro to provide a DOI link & details #}
 {% macro doi_link(doi) %}
     {%- import _self as macros %}
-    {% set doi_link = 'https://dx.doi.org/'~doi.identifiant %}
+    {#- Cinq DOI sont enregistrés avec le résolveur devant (https://doi.org/…) : gardé tel quel, sans le doubler #}
+    {% set doi_link = doi.identifiant starts with 'http' ? doi.identifiant : 'https://dx.doi.org/'~doi.identifiant %}
     {{ macros.i18nEntityLabel(doi, 'description', 'noDescription') }} <a href="{{ doi_link }}">{{ doi_link }}</a>
 {% endmacro %}
 

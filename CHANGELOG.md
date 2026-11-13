@@ -4,13 +4,28 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/). Numéros de v
 
 ## Non publié
 
+## 0.6.0 - 2026-11-13
+
+La fusion d'OTHU dans la production, prête pour la VM ; des conditions d'utilisation communes à tous les observatoires, autour de la Licence Ouverte 2.0 ; l'information sur les données personnelles ; la mise à jour de la VM qui gardait l'apparence de la version d'avant.
+
+### Ajouté
+
+- La fusion d'OTHU dans la production : un script écrit à la main, en une seule transaction, qui rapproche ses listes communes de celles de la production, recopie ses données sous de nouveaux identifiants et vérifie l'empreinte de chaque chronique avant de valider ; son retour arrière ; les cibles de la VM `vm-merge-othu` et `vm-unmerge-othu`, et `make merge-othu` pour l'éprouver sur les copies anonymisées. Le mode `merge` de la comparaison juge ce que la fusion change aux pages et aux exports d'OTHU.
+- Sur la page d'inscription et dans le courriel de bienvenue, ce que deviennent les informations d'un compte, et les droits de chacun (RGPD).
+
 ### Modifié
 
-- Installation sur la VM : le code se lit par tous dans le dossier d'une instance, `.env` et `var/` restant fermés, et chaque étape longue s'annonce à l'heure.
+- Le lien « Conditions d'utilisation » d'un observatoire mène à une page, la même pour tous : la Licence Ouverte 2.0 pour les chroniques ouvertes, comment citer, les conditions générales pour les chroniques en accès restreint. ORACLE ne sert plus ses propres conditions, une copie de celles de 2014, et la contrainte d'accès des jeux de données dit la licence (migration).
+- La fenêtre d'export mène au texte de la Licence Ouverte 2.0 et dit qu'elle permet l'usage commercial ; les conditions générales renvoient au bon article pour la citation, et au code civil d'aujourd'hui pour la force majeure.
+- Le téléphone et l'adresse d'un compte deviennent facultatifs.
+- L'accueil du portail dit INRAE et non plus Irstea ; « Terms of use » sans faute ; le libellé de la contrainte d'accès en français.
+- Installation sur la VM : une seule instance, OTHU y devenant un observatoire ; le code se lit par tous dans le dossier de l'instance, `.env` et `var/` restant fermés ; chaque étape longue s'annonce à l'heure ; la sauvegarde d'avant une mise à jour ou la fusion va dans `/var/backups/bdoh-kept/`, que la sauvegarde de la nuit ne vide pas.
 
 ### Corrigé
 
+- Les exports instantanés d'OTHU, toujours vides dans l'ancien (sa table des qualités d'une valeur interpolée l'était), donnent leurs valeurs une fois OTHU fondu dans la production.
 - Installation sur la VM : une mise à jour (`make vm-update`) poursuit, après le passage au tag, avec le script de la version qu'elle installe. Elle gardait celui de la version d'avant : le passage de la 0.3.2 à la 0.5.0 a ainsi laissé les thèmes des observatoires compilés par la 0.3.2, et le site sans sa nouvelle apparence.
+- Le lien d'un DOI enregistré avec son résolveur (`https://doi.org/…`) ne le double plus.
 
 ## 0.5.0 - 2026-11-13
 

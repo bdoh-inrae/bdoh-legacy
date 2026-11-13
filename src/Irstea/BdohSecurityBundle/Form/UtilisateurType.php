@@ -46,8 +46,8 @@ abstract class UtilisateurType extends AbstractType
             ->add('nom', TextType::class, ['required' => true, 'label' => 'nom'])
             ->add('organisme', TextType::class, ['required' => true, 'attr' => ['class' => 'col-md-8'], 'label' => 'organisme'])
             ->add('email', EmailType::class, ['required' => true, 'attr' => ['class' => 'col-md-8'], 'label' => 'email'])
-            ->add('telephone', TextType::class, ['required' => true, 'label' => 'telephone'])
-            ->add('adresse', TextareaType::class, ['required' => true, 'attr' => ['class' => 'col-md-10', 'style' => 'height: 80px;'], 'label' => 'adresse'])
+            ->add('telephone', TextType::class, ['required' => false, 'label' => 'telephone'])
+            ->add('adresse', TextareaType::class, ['required' => false, 'attr' => ['class' => 'col-md-10', 'style' => 'height: 80px;'], 'label' => 'adresse'])
             ->add(
                 'categorie',
                 null,

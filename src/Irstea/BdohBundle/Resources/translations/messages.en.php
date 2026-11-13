@@ -57,8 +57,8 @@ $various = [
     'account.login'                           => 'Sign in',
     'account.logout'                          => 'Sign out',
     'accueil'                                 => 'Home',
-    'accueilMessage'                          => "The Hydrology Observatory Database (Base de Données des Observatoires en Hydrologie, BDOH) aims at managing, banking and providing hydrological and biochemical data from long-term observatories managed by or where Irstea (formerly Cemagref) is strongly involved. These observatories consist of experimental sites in which data are collected continuously or during recurring campaigns: rainfall, water height and river flow rates, groundwater levels, suspended matter flow, concentration of various substances, etc. The oldest observatory has been operating since 1962.\n\n" .
-        "Those data are used for research by scientists of Irstea and their partners, as well as the public or private operational community for environment (State services, territory authorities, design offices, industry). Open data are accessible to everyone free of charge, without registration, under the Etalab Open Licence; closed data on access request.\n\n" .
+    'accueilMessage'                          => "The Hydrology Observatory Database (Base de Données des Observatoires en Hydrologie, BDOH) aims at managing, banking and providing hydrological and biochemical data from long-term observatories managed by or where INRAE (formerly Irstea and Cemagref) is strongly involved. These observatories consist of experimental sites in which data are collected continuously or during recurring campaigns: rainfall, water height and river flow rates, groundwater levels, suspended matter flow, concentration of various substances, etc. The oldest observatory has been operating since 1962.\n\n" .
+        "Those data are used for research by scientists of INRAE and their partners, as well as the public or private operational community for environment (State services, territory authorities, design offices, industry). Open data are accessible to everyone free of charge, without registration, under the Etalab Open Licence 2.0; closed data on access request.\n\n" .
         'In BDOH, data are naturally organised by Observatories, which are independently managed by the research units in charge.',
     'accueilObservatoires'                    => 'Observatories main page',
     'administration'                          => 'Administration',
@@ -167,9 +167,9 @@ $various = [
     'submit'                                  => 'Submit',
     'survolez'                                => 'Hover the name of the desired observatory',
     'step'                                    => 'Time step',
-    'TermsOfUses'                             => 'Terms of uses',
-    'TermsOfUses.none'                        => 'No terms of uses are defined.',
-    'TermsOfUses(the)'                        => 'The terms of uses',
+    'TermsOfUses'                             => 'Terms of use',
+    'TermsOfUses.none'                        => 'No terms of use are defined.',
+    'TermsOfUses(the)'                        => 'the terms of use',
     'to'                                      => 'to',
     'toLearnMore'                             => 'To learn more',
     'citeWithDoi'                             => 'To cite these data you may refer to the following DOI:',

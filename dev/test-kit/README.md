@@ -4,7 +4,7 @@ Ce qu'on envoie aux gestionnaires pour les essais, une fois que Lou a fait les s
 
 ```
 make test-contacts SOURCE=…brut.dump     # Lou, dans son terminal : production, puis OTHU
-make test-kit ARGS="--site https://… --site-othu https://… --deadline 'dimanche 15 novembre'"
+make test-kit ARGS="--site https://… --deadline 'dimanche 15 novembre'"
 ```
 
 - `make test-kit` écrit dans `../bdoh_reference/test-kit/<OBSERVATOIRE>/` le tableur et les deux messages, depuis les bases anonymisées. Il ne reste à compléter à la main que le mot de passe d'accès.
@@ -23,3 +23,5 @@ make test-kit ARGS="--site https://… --site-othu https://… --deadline 'diman
 Revue avec Lou, élément par élément, montré dans la discussion (10 novembre) : le message INRAE est validé (« nickel »), avec les changements ci-dessous et la carte des stations présentée. Restent à revoir de la même façon : le message hors INRAE, le tableur (ses deux onglets) et la liste des destinataires, que Lou regarde de son côté.
 
 Le message commence par « Bonjour », dit que « normalement ça colle », donne l'identifiant et le mot de passe d'accès au site sur deux lignes, et prévient que c'est la vraie base : une modification destructrice se signale, pour repartir à l'ouverture sur le dump propre (Lou, 10 novembre).
+
+Mis à jour le 13 novembre, à relire par Lou : un seul site, OTHU compris ; un quatrième changement, les conditions d'utilisation communes ; le post-scriptum sur le courriel de chaque nouveau compte retiré, ce courriel l'étant depuis la 0.5.0 ; un paragraphe propre à OTHU (la fusion, les libellés rapprochés, ses trois questions, l'accord de ses producteurs), à ORACLE (la fin de ses conditions propres) et à Arc-Isère (ses chroniques ouvertes d'EDF), tenu dans `SPECIAL` de `kit.py`.

@@ -105,7 +105,7 @@ L'Utilisateur s'engage à renvoyer vers INRAE toute demande de communication de 
 
 L'Utilisateur déclare qu'il ne fera pas d'exploitation commerciale ou industrielle directe ou indirecte de la Base de Données et des Données dérivées.
 
-Dans le cadre de la publication de ses résultats ou de toute communication, l'Utilisateur s'engage à citer INRAE (et les éventuels autres producteurs) comme producteur des Données utilisées, conformément à l'article 3 des présentes CGU.
+Dans le cadre de la publication de ses résultats ou de toute communication, l'Utilisateur s'engage à citer INRAE (et les éventuels autres producteurs) comme producteur des Données utilisées, conformément à l'article 4 des présentes CGU.
 
 Si l'Utilisateur constate la moindre anomalie sur les Données transmises, il s'engage à en informer immédiatement INRAE qui lui fournira dans la mesure du possible les réponses nécessaires pour une bonne utilisation des Données.
 
@@ -121,7 +121,7 @@ INRAE ne se porte pas garant en cas de violation de droits de tiers et se réser
 
 INRAE ne sera pas tenu pour responsable ou coresponsable des conséquences, accidents et/ou dommages immatériels comme la perte de profit, perte de production, diminution du chiffre d'affaires, perte de Données ou d'informations, perte de jouissance de droits, interruption partielle ou totale d'activité par tout Utilisateur des Données de base ou dérivées.
 
-INRAE ne sera pas considéré comme défaillant pour tout manquement à leurs obligations nées des présentes CGU dès lors que le dit manquement est la conséquence manifeste d'un fait imputable à la Force majeure, telle que définie sous les Articles 607, 1148, 1302, 1348, 1722 du code civil, ou de tout fait indépendant de sa volonté qui ne peut être empêché malgré ses efforts raisonnablement possibles, tels que les dysfonctionnements techniques.
+INRAE ne sera pas considéré comme défaillant pour tout manquement à leurs obligations nées des présentes CGU dès lors que le dit manquement est la conséquence manifeste d'un fait imputable à la Force majeure, telle que définie à l'article 1218 du code civil, ou de tout fait indépendant de sa volonté qui ne peut être empêché malgré ses efforts raisonnablement possibles, tels que les dysfonctionnements techniques.
 
 L'Utilisateur exploite les Données, conformément aux termes des CGU, sous sa seule responsabilité et à ses seuls risques. Il demeure responsable de l'utilisation et de l'exploitation qu'il fait des Données.
 

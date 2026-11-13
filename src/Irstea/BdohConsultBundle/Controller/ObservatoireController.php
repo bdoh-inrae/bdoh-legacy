@@ -12,7 +12,6 @@ use Doctrine\ORM\Query;
 use Irstea\BdohBundle\Controller\Controller;
 use Irstea\BdohBundle\Form\Type\UTCDateTimeType;
 use Irstea\BdohBundle\Manager\JobManagerInterface;
-use Irstea\BdohBundle\Util\HttpFileResponse;
 use Irstea\BdohDataBundle\Entity\Chronique;
 use Irstea\BdohDataBundle\Entity\ChroniqueDiscontinue;
 use Irstea\BdohDataBundle\Entity\Observatoire;
@@ -203,16 +202,16 @@ class ObservatoireController extends Controller
     }
 
     /**
-     * @return HttpFileResponse
+     * Les conditions d'utilisation des données, une page commune à tous les observatoires, à l'adresse où l'ancien
+     * servait un PDF, que les fiches Theia citent (dev/differences.md, « Conditions d'utilisation communes »).
+     *
+     * @return array
      */
     #[Route('/terms_of_use', name: 'bdoh_cgu_observatoires', methods: ['GET'])]
+    #[Template('@IrsteaBdohConsult/Observatoire/terms.html.twig')]
     public function cguAction()
     {
-        $observatoire = Observatoire::getCurrent();
-        $termsOfUses = $observatoire->getConditionsUtilisation();
-        $cguPath = $termsOfUses ?: $this->getParameter('irstea_bdoh_data.measure_export.default_termofuses_file');
-
-        return new HttpFileResponse($cguPath, 'application/octet-stream');
+        return [];
     }
 
     /**

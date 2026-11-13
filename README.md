@@ -2,7 +2,7 @@
 
 BDOH, la Base de Données des Observatoires Hydrologiques, telle qu'elle est en service, portée de Symfony 2.8 et PHP 7.1 vers Symfony 7.4 et PHP 8.4 et 8.5. Elle est maintenue jusqu'à son remplacement par le nouveau BDOH, développé dans les autres dépôts de [bdoh-inrae](https://github.com/bdoh-inrae), puis archivée.
 
-Le portage garde le comportement, les adresses et les données de l'application en service. Rien n'y tourne encore : il remplacera à la bascule le code du dépôt d'origine (forge INRAE, accès réservé). L'avancée est dans [ROADMAP.md](ROADMAP.md).
+Le portage garde le comportement, les adresses et les données de l'application en service. Il tourne sur une machine interne, pour les essais des gestionnaires d'observatoire, et deviendra la production à leur issue, à la place du code du dépôt d'origine (forge INRAE, accès réservé). L'avancée est dans [ROADMAP.md](ROADMAP.md).
 
 Les commandes du projet sont dans le `Makefile` : `make` les liste.
 

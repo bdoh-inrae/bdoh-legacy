@@ -21,6 +21,7 @@ dit à part »).
 """
 
 import re
+import urllib.parse
 from dataclasses import dataclass
 
 RX = re.compile
@@ -54,6 +55,17 @@ GRAPH = "Graphique d'une chronique"
 OLD_TERMS = "Pour pouvoir télécharger des données il faudra, une fois connecté, faire des demandes d'accès spécifiques sur les observatoires qui vous intéressent via le formulaire de demande d'accès aux données ou contacter un gestionnaire"
 NEW_TERMS = "Les données ouvertes se téléchargent sans compte. Pour accéder aux données fermées, il faudra, une fois connecté, faire des demandes d'accès spécifiques sur les observatoires qui vous intéressent via le formulaire de demande d'accès aux données ou contacter un gestionnaire"
 RIGHTS_NOTICE = "Conformément aux articles 39 et 40 de la loi Informatique et Libertés modifiée par la loi n° 2004-801 du 6 août 2004 relative à la protection des personnes physiques à l'égard des traitements de données à caractère personnel, vous disposez d'un droit d'accès et de rectification des données vous concernant. Pour toute demande de rectification veuillez vous adresser à : "
+
+# L'information sur les données personnelles, à l'inscription et dans le courriel de bienvenue (RGPD, article 13)
+PRIVACY = 'Données personnelles des comptes'
+TERMS = "Conditions d'utilisation communes"
+PRIVACY_NOTICE = ("INRAE (147 rue de l'Université, 75338 Paris Cedex 07) traite les informations de votre compte pour vous donner "
+                  "accès à BDOH et aux données que vous demandez ; les gestionnaires de l'observatoire concerné reçoivent vos "
+                  "demandes d'accès. Vous pouvez accéder à ces informations, les faire rectifier ou effacer, et vous opposer à "
+                  "leur traitement, comme le prévoient le règlement (UE) 2016/679 et la loi Informatique et Libertés. Écrivez à "
+                  "bdoh.support@listes.inrae.fr, ou à la déléguée à la protection des données d'INRAE, cil-dpo@inrae.fr ; vous "
+                  "pouvez aussi saisir la CNIL (www.cnil.fr).")
+PRIVACY_FORM = (f"+T Données personnelles : {PRIVACY_NOTICE} Le téléphone et l'adresse sont facultatifs.",)
 
 # La page de connexion, que montre aussi l'inscription réussie
 LOGIN_PAGE = (
@@ -290,6 +302,63 @@ def admin_rules(created, technical, stations_on_first_page):
     return rules
 
 
+
+MERGE = "Fusion d'OTHU dans BDOH"
+
+
+def merge_rules(renamed, others, families, admins):
+    """Ce que la fusion d'OTHU change à ses pages et à ses exports (`run_merge` les ajoute) :
+    - les libellés des listes communes rapprochés d'un autre libellé de la production (renamed, ancien et nouveau),
+      réécrits dans les lignes de l'ancienne base là où ils s'affichent seuls : une ligne, une valeur JSON, un paramètre
+      d'adresse, suivis d'un code postal ou d'un compte de chroniques ; un texte libre qui les contient ne change pas ;
+    - les autres observatoires (others : adresse et nom), que le choix d'un observatoire propose désormais ;
+    - l'ordre des listes que le code trie par identifiant (séries d'un graphique par qualité, chroniques d'une station),
+      et les identifiants que portent les pages, qui changent avec la fusion ;
+    - les familles des paramètres qui en changent (families : leurs noms, d'avant et d'après), et les regroupements
+      qui les suivent ;
+    - les contacts de l'observatoire, où s'ajoutent ses anciens administrateurs (admins : prénom et nom), devenus ses
+      gestionnaires ;
+    - les exports instantanés, toujours vides dans OTHU, dont la table interp_qualite était vide : ils gagnent leurs
+      valeurs, sans en perdre aucune ;
+    - dans le format Qtvar, le code de l'unité « m³/s », écrit « M-S » comme celui des m/s, devenu « M3-S » avec le
+      libellé « m3/s »."""
+    patterns = []
+    for old in sorted(renamed, key=len, reverse=True):
+        new = renamed[old]
+        patterns.append((re.compile(rf'(?<=^T ){re.escape(old)}(?=$| \(| ‒)|(?<=": "){re.escape(old)}(?=")'
+                                    rf'|(?<=;){re.escape(old)}(?=;|$)'), new))
+        patterns.append((re.compile(rf'(?<==){re.escape(urllib.parse.quote_plus(old))}(?=&|$)'), urllib.parse.quote_plus(new)))
+
+    def relabel(lines):
+        out = []
+        for line in lines:
+            for pattern, new in patterns:
+                line = pattern.sub(new, line)
+            out.append(line)
+        return out
+
+    # Les identifiants que portent les pages (sites de la carte, ancres des familles de paramètres, options d'une
+    # liste, objets du visualiseur) changent avec la fusion : masqués, ce qu'ils désignent restant comparé, et les
+    # données elles-mêmes vérifiées par l'empreinte de chaque chronique (merge.sql)
+    ids = ((r'(data-map-site=|data-chronique-id=|#famille-|#family|#param-)\d+', r'\1<id>'), (r'("sites":\[)[\d,]*', r'\1<ids>'),
+           (r'^O \d+( selected)?$', r'O <id>\1'), (r'^(\s*"(?:id|unitId)": )\d+', r'\1<id>'), (r'^(\s*")\d+(": \{)$', r'\1<id>\2'))
+    regrouped = tuple(x for name in families for x in (
+        RX(rf'[-+]T {re.escape(name)}(?:##.*)?'), RX(rf'[-+]A /[A-Z][A-Z0-9-]*/nos-donnees\?famille={re.escape(urllib.parse.quote_plus(name))}')))
+    return [
+        Rule('merge', '.*', MERGE, rewrite=relabel),
+        Rule('merge', r'anonyme /.*', MERGE, order=True, masks=ids,
+             lines=tuple(x for slug, name in others for x in (RX(rf'\+A /{re.escape(slug)}/(?:home)?'), f'+T {name}'))),
+        Rule('merge', r'anonyme /.*', MERGE, lines=(*regrouped, RX(r'[-+]A #(?:famille-|family|param-).*'),
+                                                    RX(r'[-+]D a data-toggle=collapse'))) if families else None,
+        # Les administrateurs d'OTHU, devenus gestionnaires de l'observatoire, s'ajoutent à ses contacts
+        Rule('merge', r'anonyme /[A-Z][A-Z0-9-]*/contact', MERGE, lines=tuple(f'+T {x}' for names in admins for x in names)),
+        Rule('merge', r'bdoh:export:instantaneous .*', MERGE, lines=(
+            RX(r'\+\d\d/\d\d/\d{4} \d\d:\d\d:\d\d;.*'), RX(r'-\s*Aucune mesure exportée'), RX(r'\+\s*\d+ mesures exportées'))),
+        Rule('merge', r'bdoh:export:.* --format qtvar .*', MERGE,
+             lines=(RX(r'-919;.*;M-S;'), RX(r'\+919;.*;M3-S;'))),
+    ]
+
+
 RULES = [
     # L'en-tête et le début du fil d'Ariane, sur toute page du site, quel que soit le mode qui la compare : header()
     # les réécrit dans l'ancien, et la page doit alors être la même, sauf ce que d'autres règles admettent
@@ -346,6 +415,15 @@ RULES = [
         RX(r'\+T (?:du|au) \d\d/\d\d/\d{4} \d\d:\d\d:\d\d UTC'))),
     Rule('pages', rf'{ROLE} {OBS}/login', LINK, lines=LOGIN_PAGE),
     Rule('pages', rf'{ROLE} {OBS}/user/new', OPEN, lines=NEW_ACCOUNT),
+    Rule('pages', rf'{ROLE} {OBS}/user/new', PRIVACY, lines=PRIVACY_FORM, must=PRIVACY_FORM),
+    # Une page commune à tous les observatoires, et non plus un PDF ; compare.py n'en compare que le statut et le type
+    Rule('pages', rf'{ROLE} {OBS}/terms_of_use', TERMS, lines=('-type application/octet-stream', '+type text/html'),
+         must=('+type text/html',)),
+    Rule('pages', rf'{ROLE} {OBS}/dataset/[^/ ]+', TERMS, lines=("-T Data Constraint :", "+T Conditions d'accès et d'utilisation :")),
+    Rule('pages', rf'{ROLE} /translations/messages\.js', TERMS, lines=(translation('[-+]', 'dataConstraint'),)),
+    Rule('pages', rf'{ROLE} /translations/messages\.js', PRIVACY, lines=(
+        translation(r'\+', 'security.utilisateur.create.info.personalData'),
+        translation('[-+]', 'security.utilisateur.newMailUtilisateur.body.step3'))),
     Rule('pages', rf'{ROLE} {OBS}/user/edit', LINK, lines=EDIT_ACCOUNT),
     replaced('pages', rf'{ROLE} {OBS}/resetting/(?:request|check-email)', LINK, 301,
              RX(rf'\+redirection {OBS}/login'), RX(rf'\+T Redirecting to {OBS}/login\.?'), RX(rf'\+A {OBS}/login')),
@@ -412,6 +490,8 @@ RULES = [
     # --- accounts ----------------------------------------------------------------------------------
     Rule('accounts', 'inscription, (?:téléphone trop court|adresse sans MX|adresse mal formée|adresse déjà prise|nom manquant)',
          OPEN, lines=NEW_ACCOUNT),
+    Rule('accounts', 'inscription, (?:téléphone trop court|adresse sans MX|adresse mal formée|adresse déjà prise|nom manquant)',
+         PRIVACY, lines=PRIVACY_FORM, must=PRIVACY_FORM),
     Rule('accounts', 'inscription, valide', LINK, lines=(
         *LOGIN_PAGE,
         '-D div data-notices={"success":["Votre compte BDOH a bien \\u00e9t\\u00e9 cr\\u00e9\\u00e9. Vous pouvez d\\u00e9sormais vous connecter."]}',
@@ -424,12 +504,17 @@ RULES = [
         '+T Pour confirmer votre adresse et vous connecter, suivez ce lien, valable 15 minutes et une seule fois : <lien de connexion>',
         '+Passé ce délai, demandez un nouveau lien depuis la page de connexion de BDOH.',
         '+T Passé ce délai, demandez un nouveau lien depuis la page de connexion de BDOH.',
-        '+A <lien de connexion>', '+',
+        '+A <lien de connexion>', '+')),
+    # Les articles 39 et 40 de la loi Informatique et Libertés, abrogés en 2018, cèdent la place à l'information du RGPD
+    Rule('accounts', 'courriels', PRIVACY, lines=(
         f'-{RIGHTS_NOTICE}bdoh.support@lists.irstea.fr.', f'-T {RIGHTS_NOTICE}bdoh.support@lists.irstea.fr.',
-        f'+{RIGHTS_NOTICE}bdoh.support@listes.inrae.fr.', f'+T {RIGHTS_NOTICE}bdoh.support@listes.inrae.fr.')),
+        f'+{PRIVACY_NOTICE}', f'+T {PRIVACY_NOTICE}')),
     # L'état des comptes que crée le mode : account_rules, avec les identifiants de la passe.
 
     # --- admin -------------------------------------------------------------------------------------
+    # Le libellé de la contrainte d'accès d'un jeu de données, en français (dev/differences.md)
+    Rule('admin', rf'{ROLE} {OBS}/admin/dataset/.*|dataset : .*', TERMS,
+         lines=('-T Data Constraint', "+T Conditions d'accès et d'utilisation")),
     # L'astuce de saisie des dates passe dans la bulle des champs, sur la page des barèmes aussi
     Rule('admin', rf'{ROLE} {OBS}/admin/transformation', GRAPH, lines=DATE_TIP),
     Rule('admin', rf'{ROLE} {OBS}/admin/utilisateur/export\?format=csv', "Export des listes de l'administration",

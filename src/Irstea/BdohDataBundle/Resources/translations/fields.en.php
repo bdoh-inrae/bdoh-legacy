@@ -76,7 +76,7 @@ return [
     /* DataSet */
     'titre'                               => 'Title',
     'titreEn'                             => 'Title (english)',
-    'dataConstraint'                      => 'Data Constraint',
+    'dataConstraint'                      => 'Access and use conditions',
     'topicCategories'                     => 'INSPIRE Topic Categories',
     'inspireTheme'                        => 'INSPIRE Theme',
     'portailSearchCriteriaGeology'        => 'Criteria Geology',

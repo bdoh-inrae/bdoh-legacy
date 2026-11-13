@@ -30,6 +30,31 @@ SERVER = 'bdoh-reference-db'
 BASES = ['bdoh', 'bdoh_othu']
 TO_FILL = '[à compléter]'
 
+# Ce qui ne vaut que pour un observatoire : la fusion d'OTHU (dev/plans/2026-11-13_othu-merge.md), et les conditions
+# d'utilisation (dev/audits/2026-11-13_terms-of-use.md)
+SPECIAL = {
+    'OTHU': (
+        "OTHU rejoint BDOH : ce n'est plus un serveur à part, mais un observatoire de BDOH, au même site que les autres "
+        "(data.othu.org y renverra). Vos données et vos droits sont repris tels quels ; un compte qui existait déjà dans "
+        "BDOH sous la même adresse ne fait plus qu'un avec lui. Quelques libellés "
+        "suivent désormais les listes communes de BDOH : « m3/s » au lieu de « m³/s », « m3 » au lieu de « m³ », "
+        "« mm/j » au lieu de « mm/jour », « m3.m-3 » au lieu de « cm3/cm3 », et « Ensoleillement » devient « Puissance de "
+        "rayonnement solaire ». Vos comptes d'administration deviennent gestionnaires d'OTHU ; les listes communes "
+        "(unités, types de paramètres) passent alors par un administrateur de BDOH. Et vos exports instantanés, qui "
+        "sortaient vides (un défaut de votre ancienne base), donnent désormais leurs valeurs.\n\n"
+        "Trois questions : qui a besoin d'administrer OTHU ? À quelle fréquence ajoutez-vous des paramètres ou des "
+        "unités ? Envoyez-vous vos fiches à Theia/OZCAR ? Et vos chroniques ouvertes viennent de l'INSA et de l'UCBL : "
+        "votre « OK » vaut leur accord pour une diffusion sous Licence Ouverte."),
+    'ORACLE': (
+        "Vos conditions d'utilisation : le lien « Conditions d'utilisation » de votre accueil servait un PDF propre à "
+        "ORACLE, en fait une copie des conditions de BDOH de 2014 (compte obligatoire, usage non commercial). Elles ne "
+        "peuvent plus valoir pour des données ouvertes, et vos DOI déclarent déjà la Licence Ouverte : le lien mène "
+        "désormais à la page commune à tous les observatoires. Si ORACLE a des conditions vraiment à lui, dites-le-moi."),
+    'ARC-ISERE': (
+        "Certaines de vos chroniques ouvertes viennent d'EDF, une entreprise : ouvertes, elles passent sous Licence "
+        "Ouverte. EDF l'accepte-t-il ? Sinon, on les cache, comme celles qui le sont déjà."),
+}
+
 KINDS = {'continue': 'Continue', 'discontinue': 'Discontinue', 'calculee': 'Calculée', 'convertie': 'Convertie'}
 CLEAN = "regexp_replace(coalesce({}, ''), '\\s+', ' ', 'g')"
 
@@ -175,7 +200,6 @@ def fill(template, **values):
 def main():
     parser = argparse.ArgumentParser(description=__doc__.split('\n')[0])
     parser.add_argument('--site', default=TO_FILL, help='adresse du site d’essai de la production')
-    parser.add_argument('--site-othu', default=TO_FILL, help='adresse du site d’essai d’OTHU')
     parser.add_argument('--deadline', default=TO_FILL, help='date limite des réponses, en toutes lettres')
     args = parser.parse_args()
 
@@ -194,7 +218,7 @@ def main():
             attachment = f'Le second onglet du tableau liste {items} point{"s" if items > 1 else ""} à corriger dans vos données. Ça ne bloque rien'
             values = dict(
                 observatoire=name, comptes=counts_sentence(name, opened, closed), date=args.deadline,
-                site=args.site_othu if base == 'bdoh_othu' else args.site,
+                site=args.site, special=SPECIAL.get(slug, ''),
                 theia='Theia : vos fiches publiées ont des coordonnées décalées de 300 à 700 m, un bogue de l’ancien. C’est corrigé au prochain envoi.' if theia == 't' else '')
             (folder / 'message-inrae.txt').write_text(fill('inrae.txt', **values, onglet=f'{attachment}, à faire quand vous aurez le temps.' if items else ''))
             (folder / 'message-hors-inrae.txt').write_text(fill('outside.txt', **values, onglet=f'{attachment}, à faire après la réouverture, quand vous aurez le temps.' if items else ''))

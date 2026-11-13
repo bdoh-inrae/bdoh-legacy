@@ -17,6 +17,7 @@ La base de la VM deviendra la production : un essai qui écrit se fait sur une c
 - [ ] Le visualiseur avec plusieurs chroniques.
 - [ ] L'interface modernisée (0.4.0 et 0.4.1, `CHANGELOG.md`) : le portail et ses fiches, l'accueil de deux ou trois observatoires aux couleurs différentes, la page d'une chronique avec son graphique dès l'ouverture, la bande de toute la chronique (glisser, tirer, Ctrl + molette), et les lacunes en bandes. Recharger de force (Ctrl + Maj + R) après la mise à jour : le navigateur garde sinon les anciennes feuilles de style.
 - [ ] La carte des stations, sur l'accueil du portail et sur celui de deux ou trois observatoires, dont un sans station placée : points, bulles, liens vers les stations, fond de l'IGN (`dev/differences.md`, « Carte des stations »).
+- [ ] La page « Conditions d'utilisation » d'un observatoire, la même pour tous ; celle d'ORACLE ne télécharge plus son ancien PDF (0.6.0, `dev/audits/2026-11-13_terms-of-use.md`).
 - [ ] Les favoris (0.5.0, `dev/differences.md`, « Favoris et étiquettes ») : l'étoile sur la page d'une chronique et dans la liste d'une station, « Mes favoris » depuis le portail et depuis un observatoire, une étiquette qui coche son groupe, des favoris de deux observatoires. La page se comprend-elle sans explication ?
 
 ## Les vrais courriels
@@ -28,9 +29,11 @@ La base de la VM deviendra la production : un essai qui écrit se fait sur une c
 - [ ] L'export de plusieurs favoris d'un coup, depuis « Mes favoris » : le lien arrive par courriel, l'archive a un fichier par chronique.
 - [ ] Aucun de ces courriels ne finit en indésirables. Sinon, voir avec l'équipe infra l'envoi depuis la VM.
 
-## Les deux instances
+## OTHU, après la fusion
 
-- [ ] Une fois OTHU installée : se connecter à l'une, puis à l'autre, les sessions ne se mêlent pas (`dev/plans/2026-10-26_deployment.md`, Suivi du 5 novembre).
+- [ ] `make vm-merge-othu` (`dev/deploy/README.md`, section 2 bis) : à la fin, aucune chronique de la production dans l'empreinte changée.
+- [ ] L'accueil d'OTHU, ses stations sur la carte, une chronique et son graphique, un export ; ses libellés rapprochés (« m3/s », « Puissance de rayonnement solaire »).
+- [ ] Un ancien administrateur d'OTHU : gestionnaire d'OTHU, et de lui seul.
 
 ## Les doutes
 

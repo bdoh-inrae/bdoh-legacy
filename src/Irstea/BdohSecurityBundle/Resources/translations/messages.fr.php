@@ -18,6 +18,7 @@ $user = [
             'info'        => [
                 'isTheFirstStep' => "Le compte que vous allez créer sera valable sur toute l'application BDOH. Les données ouvertes se téléchargent sans compte. Pour accéder aux données fermées, il faudra, une fois connecté, faire <b>des demandes d'accès spécifiques</b> sur les observatoires qui vous intéressent via le formulaire de demande d'accès aux données ou contacter un gestionnaire.",
                 'yourIdentifier' => "L'<b>adresse e-mail</b> sera votre <u>identifiant de connexion</u> : vous vous connecterez par un lien envoyé à cette adresse, sans mot de passe.",
+                'personalData'   => "Données personnelles : INRAE (147 rue de l'Université, 75338 Paris Cedex 07) traite les informations de votre compte pour vous donner accès à BDOH et aux données que vous demandez ; les gestionnaires de l'observatoire concerné reçoivent vos demandes d'accès. Vous pouvez accéder à ces informations, les faire rectifier ou effacer, et vous opposer à leur traitement, comme le prévoient le règlement (UE) 2016/679 et la loi Informatique et Libertés. Écrivez à bdoh.support@listes.inrae.fr, ou à la déléguée à la protection des données d'INRAE, cil-dpo@inrae.fr ; vous pouvez aussi saisir la CNIL (www.cnil.fr). Le téléphone et l'adresse sont facultatifs.",
             ],
         ],
         'edit'                         => [
@@ -71,8 +72,8 @@ Vous recevez cet e-mail car de nouveaux droits vous ont été attribués sur BDO
                 'confirmLater' => 'Passé ce délai, demandez un nouveau lien depuis la page de connexion de BDOH.',
                 'portal'       => "Choisissez l'observatoire dont vous voulez les données sur l'accueil de BDOH : vous y trouverez sa demande d'accès et ses gestionnaires",
                 'step2'        => "Les données ouvertes se téléchargent sans compte. Pour accéder aux données fermées, il faudra, une fois connecté, faire des demandes d'accès spécifiques sur les observatoires qui vous intéressent via le formulaire de demande d'accès aux données ou contacter un gestionnaire :",
-                'step3'        => "Conformément aux articles 39 et 40 de la loi Informatique et Libertés modifiée par la loi n° 2004-801 du 6 août 2004 relative à la protection des personnes physiques à l'égard des traitements de données à caractère personnel, vous disposez d'un droit d'accès et de rectification des données vous concernant.",
-                'step4'        => 'Pour toute demande de rectification veuillez vous adresser à : bdoh.support@listes.inrae.fr.',
+                'step3'        => "INRAE (147 rue de l'Université, 75338 Paris Cedex 07) traite les informations de votre compte pour vous donner accès à BDOH et aux données que vous demandez ; les gestionnaires de l'observatoire concerné reçoivent vos demandes d'accès. Vous pouvez accéder à ces informations, les faire rectifier ou effacer, et vous opposer à leur traitement, comme le prévoient le règlement (UE) 2016/679 et la loi Informatique et Libertés.",
+                'step4'        => "Écrivez à bdoh.support@listes.inrae.fr, ou à la déléguée à la protection des données d'INRAE, cil-dpo@inrae.fr ; vous pouvez aussi saisir la CNIL (www.cnil.fr).",
             ],
             'title' => 'Bienvenue sur BDOH',
         ],

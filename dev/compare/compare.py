@@ -5104,6 +5104,88 @@ def run_selftest(args):
         subprocess.run([*query_postgres, f'DROP DATABASE IF EXISTS {base}'], check=True, capture_output=True)
 
 
+# --- La fusion d'OTHU ----------------------------------------------------------------------------------
+
+# Les libellés des listes communes qu'OTHU prend de la production (dev/merge-othu/merge.sql) : table, colonnes
+MERGED_LABELS = {'unite': ('libelle', 'libelleen'), 'typeparametre': ('nom', 'nomen'),
+                 'familleparametres': ('nom', 'nomen'), 'commune': ('nom',)}
+
+
+def run_merge(args):
+    """La fusion d'OTHU (dev/plans/2026-11-13_othu-merge.md) : le nouveau BDOH sur la base d'OTHU (--base), contre le
+    même code sur la base fusionnée (--merged). Une seule chose change ainsi, la base : le code a déjà été comparé à
+    l'ancien sur OTHU. Les pages d'OTHU, sans compte, et les exports de ses chroniques ; les identifiants de la base
+    fusionnée se traduisent par fusion_othu.id_map, et ce qui change avec la fusion est au registre (mode merge)."""
+    slug = query(args.base, "SELECT slug FROM observatoire")[0][0]
+    ids = {(t, int(o)): int(n) for t, o, n in query(args.merged, "SELECT tab, old_id, new_id FROM fusion_othu.id_map",
+                                                    NEW_SERVER)}
+    back = {(t, n): o for (t, o), n in ids.items()}
+    chronique = re.compile(r'(?<=/chronique/)(\d+)|(?<=get-chronique-calculee\?id=)(\d+)|(?<="chronicleId": )(\d+)')
+    qualite = re.compile(r'(?<="qualiteId": )(\d+)')
+
+    def merged_path(path):
+        return chronique.sub(lambda m: str(ids[('chronique', int(m[0]))]), path)
+
+    def unmerged_line(line):
+        line = chronique.sub(lambda m: str(back.get(('chronique', int(m[0])), m[0])), line)
+        return qualite.sub(lambda m: str(back.get(('qualite', int(m[0])), m[0])), line)
+
+    # Les libellés d'OTHU rapprochés d'un autre libellé de la production : réécrits dans les lignes de l'ancienne base
+    renamed = {}
+    for table, columns in MERGED_LABELS.items():
+        cols = ', '.join(columns)
+        before = {int(r[0]): r[1:] for r in query(args.base, f"SELECT id, {cols} FROM {table}", NEW_SERVER)}
+        after = {int(r[0]): r[1:] for r in query(args.merged, f"""SELECT t.id, {cols} FROM {table} t
+            WHERE t.id IN (SELECT new_id FROM fusion_othu.id_map WHERE tab = '{table}' AND NOT added)""", NEW_SERVER)}
+        for (t, old), new in ids.items():
+            if t == table and old in before and new in after:
+                renamed.update({a: b for a, b in zip(before[old], after[new]) if a and b and a != b})
+    # Sans tolérance d'arrondi : même code, même PostgreSQL, mêmes mesures
+    report = Report('merge', exact=True)
+    # Les familles des paramètres d'OTHU rapprochés d'un paramètre de la production rangé dans une autre famille
+    family = "SELECT t.id, f.nom FROM typeparametre t JOIN familleparametres f ON f.id = t.familleparametres_id"
+    before = dict(map(tuple, query(args.base, family, NEW_SERVER)))
+    after = dict(map(tuple, query(args.merged, family, NEW_SERVER)))
+    families = sorted({name for (t, old), new in ids.items() if t == 'typeparametre'
+                       and before.get(str(old)) != after.get(str(new)) for name in (before[str(old)], after[str(new)])})
+    # Les anciens administrateurs d'OTHU, sous le nom de leur compte dans la base fusionnée (celui de la production pour
+    # un compte rapproché)
+    merged_admins = [str(ids[('utilisateur', int(r[0]))]) for r in query(args.base, "SELECT id FROM utilisateur WHERE roleadmin IS NOT NULL", NEW_SERVER)]
+    admins = query(args.merged, f"SELECT prenom, nom FROM utilisateur WHERE id IN ({', '.join(merged_admins)})", NEW_SERVER) if merged_admins else []
+    report.rules += [rule for rule in expected.merge_rules(
+        renamed, query(args.merged, f"SELECT slug, nom FROM observatoire WHERE slug <> '{slug}'", NEW_SERVER), families,
+        admins) if rule]
+
+    def fetch(paths):
+        client = Client(SIDES['new'], None, slug)
+        return [page_lines(client.side.url, *client.get(path)) for path in paths]
+
+    paths = [p for p in page_cases(args.base) if p.startswith(f'/{slug}/') and args.only in p]
+    cases, _ = export_cases(args.base)
+    cases = [c for c in cases if args.only in ' '.join(c)]
+
+    def exports(console, translate):
+        out = []
+        for case in cases:
+            # Les chroniques, entre la fin de la période et les options : une ou plusieurs
+            first, last = max(i for i, a in enumerate(case) if 'T' in a and ':' in a) + 1, case.index('--format')
+            case = [str(ids[('chronique', int(a))]) if translate and first <= i < last else a for i, a in enumerate(case)]
+            r = subprocess.run([*console, *case, '--env=prod'], capture_output=True, text=True)
+            out.append([export_line(line) for line in [f'code de sortie {r.returncode}', *r.stdout.splitlines(),
+                                                       *r.stderr.splitlines()] if not line.startswith('# Printing ')])
+        return out
+
+    with new_on(args.base, args.base) as console:
+        old_pages, old_exports = fetch(paths), exports(console, False)
+    with new_on(args.merged, args.base) as console:
+        new_pages, new_exports = fetch([merged_path(p) for p in paths]), exports(console, True)
+    for path, old, new in zip(paths, old_pages, new_pages):
+        report.add(f'anonyme {path}', old, [unmerged_line(line) for line in new])
+    for case, old, new in zip(cases, old_exports, new_exports):
+        report.add(' '.join(case), old, new)
+    report.close()
+
+
 def run_fingerprints(args):
     """Deux empreintes de make fingerprint, table par table, en comptes seulement : rien de ce qui nomme
     une chronique n'est écrit."""
@@ -5128,11 +5210,12 @@ def main():
     global CASES_SERVER
     parser = argparse.ArgumentParser(description=__doc__.split('\n')[0])
     parser.add_argument('what', choices=['pages', 'exports', 'state', 'queue', 'imports', 'accounts', 'admin',
-                                         'theia', 'fingerprints', 'selftest'])
+                                         'theia', 'merge', 'fingerprints', 'selftest'])
     parser.add_argument('files', nargs='*', help='pour fingerprints : les deux empreintes à comparer')
     parser.add_argument('--old', default='reference', choices=SIDES)
     parser.add_argument('--new', default='reference', choices=SIDES)
     parser.add_argument('--base', default='bdoh_small', help='base où tirer les cas')
+    parser.add_argument('--merged', help="merge : la base où OTHU a été fondu (dev/merge-othu/merge.sh)")
     parser.add_argument('--server', default=CASES_SERVER, help='conteneur du serveur de cette base')
     parser.add_argument('--only', default='', help='ne garder que les cas qui contiennent ce texte')
     parser.add_argument('--jobs', type=int, default=6, help='requêtes menées en parallèle')
@@ -5146,7 +5229,7 @@ def main():
         parser.error('--inject-sql ne vaut que pour state et exports')
     CASES_SERVER = args.server
     {'pages': run_pages, 'exports': run_exports, 'state': run_state, 'queue': run_queue, 'imports': run_imports,
-     'accounts': run_accounts, 'admin': run_admin, 'theia': run_theia,
+     'accounts': run_accounts, 'admin': run_admin, 'theia': run_theia, 'merge': run_merge,
      'fingerprints': run_fingerprints, 'selftest': run_selftest}[args.what](args)
     return 1 if Report.failed else 0
 

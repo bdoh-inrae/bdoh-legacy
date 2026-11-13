@@ -22,7 +22,7 @@ ENCORE = docker run --rm --network none --user $(HOST_UID):$(HOST_GID) -e HOME=/
 	-v $(CURDIR):/var/www/bdoh bdoh-app node_modules/.bin/encore
 DB_CONTAINER = $(if $(filter new,$(SERVER)),bdoh-db,bdoh-reference-db)
 
-.PHONY: help app-install assets start stop composer phpstan browser-check anonymize db db-small inspect fingerprint migrate reference-app reference-start reference-stop reference-base reference-17-start mail-start worker-start test-kit test-contacts vm-deps vm-env vm-build vm-db vm-apache vm-mail vm-mail-test vm-worker vm-backup vm-update vm-status
+.PHONY: help app-install assets start stop composer phpstan browser-check anonymize db db-small inspect fingerprint migrate reference-app reference-start reference-stop reference-base reference-17-start mail-start worker-start test-kit test-contacts vm-deps vm-env vm-build vm-db vm-apache vm-mail vm-mail-test vm-worker vm-backup vm-update vm-merge-othu vm-unmerge-othu vm-status merge-othu
 
 help: ## Liste les commandes
 	@grep -E '^[a-z0-9-]+:.*## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*## "} {printf "  %-19s %s\n", $$1, $$2}'
@@ -57,7 +57,7 @@ phpstan: ## Analyse statique du nouveau BDOH
 browser-check: ## Essaie l'interface dans un navigateur (.python_env, dev/browser/README.md) : make browser-check [ARGS="--only TEXTE"]
 	.python_env/bin/python dev/browser/check.py $(ARGS)
 
-test-kit: ## Prépare les tableurs et les messages des essais, par observatoire : make test-kit [ARGS="--site … --site-othu … --deadline …"]
+test-kit: ## Prépare les tableurs et les messages des essais, par observatoire : make test-kit [ARGS="--site … --deadline …"]
 	.python_env/bin/python dev/test-kit/kit.py $(ARGS)
 
 test-contacts: ## Trie les contacts des observatoires, sur un dump brut (Lou) : make test-contacts SOURCE=chemin/du.dump
@@ -79,6 +79,9 @@ db-small: ## Tire de la base bdoh la base de travail réduite bdoh_small (mesure
 
 inspect: ## Contrôles d'intégrité d'une base, en comptes : make inspect [BASE=… SERVER=…]
 	@docker exec -i $(DB_CONTAINER) psql -U postgres -d "$(BASE)" -v ON_ERROR_STOP=1 -At -F '|' -q < dev/reference/inspect.sql | grep '|' | column -t -s '|'
+
+merge-othu: ## Fond OTHU dans une base du nouveau serveur, pour éprouver la fusion : make merge-othu BASE=… [OTHU=base ou dump anonymisé]
+	dev/merge-othu/merge.sh "$(BASE)" "$(or $(OTHU),$(OUT)/bdoh-othu-2026-10-21-anon.dump)"
 
 fingerprint: ## Empreinte au bit près d'une base, sans aucune valeur : make fingerprint [BASE=… SERVER=…] > fichier
 	@docker exec -i $(DB_CONTAINER) psql -U postgres -d "$(BASE)" -v ON_ERROR_STOP=1 -At -F ';' -q < dev/reference/fingerprint.sql
@@ -102,7 +105,7 @@ reference-17-start: ## L'ancien code sur le serveur du nouveau BDOH : http://172
 mail-start: ## Retient les courriels du développement, ancien et nouveau : http://172.30.26.25:8025/
 	$(NEW) --profile mail up -d mailpit
 
-# --- Sur la VM, en root, dans le dossier de l'instance (/var/www/bdoh-prod ou /var/www/bdoh-othu, un clone
+# --- Sur la VM, en root, dans le dossier de l'instance (/var/www/bdoh-prod, un clone
 # du dépôt) : sudo make vm-… NOM=prod. L'ordre et ce qu'il faut regarder entre deux : dev/deploy/README.md.
 VM = config/deploy/vm.sh
 
@@ -135,6 +138,12 @@ vm-backup: ## VM : la sauvegarde quotidienne : sudo make vm-backup NOM=prod
 
 vm-update: ## VM : installe une version, base sauvegardée avant : sudo make vm-update NOM=prod V=vX.Y.Z
 	NOM=$(NOM) V=$(V) $(VM) update
+
+vm-merge-othu: ## VM : fond OTHU dans la production, base sauvegardée avant : sudo make vm-merge-othu NOM=prod DUMP=…
+	NOM=$(NOM) DUMP=$(DUMP) $(VM) merge-othu
+
+vm-unmerge-othu: ## VM : retire OTHU de la production, tant que personne n'y a écrit : sudo make vm-unmerge-othu NOM=prod
+	NOM=$(NOM) $(VM) unmerge-othu
 
 vm-status: ## VM : version installée, services, réponse du site : sudo make vm-status NOM=prod
 	NOM=$(NOM) $(VM) status

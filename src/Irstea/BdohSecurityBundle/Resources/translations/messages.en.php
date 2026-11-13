@@ -18,6 +18,7 @@ $user = [
             'info'        => [
                 'isTheFirstStep' => 'The account you are creating will be valid for the whole BDOH application. Open data can be downloaded without an account. To access closed data, once signed in, you will have to make <b>specific access requests</b> on observatories you are interested in by using the data access request form or by contacting a manager.',
                 'yourIdentifier' => 'The <b>e-mail address</b> will be your <u>login</u>: you will sign in with a link sent to this address, without a password.',
+                'personalData'   => "Personal data: INRAE (147 rue de l'Université, 75338 Paris Cedex 07, France) processes the information of your account to give you access to BDOH and to the data you request; the managers of the observatory concerned receive your access requests. You may access this information, have it corrected or erased, and object to its processing, as provided by Regulation (EU) 2016/679 and the French law “Informatique et Libertés”. Write to bdoh.support@listes.inrae.fr, or to the data protection officer of INRAE, cil-dpo@inrae.fr; you may also lodge a complaint with the CNIL (www.cnil.fr). Phone and address are optional.",
             ],
         ],
         'edit'                         => [
@@ -49,7 +50,7 @@ $user = [
             'OtherUsers'                   => 'Other users',
         ],
         'loginInfo'                    => 'Login information',
-        'personalInfo'                 => 'Personnal information',
+        'personalInfo'                 => 'Personal information',
         'newRightMail'                 => [
             'body'  => [
                 'hello'    => 'Hello',
@@ -71,8 +72,8 @@ You receive this e-mail because new rights have been assigned to you on BDOH.',
                 'confirmLater' => 'After that, ask for a new link from the BDOH sign-in page.',
                 'portal'       => "Choose the observatory whose data you want on the BDOH home page: you will find its access request and its managers there",
                 'step2'        => 'Open data can be downloaded without an account. To access closed data, once signed in, you will have to make specific access requests on observatories you are interested in by using the data access request form or by contacting a manager:',
-                'step3'        => "Accordance with Articles 39 and 40 of the law “\u{a0}Informatique et Libertés\u{a0}” amended by Law No. 2004-801 of 6 August 2004 on the protection of individuals with regard to the processing of personal data, you have a right to access and rectify data concerning you.",
-                'step4'        => 'To request a correction please contact: <a href="mailto:bdoh.support@listes.inrae.fr">bdoh.support@listes.inrae.fr</a>.',
+                'step3'        => "INRAE (147 rue de l'Université, 75338 Paris Cedex 07, France) processes the information of your account to give you access to BDOH and to the data you request; the managers of the observatory concerned receive your access requests. You may access this information, have it corrected or erased, and object to its processing, as provided by Regulation (EU) 2016/679 and the French law “Informatique et Libertés”.",
+                'step4'        => "Write to bdoh.support@listes.inrae.fr, or to the data protection officer of INRAE, cil-dpo@inrae.fr; you may also lodge a complaint with the CNIL (www.cnil.fr).",
             ],
             'title' => 'Welcome to BDOH',
         ],

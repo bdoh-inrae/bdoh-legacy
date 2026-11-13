@@ -35,7 +35,7 @@ return [
     /* DataSet */
     'titre'                               => 'Titre',
     'titreEn'                             => 'Titre (anglais)',
-    'dataConstraint'                      => 'Data Constraint',
+    'dataConstraint'                      => "Conditions d'accès et d'utilisation",
     'topicCategories'                     => 'Catégories thématiques INSPIRE',
     'inspireTheme'                        => 'Thème INSPIRE',
     'portailSearchCriteriaGeology'        => 'Critères Géologiques',
