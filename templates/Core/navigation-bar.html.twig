@@ -1,13 +1,18 @@
-{#-- Navigation bar : le choix d'un observatoire, puis celui qu'on consulte, à gauche ; l'aide et la langue à droite
- # (2026-11-12, Lou). « Consultation des données » devient « Recherche avancée », la page où il mène, dans la barre
- # du dessous.
+{%- from 'macros.html.twig' import richLink %}
+{#-- Navigation bar : ce qui tient à l'observatoire (Lou, 2026-11-13). À gauche, le choix d'un observatoire, celui
+ # qu'on consulte et sa recherche (l'ancienne « Consultation des données », puis « Recherche avancée »), à sa place de
+ # l'ancien ; à droite, l'aide et la langue. Le compte est dans la barre du dessous.
 ================================================== -#}
 <nav id="navbar" class="navbar navbar-default">
     <ul class="nav navbar-nav">
         {% include "Core/observatoires-selector.html.twig" %}
         {% if currentObservatoire() %}
             <li class="divider"></li>
-            <li class="current-observatoire"><a href="{{ path('bdoh_home') }}">{{ currentObservatoire().nom }}</a></li>
+            <li class="current-observatoire"><a href="{{ path('bdoh_home') }}" title="{{ currentObservatoire().nom }}">{{ currentObservatoire().nom }}</a></li>
+            {% if currentObservatoire().hasChronique() %}
+                <li class="divider"></li>
+                <li>{{ richLink(path('bdoh_consult_advancedSearch'), 'advancedSearch', 'zoom', 'both') }}</li>
+            {% endif %}
         {% endif %}
     </ul>
 

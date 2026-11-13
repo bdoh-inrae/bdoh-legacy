@@ -62,7 +62,7 @@ $various = [
         'Dans BDOH, les données sont naturellement organisées par Observatoires, qui sont administrés indépendamment par les unités de recherche qui en ont la charge.',
     'accueilObservatoires'                    => 'Accueil des Observatoires',
     'administration'                          => 'Administration',
-    'advancedSearch'                          => 'Recherche avancée',
+    'advancedSearch'                          => 'Recherche',
     'applyDates'                              => 'Exporter les dates situées',
     'atBeginning'                             => 'en début',
     'atEnd'                                   => 'en fin',

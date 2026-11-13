@@ -5,15 +5,17 @@
 namespace Irstea\BdohDataBundle\Exporter\Measure;
 
 use Irstea\BdohDataBundle\Entity\JeuQualite;
+use Irstea\BdohDataBundle\Exporter\Measure\Csv\Metadata;
 use Irstea\BdohDataBundle\Entity\Observatoire;
 use Irstea\BdohDataBundle\Exporter\Measure\Extractor\Factory as ExtractorFactory;
 use Irstea\BdohDataBundle\Exporter\Measure\Formatter\Factory as FormatterFactory;
 use Irstea\BdohDataBundle\Exporter\Measure\Reporter\LoggerDecorator;
-use Irstea\BdohDataBundle\Exporter\Measure\Reporter\Twig;
+use Irstea\BdohDataBundle\Exporter\Measure\Reporter\Readme;
 use Irstea\BdohDataBundle\Util\JeuToJeu;
 use Irstea\BdohLoggerBundle\Logger\BdohLogger;
 use Doctrine\Persistence\ManagerRegistry;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
+use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Twig\Environment;
 
 /**
@@ -70,7 +72,8 @@ class ExporterBuilder
         #[Autowire('%irstea_bdoh_data.measure_export.document_base_path%')] string $documentBasePath,
         #[Autowire('%irstea_bdoh_data.measure_export.formats_export_file%')] string $formatDocPath,
         #[Autowire('%irstea_bdoh_data.measure_export.default_termofuses_file%')] string $defaultTosPath,
-        #[Autowire('%irstea_bdoh_data.measure_export.open_licence_files%')] private array $openLicenceFiles
+        #[Autowire('%irstea_bdoh_data.measure_export.open_licence_files%')] private array $openLicenceFiles,
+        private UrlGeneratorInterface $router
     ) {
         $this->formatterFactory = $formatterFactory;
         $this->extractorFactory = $extractorFactory;
@@ -93,7 +96,19 @@ class ExporterBuilder
         $extractor = $this->createExtractor($parameters['extractor'], $formatter, $parameters);
         $reporter = $this->createReporter($parameters);
 
-        return $this->createExporter($extractor, $reporter, $archiver);
+        $exporter = $this->createExporter($extractor, $reporter, $archiver)->setFormat($parameters['format']);
+        if (strtolower($parameters['format']) === 'csv') {
+            $jeuToJeu = $this->createJeuToJeu($parameters['observatoire'], $this->formatterFactory->create($parameters['format']));
+            $exporter->setMetadata(new Metadata(
+                $this->doctrine->getConnection(),
+                $this->router,
+                $parameters['lang'] ?? 'fr',
+                basename($this->defaultTosPath),
+                fn (string $code) => $jeuToJeu->isGapType($code)
+            ));
+        }
+
+        return $exporter;
     }
 
     /**
@@ -144,7 +159,7 @@ class ExporterBuilder
      */
     private function createReporter(array $parameters)
     {
-        $reporter = new Twig($this->twigEngine);
+        $reporter = new Readme($this->twigEngine, $this->router);
         if (!empty($parameters['logged'])) {
             $reporter = new LoggerDecorator($this->bdohLogger, $reporter);
         }

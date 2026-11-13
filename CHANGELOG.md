@@ -4,6 +4,17 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/). Numéros de v
 
 ## Non publié
 
+### Ajouté
+
+- Un format d'export CSV, à côté de BDOH et de Hydro2 QTVAR : un fichier par chronique, aux mêmes colonnes pour toutes (on les met bout à bout pour le format long), UTF-8, virgule, point décimal, dates ISO 8601 avec le fuseau, `NA` pour une valeur absente ; avec lui, les chroniques, leurs stations (position en WGS 84) et les codes de qualité en CSV, et leur description CSVW, la norme du W3C.
+
+### Modifié
+
+- L'archive d'un export porte un `README.txt` à la place du `Report.txt` : ce que disait le rapport, plus la licence, comment citer, la liste des fichiers et la description de leurs colonnes.
+- L'archive d'un export ne s'appelle plus `export.zip` : son nom dit l'observatoire, la chronique (ou leur nombre), le rééchantillonnage, le format, la période et le jour de l'export.
+- La barre du haut porte ce qui tient à l'observatoire, dont « Recherche », à sa place de l'ancien ; celle du dessous, ce qui tient au compte : « Mes favoris » à gauche, puis l'administration et la gestion des données, puis le nom, qui ouvre le menu du compte. La barre d'un gestionnaire tient sur une ligne.
+- « Recherche avancée » s'appelle « Recherche ».
+
 ## 0.6.0 - 2026-11-13
 
 La fusion d'OTHU dans la production, prête pour la VM ; des conditions d'utilisation communes à tous les observatoires, autour de la Licence Ouverte 2.0 ; l'information sur les données personnelles ; la mise à jour de la VM qui gardait l'apparence de la version d'avant.

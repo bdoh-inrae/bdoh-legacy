@@ -122,6 +122,8 @@ abstract class AbstractExportCommand extends Command
         $parameters['date'] = new \DateTime('now', new \DateTimeZone('UTC'));
 
         $this->setLocale($parameters['locale']);
+        // La langue du README et des métadonnées d'un export CSV
+        $parameters['lang'] = $parameters['locale'];
         unset($parameters['locale']);
 
         $user = $parameters['user'] = $parameters['send-to'] ?? null;

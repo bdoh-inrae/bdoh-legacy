@@ -1,9 +1,3 @@
-{% from 'macros.html.twig' import richLink %}
-
-<!-- Le compte connecté, sur le portail : son nom, ses favoris et la déconnexion ; ses autres entrées (modifier le compte,
-     administration) tiennent à un observatoire (2026-11-12)
-================================================== -->
-<li><p class="navbar-text"><i class="fam-user"></i>&ensp;{{ app.user }}</p></li>
-<li>{{ richLink(path('bdoh_portal_favorites'), 'favorite.menu', 'star', 'both') }}</li>
-<li class="divider"></li>
-<li>{{ richLink(path('bdoh_portal_logout'), 'account.logout', 'disconnect', 'both') }}</li>
+{#- Le compte connecté, sur le portail : son nom ouvre son menu, sans « modifier », qui tient à un observatoire
+ # (2026-11-12) ; l'administration aussi tient à un observatoire. -#}
+{% include '@IrsteaBdohSecurity/UserBar/_account-menu.html.twig' with {'logoutPath': path('bdoh_portal_logout')} %}

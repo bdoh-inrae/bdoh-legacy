@@ -13,7 +13,7 @@ abstract class AbstractFormatter implements FormatterInterface
     /**
      * @var
      */
-    private $file;
+    protected $file;
 
     /**
      * @var JeuToJeu

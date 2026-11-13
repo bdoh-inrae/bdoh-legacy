@@ -16,8 +16,9 @@ function alwaysTrue() {
     return true
 }
 
+// Les formats qui disent une période (début et fin) : BDOH, et le CSV (dev/plans/2026-11-13_fair-exports.md)
 function isBdohFormat(fmt) {
-    return fmt === 'Bdoh';
+    return fmt === 'Bdoh' || fmt === 'Csv';
 }
 
 function isLessThenYearPerMinute(start, end, timeStep) {
@@ -27,7 +28,8 @@ function isLessThenYearPerMinute(start, end, timeStep) {
 
 const allowedTypes = {
     'Bdoh': ['identical', 'instantaneous', 'mean', 'cumulative'],
-    'Qtvar': ['identical', 'instantaneous']
+    'Qtvar': ['identical', 'instantaneous'],
+    'Csv': ['identical', 'instantaneous', 'mean', 'cumulative']
 };
 
 const exportTypes = {

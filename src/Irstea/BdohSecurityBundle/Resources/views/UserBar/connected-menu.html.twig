@@ -1,20 +1,8 @@
 {% from 'macros.html.twig' import richLink %}
 
-<!-- Navigation Menu for a connected user.
+<!-- Navigation Menu for a connected user : l'administration et la gestion des données (ou la demande d'accès), puis
+     le nom, qui ouvre le menu du compte (Lou, 2026-11-13) ; les favoris sont aussi à gauche de la barre (user-bar).
 ================================================== -->
-
-<!-- Edit user account + display user name -->
-<li class="info-high" data-toggle="tooltip" rel="tooltip" data-original-title="{{ 'account.edit'|trans }}" data-placement="bottom">
-    {{ richLink(path('bdoh_security_utilisateur_edit'), app.user , 'user-edit', 'both') }}
-</li>
-
-<!-- Les favoris du compte, qui traversent les observatoires (dev/plans/2026-11-12_favorites.md) -->
-<li>{{ richLink(path('bdoh_portal_favorites'), 'favorite.menu', 'star', 'both') }}</li>
-
-<li class="divider"></li>
-
-<!-- Logout -->
-<li>{{ richLink(path('bdoh_security_logout'), 'account.logout', 'disconnect', 'both') }}</li>
 
 {% set userIsAllManager = app.user.isGestionnaireDesObservatoires() %}
 {% set userIsManager = app.user.isAManagerOfCurrentObservatory() %}
@@ -29,12 +17,11 @@
 {% set data_admin_links = block('data_admin_links')|trim %}
 
 {% if entity_admin_links is not empty %}
-    <li class="divider"></li>
-    <li><a href="{{ path('sonata_admin_dashboard') }}">{{ 'dashboard'|trans({}, 'SonataAdminBundle') }}</a></li>
-    <li class="divider"></li>
     <li class="dropdown">
         <a href="#" class="dropdown-toggle" data-toggle="dropdown">{{ 'administration'|trans }} <b class="caret"></b></a>
         <ul class="dropdown-menu">
+            <li><a href="{{ path('sonata_admin_dashboard') }}">{{ 'dashboard'|trans({}, 'SonataAdminBundle') }}</a></li>
+            <li class="divider"></li>
             {% block entity_admin_links %}
 
                 {# les observatoires #}
@@ -113,9 +100,9 @@
 {% endif %}
 
 {% if data_admin_links is not empty %}
-    <li class="divider"></li>
+    {% if entity_admin_links is not empty %}<li class="divider"></li>{% endif %}
     <li class="dropdown">
-        <a href="#" class="dropdown-toggle" data-toggle="dropdown">{{ 'data.management'|trans }}<b class="caret"></b></a>
+        <a href="#" class="dropdown-toggle" data-toggle="dropdown">{{ 'data.management'|trans }} <b class="caret"></b></a>
         <ul class="dropdown-menu">
             {% block data_admin_links %}
 
@@ -154,7 +141,13 @@
 {# Simple user only #}
 {% if entity_admin_links is empty and data_admin_links is empty and not userIsTrusted %}
     {% if currentObservatoire().hasChronique() %}
-        <li class="divider"></li>
         <li><a href="{{ path('bdoh_security_besoin_new') }}">{{ 'askDataAccess'|trans }}</a></li>
+        <li class="divider"></li>
     {% endif %}
+{% elseif entity_admin_links is not empty or data_admin_links is not empty %}
+    <li class="divider"></li>
 {% endif %}
+
+{# Le compte : son nom ouvre son menu #}
+{% include '@IrsteaBdohSecurity/UserBar/_account-menu.html.twig' with {
+    'editPath': path('bdoh_security_utilisateur_edit'), 'logoutPath': path('bdoh_security_logout')} %}

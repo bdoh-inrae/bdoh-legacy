@@ -164,19 +164,27 @@ def translation(sign, keys):
 
 
 HEADER = "En-tête, fil d'Ariane et pied de page"
+SEARCH_NAME = 'La recherche avancée devenue « Recherche »'
+CSV_FORMAT = 'Le format CSV'
+# Le format CSV dans la fenêtre d'export, partout où va le format BDOH (dev/plans/2026-11-13_fair-exports.md)
+CSV_OPTION = ('+O Csv', '+T CSV')
 LANG_FLAG = re.compile(r'G /images/i18n/\w+\.png')
-DATA_LINK = {'T Consultation des données': 'T Recherche avancée', 'T See our data': 'T Advanced search'}
+DATA_LINK = {'T Consultation des données': 'T Recherche', 'T See our data': 'T Search'}
+SEARCH = {'T Recherche avancée': 'T Recherche', 'T Advanced search': 'T Search'}
+EDIT_TIP = re.compile(r'D li data-original-title=(.+) data-placement=bottom data-toggle=tooltip')
+DROPDOWN = ['A #', 'D a data-toggle=dropdown']
 CRUMB_HOME = ('T Accueil', 'T Home')
 OBS_TITLE = re.compile(r'T «\s*(.+?)\s*» (Bienvenue|Welcome)')
 
 
 def header(lines):
     """L'en-tête d'une page de l'ancien, et le début de son fil d'Ariane, comme le nouveau doit les montrer
-    (2026-11-12, Lou) : « BDOH », qui mène au portail, à la place du logo de l'observatoire (dont le lien passe à côté
-    du titre de son accueil) ; dans la barre du haut, le choix d'un observatoire, l'observatoire de la page, l'aide et
-    la langue ; dans celle du dessous, « Recherche avancée » (l'ancien « Consultation des données ») puis le compte ;
-    le fil commence par « BDOH » puis l'observatoire, au lieu de « Accueil », et toute page en a un. Les mêmes liens,
-    déplacés : rien ne s'ajoute ni ne se perd qu'ici."""
+    (2026-11-12 et 2026-11-13, Lou) : « BDOH », qui mène au portail, à la place du logo de l'observatoire (dont le lien
+    passe à côté du titre de son accueil) ; dans la barre du haut, ce qui tient à l'observatoire : son choix,
+    l'observatoire de la page, sa « Recherche » (l'ancien « Consultation des données », à sa place), l'aide et la
+    langue ; dans celle du dessous, le compte (`account_menu`) ; le fil commence par « BDOH » puis l'observatoire, au
+    lieu de « Accueil », et toute page en a un. Les mêmes liens, déplacés : rien ne s'ajoute ni ne se perd qu'ici,
+    sinon l'ouverture du menu du compte."""
     def at(k, *wanted):
         return all(0 <= k + i < len(lines) and (w(lines[k + i]) if callable(w) else lines[k + i] == w)
                    for i, w in enumerate(wanted))
@@ -222,9 +230,45 @@ def header(lines):
             label = " Site de l'observatoire" if outward else ''
             rest = [*rest[:title], *([f'A {site}'] if outward else []),
                     f'T {m.group(1)}{label} {m.group(2)}', *rest[title + 1:]]
-    return [*lines[:start], 'A /', 'T BDOH', *lines[everything - 3:end], *(current or []), *found.get('contact', []),
-            *lines[lang:lang + 7], *([data[0], DATA_LINK[data[1]]] if data else []), *lines[lang + 7:everything - 3],
-            *crumb, *rest]
+    return [*lines[:start], 'A /', 'T BDOH', *lines[everything - 3:end], *(current or []),
+            *([data[0], DATA_LINK[data[1]]] if data else []), *found.get('contact', []), *lines[lang:lang + 7],
+            *account_menu(lines[lang + 7:everything - 3]), *crumb, *rest]
+
+
+def account_menu(lines):
+    """Le compte d'un connecté, dans l'ancien : son nom, lien vers sa fiche avec la bulle « Modifier votre compte »,
+    la déconnexion, puis le tableau de bord et les menus Administration et Gestion des données, ou la demande d'accès.
+    Dans le nouveau (Lou, 2026-11-13) : le tableau de bord en tête du menu Administration, puis le nom, qui ouvre le
+    menu du compte : le modifier (le texte de la bulle), se déconnecter. Les favoris s'y ajoutent, admis à part
+    (FAVORITES). Sans compte, rien ne change."""
+    tip = EDIT_TIP.fullmatch(lines[0]) if lines else None
+    if not (tip and len(lines) >= 5 and re.fullmatch(rf'A {OBS}/user/edit', lines[1]) and lines[2].startswith('T ')
+            and re.fullmatch(rf'A {OBS}/logout', lines[3]) and lines[4].startswith('T ')):
+        return lines
+    edit, name, logout, rest = lines[1], lines[2], lines[3:5], lines[5:]
+    if len(rest) >= 5 and re.fullmatch(rf'A {OBS}/admin/dashboard', rest[0]) and rest[2:4] == DROPDOWN:
+        rest = [*rest[2:5], *rest[:2], *rest[5:]]
+    return [*rest, *DROPDOWN, name, edit, f'T {tip.group(1)}', *logout]
+
+
+def doi_links(lines):
+    """Un DOI enregistré avec son résolveur (« https://doi.org/10.… ») : l'ancien le préfixait d'un second
+    (« https://dx.doi.org/https://doi.org/10.… »), dans le lien comme dans son texte ; le nouveau ne le double plus
+    (passe juridique du 13 novembre, dev/differences.md, « Conditions d'utilisation communes »)."""
+    return [re.sub(r'https?://dx\.doi\.org/(https?://(?:dx\.)?doi\.org/)', r'\1', line) for line in lines]
+
+
+def search_renamed(lines):
+    """« Recherche avancée » devient « Recherche » partout où la page la nomme : le bouton de l'accueil d'un
+    observatoire, le titre, le fil d'Ariane et le titre de l'onglet de la page elle-même (Lou, 2026-11-13)."""
+    def renamed(line):
+        if line in SEARCH:
+            return SEARCH[line]
+        for before, after in SEARCH.items():
+            if line.startswith('T ') and line.endswith(' - ' + before[2:]):
+                return line[:-len(before) + 2] + after[2:]
+        return line
+    return [renamed(line) for line in lines]
 
 
 FAVORITES = 'Favoris et étiquettes'
@@ -246,7 +290,7 @@ def portal_rules(names):
     adresse inconnue, sans observatoire, ne montre pas le compte, comme l'ancien."""
     rules = [Rule('pages', r'anonyme /', PORTAL, lines=PORTAL_GUEST, must=PORTAL_GUEST)]
     for profile, name in names.items():
-        account = (f'+T {name}', '+A /logout', '+T Déconnexion')
+        account = ('+A #', '+D a data-toggle=dropdown', f'+T {name}', '+A /logout', '+T Déconnexion')
         rules.append(Rule('pages', rf'{re.escape(profile)} /', PORTAL, lines=account, must=account))
     return rules
 
@@ -363,6 +407,8 @@ RULES = [
     # L'en-tête et le début du fil d'Ariane, sur toute page du site, quel que soit le mode qui la compare : header()
     # les réécrit dans l'ancien, et la page doit alors être la même, sauf ce que d'autres règles admettent
     *(Rule(mode, r'.*', HEADER, rewrite=header) for mode in ('pages', 'admin', 'imports', 'accounts')),
+    *(Rule(mode, r'.*', SEARCH_NAME, rewrite=search_renamed) for mode in ('pages', 'admin', 'imports', 'accounts')),
+    Rule('pages', r'.*', TERMS, rewrite=doi_links),
     *(Rule(mode, r'(?!anonyme ).*', FAVORITES, lines=FAVORITE_MENU) for mode in ('pages', 'admin', 'accounts')),
     Rule('pages', r'(?!anonyme ).*', FAVORITES, lines=FAVORITE_STAR),
 
@@ -441,6 +487,12 @@ RULES = [
     # guillemets, le lien vers le site d'un observatoire
     Rule('pages', rf'{ROLE} /translations/messages\.js', HEADER, lines=(
         translation('-', 'dataAccess'), translation('[-+]', 'home.title'), translation(r'\+', 'observatoryWebsite'))),
+    Rule('pages', rf'{ROLE} /translations/messages\.js', SEARCH_NAME, lines=(translation('[-+]', 'advancedSearch'),)),
+    # Le format CSV : son nom, et l'aide de la fenêtre d'export qui le décrit
+    Rule('pages', rf'{ROLE} /translations/messages\.js', CSV_FORMAT,
+         lines=(translation(r'\+', 'export.Csv'), translation('[-+]', 'measure.export.help-content'))),
+    # Son option dans la fenêtre d'export (d'une chronique, d'une station, d'un jeu de données, des favoris)
+    *(Rule(mode, r'.*', CSV_FORMAT, lines=CSV_OPTION) for mode in ('pages', 'accounts', 'admin')),
     # Les textes de la ligne d'état du graphique
     Rule('pages', rf'{ROLE} /translations/messages\.js', GRAPH, lines=(
         translation('-', 'consult.help.chronique.double-clic-unzoom'),

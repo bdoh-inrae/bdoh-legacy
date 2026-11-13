@@ -28,6 +28,7 @@ $fileFormats = [
     'export' => [
         'Bdoh'      => 'BDOH',
         'Qtvar'     => 'Hydro2 - QTVAR',
+        'Csv'       => 'CSV',
         'Vigilance' => 'Vigilance',
     ],
 ];
@@ -60,8 +61,9 @@ $export = [
         <li>Les options pour l'export à pas de temps fixe sont : (i) pour l'export avec interpolation linéaire, un pas de temps compris entre 1 et 1440 minutes ; (ii) pour l'export avec calcul de moyenne ou cumul, un des pas de temps proposés dans la liste déroulante. L'export commence à une heure ronde. L'option «\u{a0}événement\u{a0}» calcule la moyenne ou le cumul sur toute la durée de l'événement (1 seule valeur résultat).</li>
     </ul>
     <li>On exporte un fichier par chronique.</li>
-    <li>Pour l'export de chroniques continues à l'identique ou à pas de temps fixe avec interpolation linéaire, plusieurs formats de fichier sont possibles (BDOH standard ou Hydro2 QTVAR).</li>
-    <li>Pour l'export de moyennes, cumuls ou chroniques discontinues, le format unique est le format BDOH discontinu.</li>
+    <li>Pour l'export de chroniques continues à l'identique ou à pas de temps fixe avec interpolation linéaire, trois formats de fichier sont possibles : BDOH standard, Hydro2 QTVAR ou CSV.</li>
+    <li>Pour l'export de moyennes, cumuls ou chroniques discontinues, deux formats sont possibles : BDOH discontinu ou CSV.</li>
+    <li>Le format CSV est un CSV standard (UTF-8, virgule entre les colonnes, point décimal, dates ISO 8601), qui se lit dans R ou Python, et dans un tableur par son import de CSV (encodage UTF-8, séparateur virgule) ; ses fichiers ont tous les mêmes colonnes, et des tables de métadonnées les accompagnent. Le fichier README.txt de l'archive les décrit.</li>
 </ul>
 HELP
         ,

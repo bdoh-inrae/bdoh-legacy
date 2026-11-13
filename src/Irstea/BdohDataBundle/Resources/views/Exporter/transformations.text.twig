@@ -1,0 +1,50 @@
+{#- Les entrées et les barèmes d'une chronique calculée, tels que les écrivait l'ancien rapport d'export (Report.txt) ;
+ # le README les reprend (Reporter/Readme.php). -#}
+{%- macro transformations(chronique) -%}
+    {%- import _self as report_macros -%}
+    {%- if chronique.secondeEntree is not empty -%}
+        {{- report_macros.transformation('first', chronique.premiereEntree) }}
+
+    {{ report_macros.transformation('second', chronique.secondeEntree) -}}
+    {%- else -%}
+        {{- report_macros.transformation('unique', chronique.premiereEntree) }}
+    {%- endif -%}
+{%- endmacro -%}
+
+{####################}
+
+{%- macro transformation(libelle, transfo) -%}
+    {%- set chronique = transfo.entree -%}
+    {%- set jeuBareme = transfo.jeuBaremeActuel -%}
+    {{- ('measure.export.report.calculated.input.' ~ libelle ~ '(%chronique%)') | trans({'%chronique%': chronique})|raw -}}
+    {%- set limitPolicy = jeuBareme.valueLimitTransformationType | default(null) -%}
+    {%- if limitPolicy is not empty %}
+
+        {% trans with { '%limitPolicy%': ('measure.export.report.' ~ limitPolicy) | trans } %}measure.export.report.calculated.limit_policy(%limitPolicy%){%- endtrans -%}
+        {%- if limitPolicy == constant('LQ_LD_PLACEHOLDER', jeuBareme) -%} {{ jeuBareme.valueLimitPlaceholder }}{%- endif -%}
+    {%- endif -%}
+
+    {%- for bjb in jeuBareme.baremeJeuBaremes -%}
+        {%- set bareme = bjb.bareme -%}
+        {%- set dateDebut = bjb.debutValidite|date('transformation.bareme.dateBareme'|trans, false) -%}
+        {%- if bareme.observatoire is not empty -%}
+            {%- set nom = bareme.nom -%}
+            {%- set dateCreation = bareme.dateCreation|date('transformation.bareme.dateBareme'|trans, false) -%}
+        {%- else -%}
+            {%- set nom = ('transformation.bareme.baremeTechnique.' ~ bareme.nom) | trans -%}
+            {%- set dateCreation = null -%}
+        {%- endif %}
+
+        {% trans with {'%bareme%': nom} %}measure.export.report.calculated.bareme.header(%bareme%){%- endtrans -%}
+        {%- if dateCreation is not empty -%}
+            {%- trans -%}measure.export.report.calculated.bareme.created(%dateCreation%){%- endtrans -%}
+        {%- endif -%}
+            {%- trans -%}measure.export.report.calculated.bareme.applied{%- endtrans -%}
+        {%- if bjb.finValidite is not empty -%}
+            {%- set dateFin = bjb.finValidite|date('transformation.bareme.dateBareme'|trans, false) -%}
+            {%- trans -%}measure.export.report.calculated.bareme.range(%dateDebut%,%dateFin%){%- endtrans -%}
+        {%- else -%}
+            {%- trans -%}measure.export.report.calculated.bareme.from(%dateDebut%){%- endtrans -%}
+        {%- endif -%}
+    {%- endfor -%}
+{%- endmacro -%}

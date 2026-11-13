@@ -62,7 +62,7 @@ $various = [
         'In BDOH, data are naturally organised by Observatories, which are independently managed by the research units in charge.',
     'accueilObservatoires'                    => 'Observatories main page',
     'administration'                          => 'Administration',
-    'advancedSearch'                          => 'Advanced search',
+    'advancedSearch'                          => 'Search',
     'astuceDate'                              => 'Tip : You can write the date with the number(example : 130495 -> 13/04/1995). If you write 1304 the current year will be automatically add',
     'applyDates'                              => 'Write dates located',
     'atBeginning'                             => 'at the beginning',

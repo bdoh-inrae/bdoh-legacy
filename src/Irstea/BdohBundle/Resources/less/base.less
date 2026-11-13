@@ -239,18 +239,33 @@ a.bdoh-brand {
     margin:5px 0;
 }
 
-// La barre du dessous porte la recherche avancée et, pour un gestionnaire, cinq entrées de compte : des liens plus
-// serrés, et un nom trop long coupé, pour qu'elle tienne sur une ligne (2026-11-12)
+// La barre du dessous porte le compte : les favoris, l'administration et la gestion des données, puis le nom, qui
+// ouvre son menu (Lou, 2026-11-13). Des liens serrés, et un nom trop long coupé, pour qu'elle tienne sur une ligne.
 #userbar .navbar-nav > li > a {
     padding-left: 8px;
     padding-right: 8px;
 }
-#userbar .navbar-nav > li.info-high > a {
-    display: block;
+#userbar .account-name {
+    display: inline-block;
     max-width: 180px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    vertical-align: bottom;
+}
+
+// La barre du haut porte l'observatoire et sa recherche : le nom le plus long (« Observatoire des Sédiments du
+// Rhône ») se coupe quand la fenêtre est étroite, plutôt que de faire passer la barre à la ligne
+#navbar .current-observatoire > a {
+    max-width: 340px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+@media (max-width: @screen-md-max) {
+    #navbar .current-observatoire > a {
+        max-width: 220px;
+    }
 }
 
 /******************************************************************************

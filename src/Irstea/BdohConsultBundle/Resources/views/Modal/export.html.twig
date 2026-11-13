@@ -12,10 +12,12 @@
     {% set hasWithValueLimits = hasWithValueLimits or chronique.allowValueLimits %}
 {% endfor %}
 
+{#- Le CSV, partout où va le format BDOH (dev/plans/2026-11-13_fair-exports.md) ; Qtvar ne dit ni les périodes ni
+ # les limites de quantification -#}
 {% if hasDiscontChronique or hasWithValueLimits %}
-    {% set allowedExportFormats = ['Bdoh'] %}
+    {% set allowedExportFormats = ['Bdoh', 'Csv'] %}
 {% else %}
-    {% set allowedExportFormats = ['Bdoh', 'Qtvar'] %}
+    {% set allowedExportFormats = ['Bdoh', 'Qtvar', 'Csv'] %}
 {% endif %}
 
 {% if termsOfUses is defined %}

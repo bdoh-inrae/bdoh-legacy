@@ -66,6 +66,7 @@ Il n'y a pas de bascule à part (« Avant », les essais deviennent la productio
 
 ## Après
 
+- **Les adresses écrites dans les archives d'export** (relecture du 13 novembre) : le README et `meta_series.csv` d'un export (page de l'observatoire, de chaque chronique, contact, comment citer) prennent `DEFAULT_URI` du `.env`, sur la VM l'adresse des essais. À l'ouverture au public, `DEFAULT_URI` prend le nom public, avant tout export qu'on gardera : une archive téléchargée garde ses adresses.
 - Première semaine : `inspect.sql` chaque jour, et `systemctl --failed` (une sauvegarde ratée ne prévient personne) ; toute chronique dont l'empreinte change doit avoir une entrée d'historique ; regarder les tâches en échec (`dev/audits/2026-11-03_validation-plan.md`, 6.8).
 - À l'ouverture au public : avoir par écrit l'accord des producteurs extérieurs de chroniques ouvertes pour leur diffusion sous Licence Ouverte (l'INSA et l'UCBL pour OTHU, EDF pour Arc-Isère ; la Licence Ouverte garantit au réutilisateur que des droits de tiers ne s'y opposent pas), et savoir de la direction des affaires juridiques si l'accord d'un gestionnaire engage son établissement (`dev/audits/2026-11-13_terms-of-use.md`). Essayer une à une les adresses que citent les DOI. Et mettre à jour, chez leur registre, hors de BDOH, la licence que déclarent les 20 DOI : la Licence Ouverte, comme leur fiche Theia/OZCAR (`dev/plans/2026-11-04_open-data.md`, 6).
 - Publier les corrections de sécurité dans `dev/differences.md` (`dev/local/security.md`).

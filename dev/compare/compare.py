@@ -1156,7 +1156,7 @@ def run_exports(args):
 
     def run(side, case):
         r = subprocess.run([*side.console, *case, '--env=prod'], capture_output=True, text=True)
-        lines = [f'code de sortie {r.returncode}', *r.stdout.splitlines(), *r.stderr.splitlines()]
+        lines = [f'code de sortie {r.returncode}', *with_report_facts(r.stdout.splitlines()), *r.stderr.splitlines()]
         # Le moment de l'export et le dossier temporaire changent à chaque fois.
         return [export_line(line) for line in lines if not line.startswith('# Printing ')]
 
@@ -1176,7 +1176,324 @@ def run_exports(args):
             both = lambda case: [run(old, case), run(new, case)]
             for case, outputs in zip(cases, pool.map(both, cases)):
                 report.add(' '.join(case), *outputs)
+    if not args.inject_sql and (not args.only or args.only in 'csv'):
+        csv_checks(args.base, new, report)
     report.close()
+
+
+# Le rapport de l'ancien (Report.txt) et le README du nouveau, qui le remplace (dev/differences.md, « Le README des
+# exports ») : ce qu'ils disent tous deux, sous une même forme. Le reste du README se vérifie à part (csv_checks).
+REPORT_FILE = re.compile(r'# Printing (?:Report|README)\.txt from ')
+
+
+def with_report_facts(lines):
+    """La sortie d'un export en console, où chaque fichier commence par « # Printing NOM from … » : le rapport ou le
+    README réduit à report_facts, les autres fichiers tels quels."""
+    out, section = [], None
+    for line in [*lines, '# Printing <fin> from ']:
+        if line.startswith('# Printing '):
+            if section is not None:
+                out += ['== rapport', *report_facts(section)]
+            section = [] if REPORT_FILE.match(line) else None
+            out.append(line)
+        elif section is not None:
+            section.append(line)
+        else:
+            out.append(line)
+    return out[:-1]
+
+
+def report_facts(lines):
+    """Ce que disent tous deux le rapport de l'ancien et le README du nouveau, en français ou en anglais, dans un même
+    ordre : format, période, fuseau, rééchantillonnage, DOI de l'observatoire ; puis, pour chaque chronique, ses mesures
+    présentes (sans date s'il n'y en a qu'une : l'ancien n'en donne pas), les valeurs exportées (que l'ancien ne dit
+    que rééchantillonnées), son fichier, sa généalogie et son calcul (entrées, barèmes, limites), le texte aux blancs
+    près, ou son erreur. Un pas s'écrit « 1 day » dans l'ancien, « 1 jour » dans le nouveau : ramené à « 1 day »."""
+    def iso(date):
+        m = re.fullmatch(r'(\d\d)[/-](\d\d)[/-](\d{4}) (\d\d:\d\d:\d\d)', date.strip())
+        return f'{m[3]}-{m[2]}-{m[1]} {m[4]}' if m else date.strip()
+
+    def doi(text):
+        return re.sub(r'^(?:(?:https?://)?(?:dx\.)?doi\.org/)+', '', text)
+
+    units = {'minute': 'minute', 'heure': 'hour', 'hour': 'hour', 'jour': 'day', 'day': 'day', 'mois': 'month',
+             'month': 'month', 'an': 'year', 'year': 'year', 'événement': 'event', 'event': 'event'}
+
+    def step(text):
+        m = re.fullmatch(r'(\d+) (\w+)', text.strip())
+        if not m:
+            return text.strip()
+        word = m[2] if m[2] in units else m[2][:-1] if m[2].endswith('s') else m[2]
+        return f'{m[1]} {units.get(word, word)}'
+
+    tz = r'UTC[+-]\d\d(?::?\d\d)?'
+    head, dois, chroniques, kind, steps = [], [], [], None, []
+    block, waiting = None, None  # le texte qu'on recueille (généalogie, calcul), la ligne qu'on attend (pas, erreur)
+    order = ['chronique', 'présentes', 'exportées', 'fichier', 'généalogie', 'calcul', 'erreur']
+
+    def close():
+        nonlocal block
+        if block and chroniques:
+            text = ' '.join(' '.join(block[1]).split())
+            if text:
+                chroniques[-1].append(f'{block[0]} {text}')
+        block = None
+
+    for raw in [*lines, '']:
+        line = raw.strip()
+        line = line[2:].strip() if line.startswith('- ') else line
+        current = chroniques[-1] if chroniques else head
+        if waiting and line:
+            if waiting == 'pas':
+                steps.append(step(line))
+            waiting = None
+            continue
+        if m := (re.match(r'(?:Export du|Download from) .*? (?:au format|in the format) [«“]\s*(.+?)\s*[»”]$', line)
+                 or re.match(r'Format\s*:\s*(.+)$', line)):
+            close(); head.append(f'format {m[1]}')
+        elif m := re.match(r"(?:Période d'extraction|Période demandée|Requested period)\s*:\s*(?:du|from) (.+?) UTC (?:au|to) (.+?) UTC$", line):
+            close(); head.append(f'période {iso(m[1])} {iso(m[2])}')
+        elif m := re.match(r'(?:Fuseau horaire(?: des dates)?|Time ?zone(?: of the dates)?)\s*:\s*UTC([+-]\d\d)(?::?(\d\d))?$', line):
+            close(); head.append(f'fuseau {m[1]}:{m[2] or "00"}')
+        elif m := (re.match(r'(?:Chronique(?: calculée)?|(?:Calculated )?[Tt]ime series) [«“]\s*(.+?)\s*[»”]\s*:$', line)
+                   or re.match(r'## (\S+ / \S+) _+$', line)):
+            close(); chroniques.append([f'chronique {m[1]}'])
+        elif re.match(r'#+ ', line):
+            close()
+        elif m := (re.match(rf'(\d+) (?:mesures présentes|data points found), (?:du|from) (.+?) {tz} (?:au|to) (.+?) {tz}$', line)
+                   or re.match(r'(?:Mesures présentes|Stored values)\s*:\s*(\d+)(?:, (?:du|from) (.+?) (?:au|to) (.+)|, .*)?$', line)):
+            close(); current.append(f'présentes {m[1]}' + (f' du {iso(m[2])} au {iso(m[3])}' if int(m[1]) > 1 and m[2] else ''))
+        elif re.match(r'(?:Une mesure présente|One data point found)$', line):
+            close(); current.append('présentes 1')
+        elif re.match(r'(?:Aucune mesure présente|No data points found)$', line):
+            close(); current.append('présentes 0')
+        elif m := (re.match(r'(\d+) (?:mesures exportées|data points extracted)$', line)
+                   or re.match(r'(?:Valeurs exportées|Exported values)\s*:\s*(\d+), ', line)):
+            close(); current.append(f'exportées {m[1]}')
+        elif re.match(r'(?:Une mesure exportée|One data point extracted)$', line):
+            close(); current.append('exportées 1')
+        elif re.match(r'(?:Aucune mesure exportée|No data points extracted)$', line):
+            close(); current.append('exportées 0')
+        elif m := re.match(r'(?:Fichier|File)\s*:\s*(.+)$', line):
+            close(); current.append(f'fichier {m[1]}')
+        elif re.match(r'(?:Généalogie|Genealogy|Lineage)\s*:?$', line):
+            close(); block = ('généalogie', [])
+        elif re.match(r'(?:Calcul|Computation)\s*:$', line):
+            close(); block = ('calcul', [])
+        elif re.match(r'(?:Chronique mère unique|Première chronique mère|Single parent time series|First parent time series)\s*:', line) \
+                and (block is None or block[0] != 'calcul'):
+            close(); block = ('calcul', [line])
+        elif re.match(r'(?:Export réalisé à pas de temps fixe|Download made with fixed time steps)$', line):
+            close()
+        elif m := re.match(r"(?:Type d'échantillonnage|Sampling type|Rééchantillonnage|Resampling)\s*:\s*(.+)$", line):
+            close(); kind = m[1]
+        elif m := re.match(r'(?:Pas de temps|Time step)\s*:\s*(.*)$', line):
+            close()
+            if m[1]:
+                steps.append(step(m[1]))
+            else:
+                waiting = 'pas'
+        elif block is None and (m := (re.match(r'dx\.doi\.org/(\S+) \[', line) or re.match(r'https://doi\.org/(\S+)(?: \(|$)', line))):
+            dois.append(f'doi {doi(m[1])}')
+        elif re.match(r"(?:Une erreur s'est produite pendant l'export|An error happened during the extraction|Erreur|Error)\s*:", line):
+            close(); current.append('erreur'); waiting = 'erreur'
+        elif block is not None and line:
+            block[1].append(line)
+    close()
+    # L'ancien ne dit les valeurs exportées que d'un export rééchantillonné
+    keep = lambda fact: kind or steps or not fact.startswith('exportées ')
+    facts = [*head]
+    if kind or steps:
+        facts.append(f'rééchantillonnage {kind or "?"}, {steps[0] if steps else "?"}')
+    facts += dois
+    for chronique in chroniques:
+        facts += sorted(filter(keep, chronique), key=lambda fact: order.index(fact.split(' ')[0]))
+    return facts
+
+def console_files(output):
+    """Les fichiers d'un export en console, par nom (ConsoleArchiver les écrit l'un après l'autre, chacun après
+    « # Printing NOM from … ») ; les PDF, seulement nommés (« # Ignoring NOM »)."""
+    files, current = {}, None
+    for line in output.splitlines():
+        if m := re.match(r'# (?:Printing (\S+) from |Ignoring (\S+))', line):
+            current = m[1]
+            files[m[1] or m[2]] = []
+            if m[2]:
+                current = None
+        elif current is not None:
+            files[current].append(line)
+    # Une ligne vide suit chaque marque
+    return {name: lines[1:] if lines and lines[0] == '' else lines for name, lines in files.items()}
+
+
+HAS_2024 = """(EXISTS (SELECT 1 FROM mesure m WHERE m.chronique_id = c.id AND m.date >= '2024-01-01' AND m.date < '2025-01-01'
+                     AND m.valeur IS NOT NULL)
+            OR EXISTS (SELECT 1 FROM plage p WHERE p.chronique_id = c.id AND p.debut >= '2024-01-01' AND p.debut < '2025-01-01'))"""
+# (nom, chroniques, extraction, pas, fuseau, langue) : chaque sorte de chronique, chaque rééchantillonnage, un fuseau
+# négatif, l'anglais, et un export mêlé d'une chronique ouverte et d'une cachée
+CSV_CASES = [
+    ('continue', ["c.dtype = 'continue' AND c.estvisible"], 'identical', [], '+01:00', 'fr'),
+    ('continue, moyenne journalière', ["c.dtype = 'continue' AND c.estvisible"], 'mean', ['7'], '+01:00', 'fr'),
+    # Une unité de cumul autre que celle des valeurs (un débit et son volume) : celle que doit dire meta_series.csv
+    ('continue, cumul journalier', ["c.dtype = 'continue' AND c.estvisible AND c.unitecumul_id <> c.unite_id"], 'cumulative', ['7'], '+01:00', 'fr'),
+    ('continue, interpolation à 60 min, UTC-05, en anglais', ["c.dtype = 'continue' AND c.estvisible"], 'instantaneous', ['60'], '-05:00', 'en'),
+    ('discontinue', ["c.dtype = 'discontinue' AND c.estvisible"], 'identical', [], '+01:00', 'fr'),
+    ('calculee', ["c.dtype = 'calculee' AND c.estvisible"], 'identical', [], '+01:00', 'fr'),
+    ('convertie', ["c.dtype = 'convertie' AND c.estvisible"], 'identical', [], '+00:00', 'fr'),
+    ('cachée', ['NOT c.estvisible'], 'identical', [], '+01:00', 'fr'),
+    ('cachée et ouverte', ["c.dtype = 'continue' AND NOT c.estvisible", "c.dtype = 'continue' AND c.estvisible"], 'identical', [], '+01:00', 'fr'),
+]
+CSV_COLUMNS = {
+    'measures': ['station', 'series', 'time', 'time_end', 'value', 'quality', 'value_min', 'value_max'],
+    'meta_series.csv': ['station', 'series', 'name', 'parameter', 'parameter_code', 'unit', 'kind', 'sampling',
+                        'direction', 'valid_min', 'valid_max', 'producer', 'dataset', 'dataset_doi', 'access',
+                        'licence', 'page', 'file', 'n_values', 'n_gaps', 'time_first', 'time_last'],
+    'meta_station.csv': ['station', 'name', 'latitude', 'longitude', 'altitude', 'municipality', 'insee_code',
+                         'sites', 'page'],
+    'meta_quality.csv': ['quality', 'label', 'gap'],
+}
+OPEN_LICENCE_URL = 'https://www.data.gouv.fr/datasets/licence-ouverte-2-0'
+
+
+def csv_case_chroniques(base, wheres):
+    """Des chroniques qui ont des mesures en 2024, une par condition, toutes du même observatoire : (identifiant, code,
+    identifiant de la station, code de la station, visible, observatoire)."""
+    found = []
+    for where in wheres:
+        same = f"AND k.slug = '{found[0][5]}'" if found else ''
+        rows = query(base, f"""SELECT c.id, c.code, s.id, s.code, c.estvisible, k.slug FROM chronique c
+                               JOIN station s ON s.id = c.station_id JOIN ({CHRONIQUES}) k ON k.id = c.id
+                               WHERE {where} AND {HAS_2024} {same} ORDER BY c.id LIMIT 1""", NEW_SERVER)
+        if not rows:
+            return []
+        found.append(rows[0])
+    return found
+
+
+def csv_checks(base, side, report):
+    """Le format CSV, que seul le nouveau a (dev/plans/2026-11-13_fair-exports.md), pour chaque cas de CSV_CASES : l'export
+    CSV contre le même au format BDOH, que la comparaison à l'ancien juge par ailleurs (mêmes lignes, dates de début et de
+    fin, valeurs, codes de qualité hors lacunes, minimum et maximum ; l'unité, celle des cumuls pour un cumul), puis la
+    forme : en-têtes, valeurs manquantes, dates ISO 8601 au fuseau demandé, codes de qualité décrits et lacunes cohérentes,
+    métadonnées contre la base et les fichiers, licence de chaque chronique et de chaque table du CSVW, description CSVW
+    fidèle aux fichiers, README qui nomme chaque fichier et décrit chaque colonne, en 80 colonnes."""
+    import csv
+    period = ['2024-01-01T00:00:00+00:00', '2025-01-01T00:00:00+00:00']
+    iso = re.compile(r'\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d+)?[+-]\d\d:\d\d')
+    number = re.compile(r'-?\d+(?:\.\d+)?')
+    for name, wheres, extractor, step, tz, lang in CSV_CASES:
+        chroniques = csv_case_chroniques(base, wheres)
+        if not chroniques:
+            report.add(f'nouveau seul : export CSV, {name}', [NO_CASE], [NO_CASE])
+            continue
+        problems, outputs = [], {}
+        for fmt in ('csv', 'bdoh'):
+            r = subprocess.run([*side.console, f'bdoh:export:{extractor}', *step, *period, *(c[0] for c in chroniques),
+                                '--format', fmt, '--timezone', f"'{tz}'", '--locale', lang, '--env=prod'],
+                               capture_output=True, text=True)
+            if r.returncode != 0:
+                problems.append(f'{fmt} : code de sortie {r.returncode} {r.stderr[-300:]}')
+            outputs[fmt] = console_files(r.stdout)
+        files = outputs['csv']
+        tables = {file: [row for row in csv.reader(lines) if row] for file, lines in files.items() if file.endswith('.csv')}
+        measure_files = [f'{station}_{code}.csv' for _, code, _, station, _, _ in chroniques]
+        for file, wanted in [*((m, CSV_COLUMNS['measures']) for m in measure_files),
+                             *((f, c) for f, c in CSV_COLUMNS.items() if f != 'measures')]:
+            if file not in tables or not tables[file]:
+                problems.append(f'{file} absent ou vide')
+            elif tables[file][0] != wanted:
+                problems.append(f'{file} : en-tête {tables[file][0]}')
+        if problems:
+            report.add(f'nouveau seul : export CSV, {name}', ['conforme'], problems)
+            continue
+        qualities = {row[0]: row[2] for row in tables['meta_quality.csv'][1:]}
+        series = {(row[0], row[1]): dict(zip(CSV_COLUMNS['meta_series.csv'], row)) for row in tables['meta_series.csv'][1:]}
+        for (cid, code, _, station, visible, _), measure_file in zip(chroniques, measure_files):
+            values = tables[measure_file][1:]
+            for row in values:
+                if len(row) != 8 or row[:2] != [station, code] or not iso.fullmatch(row[2]) or not row[2].endswith(tz) \
+                        or not (row[3] == 'NA' or iso.fullmatch(row[3])) or row[5] not in qualities \
+                        or (row[4] == 'NA') != (qualities[row[5]] == 'true') \
+                        or not all(cell == 'NA' or number.fullmatch(cell) for cell in (row[4], row[6], row[7])):
+                    problems.append(f'{measure_file} : ligne mal formée {row}')
+                    break
+            # Le même export au format BDOH : trois lignes d'en-tête, puis [début;]fin?;valeur;qualité;min;max
+            bdoh = outputs['bdoh'].get(f'{station}_{code}.txt', [])
+            body = [line.split(';') for line in bdoh[3:] if line]
+            when = lambda cell: (lambda d: f'{d[3]}-{d[2]}-{d[1]}T{d[4]}{tz}' if d else cell)(
+                re.fullmatch(r'(\d\d)/(\d\d)/(\d{4}) (\d\d:\d\d:\d\d)(?:\.0+)?', cell))
+            if len(body) != len(values):
+                problems.append(f'{measure_file} : {len(values)} lignes en CSV, {len(body)} au format BDOH')
+            else:
+                for cells, row in zip(body, values):
+                    ranged = len(cells) == 6
+                    value, quality, low, high = cells[2:6] if ranged else cells[1:5]
+                    gap = value == '-9999'
+                    same = row[2] == when(cells[0]) and (row[3] == when(cells[1]) if ranged else row[3] == 'NA') \
+                        and (row[4] == 'NA') == gap and (gap or float(row[4]) == float(value)) \
+                        and (gap or row[5] == quality) \
+                        and all((c == 'NA') == (b == '') and (c == 'NA' or float(c) == float(b)) for c, b in ((row[6], low), (row[7], high)))
+                    if not same:
+                        problems.append(f'{measure_file} : CSV {row[2:]} contre BDOH {cells}')
+                        break
+            s = series.get((station, code))
+            if s is None:
+                problems.append(f'meta_series.csv sans {station} / {code}')
+                continue
+            if lang == 'fr' and len(bdoh) > 1 and s['unit'] != bdoh[1].split(';')[3]:
+                problems.append(f"unité {s['unit']}, {bdoh[1].split(';')[3]} au format BDOH")
+            if s['access'] != ('open' if visible == 't' else 'restricted') or \
+                    s['licence'] != ('etalab-2.0' if visible == 't' else 'ConditionsGeneralesUtilisation.pdf'):
+                problems.append(f"accès {s['access']}, licence {s['licence']}")
+            n = sum(row[4] != 'NA' for row in values)
+            if s['file'] != measure_file or int(s['n_values']) != n or int(s['n_gaps']) != len(values) - n \
+                    or (values and (s['time_first'], s['time_last']) != (values[0][2], values[-1][2])):
+                problems.append(f"meta_series.csv : {s['file']}, {s['n_values']} valeurs, {s['n_gaps']} lacunes, "
+                                f"{s['time_first']} à {s['time_last']} ; dans le fichier {n}, {len(values) - n}")
+            if not s['page'].endswith(f'/{station}/{code}'):
+                problems.append(f"page {s['page']}")
+        if len(series) != len(chroniques):
+            problems.append(f'meta_series.csv : {len(series)} lignes pour {len(chroniques)} chroniques')
+        stations = tables['meta_station.csv'][1:]
+        if sorted(row[0] for row in stations) != sorted({c[3] for c in chroniques}):
+            problems.append(f'meta_station.csv : {[row[0] for row in stations]}')
+        for row in stations:
+            if row[2] != 'NA' and not (-90 <= float(row[2]) <= 90 and -180 <= float(row[3]) <= 180):
+                problems.append(f'position {row[2:4]}')
+        mixed = len({c[4] for c in chroniques}) > 1
+        if mixed != ('Licences.txt' in files):
+            problems.append(f"Licences.txt {'absent' if mixed else 'en trop'}")
+        # La description CSVW : chaque table, ses colonnes, sa licence
+        try:
+            described = json.loads('\n'.join(files.get('csv-metadata.json', [])))
+            urls = {table['url']: table for table in described['tables']}
+            if set(urls) != {*measure_files, 'meta_series.csv', 'meta_station.csv', 'meta_quality.csv'}:
+                problems.append(f'csv-metadata.json : tables {sorted(urls)}')
+            for file in urls.keys() & tables.keys():
+                if [c['name'] for c in urls[file]['tableSchema']['columns']] != tables[file][0]:
+                    problems.append(f'csv-metadata.json : colonnes de {file}')
+            for (_, _, _, _, visible, _), file in zip(chroniques, measure_files):
+                wanted = OPEN_LICENCE_URL if visible == 't' else 'ConditionsGeneralesUtilisation.pdf'
+                if urls.get(file, {}).get('dc:license', {}).get('@id') != wanted:
+                    problems.append(f'csv-metadata.json : licence de {file}')
+            # Une licence pour tout le groupe, seulement si toutes ses tables ont la même : toutes les chroniques ouvertes
+            if all(c[4] == 't' for c in chroniques) != ('dc:license' in described):
+                problems.append('csv-metadata.json : licence du groupe')
+        except (ValueError, KeyError, TypeError, AttributeError) as e:
+            problems.append(f'csv-metadata.json illisible : {e!r}')
+        # Le README nomme chaque fichier, décrit chaque colonne, ligne entière, et tient en 80 colonnes
+        readme = files.get('README.txt', [])
+        for file in files:
+            if f'├── {file}' not in readme and f'└── {file}' not in readme:
+                problems.append(f'README.txt ne nomme pas {file}')
+        for wanted in {c for cs in CSV_COLUMNS.values() for c in cs}:
+            if f'- displayed_name: {wanted}' not in readme:
+                problems.append(f'README.txt ne décrit pas la colonne {wanted}')
+        if 'Code des valeurs manquantes : NA' not in readme and 'Missing data code: NA' not in readme:
+            problems.append('README.txt ne dit pas NA')
+        if any(len(line) > 80 for line in readme if not re.search(r'https?://\S{50,}', line)):
+            problems.append('README.txt : ligne de plus de 80 caractères')
+        report.add(f'nouveau seul : export CSV, {name}', ['conforme'], problems or ['conforme'])
 
 
 # --- État de la base après les calculs ------------------------------------------------------------
@@ -1304,7 +1621,9 @@ def archive_lines(name, kind, body):
             if inner.endswith('.pdf') and LICENCE_FILE.search(inner):
                 continue
             content = z.read(inner)
-            if inner.endswith('.txt'):
+            if inner in ('Report.txt', 'README.txt'):
+                lines += ['== rapport', *report_facts(content.decode('utf-8', 'replace').splitlines())]
+            elif inner.endswith('.txt'):
                 lines += [f'== {inner}', *map(export_line, content.decode('utf-8', 'replace').splitlines())]
             else:
                 lines.append(f'== {inner} {hashlib.sha256(content).hexdigest()[:16]}')
@@ -1573,7 +1892,12 @@ def open_data_checks(side, console, runner, base, checks):
     status, headers, body = anonymous.get(page)
     check('page de suivi, prête', status == 200 and not headers.get('Refresh') and f'{token}/file'.encode() in body, f'statut {status}')
     status, headers, archive = anonymous.get(f'{page}/file')
-    check('archive sans compte', status == 200 and archive[:2] == b'PK' and 'export.zip' in headers.get('Content-Disposition', ''), f'statut {status}')
+    # Le nom de l'archive dit ce qu'elle contient (dev/differences.md, « Le nom de l'archive d'un export »)
+    named = re.search(rf'filename="?BDOH-export\+obs-{re.escape(slug)}\+chr-{re.escape(station)}_{re.escape(code)}\+type-\w+'
+                      r'(?:\+step-\w+)?\+format-\w+\+period-\d{4}-\d\d-\d\d_\d{4}-\d\d-\d\d\+on-\d{4}-\d\d-\d\d\.zip"?$',
+                      headers.get('Content-Disposition', ''))
+    check('archive sans compte, nommée selon son contenu', status == 200 and archive[:2] == b'PK' and named,
+          f"statut {status}, {headers.get('Content-Disposition')}")
     names = lambda body: zipfile.ZipFile(io.BytesIO(body)).namelist()
     has = lambda body, text: any(text in name for name in names(body))
     check('chronique visible, Licence Ouverte française et anglaise, sans les conditions',

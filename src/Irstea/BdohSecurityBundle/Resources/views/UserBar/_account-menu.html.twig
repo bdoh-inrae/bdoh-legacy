@@ -1,0 +1,14 @@
+{% from 'macros.html.twig' import richLink %}
+{#- Le menu du compte, sous son nom (Lou, 2026-11-13) : le modifier (pas sur le portail, ses pages tenant à un
+ # observatoire), ses favoris, la déconnexion. Un nom trop long se coupe (base.less). -#}
+<li class="dropdown account">
+    <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false" title="{{ app.user }}"><i class="fam-user"></i>&ensp;<span class="account-name">{{ app.user }}</span> <b class="caret"></b></a>
+    <ul class="dropdown-menu dropdown-menu-right">
+        {% if editPath is defined and editPath %}
+            <li>{{ richLink(editPath, 'account.edit', 'user-edit', 'both') }}</li>
+        {% endif %}
+        <li>{{ richLink(path('bdoh_portal_favorites'), 'favorite.menu', 'star', 'both') }}</li>
+        <li class="divider"></li>
+        <li>{{ richLink(logoutPath, 'account.logout', 'disconnect', 'both') }}</li>
+    </ul>
+</li>

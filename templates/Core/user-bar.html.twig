@@ -1,25 +1,27 @@
 {%- from 'macros.html.twig' import richLink %}
-{#-- User bar : la recherche avancée de l'observatoire à gauche, le compte à droite (2026-11-12, Lou). Sur le portail,
- # le compte seul, par ses pages sans observatoire (Security/AccountRoutes.php).
+{#-- User bar : ce qui tient au compte (Lou, 2026-11-13). À gauche, les favoris, bien visibles ; à droite,
+ # l'administration et la gestion des données (ou la demande d'accès), puis le nom, qui ouvre le menu du compte. Sans
+ # compte : la connexion et l'inscription. Sur le portail, les pages du compte sans observatoire
+ # (Security/AccountRoutes.php).
 ================================================== -#}
 <div id="userbar" class="navbar navbar-inverse">
-    {% if currentObservatoire() is not null and currentObservatoire().hasChronique() %}
-        <ul class="nav navbar-nav">
-            <li>{{ richLink(path('bdoh_consult_advancedSearch'), 'advancedSearch', 'zoom', 'both') }}</li>
-        </ul>
-    {% endif %}
     {#- Une adresse inconnue répond 404 avant que le pare-feu ne tourne : sans observatoire, la page d'erreur ne sait pas
      # qui est connecté, et ne montre pas le compte, comme l'ancien -#}
     {% if currentObservatoire() is not null or exception is not defined %}
-    <ul class="nav navbar-nav navbar-right">
-        {% if not is_granted('ROLE_USER') %}
-            {% include '@IrsteaBdohSecurity/UserBar/anonymous-menu.html.twig' %}
-        {% elseif currentObservatoire() is not null %}
-            {% include '@IrsteaBdohSecurity/UserBar/connected-menu.html.twig' %}
-        {% else %}
-            {% include '@IrsteaBdohSecurity/UserBar/portal-menu.html.twig' %}
+        {% if is_granted('ROLE_USER') %}
+            <ul class="nav navbar-nav">
+                <li>{{ richLink(path('bdoh_portal_favorites'), 'favorite.menu', 'star', 'both') }}</li>
+            </ul>
         {% endif %}
-    </ul>
+        <ul class="nav navbar-nav navbar-right">
+            {% if not is_granted('ROLE_USER') %}
+                {% include '@IrsteaBdohSecurity/UserBar/anonymous-menu.html.twig' %}
+            {% elseif currentObservatoire() is not null %}
+                {% include '@IrsteaBdohSecurity/UserBar/connected-menu.html.twig' %}
+            {% else %}
+                {% include '@IrsteaBdohSecurity/UserBar/portal-menu.html.twig' %}
+            {% endif %}
+        </ul>
     {% endif %}
 </div>
 {#-- END_User bar -#}

@@ -4,11 +4,12 @@ Bonjour,
 
 BDOH a été porté sur une version à jour. Mêmes pages, mêmes formats, mêmes données : tout a été comparé à l'ancien, et normalement ça colle.
 
-Quatre changements :
+Cinq changements :
 - plus de mot de passe, on se connecte par un lien reçu par mail ;
 - les données s'ouvrent : une chronique visible se télécharge sans compte, sous Licence Ouverte. Une chronique cachée reste fermée, sur demande, comme avant ;
 - une carte des stations, sur l'accueil du site et sur celui de chaque observatoire, et une apparence rafraîchie ;
 - les conditions d'utilisation sont les mêmes pour tous les observatoires : une page, au lien « Conditions d'utilisation » de votre accueil.
+- l'export propose un CSV standard (virgule, point décimal, dates ISO), à côté des formats BDOH et QTVAR, qui ne changent pas ; chaque archive porte un nom qui dit ce qu'elle contient, et un README qui décrit ses fichiers, sa licence et comment citer.
 
 Il me faut deux choses de votre part avant le {date} :
 

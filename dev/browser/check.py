@@ -330,8 +330,9 @@ def open_data_steps(s, station, chronique, console, hidden):
     """L'ouverture des données, vue sans compte : un export jusqu'au fichier, et une chronique cachée refusée."""
     chronique_page = f'/{SLUG}/{station}/{chronique}'
 
-    def export_to_file(page):
+    def export_to_file(page, fmt='Bdoh'):
         open_export(page)
+        page.locator('.modal.in [name=exportFormat]').select_option(fmt)
         assert page.locator('.modal.in .export-licence').is_visible(), 'la licence n’est pas dite'
         assert page.locator('.modal.in [name=termsOfUses]').count() == 0, 'conditions à cocher sur une chronique visible'
         page.locator('.modal.in .start').fill('01/01/2024 00:00')
@@ -346,14 +347,27 @@ def open_data_steps(s, station, chronique, console, hidden):
         known = len(s.problems)
         with page.expect_download() as download:
             page.locator('a.btn-info').click()
-        saved = OUT / 'export-sans-compte.zip'
+        # Le nom de l'archive dit ce qu'elle contient (dev/plans/2026-11-13_fair-exports.md)
+        name = download.value.suggested_filename
+        assert re.fullmatch(rf'BDOH-export\+obs-{SLUG}\+chr-{re.escape(station)}_{re.escape(chronique)}\+type-identical'
+                            rf'\+format-{fmt.lower()}\+period-2024-01-01_2024-02-01\+on-\d{{4}}-\d\d-\d\d\.zip', name), f'nom {name}'
+        saved = OUT / f'export-sans-compte-{fmt.lower()}.zip'
         download.value.save_as(saved)
         del s.problems[known:]
-        names = zipfile.ZipFile(saved).namelist()
+        archive = zipfile.ZipFile(saved)
+        names = archive.namelist()
         assert any('Licence-Ouverte' in name for name in names), f'pas de licence dans le zip : {names}'
-        assert any(name.endswith('.txt') for name in names), f'pas de données dans le zip : {names}'
+        assert 'README.txt' in names and 'Report.txt' not in names, f'pas de README : {names}'
+        if fmt == 'Csv':
+            wanted = {f'{station}_{chronique}.csv', 'meta_series.csv', 'meta_station.csv', 'meta_quality.csv', 'csv-metadata.json'}
+            assert wanted <= set(names), f'il manque {wanted - set(names)}'
+            header = archive.read(f'{station}_{chronique}.csv').decode().splitlines()[0]
+            assert header == 'station,series,time,time_end,value,quality,value_min,value_max', f'en-tête {header}'
+        else:
+            assert any(name.endswith('.txt') and name != 'README.txt' for name in names), f'pas de données dans le zip : {names}'
 
     s.step('export sans compte, jusqu’au fichier', chronique_page, export_to_file)
+    s.step('export CSV sans compte, jusqu’au fichier', chronique_page, lambda page: export_to_file(page, 'Csv'))
 
     if hidden:
         def refused(page):

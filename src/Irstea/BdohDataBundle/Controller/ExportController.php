@@ -220,18 +220,68 @@ class ExportController extends Controller
         $job = $this->findExportJob($id, $token);
 
         // D'après les arguments de la tâche : une chronique supprimée depuis ne se retrouve plus parmi ses entités liées
+        $chroniques = [];
         foreach ($this->chroniqueIdsOf($job) as $chroniqueId) {
             $chronique = $this->getEm()->find(Chronique::class, $chroniqueId);
             if ($chronique === null || !$this->authChecker->isGranted('DOWNLOAD', $chronique)) {
                 throw $this->createAccessDeniedException();
             }
+            $chroniques[] = $chronique;
         }
 
         if (!$job->isFinished() || !$this->exportFiles->isAvailable($token)) {
             throw new NotFoundHttpException();
         }
 
-        return (new BinaryFileResponse($this->exportFiles->path($token)))->setContentDisposition('attachment', 'export.zip');
+        return (new BinaryFileResponse($this->exportFiles->path($token)))
+            ->setContentDisposition('attachment', $this->archiveName($job, $chroniques));
+    }
+
+    /**
+     * Le nom de l'archive dit ce qu'elle contient (dev/plans/2026-11-13_fair-exports.md), à la manière de MEANDRE :
+     * des couples clé-valeur joints par « + ». Par exemple
+     * BDOH-export+obs-DRAIX+chr-LAVAL_Q+type-mean+step-1day+format-csv+period-2020-01-01_2024-12-31+on-2026-11-13.zip ;
+     * « n-12 » au lieu de « chr-… » pour plusieurs chroniques.
+     *
+     * @param Chronique[] $chroniques
+     */
+    private function archiveName(Job $job, array $chroniques): string
+    {
+        $safe = fn (string $text) => trim(preg_replace('/[^A-Za-z0-9_.-]+/', '-', $text), '-');
+        $type = substr($job->getCommand(), strlen('bdoh:export:'));
+        $positional = [];
+        $options = [];
+        $args = array_map('strval', $job->getArgs());
+        foreach ($args as $k => $argument) {
+            if (str_starts_with($argument, '--')) {
+                $options[substr($argument, 2)] = $args[$k + 1] ?? '';
+            } elseif (!$options) {
+                $positional[] = $argument;
+            }
+        }
+        $step = null;
+        if ($type !== 'identical' && $positional) {
+            $value = array_shift($positional);
+            if ($type === 'instantaneous') {
+                $step = (int) $value . 'min';
+            } elseif (($pas = $this->getEm()->find(PasEchantillonnage::class, (int) $value)) !== null) {
+                $step = $pas->getUnite() === 'event' ? 'event' : $pas->getValeur() . $pas->getUnite();
+            }
+        }
+        $date = fn (?string $value) => $value ? (new \DateTime($value))->format('Y-m-d') : 'x';
+        $parts = ['BDOH-export', 'obs-' . $safe($chroniques ? $chroniques[0]->getObservatoire()->getSlug() : 'x')];
+        $parts[] = count($chroniques) === 1
+            ? 'chr-' . $safe($chroniques[0]->getStation()->getCode() . '_' . $chroniques[0]->getCode())
+            : 'n-' . count($chroniques);
+        $parts[] = 'type-' . $safe($type);
+        if ($step !== null) {
+            $parts[] = 'step-' . $safe($step);
+        }
+        $parts[] = 'format-' . $safe($options['format'] ?? 'bdoh');
+        $parts[] = 'period-' . $date($positional[0] ?? null) . '_' . $date($positional[1] ?? null);
+        $parts[] = 'on-' . ($job->getClosedAt() ?? $job->getCreatedAt() ?? new \DateTime())->format('Y-m-d');
+
+        return implode('+', $parts) . '.zip';
     }
 
     /**
@@ -334,6 +384,7 @@ class ExportController extends Controller
                     'choices'     => [
                         'Bdoh'  => 'Bdoh',
                         'Qtvar' => 'Qtvar',
+                        'Csv'   => 'Csv',
                     ],
                     'constraints' => [new NotBlank()],
                 ]

@@ -368,8 +368,18 @@ class Register(unittest.TestCase):
                   'A /OBS/contact', 'T Aide', *LANG, *ACCOUNT, *SELECTOR, 'A /OBS/home', 'T Accueil', 'T Station',
                   'D div data-notices=[]']
     NEW_HEADER = ['T BDOH - Obs - Station', 'L stylesheet /css/themes/OBS.min.css', 'A /', 'T BDOH', *SELECTOR,
-                  'A /OBS/home', 'T Obs', 'A /OBS/contact', 'T Aide', *LANG, 'A /OBS/nos-donnees', 'T Recherche avancée',
+                  'A /OBS/home', 'T Obs', 'A /OBS/nos-donnees', 'T Recherche', 'A /OBS/contact', 'T Aide', *LANG,
                   *ACCOUNT, 'A /', 'T BDOH', 'A /OBS/home', 'T Obs', 'T Station', 'D div data-notices=[]']
+    # Le compte d'un gestionnaire, dans l'ancien puis dans le nouveau : le nom ouvre son menu, le tableau de bord passe
+    # en tête du menu Administration (Lou, 2026-11-13)
+    OLD_MANAGER = ['D li data-original-title=Modifier votre compte data-placement=bottom data-toggle=tooltip',
+                   'A /OBS/user/edit', 'T Camille Essai', 'A /OBS/logout', 'T Déconnexion', 'A /OBS/admin/dashboard',
+                   'T Tableau de bord', 'A #', 'D a data-toggle=dropdown', 'T Administration', 'A /OBS/admin/station/list',
+                   'T Stations', 'A #', 'D a data-toggle=dropdown', 'T Gestion des données', 'A /OBS/jobs/', 'T Jobs']
+    NEW_MANAGER = ['A #', 'D a data-toggle=dropdown', 'T Administration', 'A /OBS/admin/dashboard', 'T Tableau de bord',
+                   'A /OBS/admin/station/list', 'T Stations', 'A #', 'D a data-toggle=dropdown', 'T Gestion des données',
+                   'A /OBS/jobs/', 'T Jobs', 'A #', 'D a data-toggle=dropdown', 'T Camille Essai', 'A /OBS/user/edit',
+                   'T Modifier votre compte', 'A /OBS/logout', 'T Déconnexion']
 
     def test_the_header_moves_its_links_and_loses_none(self):
         rules = [r for r in compare.expected.RULES if r.mode == 'pages']
@@ -379,18 +389,42 @@ class Register(unittest.TestCase):
         new = self.NEW_HEADER
         for fault, faulty in [
             ("l'aide perdue", [l for l in new if l not in ('A /OBS/contact', 'T Aide')]),
-            ('la recherche avancée perdue', [l for l in new if l not in ('A /OBS/nos-donnees', 'T Recherche avancée')]),
+            ('la recherche perdue', [l for l in new if l not in ('A /OBS/nos-donnees', 'T Recherche')]),
             ('un lien de plus', [*new[:4], 'A /ailleurs', 'T Ailleurs', *new[4:]]),
-            ("l'ancien libellé gardé", [l if l != 'T Recherche avancée' else 'T Consultation des données' for l in new]),
-            ('le compte avant la recherche avancée', [*new[:new.index('A /OBS/nos-donnees')], *self.ACCOUNT,
-                                                      'A /OBS/nos-donnees', 'T Recherche avancée',
-                                                      *new[new.index('T Créer un compte') + 1:]]),
+            ("l'ancien libellé gardé", [l if l != 'T Recherche' else 'T Consultation des données' for l in new]),
+            ('le libellé intermédiaire', [l if l != 'T Recherche' else 'T Recherche avancée' for l in new]),
+            ('la recherche dans la barre du compte', [*[l for l in new[:new.index('A /OBS/login')]
+                                                         if l not in ('A /OBS/nos-donnees', 'T Recherche')],
+                                                      'A /OBS/nos-donnees', 'T Recherche',
+                                                      *new[new.index('A /OBS/login'):]]),
             ("le fil sans l'observatoire", [*new[:-4], 'T Station', 'D div data-notices=[]']),
             ('la connexion perdue', [l for l in new if l not in self.ACCOUNT]),
             ("l'en-tête de l'ancien gardé", self.OLD_HEADER),
         ]:
             with self.subTest(fault):
                 self.assertEqual(self.verdict(rules, name, self.OLD_HEADER, faulty), 'différents')
+
+    def test_the_account_of_a_manager_opens_a_menu(self):
+        rules = [r for r in compare.expected.RULES if r.mode == 'pages']
+        name = 'gestionnaire /OBS/station/S'
+        old = [l for k in self.OLD_HEADER for l in (self.OLD_MANAGER if k == 'A /OBS/login' else [k])
+               if l not in self.ACCOUNT[1:]]
+        new = [l for k in self.NEW_HEADER for l in (self.NEW_MANAGER if k == 'A /OBS/login' else [k])
+               if l not in self.ACCOUNT[1:]]
+        self.assertEqual(compare.expected.header(old), new)
+        favorites = ['A /favorites', 'T Mes favoris']
+        lang_end = new.index('T English') + 1
+        with_favorites = [*new[:lang_end], *favorites, *new[lang_end:new.index('A /OBS/logout')], *favorites,
+                          *new[new.index('A /OBS/logout'):]]
+        self.assertEqual(self.verdict(rules, name, old, with_favorites), 'écarts admis')
+        for fault, faulty in [
+            ('la déconnexion perdue', [l for l in with_favorites if l not in ('A /OBS/logout', 'T Déconnexion')]),
+            ('le tableau de bord perdu', [l for l in with_favorites if l not in ('A /OBS/admin/dashboard', 'T Tableau de bord')]),
+            ('le nom hors du menu', [l for l in with_favorites if l != 'T Camille Essai']),
+            ("l'ancien compte gardé", [*new[:lang_end], *favorites, *self.OLD_MANAGER, *new[new.index('T Déconnexion') + 1:]]),
+        ]:
+            with self.subTest(fault):
+                self.assertEqual(self.verdict(rules, name, old, faulty), 'différents')
 
     def test_no_more_mail_to_managers_and_nothing_else_lost(self):
         rules = [r for r in compare.expected.RULES if r.mode == 'accounts']
@@ -434,7 +468,7 @@ class Register(unittest.TestCase):
         portal = compare.expected.portal_rules({'utilisateur': 'Camille Essai'})
         rules = [r for r in compare.expected.RULES if r.mode == 'pages' and r.rewrite] + portal
         guest = [*new, *(l[1:] for l in compare.expected.PORTAL_GUEST), 'T BDOH', 'T Présentation']
-        user = [*new, 'T Camille Essai', 'A /logout', 'T Déconnexion', 'T BDOH', 'T Présentation']
+        user = [*new, 'A #', 'D a data-toggle=dropdown', 'T Camille Essai', 'A /logout', 'T Déconnexion', 'T BDOH', 'T Présentation']
         self.assertEqual(self.verdict(rules, 'anonyme /', old, guest), 'écarts admis')
         self.assertEqual(self.verdict(rules, 'utilisateur /', old, user), 'écarts admis')
         for name, case, lines in [('le nom d’un autre', 'utilisateur /', [l.replace('Camille Essai', 'Autre Nom') for l in user]),
@@ -451,6 +485,85 @@ class Register(unittest.TestCase):
         self.assertEqual(self.verdict([self.RULE], 'page a', old, new), 'différents')
         self.assertEqual(self.verdict([self.RULE, self.rule(order=True)], 'page a', old, new), 'écarts admis')
         self.assertEqual(self.verdict([self.RULE, self.rule(order=True)], 'page a', old, ['T nouveau', 'T b', 'T c']), 'différents')
+
+
+class ReportFacts(unittest.TestCase):
+    """Le rapport de l'ancien (Report.txt) et le README du nouveau, lus sous une même forme (compare.report_facts) :
+    des textes écrits comme les écrivent les deux codes, rééchantillonnage mensuel, chronique calculée, une seule valeur,
+    une erreur, en français et en anglais."""
+    NB = '\u00a0'
+    OLD = [
+        'Export du <date> au format «\u00a0BDOH\u00a0»', '', "Période d'extraction : du 01/01/2024 00:00:00 UTC au 01/01/2025 00:00:00 UTC",
+        '', 'Fuseau horaire : UTC+01:00 ', '', '', '', "DOI associés à l'observatoire «\u00a0Draix\u00a0» :",
+        '', ' - dx.doi.org/10.17180/obs.draix [ Données de Draix ]', '', '', '',
+        'Chronique calculée «\u00a0V3019111 / DEB\u00a0» :', '', '',
+        '    8784 mesures présentes, du 01/01/2024 01:00:00 UTC+01:00 au 01/01/2025 00:00:00 UTC+01:00', '', '',
+        '    Fichier : V3019111_DEB.txt', '', '', '    Généalogie', '        Mesures à la minute', '',
+        '        par une sonde.', '', '', '    Export réalisé à pas de temps fixe', '',
+        "        Type d'échantillonnage : moyenne", '', '        Pas de temps : 1 month', '', '        12 mesures exportées', '', '',
+        '    Chronique mère unique : «\u00a0V3019111 / HT\u00a0»', '',
+        '        Barème «\u00a0B1\u00a0», crée le 06/03/2014 00:00:00 UTC, appliqué à partir du 15/11/2000 00:00:00 UTC',
+        '', '', '', 'Chronique «\u00a0LAVAL / PRCP\u00a0» :', '', '', '    Une mesure présente', '', '',
+        '    Fichier : LAVAL_PRCP.txt', '', '', '    Export réalisé à pas de temps fixe', '',
+        "        Type d'échantillonnage : moyenne", '', '        Pas de temps : 1 month', '', '        Une mesure exportée',
+        '', '', '', 'Chronique «\u00a0X / Y\u00a0» :', '', '', "    Une erreur s'est produite pendant l'export :", '', '    Oups',
+    ]
+    NEW = [
+        '# INFORMATIONS GÉNÉRALES ____', 'Observatoire : Draix', "DOI de l'observatoire :",
+        '  - https://doi.org/10.17180/obs.draix (Données de Draix)', '', "# PARAMÈTRES DE L'EXPORT ____", 'Format : BDOH',
+        'Période demandée : du 2024-01-01 00:00:00 UTC au 2025-01-01 00:00:00 UTC', 'Fuseau horaire des dates : UTC+01:00',
+        'Valeurs : rééchantillonnées à pas de temps fixe', 'Rééchantillonnage : moyenne', 'Pas de temps : 1 mois',
+        'Chroniques : 3', '', '# INFORMATIONS MÉTHODOLOGIQUES ____', '', '## V3019111 / DEB ____', 'Nom : Débit',
+        'Page : http://x/YZERON/V3019111/DEB', 'Mesures présentes : 8784, du 2024-01-01 01:00:00 au 2025-01-01 00:00:00',
+        'Valeurs exportées : 12, dont 0 lacunes', 'Fichier : V3019111_DEB.txt', 'Généalogie :', '  Mesures à la minute',
+        '  par une sonde.', 'Calcul :', '  Chronique mère unique : «\u00a0V3019111 / HT\u00a0»',
+        '    Barème «\u00a0B1\u00a0», crée le 06/03/2014 00:00:00 UTC, appliqué à partir du',
+        '    15/11/2000 00:00:00 UTC', '', '## LAVAL / PRCP ____', 'Nom : Pluie', 'Page : http://x/DRAIX/LAVAL/PRCP',
+        'Mesures présentes : 1, le 2024-03-01 00:00:00', 'Valeurs exportées : 1, dont 0 lacunes', 'Fichier : LAVAL_PRCP.txt',
+        '', '## X / Y ____', 'Nom : Z', 'Page : http://x/DRAIX/X/Y', 'Erreur :', '  Oups', '', '# APERÇU DES FICHIERS ____',
+        '  - README.txt : ce fichier.',
+    ]
+
+    def test_the_old_report_and_the_readme_say_the_same(self):
+        old, new = compare.report_facts(self.OLD), compare.report_facts(self.NEW)
+        self.assertEqual(old, new)
+        self.assertEqual(old[:5], ['format BDOH', 'période 2024-01-01 00:00:00 2025-01-01 00:00:00', 'fuseau +01:00',
+                                   'rééchantillonnage moyenne, 1 month', 'doi 10.17180/obs.draix'])
+        self.assertIn('présentes 8784 du 2024-01-01 01:00:00 au 2025-01-01 00:00:00', old)
+        self.assertIn('généalogie Mesures à la minute par une sonde.', old)
+        self.assertTrue(any(f.startswith('calcul Chronique mère unique') and f.endswith('15/11/2000 00:00:00 UTC') for f in old))
+        self.assertIn('exportées 12', old)
+        self.assertIn('erreur', old)
+
+    def test_a_difference_shows(self):
+        old = compare.report_facts(self.OLD)
+        for fault, new in [
+            ('un nombre de mesures', [l.replace('8784,', '8783,') for l in self.NEW]),
+            ('un nombre exporté', [l.replace('Valeurs exportées : 12', 'Valeurs exportées : 13') for l in self.NEW]),
+            ('le pas', [l.replace('1 mois', '1 jour') for l in self.NEW]),
+            ('la généalogie', [l.replace('par une sonde.', 'par deux sondes.') for l in self.NEW]),
+            ('le barème', [l.replace('15/11/2000', '16/11/2000') for l in self.NEW]),
+            ('un fichier', [l.replace('LAVAL_PRCP.txt', 'LAVAL_PRCP.csv') for l in self.NEW]),
+            ("l'erreur perdue", [l for l in self.NEW if l not in ('Erreur :', '  Oups')]),
+            ('le DOI', [l.replace('obs.draix (', 'obs.drai (') for l in self.NEW]),
+        ]:
+            with self.subTest(fault):
+                self.assertNotEqual(compare.report_facts(new), old)
+
+    def test_english_and_steps(self):
+        old = ['Download from <date> UTC in the format “\u00a0BDOH\u00a0”', 'Timezone: UTC-05:00 ',
+               'Time series “\u00a0A / B\u00a0”:', '    3 data points found, from 01-01-2024 00:00:00 UTC-05:00 to 03-01-2024 00:00:00 UTC-05:00',
+               '    File: A_B.txt', '    Sampling type: linear interpolation', '    Time step:', ' 60 minutes', '    3 data points extracted']
+        new = ['Format: BDOH', 'Time zone of the dates: UTC-05:00', 'Resampling: linear interpolation', 'Time step: 60 minutes',
+               '## A / B ____', 'Stored values: 3, from 2024-01-01 00:00:00 to 2024-01-03 00:00:00',
+               'Exported values: 3, of which 0 gaps', 'File: A_B.txt']
+        self.assertEqual(compare.report_facts(old), compare.report_facts(new))
+        self.assertIn('rééchantillonnage linear interpolation, 60 minute', compare.report_facts(new))
+        for written, wanted in [('1 mois', '1 month'), ('1 month', '1 month'), ('6 heures', '6 hour'), ('1 an', '1 year'),
+                                ('1 événement', '1 event'), ('1 event', '1 event'), ('15 minutes', '15 minute')]:
+            with self.subTest(written):
+                self.assertEqual(compare.report_facts([f'Pas de temps : {written}', 'Rééchantillonnage : cumul'])[-1],
+                                 f'rééchantillonnage cumul, {wanted}')
 
 
 class Stylesheets(unittest.TestCase):

@@ -6,6 +6,8 @@ namespace Irstea\BdohDataBundle\Exporter\Measure;
 
 use Irstea\BdohDataBundle\Entity\Chronique;
 use Irstea\BdohDataBundle\Entity\Observatoire;
+use Irstea\BdohDataBundle\Exporter\Measure\Csv\Metadata;
+use Irstea\BdohDataBundle\Exporter\Measure\Csv\Tables;
 
 class Exporter implements ExporterInterface
 {
@@ -48,6 +50,32 @@ class Exporter implements ExporterInterface
      * @var string
      */
     private $formatDocPath;
+
+    /** @var string le format, en minuscules : bdoh, qtvar ou csv */
+    private $format = 'bdoh';
+
+    /** @var Metadata|null les métadonnées en CSV, pour ce format seulement */
+    private $metadata;
+
+    /** @var string[] les fichiers de l'archive, dans l'ordre où ils y entrent, pour le README */
+    private $names = [];
+
+    /** @var array<string, array> ce qu'a dit l'extraction de chaque chronique, par identifiant */
+    private $reports = [];
+
+    public function setFormat(string $format): self
+    {
+        $this->format = strtolower($format);
+
+        return $this;
+    }
+
+    public function setMetadata(?Metadata $metadata): self
+    {
+        $this->metadata = $metadata;
+
+        return $this;
+    }
 
     /** Set extractor.
      * @param ExtractorInterface $extractor
@@ -150,15 +178,59 @@ class Exporter implements ExporterInterface
 
         $this->addLicences($chroniques, $observatoire);
 
-        $this->addExportDoc();
+        // La description des formats BDOH et Qtvar ; celle du CSV est dans le README
+        if ($this->format !== 'csv') {
+            $this->addExportDoc();
+        }
 
         foreach ($chroniques as $chronique) {
             $this->addMeasures($chronique);
         }
 
-        $this->addReport();
+        if ($this->metadata !== null) {
+            $this->addMetadata($chroniques, $observatoire);
+        }
+
+        $this->addReadme($chroniques);
 
         $this->archiver->close();
+    }
+
+    /**
+     * Les chroniques, leurs stations et les codes de qualité, chacun dans son CSV, puis leur description CSVW.
+     *
+     * @param Chronique[] $chroniques
+     */
+    private function addMetadata(array $chroniques, Observatoire $observatoire)
+    {
+        $this->generateFile(Tables::SERIES_FILE, function ($output) use ($chroniques) {
+            $this->metadata->writeSeries($chroniques, $this->reports, $output);
+
+            return true;
+        });
+        $this->generateFile(Tables::STATION_FILE, function ($output) use ($chroniques) {
+            $this->metadata->writeStations($chroniques, $output);
+
+            return true;
+        });
+        $this->generateFile(Tables::QUALITY_FILE, function ($output) use ($observatoire) {
+            $this->metadata->writeQualities($observatoire->getJeu(), $output);
+
+            return true;
+        });
+        $measureFiles = [];
+        foreach ($chroniques as $chronique) {
+            if (isset($this->reports[$chronique->getId()]['filename'])) {
+                $measureFiles[$this->reports[$chronique->getId()]['filename']] = (bool) $chronique->getEstVisible();
+            }
+        }
+        $this->generateFile(Tables::CSVW_FILE, function ($output) use ($measureFiles, $observatoire) {
+            return false !== fwrite($output, $this->metadata->csvw(
+                $measureFiles,
+                'BDOH, ' . $observatoire->getNom(),
+                'https://www.data.gouv.fr/datasets/licence-ouverte-2-0'
+            ));
+        });
     }
 
     /**
@@ -175,11 +247,11 @@ class Exporter implements ExporterInterface
 
         if ($visible) {
             foreach ($this->openLicenceFiles as $file) {
-                $this->archiver->addFile($this->documentBasePath . DIRECTORY_SEPARATOR . $file);
+                $this->add($this->documentBasePath . DIRECTORY_SEPARATOR . $file);
             }
         }
         if ($hidden) {
-            $this->addTermsOfUse($observatoire);
+            $this->add($this->documentBasePath . DIRECTORY_SEPARATOR . $this->defaultTosPath);
         }
         if ($visible && $hidden) {
             $names = fn (array $list) => implode("\n", array_map(fn (Chronique $chronique) => '- ' . $chronique, $list));
@@ -190,22 +262,9 @@ class Exporter implements ExporterInterface
         }
     }
 
-    /**
-     * Les conditions propres à l'observatoire, si leur fichier est là, sinon celles de BDOH : un fichier déposé
-     * ne vit que sur le serveur, jamais dans le dépôt.
-     */
-    private function addTermsOfUse(Observatoire $observatoire)
-    {
-        $observatoryTos = $observatoire->getConditionsUtilisation();
-        $path = $this->documentBasePath . DIRECTORY_SEPARATOR . $observatoryTos;
-        $this->archiver->addFile(
-            $observatoryTos && is_file($path) ? $path : $this->documentBasePath . DIRECTORY_SEPARATOR . $this->defaultTosPath
-        );
-    }
-
     private function addExportDoc()
     {
-        $this->archiver->addFile($this->documentBasePath . DIRECTORY_SEPARATOR . $this->formatDocPath);
+        $this->add($this->documentBasePath . DIRECTORY_SEPARATOR . $this->formatDocPath);
     }
 
     /**
@@ -215,7 +274,7 @@ class Exporter implements ExporterInterface
      */
     private function addMeasures(Chronique $chronique)
     {
-        $filename = sprintf('%s_%s.txt', $chronique->getStation()->getCode(), $chronique->getCode());
+        $filename = sprintf('%s_%s.%s', $chronique->getStation()->getCode(), $chronique->getCode(), $this->format === 'csv' ? 'csv' : 'txt');
 
         return $this->generateFile(
             $filename,
@@ -226,6 +285,10 @@ class Exporter implements ExporterInterface
                 } catch (\Exception $ex) {
                     $report = ['number' => 0, 'error' => $ex->getMessage()];
                 }
+                if ($report['number'] <= 0) {
+                    unset($report['filename']);
+                }
+                $this->reports[$chronique->getId()] = $report;
                 $this->reporter->addChronique($chronique, $report);
 
                 return $report['number'] > 0;
@@ -234,12 +297,31 @@ class Exporter implements ExporterInterface
     }
 
     /**
+     * Le README, qui remplace l'ancien Report.txt (dev/plans/2026-11-13_fair-exports.md) : ce que disait le rapport,
+     * et ce qu'il faut pour réutiliser les données sans rien d'autre (licence, citation, fichiers, colonnes).
+     *
+     * @param Chronique[] $chroniques
+     *
      * @return bool
      */
-    private function addReport()
+    private function addReadme(array $chroniques)
     {
+        $visible = array_values(array_filter($chroniques, fn (Chronique $chronique) => $chronique->getEstVisible()));
+        $files = [...$this->names, 'README.txt'];
+        sort($files, SORT_STRING | SORT_FLAG_CASE);
+        $this->reporter->addParameters([
+            'files'          => $files,
+            'openFiles'      => $visible ? array_map('basename', $this->openLicenceFiles) : [],
+            'termsFile'      => count($visible) < count($chroniques) ? basename($this->defaultTosPath) : null,
+            'formatDocFile'  => $this->format !== 'csv' ? basename($this->formatDocPath) : null,
+            'visibleCount'   => count($visible),
+            'hiddenCount'    => count($chroniques) - count($visible),
+            'tables'         => $this->format === 'csv' ? Tables::all() : [],
+            'missing'        => Tables::MISSING,
+        ]);
+
         return $this->generateFile(
-            'Report.txt',
+            'README.txt',
             function ($output) {
                 $this->reporter->writeTo($output);
 
@@ -266,9 +348,16 @@ class Exporter implements ExporterInterface
             fclose($handle);
         }
         if ($success) {
-            $this->archiver->addFile($path, $name);
+            $this->add($path, $name);
         }
 
         return $success;
+    }
+
+    /** Un fichier de plus dans l'archive, dont le README donnera le nom. */
+    private function add(string $path, ?string $name = null)
+    {
+        $this->archiver->addFile($path, $name);
+        $this->names[] = $name ?? basename($path);
     }
 }

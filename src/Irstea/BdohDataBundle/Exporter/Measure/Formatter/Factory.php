@@ -18,6 +18,7 @@ class Factory
     private static $classes = [
         'bdoh'      => Bdoh::class,
         'qtvar'     => Qtvar::class,
+        'csv'       => Csv::class,
     ];
 
     /**

@@ -12,6 +12,16 @@ def visible(page, selector, timeout=20000):
     page.locator(selector).first.wait_for(state='visible', timeout=timeout)
 
 
+# Le menu du compte, sous son nom (Lou, 2026-11-13) : son ouverture, puis la déconnexion qu'il porte
+ACCOUNT = '#userbar .account > .dropdown-toggle'
+
+
+def log_out(page):
+    page.locator(ACCOUNT).click()
+    with page.expect_navigation(wait_until='networkidle'):
+        page.locator('#userbar .account a[href*="/logout"]').click()
+
+
 def submit(page, scope='form'):
     """Envoie un formulaire et attend la page qui suit."""
     with page.expect_navigation(wait_until='networkidle', timeout=120000):
@@ -77,7 +87,7 @@ def new_account(trip):
 
     def first_link(page):
         trip.follow_mailed_link(page, email)
-        visible(page, 'a[href*="/logout"]')
+        visible(page, ACCOUNT)
         assert trip.one(f"SELECT derniereconnection IS NOT NULL FROM utilisateur WHERE email = '{email}'") == 't', 'dernière connexion non notée'
         assert trip.one(f"SELECT confirmationtoken IS NULL OR confirmationtoken = '' FROM utilisateur WHERE email = '{email}'") == 't', 'adresse non confirmée'
 
@@ -117,8 +127,7 @@ def new_account(trip):
     s.step('demander un accès aux données fermées', f'/{slug}/besoin/new', ask_access)
 
     def out_and_back(page):
-        with page.expect_navigation(wait_until='networkidle'):
-            page.locator('a[href*="/logout"]').first.click()
+        log_out(page)
         assert page.locator('a[href*="/logout"]').count() == 0, 'toujours connecté'
         page.goto(f'{trip.site}/{slug}/login', wait_until='networkidle')
         page.locator('#email').fill(email.upper())  # une adresse saisie autrement retrouve son compte
@@ -126,7 +135,7 @@ def new_account(trip):
         submit(page)
         assert email in notice(page).lower() or 'lien' in notice(page).lower(), f'pas de message : {notice(page)[:200]}'
         trip.follow_mailed_link(page, email)
-        visible(page, 'a[href*="/logout"]')
+        visible(page, ACCOUNT)
 
     s.step('se déconnecter, redemander un lien, revenir', None, out_and_back)
     return email, s

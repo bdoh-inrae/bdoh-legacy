@@ -28,6 +28,7 @@ $fileFormats = [
     'export' => [
         'Bdoh'      => 'BDOH',
         'Qtvar'     => 'Hydro2 - QTVAR',
+        'Csv'       => 'CSV',
         'Vigilance' => 'Vigilance',
     ],
 ];
@@ -60,8 +61,9 @@ $export = [
         <li>the options for fiexed time step calculation are: (i) for linear interpolation, a time step between 1 and 1440 minutes; (ii) for mean and sum calculations, one of the time steps available in the drop-down list. The interpolated values start at a round time. Option “\u{a0}event\u{a0}” calculates the mean or sum of the values in the time range of the event (1 output value).</li>
     </ul>
     <li>One separate file is downloaded for each time series.</li>
-    <li>For downloads of continuous time series with identical time step or linear interpolation, several file formats are available (BDOH standard or Hydro2 QTVAR).</li>
-    <li>For fix time steps with mean/sum calculation options, the only possible file format is "BDOH discontinu".</li>
+    <li>For downloads of continuous time series with identical time step or linear interpolation, three file formats are available: BDOH standard, Hydro2 QTVAR or CSV.</li>
+    <li>For fixed time steps with mean/sum calculation options, and for discontinuous time series, two formats are available: "BDOH discontinu" or CSV.</li>
+    <li>The CSV format is a standard CSV (UTF-8, comma between columns, decimal point, ISO 8601 dates), readable in R or Python, and in a spreadsheet through its CSV import (UTF-8 encoding, comma separator); its files all have the same columns, and metadata tables come with them. The README.txt file of the archive describes them.</li>
 </ul>
 HELP
         ,

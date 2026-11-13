@@ -19,6 +19,8 @@ La base de la VM deviendra la production : un essai qui écrit se fait sur une c
 - [ ] La carte des stations, sur l'accueil du portail et sur celui de deux ou trois observatoires, dont un sans station placée : points, bulles, liens vers les stations, fond de l'IGN (`dev/differences.md`, « Carte des stations »).
 - [ ] La page « Conditions d'utilisation » d'un observatoire, la même pour tous ; celle d'ORACLE ne télécharge plus son ancien PDF (0.6.0, `dev/audits/2026-11-13_terms-of-use.md`).
 - [ ] Les favoris (0.5.0, `dev/differences.md`, « Favoris et étiquettes ») : l'étoile sur la page d'une chronique et dans la liste d'une station, « Mes favoris » depuis le portail et depuis un observatoire, une étiquette qui coche son groupe, des favoris de deux observatoires. La page se comprend-elle sans explication ?
+- [ ] Les barres (0.7.0) : en haut l'observatoire et « Recherche », en bas « Mes favoris » puis le compte ; avec un compte d'administration, la barre du dessous tient sur une ligne, et le nom ouvre le menu du compte.
+- [ ] Un export CSV (0.7.0) : le nom de l'archive, le README (licence, comment citer, fichiers, colonnes), un CSV ouvert dans R ou Python, et dans un tableur par son import ; puis un export au format BDOH, dont le `.txt` n'a pas changé et dont le README remplace `Report.txt`.
 
 ## Les vrais courriels
 
