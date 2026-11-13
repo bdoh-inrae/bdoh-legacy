@@ -70,7 +70,7 @@ Il n'y a pas de bascule à part (« Avant », les essais deviennent la productio
 - À l'ouverture au public : avoir par écrit l'accord des producteurs extérieurs de chroniques ouvertes pour leur diffusion sous Licence Ouverte (l'INSA et l'UCBL pour OTHU, EDF pour Arc-Isère ; la Licence Ouverte garantit au réutilisateur que des droits de tiers ne s'y opposent pas), et savoir de la direction des affaires juridiques si l'accord d'un gestionnaire engage son établissement (`dev/audits/2026-11-13_terms-of-use.md`). Essayer une à une les adresses que citent les DOI. Et mettre à jour, chez leur registre, hors de BDOH, la licence que déclarent les 20 DOI : la Licence Ouverte, comme leur fiche Theia/OZCAR (`dev/plans/2026-11-04_open-data.md`, 6).
 - Publier les corrections de sécurité dans `dev/differences.md` (`dev/local/security.md`).
 - Effacer les hachages des anciens mots de passe, une fois la connexion par lien éprouvée (`ROADMAP.md`, « Modernisations »).
-- Supprimer la table `station_point_rebuilt`, qui ne sert qu'au retour arrière de `Version20261103120000`, une fois la bascule éprouvée.
+- Supprimer la table `station_point_rebuilt`, qui ne sert qu'au retour arrière de `Version20261103120000`, une fois la bascule éprouvée ; de même le schéma `fusion_othu` (`DROP SCHEMA fusion_othu CASCADE`), qui ne sert qu'au retour arrière de la fusion d'OTHU, et les sauvegardes de `/var/backups/bdoh-kept/`.
 
 ## Suivi
 
