@@ -27,7 +27,14 @@
 
 ## Pour reprendre (13 novembre, soir)
 
-Tout est écrit et commité ; la passe complète (tous les modes de `compare.py`, puis `make browser-check`) tournait au moment du commit. Si elle passe : version 0.7.0 (`CHANGELOG.md`, « Non publié »), tag, release. Puis, sur la VM, une fois la fusion d'OTHU finie et son compte rendu noté (`dev/plans/2026-11-13_othu-merge.md`, étape 6) : `sudo make -C /var/www/bdoh-prod vm-update NOM=prod V=v0.7.0`, la liste de Lou (`dev/test-kit/lou-checklist.md`), et l'envoi des essais lundi 16 novembre. Si elle ne passe pas : lire les écarts dans `../bdoh_reference/compare/`, corriger, rejouer le mode.
+Tout est commité ; la 0.7.0 n'est pas publiée. Passe complète du 13 novembre au soir, au commit 885a241 (rapports dans `../bdoh_reference/compare/`) :
+- passent : `pages` (483 identiques, 1 096 écarts admis), `queue`, `imports`, `admin` ; les neuf cas « nouveau seul : export CSV » ;
+- `exports` : 285 « différents », tous les cas de la chronique 9 au moins : lire un écart (`report_facts`, sans doute un texte de l'ancien rapport qu'il ne lit pas encore, ou une différence vraie du README), corriger, rejouer `exports` ;
+- `state` : « étapes », « courriels », « jms_jobs » différents (probablement l'archive : `README.txt` au lieu de `Report.txt`, ou son nom, que ces cas lisent sans `report_facts`) ;
+- `accounts` : « favoris, fenêtre d'export : avec une discontinue, l'identique au format BDOH » attend le seul format BDOH, alors que le CSV y est désormais proposé : mettre la vérification à jour ;
+- `make browser-check` n'a pas tourné.
+
+Ensuite : version 0.7.0 (`CHANGELOG.md`, « Non publié »), tag, release ; sur la VM, `sudo make -C /var/www/bdoh-prod vm-update NOM=prod V=v0.7.0`, la liste de Lou (`dev/test-kit/lou-checklist.md`), et l'envoi des essais lundi 16 novembre. La fusion d'OTHU est faite (`dev/plans/2026-11-13_othu-merge.md`).
 
 ## Vérification
 

@@ -333,7 +333,9 @@ cmd_merge_othu() {
     echo "--- inspect.sql, avant et après (les lignes d'OTHU s'ajoutent aux comptes) :"
     diff "/root/inspect-$NOM-avant.txt" "/root/inspect-$NOM-apres.txt" || true
     local changed
-    changed=$(comm -23 <(sort "/root/fingerprint-$NOM-avant.txt") <(sort "/root/fingerprint-$NOM-apres.txt") | cut -d'|' -f1-2)
+    # Le même ordre pour sort et comm, celui des octets : selon la langue du système, ils ne rangeaient pas pareil, et
+    # comm s'arrêtait sur une erreur (fusion du 13 novembre sur la VM)
+    changed=$(LC_ALL=C comm -23 <(LC_ALL=C sort "/root/fingerprint-$NOM-avant.txt") <(LC_ALL=C sort "/root/fingerprint-$NOM-apres.txt") | cut -d'|' -f1-2)
     echo "--- empreinte des mesures, chroniques de la production changées (attendu : aucune) :"
     echo "${changed:-aucune}"
     console cache:clear
