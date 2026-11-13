@@ -13,6 +13,8 @@ sources=/var/backups/bdoh-sources   # les dumps bruts et les fichiers déposés,
 backups=/var/backups/bdoh           # les sauvegardes des bases (bdoh-backup@.timer, mises à jour)
 
 die() { echo "$*" >&2; exit 1; }
+# Ce que fait le script, à l'heure : les étapes longues (sauvegarde, empreinte) n'écrivent rien d'elles-mêmes
+step() { echo "[$(date +%T)] $*"; }
 pg() { runuser -u postgres -- psql -v ON_ERROR_STOP=1 "$@"; }
 console() { runuser -u www-data -- php bin/console --env=prod --no-interaction "$@"; }
 
@@ -109,15 +111,22 @@ EOF
 build() {
     [[ -f .env ]] || die "D'abord : make vm-env"
     export COMPOSER_ALLOW_SUPERUSER=1 HOME=/root
+    step "Bibliothèques PHP (Composer)"
     composer install --no-dev --no-scripts --no-interaction --classmap-authoritative
+    step "Bibliothèques JavaScript (npm)"
     npm ci --no-audit --no-fund
+    step "Compilation du JavaScript et des styles"
     NODE_OPTIONS=--openssl-legacy-provider node_modules/.bin/encore production
     mkdir -p var public/uploads public/css/themes
     # Les thèmes compilés de la version précédente : CssManager ne recompile un thème que s'il manque, à la
     # première page de chaque observatoire, avec les feuilles et les couleurs de cette version.
     rm -f public/css/themes/*.css
     php bin/console assets:install public --env=prod --no-debug
+    step "Droits et cache"
+    # Le code est celui du dépôt public : lisible par tous, pour qu'on y lise le Makefile ; fermés aux autres
+    # comptes, les secrets (.env) et ce que le site écrit (var/ : exports, dont des séries cachées, journaux, sessions)
     chown -R root:www-data . && chmod -R g-w,o-rwx .
+    find . -path ./var -prune -o ! -name '.env*' -exec chmod o+rX {} +
     chown -R www-data:www-data var public/uploads public/css/themes
     console cache:clear
 }
@@ -143,9 +152,12 @@ cmd_db() {
     pg -qc "ALTER DATABASE $base OWNER TO $role"
     sed "s/OWNER TO bdoh/OWNER TO $role/" dev/reference/own-by-bdoh.sql | pg -d "$base" -q
     pg -d "$base" -qc 'VACUUM ANALYZE'
+    step "Contrôle de la base avant les migrations (comptes et empreinte des mesures, quelques minutes)"
     controle avant
+    step "Migrations"
     console doctrine:migrations:migrate
     console cache:clear
+    step "Contrôle de la base après les migrations (quelques minutes)"
     controle apres
     changes
     # Les logos et images de la production (OTHU n'en a pas)
@@ -234,18 +246,25 @@ cmd_update() {
     git rev-parse -q --verify "refs/tags/$V" > /dev/null || die "Version inconnue : $V"
     local worker=bdoh-job-worker@$NOM was_active=no
     systemctl is-active -q "$worker" && was_active=yes
+    step "Arrêt de la file de tâches (elle reprend à la fin ; un arrêt en route la laisse arrêtée)"
     systemctl stop "$worker"
+    step "Sauvegarde de la base $base dans $backups (quelques minutes)"
     runuser -u postgres -- pg_dump -Fc -f "$backups/$NOM-avant-$V-$(date +%F-%H%M).dump" "$base"
+    step "Contrôle de la base avant les migrations (comptes et empreinte des mesures, quelques minutes)"
     controle avant
+    step "Passage à $V"
     git -c advice.detachedHead=false checkout --quiet "$V"
     build
+    step "Migrations"
     console doctrine:migrations:migrate
     console cache:clear
+    step "Contrôle de la base après les migrations (quelques minutes)"
     controle apres
     changes
+    step "Rechargement d'Apache et reprise de la file"
     systemctl reload apache2
     [[ $was_active == yes ]] && systemctl start "$worker"
-    echo "Installée : $(git describe --tags --always)"
+    step "Installée : $(git describe --tags --always), en $((SECONDS / 60)) min"
 }
 
 cmd_status() {
