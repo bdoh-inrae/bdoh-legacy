@@ -19,8 +19,11 @@ step() { echo "[$(date +%T)] $*"; }
 pg() { runuser -u postgres -- psql -v ON_ERROR_STOP=1 "$@"; }
 console() { runuser -u www-data -- php bin/console --env=prod --no-interaction "$@"; }
 
+# Une seule instance depuis la fusion d'OTHU (2026-11-13) : NOM vaut prod, et n'est plus à donner (2026-11-15).
+# Il nomme encore le dossier, la base, le rôle et les services, comme lorsque OTHU devait avoir la sienne.
 instance() {
-    [[ ${NOM:-} == prod ]] || die "Préciser l'instance : NOM=prod"
+    NOM=${NOM:-prod}
+    [[ $NOM == prod ]] || die "Une seule instance, prod : NOM=$NOM n'existe pas"
     port=443
     [[ $PWD == /var/www/bdoh-$NOM ]] || die "À lancer dans /var/www/bdoh-$NOM"
     base=bdoh_$NOM role=bdoh_$NOM

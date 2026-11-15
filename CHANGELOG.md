@@ -4,6 +4,10 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/). Numéros de v
 
 ## Non publié
 
+### Modifié
+
+- Installation sur la VM : `NOM=prod` n'est plus à donner aux cibles, puisqu'il n'y a plus qu'une instance. La mise à jour vers cette version le demande encore, une dernière fois, au script de la 0.7.0.
+
 ## 0.7.0 - 2026-11-15
 
 Des exports plus FAIR : un format CSV, avec ses métadonnées et leur description CSVW, un README à la place du rapport, et un nom d'archive qui dit ce qu'elle contient ; les barres rangées, l'observatoire en haut, le compte en dessous. La version des essais des gestionnaires.

@@ -106,44 +106,44 @@ mail-start: ## Retient les courriels du développement, ancien et nouveau : http
 	$(NEW) --profile mail up -d mailpit
 
 # --- Sur la VM, en root, dans le dossier de l'instance (/var/www/bdoh-prod, un clone
-# du dépôt) : sudo make vm-… NOM=prod. L'ordre et ce qu'il faut regarder entre deux : dev/deploy/README.md.
+# du dépôt) : sudo make vm-…. L'ordre et ce qu'il faut regarder entre deux : dev/deploy/README.md.
 VM = config/deploy/vm.sh
 
 vm-deps: ## VM, une fois : paquets d'Ubuntu 26.04, réglages de PostgreSQL et d'Apache, services
 	$(VM) deps
 
-vm-env: ## VM : .env et rôle PostgreSQL d'une instance : sudo make vm-env NOM=prod ADRESSE=…
+vm-env: ## VM : .env et rôle PostgreSQL d'une instance : sudo make vm-env ADRESSE=…
 	NOM=$(NOM) ADRESSE=$(ADRESSE) $(VM) env
 
-vm-build: ## VM : bibliothèques PHP et JavaScript compilé : sudo make vm-build NOM=prod
+vm-build: ## VM : bibliothèques PHP et JavaScript compilé : sudo make vm-build
 	NOM=$(NOM) $(VM) build
 
-vm-db: ## VM : restaure le dump brut, migrations et contrôles : sudo make vm-db NOM=prod DUMP=…
+vm-db: ## VM : restaure le dump brut, migrations et contrôles : sudo make vm-db DUMP=…
 	NOM=$(NOM) DUMP=$(DUMP) $(VM) db
 
-vm-apache: ## VM : le site, derrière le mot de passe des essais : sudo make vm-apache NOM=prod
+vm-apache: ## VM : le site, derrière le mot de passe des essais : sudo make vm-apache
 	NOM=$(NOM) $(VM) apache
 
-vm-mail: ## VM : les courriels, l'adresse de renvoi puis le relais : sudo make vm-mail NOM=prod RELAIS=hôte:port RENVOI=adresse
+vm-mail: ## VM : les courriels, l'adresse de renvoi puis le relais : sudo make vm-mail RELAIS=hôte:port RENVOI=adresse
 	NOM=$(NOM) RELAIS=$(RELAIS) RENVOI=$(RENVOI) $(VM) mail
 
-vm-mail-test: ## VM : un courriel d'essai, qui doit arriver à MAILER_DIVERT_TO : sudo make vm-mail-test NOM=prod TO=…
+vm-mail-test: ## VM : un courriel d'essai, qui doit arriver à MAILER_DIVERT_TO : sudo make vm-mail-test TO=…
 	NOM=$(NOM) TO=$(TO) $(VM) mail-test
 
-vm-worker: ## VM : lance la file de tâches (MAILER_DIVERT_TO rempli) : sudo make vm-worker NOM=prod
+vm-worker: ## VM : lance la file de tâches (MAILER_DIVERT_TO rempli) : sudo make vm-worker
 	NOM=$(NOM) $(VM) worker
 
-vm-backup: ## VM : la sauvegarde quotidienne : sudo make vm-backup NOM=prod
+vm-backup: ## VM : la sauvegarde quotidienne : sudo make vm-backup
 	NOM=$(NOM) $(VM) backup
 
-vm-update: ## VM : installe une version, base sauvegardée avant : sudo make vm-update NOM=prod V=vX.Y.Z
+vm-update: ## VM : installe une version, base sauvegardée avant : sudo make vm-update V=vX.Y.Z
 	NOM=$(NOM) V=$(V) $(VM) update
 
-vm-merge-othu: ## VM : fond OTHU dans la production, base sauvegardée avant : sudo make vm-merge-othu NOM=prod DUMP=…
+vm-merge-othu: ## VM : fond OTHU dans la production, base sauvegardée avant : sudo make vm-merge-othu DUMP=…
 	NOM=$(NOM) DUMP=$(DUMP) $(VM) merge-othu
 
-vm-unmerge-othu: ## VM : retire OTHU de la production, tant que personne n'y a écrit : sudo make vm-unmerge-othu NOM=prod
+vm-unmerge-othu: ## VM : retire OTHU de la production, tant que personne n'y a écrit : sudo make vm-unmerge-othu
 	NOM=$(NOM) $(VM) unmerge-othu
 
-vm-status: ## VM : version installée, services, réponse du site : sudo make vm-status NOM=prod
+vm-status: ## VM : version installée, services, réponse du site : sudo make vm-status
 	NOM=$(NOM) $(VM) status
