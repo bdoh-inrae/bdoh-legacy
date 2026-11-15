@@ -13,7 +13,7 @@ Cinq changements :
 
 Il me faut une seule chose de votre part avant le {date}, le tableau joint. {comptes}
 
-Le site d'essai n'est accessible que sous le VPN d'INRAE, donc rien d'autre à faire pour l'instant.
+Le site d'essai n'est accessible pour l'instant que sous le VPN d'INRAE, donc rien d'autre à faire. S'il s'ouvre plus largement pendant les essais, je vous enverrai son adresse.
 
 {onglet}
 

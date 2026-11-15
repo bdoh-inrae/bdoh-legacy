@@ -60,7 +60,7 @@ class Exporter implements ExporterInterface
     /** @var string[] les fichiers de l'archive, dans l'ordre où ils y entrent, pour le README */
     private $names = [];
 
-    /** @var array<string, array> ce qu'a dit l'extraction de chaque chronique, par identifiant */
+    /** @var array<int, array> ce qu'a dit l'extraction de chaque chronique, par identifiant */
     private $reports = [];
 
     public function setFormat(string $format): self

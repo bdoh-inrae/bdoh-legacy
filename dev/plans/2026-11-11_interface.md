@@ -1,6 +1,6 @@
 # L'interface modernisée
 
-État : en cours, ouvert le 2026-11-11 ; publié en 0.4.0, puis 0.4.1 après le second regard de Lou. Restent les points de « Pour reprendre ». Né du point « Les deux accueils autour de la carte » de `ROADMAP.md`, élargi par Lou le même jour. Les raisons : `dev/decisions.md`, « L'apparence se modernise, le visage reste ».
+État : terminé le 2026-11-15, ouvert le 2026-11-11 ; publié en 0.4.0, 0.4.1 et 0.5.0, la barre rangée en 0.7.0. La copie de travail et la seconde instance sont retirées. Le dernier point de « Pour reprendre », remesurer le graphique de la plus longue chronique, passe à la mesure de charge sur la VM (`dev/plans/2026-10-26_deployment.md`, « Charge des pages de chronique »). Né du point « Les deux accueils autour de la carte » de `ROADMAP.md`, élargi par Lou le même jour. Les raisons : `dev/decisions.md`, « L'apparence se modernise, le visage reste ».
 
 ## Choix de Lou (2026-11-11)
 

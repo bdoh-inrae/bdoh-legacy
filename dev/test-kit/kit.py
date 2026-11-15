@@ -219,7 +219,7 @@ def main():
             values = dict(
                 observatoire=name, comptes=counts_sentence(name, opened, closed), date=args.deadline,
                 site=args.site, special=SPECIAL.get(slug, ''),
-                theia='Theia : vos fiches publiées ont des coordonnées décalées de 300 à 700 m, un bogue de l’ancien. C’est corrigé au prochain envoi.' if theia == 't' else '')
+                theia='Theia : vos fiches publiées ont des coordonnées décalées de 300 à 700 m, un bogue de l’ancien. C’est corrigé au prochain envoi, à la réouverture. Avant cet envoi, ressaisissez le mot de passe Theia/OZCAR de votre observatoire dans sa fiche (Administration > Observatoires) : BDOH le garde chiffré, et le nouveau ne peut pas relire celui de l’ancien.' if theia == 't' else '')
             (folder / 'message-inrae.txt').write_text(fill('inrae.txt', **values, onglet=f'{attachment}, à faire quand vous aurez le temps.' if items else ''))
             (folder / 'message-hors-inrae.txt').write_text(fill('outside.txt', **values, onglet=f'{attachment}, à faire après la réouverture, quand vous aurez le temps.' if items else ''))
             summary.append((slug, opened, closed, items))

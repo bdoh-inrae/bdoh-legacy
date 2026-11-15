@@ -4,16 +4,24 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/). Numéros de v
 
 ## Non publié
 
+## 0.7.0 - 2026-11-15
+
+Des exports plus FAIR : un format CSV, avec ses métadonnées et leur description CSVW, un README à la place du rapport, et un nom d'archive qui dit ce qu'elle contient ; les barres rangées, l'observatoire en haut, le compte en dessous. La version des essais des gestionnaires.
+
 ### Ajouté
 
 - Un format d'export CSV, à côté de BDOH et de Hydro2 QTVAR : un fichier par chronique, aux mêmes colonnes pour toutes (on les met bout à bout pour le format long), UTF-8, virgule, point décimal, dates ISO 8601 avec le fuseau, `NA` pour une valeur absente ; avec lui, les chroniques, leurs stations (position en WGS 84) et les codes de qualité en CSV, et leur description CSVW, la norme du W3C.
 
 ### Modifié
 
-- L'archive d'un export porte un `README.txt` à la place du `Report.txt` : ce que disait le rapport, plus la licence, comment citer, la liste des fichiers et la description de leurs colonnes.
+- L'archive d'un export porte un `README.txt` à la place du `Report.txt` : ce que disait le rapport, plus la licence, comment citer, la liste des fichiers et la description de leurs colonnes, et de quoi lire les fichiers en R et en Python, dates comprises.
 - L'archive d'un export ne s'appelle plus `export.zip` : son nom dit l'observatoire, la chronique (ou leur nombre), le rééchantillonnage, le format, la période et le jour de l'export.
 - La barre du haut porte ce qui tient à l'observatoire, dont « Recherche », à sa place de l'ancien ; celle du dessous, ce qui tient au compte : « Mes favoris » à gauche, puis l'administration et la gestion des données, puis le nom, qui ouvre le menu du compte. La barre d'un gestionnaire tient sur une ligne.
 - « Recherche avancée » s'appelle « Recherche ».
+
+### Corrigé
+
+- Installation sur la VM : la dernière étape de la fusion d'OTHU, la liste des chroniques de la production changées, ne dépend plus de la langue du système ; elle s'arrêtait sur une erreur de tri.
 
 ## 0.6.0 - 2026-11-13
 

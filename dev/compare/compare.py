@@ -1189,12 +1189,13 @@ REPORT_FILE = re.compile(r'# Printing (?:Report|README)\.txt from ')
 def with_report_facts(lines):
     """La sortie d'un export en console, où chaque fichier commence par « # Printing NOM from … » : le rapport ou le
     README réduit à report_facts, les autres fichiers tels quels."""
-    out, section = [], None
+    out, section, old = [], None, False
     for line in [*lines, '# Printing <fin> from ']:
         if line.startswith('# Printing '):
             if section is not None:
-                out += ['== rapport', *report_facts(section)]
+                out += ['== rapport', *report_facts(section, old)]
             section = [] if REPORT_FILE.match(line) else None
+            old = line.startswith('# Printing Report.txt ')
             out.append(line)
         elif section is not None:
             section.append(line)
@@ -1203,12 +1204,18 @@ def with_report_facts(lines):
     return out[:-1]
 
 
-def report_facts(lines):
+def report_facts(lines, old=False):
     """Ce que disent tous deux le rapport de l'ancien et le README du nouveau, en français ou en anglais, dans un même
     ordre : format, période, fuseau, rééchantillonnage, DOI de l'observatoire ; puis, pour chaque chronique, ses mesures
     présentes (sans date s'il n'y en a qu'une : l'ancien n'en donne pas), les valeurs exportées (que l'ancien ne dit
     que rééchantillonnées), son fichier, sa généalogie et son calcul (entrées, barèmes, limites), le texte aux blancs
-    près, ou son erreur. Un pas s'écrit « 1 day » dans l'ancien, « 1 jour » dans le nouveau : ramené à « 1 day »."""
+    près, ou son erreur. Un pas s'écrit « 1 day » dans l'ancien, « 1 jour » dans le nouveau : ramené à « 1 day ».
+    old : le rapport de l'ancien, dont deux bogues se corrigent ici, et ici seulement, pour qu'un README qui les
+    referait se voie (dev/differences.md, « Le README des exports ») : ses macros échappaient leur texte en HTML (une
+    apostrophe en &#039;), décodé ; et, sans mesure présente, il comptait les valeurs d'un fichier qu'il n'écrivait
+    pas (« 8929 mesures exportées » d'un mois vide à 5 minutes), ramenées à 0."""
+    if old:
+        lines = [html.unescape(line) for line in lines]
     def iso(date):
         m = re.fullmatch(r'(\d\d)[/-](\d\d)[/-](\d{4}) (\d\d:\d\d:\d\d)', date.strip())
         return f'{m[3]}-{m[2]}-{m[1]} {m[4]}' if m else date.strip()
@@ -1268,7 +1275,7 @@ def report_facts(lines):
         elif re.match(r'(?:Aucune mesure présente|No data points found)$', line):
             close(); current.append('présentes 0')
         elif m := (re.match(r'(\d+) (?:mesures exportées|data points extracted)$', line)
-                   or re.match(r'(?:Valeurs exportées|Exported values)\s*:\s*(\d+), ', line)):
+                   or re.match(r'(?:Valeurs exportées|Exported values)\s*:\s*(\d+)(?:, |$)', line)):
             close(); current.append(f'exportées {m[1]}')
         elif re.match(r'(?:Une mesure exportée|One data point extracted)$', line):
             close(); current.append('exportées 1')
@@ -1307,6 +1314,8 @@ def report_facts(lines):
         facts.append(f'rééchantillonnage {kind or "?"}, {steps[0] if steps else "?"}')
     facts += dois
     for chronique in chroniques:
+        if old and 'présentes 0' in chronique:
+            chronique = ['exportées 0' if fact.startswith('exportées ') else fact for fact in chronique]
         facts += sorted(filter(keep, chronique), key=lambda fact: order.index(fact.split(' ')[0]))
     return facts
 
@@ -1622,7 +1631,7 @@ def archive_lines(name, kind, body):
                 continue
             content = z.read(inner)
             if inner in ('Report.txt', 'README.txt'):
-                lines += ['== rapport', *report_facts(content.decode('utf-8', 'replace').splitlines())]
+                lines += ['== rapport', *report_facts(content.decode('utf-8', 'replace').splitlines(), old=inner == 'Report.txt')]
             elif inner.endswith('.txt'):
                 lines += [f'== {inner}', *map(export_line, content.decode('utf-8', 'replace').splitlines())]
             else:
@@ -3716,20 +3725,21 @@ def favorite_checks(side, base):
     else:
         none('fenêtre d’export : deux favoris d’options différentes, seules les options communes')
 
-    # Avec une discontinue : l'identique seul, au format BDOH seul, comme sur sa propre page
+    # Avec une discontinue : l'identique seul, aux formats BDOH et CSV (pas Qtvar, qui ne dit ni les périodes ni les
+    # limites), comme sur sa propre page
     if discontinuous:
         star(discontinuous, '1', token)
         fragment, modal = modal_for([visible[0], discontinuous])
         alone = form_of(client, page(discontinuous), '/mesure/export')
-        check('fenêtre d’export : avec une discontinue, l’identique au format BDOH',
+        check('fenêtre d’export : avec une discontinue, l’identique aux formats BDOH et CSV',
               fragment[0] == 200 and sorted(modal.choices('chroniques')) == sorted([visible[0][2], discontinuous[2]])
               and modal.choices('exportType') == ['identical'] == alone.choices('exportType')
-              and modal.choices('exportFormat') == ['Bdoh'] == alone.choices('exportFormat')
+              and modal.choices('exportFormat') == ['Bdoh', 'Csv'] == alone.choices('exportFormat')
               and modal.choices('meanCumulStep') == [],
               f"types {modal.choices('exportType')}, formats {modal.choices('exportFormat')}, "
               f"pas {modal.choices('meanCumulStep')} ; sa page : {alone.choices('exportType')}, {alone.choices('exportFormat')}")
     else:
-        none('fenêtre d’export : avec une discontinue, l’identique au format BDOH')
+        none('fenêtre d’export : avec une discontinue, l’identique aux formats BDOH et CSV')
 
     # L'export d'une sélection : la fenêtre envoie au même export que la page d'une chronique, une tâche pour les deux
     fragment, modal = modal_for(visible[:2])

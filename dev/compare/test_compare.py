@@ -381,6 +381,18 @@ class Register(unittest.TestCase):
                    'A /OBS/jobs/', 'T Jobs', 'A #', 'D a data-toggle=dropdown', 'T Camille Essai', 'A /OBS/user/edit',
                    'T Modifier votre compte', 'A /OBS/logout', 'T Déconnexion']
 
+    def test_each_page_of_a_log_is_rewritten(self):
+        # Les étapes de state mêlent plusieurs pages, chacune après sa ligne « statut »
+        page = lambda header: ['statut 200', 'type text/html', *header]
+        old = ['vider une période : 302 /OBS/S/C', *page(self.OLD_HEADER), 'relance : 302', *page(self.OLD_HEADER)]
+        new = ['vider une période : 302 /OBS/S/C', *page(self.NEW_HEADER), 'relance : 302', *page(self.NEW_HEADER)]
+        self.assertEqual(compare.expected.per_page(compare.expected.header)(old), new)
+        self.assertNotEqual(compare.expected.header(old), new)
+        rules = [r for r in compare.expected.RULES if r.mode == 'state']
+        self.assertEqual(self.verdict(rules, 'étapes', old, new), 'écarts admis')
+        lost = [*new[:-2]]
+        self.assertEqual(self.verdict(rules, 'étapes', old, lost), 'différents')
+
     def test_the_header_moves_its_links_and_loses_none(self):
         rules = [r for r in compare.expected.RULES if r.mode == 'pages']
         name = 'anonyme /OBS/station/S'
@@ -549,6 +561,35 @@ class ReportFacts(unittest.TestCase):
         ]:
             with self.subTest(fault):
                 self.assertNotEqual(compare.report_facts(new), old)
+
+    def test_the_old_report_escaped_its_texts(self):
+        # Les macros de l'ancien report.text.twig échappaient en HTML : l'apostrophe y devenait &#039;
+        old = [l.replace('Mesures à la minute', "Mesures d&#039;une sonde") for l in self.OLD]
+        new = [l.replace('Mesures à la minute', "Mesures d'une sonde") for l in self.NEW]
+        self.assertEqual(compare.report_facts(old, old=True), compare.report_facts(new))
+        # Un README qui échapperait se voit : on ne le décode jamais
+        escaped_new = [l.replace("d'une", 'd&#039;une') for l in new]
+        self.assertNotEqual(compare.report_facts(escaped_new), compare.report_facts(old, old=True))
+        # Le marqueur de la console dit lequel des deux on lit
+        console = lambda name, lines: [f'# Printing {name} from /tmp/x', '', *lines]
+        self.assertEqual(compare.with_report_facts(console('Report.txt', old))[1:],
+                         compare.with_report_facts(console('README.txt', new))[1:])
+
+    def test_nothing_exported(self):
+        old = ['Chronique « A / B » :', '    Aucune mesure présente', '    Export réalisé à pas de temps fixe',
+               "        Type d'échantillonnage : cumul", '        Pas de temps : 1 hour', '        Aucune mesure exportée']
+        new = ['Rééchantillonnage : cumul', 'Pas de temps : 1 heure', '## A / B ____', 'Nom : C', 'Mesures présentes : 0',
+               'Valeurs exportées : 0']
+        self.assertEqual(compare.report_facts(old), compare.report_facts(new))
+        self.assertIn('exportées 0', compare.report_facts(new))
+        self.assertNotEqual(compare.report_facts(old), compare.report_facts(new[:-1]))
+        # Sans mesure présente, l'ancien comptait les valeurs d'un fichier qu'il n'écrivait pas : ramené à 0 chez lui
+        counted = [l.replace('Aucune mesure exportée', '8929 mesures exportées') for l in old]
+        self.assertEqual(compare.report_facts(counted, old=True), compare.report_facts(new))
+        self.assertNotEqual(compare.report_facts(counted), compare.report_facts(new))
+        # Un README qui ferait la même erreur se voit
+        wrong = [*new[:-1], 'Valeurs exportées : 8929, dont 8929 lacunes']
+        self.assertNotEqual(compare.report_facts(counted, old=True), compare.report_facts(wrong))
 
     def test_english_and_steps(self):
         old = ['Download from <date> UTC in the format “\u00a0BDOH\u00a0”', 'Timezone: UTC-05:00 ',

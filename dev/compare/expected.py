@@ -235,6 +235,18 @@ def header(lines):
             *account_menu(lines[lang + 7:everything - 3]), *crumb, *rest]
 
 
+def per_page(rewrite):
+    """Une réécriture de page, appliquée à chaque page d'un journal qui en mêle plusieurs (les étapes de `state`), où
+    chacune commence par sa ligne « statut » (`page_lines`) : header() ne réécrit que le premier en-tête qu'il trouve."""
+    def apply(lines):
+        cuts = [i for i, line in enumerate(lines) if line.startswith('statut ')] + [len(lines)]
+        out = list(lines[:cuts[0]])
+        for begin, end in zip(cuts, cuts[1:]):
+            out += rewrite(lines[begin:end])
+        return out
+    return apply
+
+
 def account_menu(lines):
     """Le compte d'un connecté, dans l'ancien : son nom, lien vers sa fiche avec la bulle « Modifier votre compte »,
     la déconnexion, puis le tableau de bord et les menus Administration et Gestion des données, ou la demande d'accès.
@@ -407,10 +419,23 @@ RULES = [
     # L'en-tête et le début du fil d'Ariane, sur toute page du site, quel que soit le mode qui la compare : header()
     # les réécrit dans l'ancien, et la page doit alors être la même, sauf ce que d'autres règles admettent
     *(Rule(mode, r'.*', HEADER, rewrite=header) for mode in ('pages', 'admin', 'imports', 'accounts')),
-    *(Rule(mode, r'.*', SEARCH_NAME, rewrite=search_renamed) for mode in ('pages', 'admin', 'imports', 'accounts')),
+    # (les pages des autres modes ne nomment pas la recherche : « Règle sans écart » le 13 et le 15 novembre)
+    Rule('pages', r'.*', SEARCH_NAME, rewrite=search_renamed),
     Rule('pages', r'.*', TERMS, rewrite=doi_links),
     *(Rule(mode, r'(?!anonyme ).*', FAVORITES, lines=FAVORITE_MENU) for mode in ('pages', 'admin', 'accounts')),
     Rule('pages', r'(?!anonyme ).*', FAVORITES, lines=FAVORITE_STAR),
+    # Les mêmes, dans les étapes de state, qui montrent les pages d'une chronique après qu'on l'a vidée sur une période
+    Rule('state', 'étapes', HEADER, rewrite=per_page(header)),
+    Rule('state', 'étapes', SEARCH_NAME, rewrite=search_renamed),
+    Rule('state', 'étapes', FAVORITES, lines=(*FAVORITE_MENU, *FAVORITE_STAR)),
+    Rule('state', 'étapes', CSV_FORMAT, lines=CSV_OPTION),
+    Rule('state', 'étapes', GRAPH, lines=(
+        RX(rf'\+D div data-hint=.+ data-title=.+ data-url={OBS}/chronique/\d+/overview'), *FIVE_YEARS, *DATE_TIP,
+        *STATUS_LINE)),
+    # L'export en moyenne d'une chronique discontinue, que state demande par le formulaire : l'ancien s'arrête sur une
+    # erreur fatale (255), le nouveau sur le code 1 ; un export qui réussit (0) d'un côté seulement reste un écart
+    Rule('state', 'jms_jobs', 'Export en moyenne d’une chronique discontinue', masks=(
+        (r'("command": "bdoh:export:mean", "exitcode": )(?:1|255)\b', r'\1<1 ou 255>'),)),
 
     # --- pages -------------------------------------------------------------------------------------
     # La carte des stations, sur l'accueil du portail et sur celui d'un observatoire ; son contenu se vérifie à part
@@ -492,7 +517,8 @@ RULES = [
     Rule('pages', rf'{ROLE} /translations/messages\.js', CSV_FORMAT,
          lines=(translation(r'\+', 'export.Csv'), translation('[-+]', 'measure.export.help-content'))),
     # Son option dans la fenêtre d'export (d'une chronique, d'une station, d'un jeu de données, des favoris)
-    *(Rule(mode, r'.*', CSV_FORMAT, lines=CSV_OPTION) for mode in ('pages', 'accounts', 'admin')),
+    # (accounts et admin ne comparent pas de fenêtre d'export : « Règle sans écart » le 13 et le 15 novembre)
+    Rule('pages', r'.*', CSV_FORMAT, lines=CSV_OPTION),
     # Les textes de la ligne d'état du graphique
     Rule('pages', rf'{ROLE} /translations/messages\.js', GRAPH, lines=(
         translation('-', 'consult.help.chronique.double-clic-unzoom'),

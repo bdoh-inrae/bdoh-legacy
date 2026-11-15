@@ -205,7 +205,10 @@ class Readme implements ReporterInterface
                 default       => $number . $this->t(', du ', ', from ') . $this->local($report['first'] ?? null)
                     . $this->t(' au ', ' to ') . $this->local($report['last'] ?? null),
             });
-            if ($number > 0) {
+            if ($number === 0) {
+                // L'ancien rapport le disait aussi : « Aucune mesure exportée »
+                $this->field($this->t('Valeurs exportées', 'Exported values'), '0');
+            } else {
                 $gaps = (int) ($report['count']['gaps'] ?? 0);
                 $this->field($this->t('Valeurs exportées', 'Exported values'), ((int) ($report['count']['measures'] ?? 0) + $gaps)
                     . $this->t(', dont ', ', of which ') . $gaps . $this->t(' lacunes', ' gaps'));
@@ -339,10 +342,14 @@ class Readme implements ReporterInterface
         ));
         $this->lines[] = '  files <- setdiff(Sys.glob("*.csv"), Sys.glob("meta_*.csv"))';
         $this->lines[] = '  values <- do.call(rbind, lapply(files, read.csv))';
+        // Les dates portent leur décalage (« +01:00 », ISO 8601), que as.POSIXct de R ne lit pas (essai du 15 novembre)
+        $this->lines[] = '  values$time <- lubridate::ymd_hms(values$time)'
+            . $this->t('  # lit le décalage +01:00', '  # reads the +01:00 offset');
         $this->lines[] = $this->t('En Python :', 'In Python:');
         $this->lines[] = '  import glob, pandas';
         $this->lines[] = '  files = [f for f in glob.glob("*.csv") if not f.startswith("meta_")]';
         $this->lines[] = '  values = pandas.concat(pandas.read_csv(f) for f in files)';
+        $this->lines[] = '  values["time"] = pandas.to_datetime(values["time"])';
 
         foreach ($this->tables() as $file => $table) {
             $this->title($file === '{station}_{series}.csv' ? $this->t('{station}_{chronique}.csv', $file) : $file, 2);

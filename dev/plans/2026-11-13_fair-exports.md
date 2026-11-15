@@ -1,12 +1,12 @@
 # Des exports plus FAIR
 
-État : en cours, ouvert le 2026-11-13. Point « Des exports plus FAIR » de `ROADMAP.md`, avancé par Lou avant l'envoi des essais aux gestionnaires (lundi 16 novembre) : « on ne fait pas tester un truc qui va changer autant après ».
+État : terminé le 2026-11-15, publié avec la 0.7.0 ; ouvert le 2026-11-13. Point « Des exports plus FAIR » de `ROADMAP.md`, avancé par Lou avant l'envoi des essais aux gestionnaires (lundi 16 novembre) : « on ne fait pas tester un truc qui va changer autant après ».
 
 ## Choix de Lou (13 novembre)
 
 - Un format CSV à côté des formats BDOH et Qtvar, gardés tels quels pour les utilisateurs actuels : virgule entre les colonnes, point décimal.
 - Des CSV de métadonnées à côté des données, comme dans MEANDRE (`data.csv` et ses `meta_*.csv`).
-- Pas de Parquet dans ce dépôt (`ROADMAP.md`, la raison).
+- Pas de Parquet dans ce dépôt : la seule bibliothèque PHP qui l'écrit (`flow-php/parquet`) était en 0.47.0 (Packagist, 2 novembre 2026), avant sa version 1, avec quatre paquets et l'extension `bcmath` de plus, dans un dépôt voué à l'archive ; il a sa place dans le nouveau BDOH.
 - CSVW, la description des CSV que recommande le W3C : à essayer et à montrer.
 - Un README plutôt qu'un rapport : c'est l'usage (le guide de Cornell, que suivent Dryad et le modèle « RDG x RiverLy » de Lou), et l'export doit être propre dès maintenant.
 - Le nom de l'archive dit ce qu'elle contient ; le nommage de MEANDRE en donne l'idée.
@@ -26,6 +26,9 @@
 6. **La fenêtre d'export** propose « CSV », avec tous les rééchantillonnages.
 
 ## Pour reprendre (13 novembre, soir)
+
+Fait le 15 novembre (Suivi) : tous les modes touchés passent, `make browser-check` 74 étapes sur 74, version 0.7.0 publiée. Ce qui suit est l'état du 13 novembre.
+
 
 Tout est commité ; la 0.7.0 n'est pas publiée. Passe complète du 13 novembre au soir, au commit 885a241 (rapports dans `../bdoh_reference/compare/`) :
 - passent : `pages` (483 identiques, 1 096 écarts admis), `queue`, `imports`, `admin` ; les neuf cas « nouveau seul : export CSV » ;
@@ -52,10 +55,15 @@ Ensuite : version 0.7.0 (`CHANGELOG.md`, « Non publié »), tag, release ; sur 
 3. [x] Formateur CSV et fenêtre d'export.
 4. [x] Métadonnées CSV et CSVW.
 5. [x] README.
-6. [ ] Comparaison, essais, relecture ; version 0.7.0 ; la VM avant lundi.
+6. [x] Comparaison, essais, relecture ; version 0.7.0 (15 novembre) ; la VM avant lundi (Lou).
 
 ## Suivi
 
+- 2026-11-15, soir : **les écarts de la passe du 13 novembre, lus et traités** (`dev/audits/2026-11-15_before-test-kit.md`).
+  - `exports` : deux bogues de l'ancien rapport, que `report_facts` corrige du côté de l'ancien seulement (paramètre `old`), pour qu'un README qui les referait se voie : ses macros échappaient leur texte en HTML (`&#039;` dans 286 lignes de généalogie) ; et, sans mesure présente, il comptait les valeurs d'un fichier qu'il n'écrivait pas (« 8929 mesures exportées » d'un mois vide à 5 minutes). Le README dit désormais « Valeurs exportées : 0 » dans ce cas, comme l'ancien en rééchantillonné. Entrée « Le README des exports » de `dev/differences.md` ; tests de `ReportFacts`.
+  - `state` : n'avait pas été rejoué depuis le 11 novembre, avant l'interface. Ses étapes montrent deux pages de chronique : les règles de l'en-tête, de la recherche, des favoris, du CSV et du graphique y valent aussi, l'en-tête réécrit page par page (`expected.per_page`). Et l'export en moyenne d'une discontinue, que l'ancien finit sur une erreur fatale (255) depuis que la migration de la 0.6.0 ne lui fait plus chercher le PDF d'ORACLE, le nouveau sur le code 1 : admis pour cette commande seulement (`dev/differences.md`, « Export en moyenne d'une chronique discontinue »).
+  - `accounts` : la fenêtre d'export avec une discontinue propose BDOH et CSV, comme sa propre page.
+  - Le CSV lu par R 4.6 et pandas 2.1 sur deux exports (identique avec une discontinue, en français ; moyenne d'une cachée et d'une ouverte, en anglais) : types, `NA`, nombre de lignes égal à `n_values + n_gaps`, codes de qualité tous dans `meta_quality.csv`. R de base ne lit pas le décalage « +01:00 » (`as.POSIXct`, `%z`), que la norme impose : le README donne `lubridate::ymd_hms`, et `pandas.to_datetime`. Le CSVW validé par `csvwvalidate` (bibliothèque `csvw` 4.2) ; une valeur ou une date fautive y est refusée.
 - 2026-11-13, après-midi : **relecture** par un second Claude, en lecture seule, de la barre, des exports et de l'outil. Quinze constats, tous traités :
   1. l'unité de `meta_series.csv` était celle de la chronique, même pour un cumul, dont les valeurs sont dans l'unité des cumuls (m3/s pour des m3) : elle vient de l'extraction, comme l'en-tête du format BDOH. Éprouvé : la faute remise est vue par `csv_checks`, une fois le cas tiré parmi les chroniques dont l'unité de cumul diffère (la première chronique à cumul était une pluie, en mm des deux côtés, et la faute passait) ;
   2. la lecture commune du rapport et du README échouait sur tous les cas (ordre, « UTC+01:00 », « 1 day » et « 1 jour », ligne repliée) et aurait lu « 1 mois » en « 1 moi » : faits rangés dans un même ordre, pas ramenés à « 1 month », README fait de champs courts (« Mesures présentes », « Valeurs exportées », « Rééchantillonnage », « Pas de temps »), et une classe de tests (`ReportFacts`) sur des textes écrits comme les écrivent les deux codes, avec des fautes qui doivent se voir ;
