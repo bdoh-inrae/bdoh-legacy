@@ -129,7 +129,7 @@ class Readme implements ReporterInterface
                 'Licences.txt tells which is which; so does meta_series.csv, for a CSV export.'
             ), 2);
         }
-        $this->field($this->t("Conditions d'utilisation", 'Terms of use'), $this->url('bdoh_cgu_observatoires', $slug), 2);
+        $this->field($this->t("Conditions d'utilisation", 'Terms of use'), $this->url('bdoh_terms_of_use', []), 2);
 
         $this->lines[] = '';
         $this->lines[] = $this->t('Comment citer :', 'How to cite:');

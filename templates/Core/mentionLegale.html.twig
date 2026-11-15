@@ -1,6 +1,8 @@
 {#-- Les mentions légales, sous les logos, en petit (2026-11-12, Lou). Le paragraphe garde sa balise d'origine :
- # dev/compare/compare.py le reconnaît à elle (LEGAL_NOTICE). -#}
+ # dev/compare/compare.py le reconnaît à elle (LEGAL_NOTICE). Au-dessus, les conditions d'utilisation des données,
+ # communes à tout BDOH, sur toutes les pages (Lou, 2026-11-15) : la comparaison les voit (expected.footer). -#}
 <div class="legal-notice">
+    <p class="footer-links"><a href="{{ path('bdoh_terms_of_use') }}">{{ 'cgu'|trans }}</a></p>
     <p style='text-align: center;'>
         INRAE, Institut national de recherche pour l'agriculture, l'alimentation et l'environnement,
         établissement public à caractère scientifique et technologique

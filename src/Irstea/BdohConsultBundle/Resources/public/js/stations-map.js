@@ -5,8 +5,9 @@
 //
 // La page peut avoir des éléments qui servent de légende : une fiche d'observatoire (data-map-observatoire, le nom de
 // l'observatoire) ou un site (data-map-site, son identifiant). Les survoler ou les atteindre au clavier allume leurs
-// stations et grise les autres ; cliquer sur un bouton de site le garde allumé, pour les écrans tactiles. La carte
-// ne zoome pas et rien ne se déplace : seule la couleur des points change.
+// stations et grise les autres, sans rien déplacer : seule la couleur des points change. Un clic sur un bouton (une
+// pastille d'observatoire, un site) le garde allumé et cadre la carte sur ses stations ; un second clic l'éteint et
+// ramène la vue de départ (Lou, 2026-11-16).
 //
 // Le fond : le plan de l'IGN, adouci (homes.css, .stations-map-plan), et par-dessus le réseau hydrographique de l'IGN,
 // à partir du zoom 9, l'échelle d'un observatoire : plus large, il couvrirait la carte. Zoomer : les boutons, le double clic, le pincement d'un écran tactile ou d'un pavé tactile, ou
@@ -100,15 +101,25 @@
             return marker;
         });
         L.featureGroup(markers).addTo(map);
-        const framed = 'fitFrance' in element.dataset
-            ? markers.filter((marker) => FRANCE.contains(marker.getLatLng())) : markers;
-        if (framed.length) {
-            map.fitBounds(L.featureGroup(framed).getBounds(), {padding: [20, 20], maxZoom: 13});
-        } else {
-            map.setView([46.6, 2.5], 5);  // la France métropolitaine
-        }
+        // Cadrer la carte sur des stations. Sur le portail (data-fit-france), sur celles de France métropolitaine
+        // s'il y en a : une station placée ailleurs, souvent par erreur de saisie, élargirait la vue au monde.
+        const fitFrance = 'fitFrance' in element.dataset;
+        const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        const frame = (chosen, animate) => {
+            const inFrance = fitFrance ? chosen.filter((marker) => FRANCE.contains(marker.getLatLng())) : [];
+            const framed = inFrance.length ? inFrance : chosen;
+            const options = {padding: [20, 20], maxZoom: 13};
+            if (!framed.length) {
+                map.setView([46.6, 2.5], 5);  // la France métropolitaine
+            } else if (animate && !still) {
+                map.flyToBounds(L.featureGroup(framed).getBounds(), {...options, duration: 0.6});
+            } else {
+                map.fitBounds(L.featureGroup(framed).getBounds(), options);
+            }
+        };
+        frame(fitFrance ? markers.filter((marker) => FRANCE.contains(marker.getLatLng())) : markers, false);
 
-        // La légende : survol et clavier allument, un clic sur un bouton garde allumé
+        // La légende : survol et clavier allument, un clic sur un bouton garde allumé et cadre la carte
         const items = Array.from(document.querySelectorAll('[data-map-observatoire], [data-map-site]'));
         let pinned = null;
         const light = (item) => {
@@ -137,6 +148,7 @@
                     items.filter((other) => other.tagName === 'BUTTON')
                         .forEach((other) => other.setAttribute('aria-pressed', String(other === pinned)));
                     light(pinned);
+                    frame(pinned ? markers.filter((marker) => selects(pinned)(marker.station)) : markers, true);
                 });
             }
         });

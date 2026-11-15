@@ -1,17 +1,16 @@
-{% extends '@IrsteaBdohConsult/layout.html.twig' %}
+{% extends 'layout.html.twig' %}
 {#-
- # Les conditions d'utilisation des données, les mêmes pour tous les observatoires (dev/differences.md, « Conditions
- # d'utilisation communes ») : la Licence Ouverte 2.0 pour une chronique visible, les conditions générales de BDOH
- # (/conditions, le PDF qu'on accepte par une case) pour une chronique en accès restreint. Seuls changent le nom de
- # l'observatoire et ses DOI. Le texte est ici, en français et en anglais, plutôt qu'en traductions : c'est un texte
- # suivi, qu'on relit d'un bloc.
+ # Les conditions d'utilisation des données, une page pour tout BDOH, sans observatoire dans son adresse, liée depuis le
+ # pied de page de toutes les pages (Lou, 2026-11-15 ; dev/differences.md, « Conditions d'utilisation communes ») : la
+ # Licence Ouverte 2.0 pour une chronique visible, les conditions générales de BDOH (le PDF qu'on accepte par une case)
+ # pour une chronique en accès restreint. Le texte est ici, en français et en anglais, plutôt qu'en traductions : c'est
+ # un texte suivi, qu'on relit d'un bloc.
  #}
-{% from 'macros.html.twig' import pageTitle, doi_list %}
+{% from 'macros.html.twig' import pageTitle %}
 
-{% set obs = currentObservatoire() %}
 {% set licence_fr = asset('documents/Licence-Ouverte-2.0-fr.pdf') %}
 {% set licence_en = asset('documents/Open-Licence-2.0-en.pdf') %}
-{% set terms = path('bdoh_data_observatoire_conditions_export') %}
+{% set terms = asset('documents/ConditionsGeneralesUtilisation.pdf') %}
 
 {% block title %}
     {{ pageTitle('cgu'|trans) }}
@@ -43,10 +42,10 @@
         export). You may copy, adapt, distribute and use them, including for commercial purposes, worldwide, free of
         charge and without time limit.</p>
     <p>The only condition is to mention their source and the date of their last update, for instance:
-        <em>INRAE – BDOH, {{ obs.nom }} observatory, data downloaded on [date]</em>. BDOH does not date each update of a
-        time series: the download date, written at the top of the <code>Report.txt</code> file of each export, stands
-        for it. A link to the page of the time series or of the dataset
-        also fulfils this condition. The mention must not suggest that INRAE endorses your work.</p>
+        <em>INRAE – BDOH, [name] observatory, data downloaded on [date]</em>. BDOH does not date each update of a time
+        series: the download date stands for it. The <code>README.txt</code> file of each export gives this date, and
+        the mention ready to copy. A link to the page of the time series or of the dataset also
+        fulfils this condition. The mention must not suggest that INRAE endorses your work.</p>
     <p>The licence is compatible with free licences that require at least attribution, such as Creative Commons
         Attribution (CC-BY). The metadata of BDOH (observatories, sites, stations, datasets, time series) are under the
         same licence, except logos, photographs and contact details of people. Data are provided as produced or
@@ -55,14 +54,14 @@
     <h3>Citing the data</h3>
     <p>In a publication, please cite the DOI of the dataset when there is one; otherwise the producer of the time
         series (shown on its page), the observatory, the dataset or the time series, “BDOH, INRAE”, the address of the
-        page and the download date. This is a recommendation, which does not restrict the licence.</p>
-    {{ doi_list(obs.dois) }}
+        page and the download date. This is a recommendation, which does not restrict the licence. The DOIs of an
+        observatory are on its home page, that of a dataset on its page.</p>
 
     <h3>Restricted-access time series</h3>
     <p>Some time series come from partners whose agreements with INRAE ask that INRAE not be the first to redistribute
-        them. Their metadata stay visible, their values are provided on request: create an account, then
-        <a href="{{ path('bdoh_security_besoin_new') }}">request access</a> or
-        <a href="{{ path('bdoh_consult_contact') }}">write to the managers</a> of the observatory. The request and every
+        them. Their metadata stay visible, their values are provided on request: create an account, then, on the pages
+        of the observatory, request access (in the bar of your account) or write to its managers (the “?” at the top
+        of its pages). The request and every
         export of such a time series require accepting the <a href="{{ terms }}">BDOH general terms of use</a>, which
         provide in particular for non-commercial use and forbid passing the data on to third parties.</p>
 
@@ -85,10 +84,10 @@
         export). Vous pouvez les copier, les adapter, les diffuser et les exploiter, y compris à titre commercial, dans
         le monde entier, gratuitement et sans limite de durée.</p>
     <p>La seule condition est de mentionner leur source et la date de leur dernière mise à jour, par exemple :
-        <em>INRAE – BDOH, observatoire {{ obs.nom }}, données téléchargées le [date]</em>. BDOH ne date pas chaque mise
-        à jour d'une chronique : la date du téléchargement, en tête du fichier <code>Report.txt</code> de chaque export,
-        en tient lieu. Un lien vers la page de la chronique ou du
-        jeu de données remplit aussi cette condition. La mention ne doit pas laisser croire qu'INRAE cautionne votre
+        <em>INRAE – BDOH, observatoire [nom], données téléchargées le [date]</em>. BDOH ne date pas chaque mise à jour
+        d'une chronique : la date du téléchargement en tient lieu. Le fichier <code>README.txt</code> de chaque export
+        donne cette date, et la mention toute prête. Un lien vers la page de la chronique ou du jeu
+        de données remplit aussi cette condition. La mention ne doit pas laisser croire qu'INRAE cautionne votre
         travail.</p>
     <p>La licence est compatible avec les licences libres qui demandent au moins la mention de la source, comme
         Creative Commons Attribution (CC-BY). Les métadonnées de BDOH (observatoires, sites, stations, jeux de données,
@@ -99,14 +98,14 @@
     <h3>Citer les données</h3>
     <p>Dans une publication, citez de préférence le DOI du jeu de données quand il y en a un ; sinon le producteur de
         la chronique (indiqué sur sa page), l'observatoire, le jeu de données ou la chronique, « BDOH, INRAE », l'adresse
-        de la page et la date du téléchargement. C'est une recommandation, qui ne restreint pas la licence.</p>
-    {{ doi_list(obs.dois) }}
+        de la page et la date du téléchargement. C'est une recommandation, qui ne restreint pas la licence. Les DOI d'un
+        observatoire sont sur son accueil, celui d'un jeu de données sur sa page.</p>
 
     <h3>Les chroniques en accès restreint</h3>
     <p>Certaines chroniques viennent de partenaires dont les accords avec INRAE demandent qu'INRAE n'en soit pas le
         premier rediffuseur. Leurs métadonnées restent visibles, leurs valeurs sont fournies sur demande : créez un
-        compte, puis faites une <a href="{{ path('bdoh_security_besoin_new') }}">demande d'accès</a> ou
-        <a href="{{ path('bdoh_consult_contact') }}">écrivez aux gestionnaires</a> de l'observatoire. La demande et chaque
+        compte, puis, sur les pages de l'observatoire, faites une demande d'accès (dans la barre de votre compte) ou
+        écrivez à ses gestionnaires (le « ? » en haut de ses pages). La demande et chaque
         export d'une telle chronique demandent d'accepter les <a href="{{ terms }}">conditions générales d'utilisation
         de BDOH</a>, qui prévoient notamment un usage non commercial et l'interdiction de transmettre les données à un
         tiers.</p>

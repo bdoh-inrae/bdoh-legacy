@@ -949,6 +949,7 @@ def run_pages(args):
     if not args.only and not args.profile:
         map_checks(args.base, new, slug, report)
         cards_checks(args.base, new, report)
+        terms_checks(new, slug, report)
         overview_checks(args.base, new, report)
         thinned_checks(args.base, new, report)
     report.close()
@@ -1024,6 +1025,32 @@ def cards_checks(base, side, report):
         if problems:
             lines.append(f'{slug} : {", ".join(problems)}')
     report.add('nouveau seul : fiches des observatoires, /', ['conforme'], lines or ['conforme'])
+
+
+def terms_checks(side, slug, report):
+    """La page des conditions d'utilisation, commune à tout BDOH, sans observatoire dans son adresse (Lou, 2026-11-15),
+    que seul le nouveau a : en français et en anglais, la Licence Ouverte et ses textes, les conditions générales des
+    chroniques en accès restreint, le README des exports pour la mention ; et son lien au pied des pages, sur le portail
+    comme sur un observatoire. L'ancienne adresse de chaque observatoire y renvoie (expected.py, règle des conditions)."""
+    problems = []
+    wanted = {'fr': ["Licence Ouverte d'Etalab", 'documents/Licence-Ouverte-2.0-fr.pdf', 'documents/Open-Licence-2.0-en.pdf',
+                     'documents/ConditionsGeneralesUtilisation.pdf', 'README.txt'],
+              'en': ['Etalab Open Licence', 'documents/ConditionsGeneralesUtilisation.pdf', 'README.txt']}
+    for language, words in wanted.items():
+        guest = Client(side, None, slug)
+        if language == 'en':
+            guest.get('/select_lang/en')
+        status, headers, body = guest.get('/terms_of_use')
+        text = html.unescape(body.decode('utf-8', 'replace'))
+        if status != 200:
+            problems.append(f'{language} : statut {status}')
+            continue
+        problems += [f'{language} : « {w} » absent' for w in words if w not in text]
+        problems += [f'{language} : « Report.txt » cité' for _ in [1] if 'Report.txt' in text]
+    for path in ('/', f'/{slug}/', f'/{slug}/nos-donnees'):
+        if b'href="/terms_of_use"' not in Client(side, None, slug).get(path)[2]:
+            problems.append(f'{path} : pas de lien vers /terms_of_use')
+    report.add("nouveau seul : conditions d'utilisation, /terms_of_use", ['conforme'], problems or ['conforme'])
 
 
 def overview_checks(base, side, report):

@@ -25,6 +25,7 @@ use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\Form\Extension\Core\Type\FormType;
 use Symfony\Component\Form\Form;
 use Symfony\Component\HttpFoundation\ParameterBag;
+use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\ResponseHeaderBag;
@@ -202,16 +203,13 @@ class ObservatoireController extends Controller
     }
 
     /**
-     * Les conditions d'utilisation des données, une page commune à tous les observatoires, à l'adresse où l'ancien
-     * servait un PDF, que les fiches Theia citent (dev/differences.md, « Conditions d'utilisation communes »).
-     *
-     * @return array
+     * L'adresse où l'ancien servait les conditions d'un observatoire, en PDF, et que des fiches Theia citent : elle
+     * renvoie à la page des conditions de tout BDOH (dev/differences.md, « Conditions d'utilisation communes »).
      */
     #[Route('/terms_of_use', name: 'bdoh_cgu_observatoires', methods: ['GET'])]
-    #[Template('@IrsteaBdohConsult/Observatoire/terms.html.twig')]
-    public function cguAction()
+    public function cguAction(): RedirectResponse
     {
-        return [];
+        return $this->redirectToRoute('bdoh_terms_of_use', [], Response::HTTP_MOVED_PERMANENTLY);
     }
 
     /**

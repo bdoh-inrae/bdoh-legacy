@@ -137,7 +137,7 @@ final class Mapper implements MapperInterface
     {
         $dataConstraint = new DataConstraint();
         $dataConstraint->setAccessUseConstraint($dataSet->getDataConstraint());
-        $dataConstraint->setUrlDataPolicy($this->generateurUrl->generate('bdoh_cgu_observatoires', [], UrlGeneratorInterface::ABSOLUTE_URL));
+        $dataConstraint->setUrlDataPolicy($this->generateurUrl->generate('bdoh_terms_of_use', [], UrlGeneratorInterface::ABSOLUTE_URL));
 
         return $dataConstraint;
     }

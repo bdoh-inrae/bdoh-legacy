@@ -20,7 +20,8 @@
     <link rel="stylesheet" href="{{ asset('bundles/irsteabdohconsult/css/homes.css') }}"/>
 {% endblock %}
 
-{# Makes 'partenaires' list : chacun avec son logo, d'une même taille (Lou, 2026-11-15 : ils quittent le pied de page) #}
+{# Makes 'partenaires' list : chacun avec son logo, d'une même taille (Lou, 2026-11-15 : ils quittent le pied de page) ;
+ # leur site s'ouvre dans un nouvel onglet, comme celui de l'observatoire #}
 {% macro makePartenaires(partenaires) %}
     {#- La place d'un logo, seulement si l'un d'eux en a : les noms restent alignés #}
     {% set withLogos = partenaires|filter(p => p.pathLogo)|length > 0 %}
@@ -34,7 +35,7 @@
                 {% endif %}
 
                 {% if partenaire.lien and partenaire.lien != 'http://' %}
-                    <a href="{{ partenaire.lien }}">{{ partenaire.nom }}</a>
+                    <a href="{{ partenaire.lien }}" target="_blank" rel="noopener">{{ partenaire.nom }}</a>
                 {% else %}
                     {{ partenaire.nom }}
                 {% endif %}
@@ -125,8 +126,7 @@
         {% if partenaireTab %}
             <li><a href="#partners" data-toggle="pill">{{ 'partners'|trans }}</a></li>
         {% endif %}
-
-        <li><a href="{{ path('bdoh_cgu_observatoires') }}">{{ 'cgu'|trans }}</a></li>
+        {#- Les conditions d'utilisation, communes à tout BDOH, sont au pied de chaque page (Lou, 2026-11-15) #}
     </ul>
 
     <!-- Toolbox for 'observatoire' -->
@@ -146,9 +146,10 @@
         <img class="observatory-logo" src="{{ asset(observatoire.pathLogo) }}" alt="">
     {% endif %}
     <h1>{{ observatoire.nom }}
-        {#- Le site de l'observatoire, auquel menait son logo en haut de page (2026-11-12, Lou) #}
+        {#- Le site de l'observatoire, auquel menait son logo en haut de page (2026-11-12, Lou), dans un nouvel onglet
+         # (Lou, 2026-11-15) #}
         {% if observatoire.lien and observatoire.lien != 'http://' %}
-            <a class="external-link" href="{{ observatoire.lien }}" title="{{ 'observatoryWebsite'|trans }}"><i class="icon-external" aria-hidden="true"></i><span class="sr-only">{{ 'observatoryWebsite'|trans }}</span></a>
+            <a class="external-link" href="{{ observatoire.lien }}" target="_blank" rel="noopener" title="{{ 'observatoryWebsite'|trans }}"><i class="icon-external" aria-hidden="true"></i><span class="sr-only">{{ 'observatoryWebsite'|trans }}</span></a>
         {% endif %}
         <small>{{ 'welcome'|trans }}</small>
     </h1>
@@ -184,10 +185,17 @@
 
             {{ doi_list(observatoire.dois) }}
 
+            {#- Comment citer l'observatoire, comme le README de ses exports (Lou, 2026-11-15) #}
+            <div class="observatory-cite">
+                <strong>{{ 'cite.title'|trans }}</strong>
+                <p>{{ 'cite.observatory'|trans({'%name%': observatoire.nom, '%url%': url('bdoh_home')}) }}</p>
+                {% if observatoire.dois is not empty %}<p>{{ 'cite.preferDoi'|trans }}</p>{% endif %}
+            </div>
+
             {% if observatoire.lien and observatoire.lien != 'http://' %}
                 <div>
                     <strong>{{ 'toLearnMore'|trans }}{{ 'deux_points'|trans }}</strong>
-                    <a href="{{ observatoire.lien }}">{{ observatoire.lien }}</a>
+                    <a href="{{ observatoire.lien }}" target="_blank" rel="noopener">{{ observatoire.lien }}</a>
                 </div>
             {% endif %}
         </div>

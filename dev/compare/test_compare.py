@@ -370,7 +370,7 @@ class Register(unittest.TestCase):
                   'A /OBS/contact', 'T Aide', *LANG, *ACCOUNT, *SELECTOR, 'A /OBS/home', 'T Accueil', 'T Station',
                   'D div data-notices=[]']
     NEW_HEADER = ['T BDOH - Obs - Station', 'L stylesheet /css/themes/OBS.min.css', 'A /', 'T BDOH', *SELECTOR,
-                  'A /OBS/home', 'T Obs', 'A /OBS/nos-donnees', 'T Recherche', 'A /OBS/contact', 'T Aide', *NEW_LANG,
+                  'A /OBS/home', 'T Obs', 'A /OBS/nos-donnees', 'T Recherche', *NEW_LANG, 'A /OBS/contact', 'T Aide',
                   *ACCOUNT, 'A /', 'T BDOH', 'A /OBS/home', 'T Obs', 'T Station', 'D div data-notices=[]']
     # Le compte d'un gestionnaire, dans l'ancien puis dans le nouveau : le nom ouvre son menu, le tableau de bord passe
     # en tête du menu Administration (Lou, 2026-11-13)
@@ -414,22 +414,51 @@ class Register(unittest.TestCase):
             ("le fil sans l'observatoire", [*new[:-4], 'T Station', 'D div data-notices=[]']),
             ('la connexion perdue', [l for l in new if l not in self.ACCOUNT]),
             ("l'en-tête de l'ancien gardé", self.OLD_HEADER),
+            ("l'aide avant la langue", [*new[:new.index('A /select_lang/en')], 'A /OBS/contact', 'T Aide', *self.NEW_LANG,
+                                         *new[new.index('T Aide') + 1:]]),
         ]:
             with self.subTest(fault):
                 self.assertEqual(self.verdict(rules, name, self.OLD_HEADER, faulty), 'différents')
 
-    def test_the_footer_loses_the_partner_logos_only(self):
-        # Le bloc Marianne et INRAE reste ; les logos des partenaires, avec ou sans lien, partent (Lou, 2026-11-15)
+    def test_the_footer_loses_the_partner_logos_and_links_the_terms(self):
+        # Le bloc Marianne et INRAE reste ; les logos des partenaires, avec ou sans lien, partent ; le lien des
+        # conditions d'utilisation, communes à tout BDOH, suit le bloc, dans la langue de la page (Lou, 2026-11-15)
         rules = [r for r in compare.expected.RULES if r.mode == 'pages']
         tail = ['S /assets/manifest.js']
+        terms = ['A /terms_of_use', "T Conditions d'utilisation"]
         old = ['T page', *compare.expected.FOOTER_INRAE, 'A https://a.example/', 'G /uploads/A-logo.png A',
                'G /uploads/B-logo.png B', *tail]
-        new = ['T page', *compare.expected.FOOTER_INRAE, *tail]
+        new = ['T page', *compare.expected.FOOTER_INRAE, *terms, *tail]
         self.assertEqual(compare.expected.footer(old), new)
         self.assertEqual(self.verdict(rules, 'anonyme /OBS/station/S', old, new), 'écarts admis')
         self.assertEqual(self.verdict(rules, 'anonyme /OBS/station/S', old, new[:-1]), 'différents')
+        without_terms = [l for l in new if l not in terms]
+        self.assertEqual(self.verdict(rules, 'anonyme /OBS/station/S', old, without_terms), 'différents')
+        # Une page en anglais : le lien vers le français est dans son en-tête
+        english = ['A /select_lang/fr', 'T FR EN', *old]
+        self.assertEqual(compare.expected.footer(english),
+                         ['A /select_lang/fr', 'T FR EN', 'T page', *compare.expected.FOOTER_INRAE, 'A /terms_of_use',
+                          'T Terms of use', *tail])
         # Sans le bloc INRAE, rien ne se réécrit : l'écart se voit
         self.assertEqual(compare.expected.footer(old[2:]), old[2:])
+
+    def test_the_terms_of_an_observatory_lead_to_the_common_page(self):
+        rules = [r for r in compare.expected.RULES if r.mode == 'pages']
+        old = ['statut 200', 'type application/octet-stream']
+        self.assertEqual(self.verdict(rules, 'anonyme /OBS/terms_of_use', old,
+                                      ['statut 301', 'redirection /terms_of_use']), 'écarts admis')
+        for fault, faulty in [('ailleurs', ['statut 301', 'redirection /OBS/home']),
+                              ('la page de l’observatoire', ['statut 200', 'type text/html']),
+                              ('introuvable', ['statut 404', 'type text/html'])]:
+            with self.subTest(fault):
+                self.assertEqual(self.verdict(rules, 'anonyme /OBS/terms_of_use', old, faulty), 'différents')
+        # Les fiches de Theia citent la page commune
+        rules = [r for r in compare.expected.RULES if r.mode == 'theia']
+        old = ['{', '  "urlDataPolicy": "<site>/DRAIX/terms_of_use",', '}']
+        new = ['{', '  "urlDataPolicy": "<site>/terms_of_use",', '}']
+        self.assertEqual(self.verdict(rules, 'JSON DRAIX', old, new), 'écarts admis')
+        self.assertEqual(self.verdict(rules, 'JSON DRAIX', old, ['{', '  "urlDataPolicy": "<site>/ailleurs",', '}']),
+                         'différents')
 
     def test_the_language_reads_fr_en(self):
         en = ['A #', 'D a data-toggle=dropdown', 'G /images/i18n/gb.png', 'T English', 'A /select_lang/fr',
@@ -447,8 +476,9 @@ class Register(unittest.TestCase):
                if l not in self.ACCOUNT[1:]]
         self.assertEqual(compare.expected.header(old), new)
         favorites = ['A /favorites', 'T Mes favoris']
-        # Les favoris, dans la barre du compte seulement, plus dans son menu (Lou, 2026-11-15)
-        lang_end = new.index('T FR EN') + 1
+        # Les favoris, dans la barre du compte seulement, plus dans son menu (Lou, 2026-11-15) ; la barre du haut finit
+        # par l'aide
+        lang_end = new.index('T Aide') + 1
         with_favorites = [*new[:lang_end], *favorites, *new[lang_end:]]
         self.assertEqual(self.verdict(rules, name, old, with_favorites), 'écarts admis')
         for fault, faulty in [

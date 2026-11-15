@@ -278,10 +278,48 @@ def public_steps(s, station, chronique):
         assert page.locator('.stations-map path.leaflet-interactive[fill-opacity="0.9"]').count() == markers.count(), \
             'les stations restent allumées une fois la légende quittée'
 
+    def map_zoom(page, legend, belongs, closer=True):
+        """Un clic sur une pastille (la première qui a deux stations à des places différentes) la garde allumée et
+        cadre la carte sur ses stations, qui s'écartent ; un second clic la décoche, et la carte revient à sa vue de
+        départ (Lou, 2026-11-16). Un site peut couvrir tout son observatoire, que la carte montre déjà : closer=False
+        n'attend pas que ses stations s'écartent."""
+        stations = json.loads(page.locator('.stations-map').first.get_attribute('data-stations'))
+        centres = """(lit) => Array.from(document.querySelectorAll('.stations-map path.leaflet-interactive'
+            + (lit ? '[fill-opacity="1"]' : ''))).map((p) => { const r = p.getBoundingClientRect();
+            return [Math.round(r.x + r.width / 2), Math.round(r.y + r.height / 2)]; }).sort()"""
+        spread = lambda points: max(abs(a[0] - b[0]) + abs(a[1] - b[1]) for a in points for b in points)
+        items = page.locator(legend)
+        item = next((items.nth(i) for i in range(items.count())
+                     if len({(s['lat'], s['lon']) for s in stations if belongs(items.nth(i), s)}) > 1), None)
+        assert item is not None, f'{legend} : aucune pastille qui ait deux stations à des places différentes'
+        start = page.evaluate(centres, False)
+        item.hover()
+        page.wait_for_timeout(200)
+        before = spread(page.evaluate(centres, True))
+        item.click()
+        page.wait_for_timeout(1500)
+        assert item.get_attribute('aria-pressed') == 'true', 'la pastille cliquée ne reste pas cochée'
+        after = spread(page.evaluate(centres, True))
+        assert not closer or after > before * 1.5, f'{legend} : la carte ne cadre pas les stations cliquées ({before} px, puis {after})'
+        item.click()
+        page.wait_for_timeout(1500)
+        assert item.get_attribute('aria-pressed') == 'false', 'la pastille reste cochée au second clic'
+        back = page.evaluate(centres, False)
+        assert len(back) == len(start) and all(abs(a[0] - b[0]) <= 2 and abs(a[1] - b[1]) <= 2 for a, b in zip(back, start)), \
+            'la carte ne revient pas à sa vue de départ au second clic'
+
     def observatory_home(page):
+        # Le site de l'observatoire et ceux de ses partenaires s'ouvrent dans un nouvel onglet (Lou, 2026-11-15)
+        outward = page.locator('.observatory-head a.external-link, .partner-list a')
+        for i in range(outward.count()):
+            link = outward.nth(i)
+            assert link.get_attribute('target') == '_blank' and 'noopener' in (link.get_attribute('rel') or ''), \
+                f'{link.get_attribute("href")} ne s’ouvre pas dans un nouvel onglet'
         stations_map(page)
         map_legend(page, '.stations-map-site:not([disabled])',
                    lambda item, s: int(item.get_attribute('data-map-site')) in s['sites'])
+        map_zoom(page, '.stations-map-site:not([disabled])',
+                 lambda item, s: int(item.get_attribute('data-map-site')) in s['sites'], closer=False)
         toggle = page.locator('.read-more-toggle').first
         if toggle.count():
             text = page.locator('.read-more:not(.read-more-short)').first
@@ -293,6 +331,8 @@ def public_steps(s, station, chronique):
         stations_map(page)
         map_legend(page, '.observatory-card',
                    lambda item, s: s['observatoire'] == item.get_attribute('data-map-observatoire'))
+        map_zoom(page, 'button.stations-map-site[data-map-observatoire]:not([disabled])',
+                 lambda item, s: s['observatoire'] == item.get_attribute('data-map-observatoire'))
 
     s.step('carte des stations de l’observatoire', f'/{SLUG}/', observatory_home)
     s.step('carte des stations du portail', '/', portal_home)
@@ -309,9 +349,10 @@ def public_steps(s, station, chronique):
     s.step('visualiseur, ajout d’un panneau', f'/{SLUG}/viewer', complex_viewer)
 
     def language(page):
-        page.locator('.dropdown-toggle:has-text("Français")').first.click()
+        # « FR EN » dans la barre, la langue de la page en gras, l'autre en lien (Lou, 2026-11-15)
+        visible(page, '.lang-switch .lang-current:text-is("FR")')
         with page.expect_navigation(wait_until='networkidle'):
-            page.locator('a[href*="select_lang/en"]').first.click()
+            page.locator('.lang-switch a[href*="select_lang/en"]').click()
         visible(page, 'text=Specifications')
         page.goto(f'{SITE}/{SLUG}/station/{station}', wait_until='networkidle')
         visible(page, 'text=Specifications')

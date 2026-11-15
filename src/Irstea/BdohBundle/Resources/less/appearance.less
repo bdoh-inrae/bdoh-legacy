@@ -242,32 +242,15 @@ h1 a.external-link {
     > .lang-current { font-weight: bold; color: @navbar-default-link-color; }
     > :last-child { padding-right: 15px; }
 }
-// Les onglets d'un observatoire, Présentation et Partenaires, juste au-dessus de ce qu'ils montrent : un trait sous
-// celui qui est ouvert, au lieu d'une pastille (Lou, 2026-11-15)
+// Les onglets d'un observatoire, Présentation et Partenaires : sous son nom, au-dessus de la carte, alignés à gauche,
+// en pastilles comme avant (Lou, 2026-11-15) ; la pastille ouverte prend la couleur du thème (.nav-pills, plus haut)
 #consult-observatoire > .nav-pills {
     display: flex;
     flex-wrap: wrap;
     gap: 4px;
-    margin: 16px 15px 12px;
+    margin: 0 0 12px;
     padding: 0;
-    background: none;
-    border-bottom: 1px solid @lineColor;
     > li { float: none; margin: 0; }
-    > li > a {
-        padding: 6px 12px;
-        margin-bottom: -1px;
-        border-radius: 0;
-        border-bottom: 2px solid transparent;
-        color: @text-color;
-        background: none;
-    }
-    > li > a:hover, > li > a:focus { color: @inkColor; background: none; border-bottom-color: @lineColor; }
-    > li.active > a, > li.active > a:hover, > li.active > a:focus {
-        color: @inkColor;
-        background: none;
-        border-bottom-color: @inkColor;
-        font-weight: 600;
-    }
 }
 
 // Une ligne de liste qui mène à sa fiche, une chronique ou une station (bdoh/row-links.js) : toute la ligne se clique.

@@ -181,8 +181,8 @@ def header(lines):
     """L'en-tête d'une page de l'ancien, et le début de son fil d'Ariane, comme le nouveau doit les montrer
     (2026-11-12 et 2026-11-13, Lou) : « BDOH », qui mène au portail, à la place du logo de l'observatoire (dont le lien
     passe à côté du titre de son accueil) ; dans la barre du haut, ce qui tient à l'observatoire : son choix,
-    l'observatoire de la page, sa « Recherche » (l'ancien « Consultation des données », à sa place), l'aide et la
-    langue ; dans celle du dessous, le compte (`account_menu`) ; le fil commence par « BDOH » puis l'observatoire, au
+    l'observatoire de la page, sa « Recherche » (l'ancien « Consultation des données », à sa place), la langue puis
+    l'aide, au bout (Lou, 2026-11-15) ; dans celle du dessous, le compte (`account_menu`) ; le fil commence par « BDOH » puis l'observatoire, au
     lieu de « Accueil », et toute page en a un. Les mêmes liens, déplacés : rien ne s'ajoute ni ne se perd qu'ici,
     sinon l'ouverture du menu du compte."""
     def at(k, *wanted):
@@ -231,7 +231,7 @@ def header(lines):
             rest = [*rest[:title], *([f'A {site}'] if outward else []),
                     f'T {m.group(1)}{label} {m.group(2)}', *rest[title + 1:]]
     return [*lines[:start], 'A /', 'T BDOH', *lines[everything - 3:end], *(current or []),
-            *([data[0], DATA_LINK[data[1]]] if data else []), *found.get('contact', []), *lang_switch(lines[lang:lang + 7]),
+            *([data[0], DATA_LINK[data[1]]] if data else []), *lang_switch(lines[lang:lang + 7]), *found.get('contact', []),
             *account_menu(lines[lang + 7:everything - 3]), *crumb, *rest]
 
 
@@ -251,10 +251,17 @@ FOOTER_INRAE = ['A https://www.inrae.fr/', 'G /images/Logo_INRAE_REPUBLIQUE.png 
 UPLOADED = re.compile(r'G /uploads/\S+(?: .+)?')
 
 
+# Le lien des conditions d'utilisation, au pied de chaque page, selon la langue de la page (Lou, 2026-11-15)
+TERMS_LINK = {'fr': ['A /terms_of_use', "T Conditions d'utilisation"], 'en': ['A /terms_of_use', 'T Terms of use']}
+
+
 def footer(lines):
-    """Le pied de page de l'ancien comme le nouveau le montre (Lou, 2026-11-15) : le bloc Marianne et INRAE seul. Les
-    logos des partenaires de l'observatoire, qui le suivaient (une image de /uploads/, avec son lien s'il en a un),
-    passent à l'onglet « Partenaires » de son accueil, où HOMES les admet."""
+    """Le pied de page de l'ancien comme le nouveau le montre (Lou, 2026-11-15) : le bloc Marianne et INRAE, puis le
+    lien des conditions d'utilisation, communes à tout BDOH. Les logos des partenaires de l'observatoire, qui
+    suivaient le bloc (une image de /uploads/, avec son lien s'il en a un), passent à l'onglet « Partenaires » de son
+    accueil, où HOMES les admet. La langue de la page se lit au lien de l'autre langue, dans l'en-tête de l'ancien
+    comme une fois réécrit (`lang_switch`)."""
+    language = 'en' if 'A /select_lang/fr' in lines else 'fr'
     for k in range(len(lines) - 1):
         if lines[k:k + 2] == FOOTER_INRAE:
             end = k + 2
@@ -265,7 +272,7 @@ def footer(lines):
                     end += 2
                 else:
                     break
-            return [*lines[:k + 2], *lines[end:]]
+            return [*lines[:k + 2], *TERMS_LINK[language], *lines[end:]]
     return lines
 
 
@@ -505,7 +512,14 @@ RULES = [
         RX(r'[-+]D a data-slide=(?:prev|next)'),
         # le logo de l'observatoire à côté de son nom, et ceux des partenaires dans leur onglet, sans texte : le nom est
         # à côté (Lou, 2026-11-15)
-        RX(r'\+G /uploads/\S+')),
+        RX(r'\+G /uploads/\S+'),
+        # l'onglet des conditions d'utilisation, passées au pied de toutes les pages (Lou, 2026-11-15 ; expected.footer)
+        RX(rf'-A {OBS}/terms_of_use'), RX(r"-T (?:Conditions d'utilisation|Terms of use)"),
+        # comment citer l'observatoire, comme le README de ses exports (Lou, 2026-11-15)
+        RX(r'\+T (?:Comment citer|How to cite)'),
+        RX(r'\+T Source ?: INRAE, BDOH, (?:observatoire|observatory) .+, (?:données téléchargées le|data downloaded on)'
+           rf' \[date\], <site>{OBS}/home\.'),
+        RX(r'\+T (?:Si les données ont un DOI, ci-dessus, citez-le de préférence|If the data have a DOI, above, cite it preferably)\.')),
         must=('+S /bundles/irsteabdohconsult/js/read-more.js',)),
     # La bande de toute la chronique, sous son graphique : un élément de plus sur la page d'une chronique, que le
     # JavaScript remplit (« nouveau seul : bande de toute la chronique » vérifie sa route)
@@ -528,9 +542,15 @@ RULES = [
     Rule('pages', rf'{ROLE} {OBS}/login', LINK, lines=LOGIN_PAGE),
     Rule('pages', rf'{ROLE} {OBS}/user/new', OPEN, lines=NEW_ACCOUNT),
     Rule('pages', rf'{ROLE} {OBS}/user/new', PRIVACY, lines=PRIVACY_FORM, must=PRIVACY_FORM),
-    # Une page commune à tous les observatoires, et non plus un PDF ; compare.py n'en compare que le statut et le type
-    Rule('pages', rf'{ROLE} {OBS}/terms_of_use', TERMS, lines=('-type application/octet-stream', '+type text/html'),
-         must=('+type text/html',)),
+    # L'adresse des conditions d'un observatoire, où l'ancien servait un PDF, renvoie à la page commune à tout BDOH
+    # (Lou, 2026-11-15), que « nouveau seul : conditions d'utilisation » lit ; compare.py n'en compare que les deux
+    # premières lignes, le statut et le type ou la redirection
+    Rule('pages', rf'{ROLE} {OBS}/terms_of_use', TERMS,
+         lines=('-statut 200', '-type application/octet-stream', '+statut 301', '+redirection /terms_of_use'),
+         must=('+redirection /terms_of_use',)),
+    # Les fiches envoyées à Theia citent cette page, et non plus l'adresse de l'observatoire (Mapper::mapDataConstraint)
+    Rule('theia', r'.*', TERMS, lines=(RX(r'-\s*"urlDataPolicy": "<site>\\?/[A-Z0-9_-]+\\?/terms_of_use",?'),
+                                       RX(r'\+\s*"urlDataPolicy": "<site>\\?/terms_of_use",?'))),
     Rule('pages', rf'{ROLE} {OBS}/dataset/[^/ ]+', TERMS, lines=("-T Data Constraint :", "+T Conditions d'accès et d'utilisation :")),
     Rule('pages', rf'{ROLE} /translations/messages\.js', TERMS, lines=(translation('[-+]', 'dataConstraint'),)),
     Rule('pages', rf'{ROLE} /translations/messages\.js', PRIVACY, lines=(
@@ -554,6 +574,9 @@ RULES = [
     Rule('pages', rf'{ROLE} /translations/messages\.js', HEADER, lines=(
         translation('-', 'dataAccess'), translation('[-+]', 'home.title'), translation(r'\+', 'observatoryWebsite'))),
     Rule('pages', rf'{ROLE} /translations/messages\.js', SEARCH_NAME, lines=(translation('[-+]', 'advancedSearch'),)),
+    # Les flèches des photos d'un observatoire, et le libellé des pastilles du portail (Lou, 2026-11-15)
+    Rule('pages', rf'{ROLE} /translations/messages\.js', HOMES,
+         lines=(translation(r'\+', 'photo.previous | photo.next | map.observatories | cite.title | cite.observatory | cite.preferDoi'),)),
     # Le format CSV : son nom, et l'aide de la fenêtre d'export qui le décrit
     Rule('pages', rf'{ROLE} /translations/messages\.js', CSV_FORMAT,
          lines=(translation(r'\+', 'export.Csv'), translation('[-+]', 'measure.export.help-content'))),

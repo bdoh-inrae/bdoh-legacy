@@ -43,12 +43,11 @@
 .observatory-card-text { flex: 1; color: #555; }
 .observatory-card-count { color: #777; font-size: 11px; }
 
-/* Un observatoire (Lou, 2026-11-15) : le logo à gauche du nom, puis la carte, puis les onglets juste au-dessus de ce
-   qu'ils montrent, la présentation coulant autour des photos, puis les listes. L'ordre de la page ne change pas : seule
-   la grille place les blocs. */
+/* Un observatoire (Lou, 2026-11-15) : le logo à gauche du nom, les onglets dessous, puis la carte, la présentation
+   coulant autour des photos, puis les listes. L'ordre de la page ne change pas : seule la grille place les blocs. */
 #consult-observatoire {
     display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 10px;
-    grid-template-areas: "head tools" "map map" "tabs tabs" "content content" "lists lists";
+    grid-template-areas: "head tools" "tabs tabs" "map map" "content content" "lists lists";
 }
 #consult-observatoire > .observatory-head { grid-area: head; }
 #consult-observatoire > .toolbox-btns { grid-area: tools; align-self: center; }
@@ -78,6 +77,10 @@
 .observatory-photos:hover .carousel-control, .observatory-photos .carousel-control:focus { opacity: 1 !important; }
 @media (hover: none) { #photos.observatory-photos .carousel-control { opacity: 1; } }
 .observatory-photos .carousel-control i { width: 22px; height: 22px; }
+
+/* Comment citer l'observatoire : un encart discret dans la présentation (Lou, 2026-11-15) */
+.observatory-cite { margin: 14px 0; padding: 8px 12px; border-left: 3px solid #c9ced3; background: #f5f6f7; font-size: 13px; }
+.observatory-cite p { margin: 4px 0 0; }
 
 /* Les partenaires, chacun avec son logo, d'une même taille */
 .partner-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 8px 24px; }

@@ -48,8 +48,8 @@ SPECIAL = {
     'ORACLE': (
         "Vos conditions d'utilisation : le lien « Conditions d'utilisation » de votre accueil servait un PDF propre à "
         "ORACLE, en fait une copie des conditions de BDOH de 2014 (compte obligatoire, usage non commercial). Elles ne "
-        "peuvent plus valoir pour des données ouvertes, et vos DOI déclarent déjà la Licence Ouverte : le lien mène "
-        "désormais à la page commune à tous les observatoires. Si ORACLE a des conditions vraiment à lui, dites-le-moi."),
+        "peuvent plus valoir pour des données ouvertes, et vos DOI déclarent déjà la Licence Ouverte : elles laissent "
+        "la place aux conditions communes à tout BDOH, au lien « Conditions d'utilisation » en bas de chaque page. Si ORACLE a des conditions vraiment à lui, dites-le-moi."),
     'ARC-ISERE': (
         "Certaines de vos chroniques ouvertes viennent d'EDF, une entreprise : ouvertes, elles passent sous Licence "
         "Ouverte. EDF l'accepte-t-il ? Sinon, on les cache, comme celles qui le sont déjà."),

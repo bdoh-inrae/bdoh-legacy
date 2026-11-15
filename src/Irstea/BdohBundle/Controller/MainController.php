@@ -30,4 +30,15 @@ class MainController extends Controller
 
         return new HttpFileResponse($userManualPath, 'application/octet-stream');
     }
+
+    /**
+     * Les conditions d'utilisation des données, une page pour tout BDOH, sans observatoire dans son adresse (Lou,
+     * 2026-11-15) ; l'ancienne adresse de chaque observatoire, que des fiches Theia citent, y renvoie
+     * (ObservatoireController::cguAction).
+     */
+    #[Route('/terms_of_use', name: 'bdoh_terms_of_use', methods: ['GET'])]
+    public function termsAction()
+    {
+        return $this->render('@IrsteaBdoh/Core/terms.html.twig');
+    }
 }
