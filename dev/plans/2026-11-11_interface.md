@@ -84,6 +84,7 @@ Précisions de Lou, le même soir, après les premières captures :
 5. Liens vers le site d'un observatoire et des partenaires : `target="_blank" rel="noopener"`.
 6. Citation d'un observatoire (encart dans la présentation, texte du README des exports) ; citation DataCite d'un jeu de données (encart en haut à droite, demandée par le navigateur à `api.datacite.org/dois/<doi>`, `Accept: text/x-bibliography; style=apa; locale=fr-FR`, réponse réduite à du texte et de l'italique ; repli sur la citation de l'observatoire).
 7. Retirer de `public/uploads/` les images de la production copiées pour les captures (liste dans le scratchpad, `uploads-added.txt` : les fichiers absents de l'état d'origine, qui n'avait que `CEREGE-logo.gif`) avant toute passe d'`admin`.
+7 bis. Fenêtre d'export : toute la période disponible par défaut, de la première à la dernière mesure, au lieu de devoir cliquer sur les boutons de début et de fin (Lou, 15 novembre) ; partout où elle s'ouvre (chronique, station, jeu de données, favoris). Les valeurs par défaut du formulaire se comparent dans `pages` : un écart à admettre.
 8. `vm.sh` : vider `var/cache/prod` avant les commandes de la console de `build()` (avertissements « Too few arguments » de la mise à jour vers la 0.7.0, `dev/plans/2026-10-26_deployment.md`, Suivi du 15 novembre), essayé dans un conteneur comme `update-installed`.
 9. Rejouer `pages`, `admin`, `accounts`, `state` ; `make browser-check` ; 0.7.1 ; Lou l'installe sur la VM (`NOM=prod` une dernière fois).
 
