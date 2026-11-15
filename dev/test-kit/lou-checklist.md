@@ -20,12 +20,12 @@ La base de la VM deviendra la production : un essai qui écrit se fait sur une c
 - [ ] La page « Conditions d'utilisation » d'un observatoire, la même pour tous ; celle d'ORACLE ne télécharge plus son ancien PDF (0.6.0, `dev/audits/2026-11-13_terms-of-use.md`).
 - [ ] Les favoris (0.5.0, `dev/differences.md`, « Favoris et étiquettes ») : l'étoile sur la page d'une chronique et dans la liste d'une station, « Mes favoris » depuis le portail et depuis un observatoire, une étiquette qui coche son groupe, des favoris de deux observatoires. La page se comprend-elle sans explication ?
 - [ ] Les barres (0.7.0) : en haut l'observatoire et « Recherche », en bas « Mes favoris » puis le compte ; avec un compte d'administration, la barre du dessous tient sur une ligne, et le nom ouvre le menu du compte.
-- [ ] Un export CSV (0.7.0) : le nom de l'archive, le README (licence, comment citer, fichiers, colonnes), un CSV ouvert dans R ou Python, et dans un tableur par son import ; puis un export au format BDOH, dont le `.txt` n'a pas changé et dont le README remplace `Report.txt`.
+- [x] Un export CSV (0.7.0) : le nom de l'archive, le README (licence, comment citer, fichiers, colonnes), un CSV ouvert dans R ou Python, et dans un tableur par son import ; puis un export au format BDOH, dont le `.txt` n'a pas changé et dont le README remplace `Report.txt`. Essayé par Lou sur la VM le 15 novembre : « parfait ».
 
 ## Les vrais courriels
 
-- [ ] S'inscrire, puis se connecter par le lien reçu dans la messagerie INRAE. Ces messageries ouvrent les liens pour les analyser ; le lien ne sert qu'une fois, mais il ne se consomme que par le bouton de la page qu'il ouvre (`dev/decisions.md`, « Connexion par lien ») : il doit encore marcher quand on clique.
-- [ ] La même chose depuis une adresse hors INRAE.
+- [x] Se connecter par le lien reçu dans la messagerie INRAE. Ces messageries ouvrent les liens pour les analyser ; le lien ne sert qu'une fois, mais il ne se consomme que par le bouton de la page qu'il ouvre (`dev/decisions.md`, « Connexion par lien ») : il doit encore marcher quand on clique. Fait par Lou sur la VM (10 novembre, puis avec la 0.7.0) : ça marche.
+- [ ] La même chose depuis une adresse hors INRAE, **une fois le site ouvert sans VPN** (`ROADMAP.md`, « Le site d'essai sans VPN ») : d'ici là, la messagerie d'un partenaire ne peut pas atteindre le site pour analyser le lien, et le partenaire non plus ; rien à éprouver.
 - [ ] Une demande d'accès à une chronique cachée : le courriel aux gestionnaires, puis le droit donné, puis l'export.
 - [ ] Un export lourd, avec un compte : le lien arrive par courriel.
 - [ ] L'export de plusieurs favoris d'un coup, depuis « Mes favoris » : le lien arrive par courriel, l'archive a un fichier par chronique.
@@ -33,7 +33,7 @@ La base de la VM deviendra la production : un essai qui écrit se fait sur une c
 
 ## OTHU, après la fusion
 
-- [ ] `make vm-merge-othu` (`dev/deploy/README.md`, section 2 bis) : à la fin, aucune chronique de la production dans l'empreinte changée.
+- [x] `make vm-merge-othu` (`dev/deploy/README.md`, section 2 bis) : à la fin, aucune chronique de la production dans l'empreinte changée. Fait le 13 novembre (`dev/plans/2026-11-13_othu-merge.md`, Suivi).
 - [ ] L'accueil d'OTHU, ses stations sur la carte, une chronique et son graphique, un export ; ses libellés rapprochés (« m3/s », « Puissance de rayonnement solaire »).
 - [ ] Un ancien administrateur d'OTHU : gestionnaire d'OTHU, et de lui seul.
 
