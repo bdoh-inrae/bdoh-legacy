@@ -34,6 +34,8 @@ Tout est commité ; la 0.7.0 n'est pas publiée. Passe complète du 13 novembre 
 - `accounts` : « favoris, fenêtre d'export : avec une discontinue, l'identique au format BDOH » attend le seul format BDOH, alors que le CSV y est désormais proposé : mettre la vérification à jour ;
 - `make browser-check` n'a pas tourné.
 
+Ces écarts sont lus le 15 novembre (`dev/audits/2026-11-15_before-test-kit.md`, « Où on en est ») : surtout les apostrophes de la généalogie, que l'ancien rapport écrit en `&#039;`.
+
 Ensuite : version 0.7.0 (`CHANGELOG.md`, « Non publié »), tag, release ; sur la VM, `sudo make -C /var/www/bdoh-prod vm-update NOM=prod V=v0.7.0`, la liste de Lou (`dev/test-kit/lou-checklist.md`), et l'envoi des essais lundi 16 novembre. La fusion d'OTHU est faite (`dev/plans/2026-11-13_othu-merge.md`).
 
 ## Vérification

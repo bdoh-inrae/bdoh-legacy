@@ -1,6 +1,6 @@
 # La fusion d'OTHU dans BDOH
 
-État : prêt pour la VM le 2026-11-13 (étape 6, Lou), ouvert le même jour. Point « Fusion d'OTHU dans BDOH » de `ROADMAP.md` ; la décision et ses raisons dans `dev/decisions.md`, « OTHU, un observatoire de BDOH ».
+État : terminé le 2026-11-13, fusion faite sur la VM (Suivi) ; ouvert le même jour. Point « Fusion d'OTHU dans BDOH » de `ROADMAP.md` ; la décision et ses raisons dans `dev/decisions.md`, « OTHU, un observatoire de BDOH ».
 
 ## Ce que fait la fusion
 
