@@ -1,6 +1,6 @@
 # L'interface modernisée
 
-État : terminé le 2026-11-15, ouvert le 2026-11-11 ; publié en 0.4.0, 0.4.1 et 0.5.0, la barre rangée en 0.7.0. La copie de travail et la seconde instance sont retirées. Le dernier point de « Pour reprendre », remesurer le graphique de la plus longue chronique, passe à la mesure de charge sur la VM (`dev/plans/2026-10-26_deployment.md`, « Charge des pages de chronique »). Né du point « Les deux accueils autour de la carte » de `ROADMAP.md`, élargi par Lou le même jour. Les raisons : `dev/decisions.md`, « L'apparence se modernise, le visage reste ».
+État : rouvert le 2026-11-15 au soir pour les retours de Lou sur l'accueil d'un observatoire (« Retours du 15 novembre », plus bas) ; terminé une première fois le 2026-11-15, ouvert le 2026-11-11 ; publié en 0.4.0, 0.4.1 et 0.5.0, la barre rangée en 0.7.0. La copie de travail et la seconde instance sont retirées. Le dernier point de « Pour reprendre », remesurer le graphique de la plus longue chronique, passe à la mesure de charge sur la VM (`dev/plans/2026-10-26_deployment.md`, « Charge des pages de chronique »). Né du point « Les deux accueils autour de la carte » de `ROADMAP.md`, élargi par Lou le même jour. Les raisons : `dev/decisions.md`, « L'apparence se modernise, le visage reste ».
 
 ## Choix de Lou (2026-11-11)
 
@@ -60,6 +60,31 @@ Retours de Lou du 11 novembre au soir, sur la 0.4.0 :
 1. **Le site de la VM sans son apparence** depuis la mise à jour à la 0.5.0 (Lou, 13 novembre) : rétablie par la 0.6.0, vue par Lou le 13 novembre (`dev/plans/2026-10-26_deployment.md`, Suivi).
 2. Remesurer au calme le graphique de toute la chronique la plus longue (Yzeron, 2,4 millions de mesures) : 6,3 s mesurés pendant une copie de base de 15 Go, 10 s avant.
 3. **La barre du compte déborde** (Lou, 13 novembre, sur la VM, avec un compte). Mesuré sur le poste (base réduite, captures de 800 à 1920 px) : les deux barres font 877 px de large dès 1200 px de fenêtre, à côté de « BDOH ». Pour un gestionnaire ou un administrateur, la barre du dessous (recherche avancée ; nom, Mes favoris, Déconnexion, Tableau de bord, Administration, Gestion des données) tient sur deux lignes à toute largeur, trois sous 1200 px ; pour un simple compte, elle tient tout juste, et passerait à la ligne avec un nom plus long. Choix de Lou (13 novembre) : la barre du haut dit l'observatoire, celle du dessous le compte. En haut : Observatoires, l'observatoire, puis « Recherche » (l'ancienne « Recherche avancée », renommée partout : lien, titre, fil d'Ariane ; même adresse), l'aide et la langue à droite. En bas : Mes favoris à gauche, bien visibles ; à droite, Administration et Gestion des données (ou la demande d'accès), puis le nom, qui ouvre un menu : modifier son compte, se déconnecter. Le tableau de bord devient la première ligne du menu Administration.
+
+## Retours du 15 novembre
+
+Lou, sur l'accueil d'un observatoire, avant l'envoi des essais :
+1. **Le carrousel des photos** : plus moderne, sobre, épuré, dans le style actuel ; un cadre de taille fixe, pour que le texte d'à côté ne bouge plus d'une photo à l'autre. Ou dans un onglet à part, à côté de « Présentation » et « Partenaires ».
+2. **Les logos du pied de page** : ceux des partenaires (des logos INRAE différents du bloc officiel, d'autres peu soignés) quittent le pied de page ; le bloc officiel Marianne et INRAE reste.
+3. **Le logo de l'observatoire** à côté de son nom, au-dessus de la carte, le titre et les onglets sur des lignes distinctes ; ou au début de la présentation.
+4. **« Mes favoris »** dans la barre seulement, plus dans le menu du compte.
+5. **La langue en « FR EN »**, et l'aide en icône « ? ».
+6. **Sur le portail, des pastilles sous la carte**, une par observatoire, comme celles des sites sur l'accueil d'un observatoire : au survol ou au clic, la carte allume ses stations, sans descendre jusqu'aux fiches.
+
+Précisions de Lou, le même soir, après les premières captures :
+- le logo reste petit et discret, à gauche du titre ; les onglets « Présentation » et « Partenaires » sous le titre et au-dessus de la carte, alignés à gauche, dans leur style d'avant (pastilles) ; pas de mise en page à la Dataverse ;
+- les conditions d'utilisation sont celles de tout BDOH : une seule page, sans observatoire dans l'adresse, liée depuis le pied de page de toutes les pages ; les anciennes adresses par observatoire y renvoient. La page d'un observatoire ne changeait que son nom dans l'exemple de mention et la liste de ses DOI (`terms.html.twig`) ;
+- les liens vers le site d'un observatoire et ceux des partenaires ouvrent un nouvel onglet.
+
+**Reste à faire (15 novembre, nuit), dans l'ordre, une fois les passes finies** ; déjà fait sur le poste, non commité : barres en flex (`base.less`), « FR EN », « ? », pied de page sans logos de partenaires, logo et partenaires de l'accueil, cadre des photos, pastilles du portail, « Mes favoris » hors du menu du compte ; `admin` passe, `pages` n'échoue que sur `messages.js` :
+1. Règle de `pages` pour les trois clés ajoutées à `messages.js` (`photo.previous`, `photo.next`, `map.observatories`).
+2. En-tête d'un observatoire : logo petit à gauche du titre ; onglets sous le titre, au-dessus de la carte, en pastilles comme avant (retirer le soulignement d'`appearance.less`).
+3. Barre : « FR EN » puis « ? » au bout ; `expected.header` et les tests suivent l'ordre.
+4. Conditions d'utilisation : une page sans observatoire dans l'adresse, lien dans le pied de page de toutes les pages, anciennes adresses redirigées, onglet retiré de l'accueil, exemple de mention général, `Report.txt` devenu `README.txt` ; la phrase du kit (« au lien de votre accueil ») à corriger.
+5. Liens vers le site d'un observatoire et des partenaires : `target="_blank" rel="noopener"`.
+6. Citation d'un observatoire (encart dans la présentation, texte du README des exports) ; citation DataCite d'un jeu de données (encart en haut à droite, demandée par le navigateur à `api.datacite.org/dois/<doi>`, `Accept: text/x-bibliography; style=apa; locale=fr-FR`, réponse réduite à du texte et de l'italique ; repli sur la citation de l'observatoire).
+7. Retirer de `public/uploads/` les images de la production copiées pour les captures (liste dans le scratchpad, `uploads-added.txt` : les fichiers absents de l'état d'origine, qui n'avait que `CEREGE-logo.gif`) avant toute passe d'`admin`.
+8. Rejouer `pages`, `admin`, `accounts`, `state` ; `make browser-check` ; 0.7.1 ; Lou l'installe sur la VM (`NOM=prod` une dernière fois).
 
 ## Suivi
 
