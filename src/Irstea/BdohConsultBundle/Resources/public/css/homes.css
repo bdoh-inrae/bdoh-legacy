@@ -43,8 +43,47 @@
 .observatory-card-text { flex: 1; color: #555; }
 .observatory-card-count { color: #777; font-size: 11px; }
 
-/* Un observatoire : la présentation coule autour des photos, s'il y en a */
-.observatory-photos { float: right; width: 40%; margin: 4px 0 12px 20px; }
+/* Un observatoire (Lou, 2026-11-15) : le logo à gauche du nom, puis la carte, puis les onglets juste au-dessus de ce
+   qu'ils montrent, la présentation coulant autour des photos, puis les listes. L'ordre de la page ne change pas : seule
+   la grille place les blocs. */
+#consult-observatoire {
+    display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 10px;
+    grid-template-areas: "head tools" "map map" "tabs tabs" "content content" "lists lists";
+}
+#consult-observatoire > .observatory-head { grid-area: head; }
+#consult-observatoire > .toolbox-btns { grid-area: tools; align-self: center; }
+#consult-observatoire > .observatory-map { grid-area: map; }
+#consult-observatoire > .nav-pills { grid-area: tabs; }
+#consult-observatoire > .tab-content { grid-area: content; }
+#consult-observatoire > .observatory-lists { grid-area: lists; }
+.observatory-head { display: flex; align-items: center; gap: 16px; min-width: 0; padding: 4px 0 8px; }
+.observatory-head h1 { margin: 12px 0; }
+.observatory-logo { flex: none; max-height: 60px; max-width: 150px; object-fit: contain; }
+
+/* Les photos : un cadre de taille fixe, chacune entière dedans, si bien que le texte ne bouge pas de l'une à l'autre ;
+   deux flèches rondes, au survol (toujours sur un écran tactile) */
+.observatory-photos {
+    float: right; width: 40%; aspect-ratio: 3 / 2; margin: 4px 0 12px 20px;
+    border-radius: 6px; overflow: hidden; background: #f4f5f5;
+}
+.observatory-photos .carousel-inner, .observatory-photos .carousel-inner > .item { height: 100%; }
+.observatory-photos .carousel-inner > .item > img { width: 100%; height: 100%; object-fit: contain; }
+#photos.observatory-photos .carousel-control {
+    top: 50%; bottom: auto; width: 34px; height: 34px; margin-top: -17px; border-radius: 50%;
+    background: rgba(255, 255, 255, 0.9); box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25); color: #333; text-shadow: none;
+    opacity: 0; transition: opacity 0.2s;
+}
+#photos.observatory-photos .carousel-control.left { left: 10px; }
+#photos.observatory-photos .carousel-control.right { right: 10px; left: auto; }
+.observatory-photos:hover .carousel-control, .observatory-photos .carousel-control:focus { opacity: 1 !important; }
+@media (hover: none) { #photos.observatory-photos .carousel-control { opacity: 1; } }
+.observatory-photos .carousel-control i { width: 22px; height: 22px; }
+
+/* Les partenaires, chacun avec son logo, d'une même taille */
+.partner-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 8px 24px; }
+.partner-list > li { display: flex; align-items: center; gap: 12px; min-height: 44px; }
+.partner-logo { flex: none; width: 96px; height: 44px; display: flex; align-items: center; justify-content: center; }
+.partner-logo img { max-width: 100%; max-height: 100%; object-fit: contain; }
 #consult-observatoire > .tab-content::after { content: ""; display: block; clear: both; }
 /* Une description saisie dans l'éditeur laisse souvent des paragraphes vides, qui creusent de grands blancs */
 #consult-observatoire .tab-pane p:empty { display: none; }
@@ -81,6 +120,7 @@
     .observatory-cards { grid-template-columns: minmax(0, 1fr); }
     .observatory-lists { grid-template-columns: minmax(0, 1fr); grid-template-areas: "search" "sites" "parameters" "datasets"; }
     .observatory-photos { float: none; width: auto; margin: 0 0 12px; }
+    .observatory-head { flex-wrap: wrap; }
 }
 /* Les bulles des stations : Leaflet les écrit à 12 px, trop petit à côté du texte de la page ; 14 px était trop grand (Lou) */
 .stations-map .leaflet-popup-content { font-size: 13px; line-height: 1.45; margin: 10px 14px; }

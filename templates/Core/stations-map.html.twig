@@ -8,6 +8,8 @@
  # france : la vue s'ajuste aux stations de la France métropolitaine, et non à toutes ; celles qui sont placées
  # ailleurs, souvent par une erreur de saisie, restent dessinées.
  # sites : les sites de l'observatoire, en boutons sous la carte, qui allument leurs stations (data-map-site).
+ # observatories : de même, les observatoires du portail (data-map-observatoire, leur nom), pour voir l'emprise de
+ # chacun sans descendre jusqu'à sa fiche (Lou, 2026-11-15).
  # title : false garde le titre pour les lecteurs d'écran seulement ; height : la hauteur de la carte, en pixels.
  #}
 {# Une liste, et non un objet : filter garderait les clés d'origine, que json_encode écrirait #}
@@ -27,6 +29,17 @@
         <div class="stations-map" style="height: {{ height|default(420) }}px"{{ france|default(false) ? ' data-fit-france' : '' }}
              data-see-station="{{ 'map.seeStation'|trans }}" data-zoom-hint="{{ 'map.zoomHint'|trans }}"
              data-stations="{{ placed|json_encode }}"></div>
+        {% if observatories|default([]) is not empty %}
+            <div class="stations-map-sites">
+                <span class="text-muted">{{ 'map.observatories'|trans }}</span>
+                {% for obs in observatories %}
+                    {% set count = placed|filter(s => s.observatoire == obs.nom)|length %}
+                    <button type="button" class="stations-map-site" data-map-observatoire="{{ obs.nom }}"{{ count ? '' : ' disabled' }}>
+                        {{- obs.nom }} · {{ count -}}
+                    </button>
+                {% endfor %}
+            </div>
+        {% endif %}
         {% if sites|default([]) is not empty %}
             <div class="stations-map-sites">
                 <span class="text-muted">{{ 'map.sites'|trans }}</span>

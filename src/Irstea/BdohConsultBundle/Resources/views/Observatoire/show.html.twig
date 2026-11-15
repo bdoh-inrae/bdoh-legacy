@@ -20,11 +20,18 @@
     <link rel="stylesheet" href="{{ asset('bundles/irsteabdohconsult/css/homes.css') }}"/>
 {% endblock %}
 
-{# Makes 'partenaires' list #}
+{# Makes 'partenaires' list : chacun avec son logo, d'une même taille (Lou, 2026-11-15 : ils quittent le pied de page) #}
 {% macro makePartenaires(partenaires) %}
-    <ul>
+    {#- La place d'un logo, seulement si l'un d'eux en a : les noms restent alignés #}
+    {% set withLogos = partenaires|filter(p => p.pathLogo)|length > 0 %}
+    <ul class="partner-list">
         {% for partenaire in partenaires %}
             <li>
+                {% if withLogos %}
+                <span class="partner-logo">
+                    {%- if partenaire.pathLogo %}<img src="{{ asset(partenaire.pathLogo) }}" alt="" loading="lazy">{% endif -%}
+                </span>
+                {% endif %}
 
                 {% if partenaire.lien and partenaire.lien != 'http://' %}
                     <a href="{{ partenaire.lien }}">{{ partenaire.nom }}</a>
@@ -103,6 +110,8 @@
  # la présentation (ou les partenaires), que le texte fait couler autour des photos ; puis la recherche avancée, les
  # sites et les jeux de données d'un côté, les paramètres, deux fois plus larges, de l'autre (homes.css), les longues
  # descriptions repliées (read-more.js). Les blocs restent où ils sont : seul le contenu des onglets change.
+ # Depuis le 15 novembre (Lou) : le logo à gauche du nom, les onglets juste au-dessus de ce qu'ils montrent, les photos
+ # dans un cadre fixe ; l'ordre de la page ne change pas, la grille de homes.css place les blocs.
  #}
 {% block main %}
 <div id="consult-observatoire">
@@ -131,7 +140,11 @@
     </div>
 
     <!-- Title -->
-    {#- Le nom, sans guillemets (2026-11-12, Lou) #}
+    {#- Le nom, sans guillemets (2026-11-12, Lou), avec le logo de l'observatoire à sa gauche (Lou, 2026-11-15) #}
+    <div class="observatory-head">
+    {% if observatoire.pathLogo %}
+        <img class="observatory-logo" src="{{ asset(observatoire.pathLogo) }}" alt="">
+    {% endif %}
     <h1>{{ observatoire.nom }}
         {#- Le site de l'observatoire, auquel menait son logo en haut de page (2026-11-12, Lou) #}
         {% if observatoire.lien and observatoire.lien != 'http://' %}
@@ -139,25 +152,28 @@
         {% endif %}
         <small>{{ 'welcome'|trans }}</small>
     </h1>
+    </div>
 
     <!-- Carte des stations, en bandeau -->
-    <div class="col-md-24">
+    <div class="col-md-24 observatory-map">
         {% include 'Core/stations-map.html.twig' with {stations: mapStations, sites: sites, title: false, height: 320} %}
     </div>
 
     <!-- Variable part : presentation / partnership, autour des photos -->
     <div class="col-md-24 tab-content">
 
-        <!--  Photos -->
+        <!--  Photos : un cadre de taille fixe, chaque photo entière dedans, si bien que le texte ne bouge pas de l'une à
+              l'autre ; deux flèches discrètes, seulement s'il y en a deux (Lou, 2026-11-15) -->
         {% if photos %}
-            <div id="photos" class="box carousel slide observatory-photos" data-ride="carousel" data-interval="false">
+            <div id="photos" class="carousel slide observatory-photos" data-ride="carousel" data-interval="false">
                 <div class="carousel-inner">
                     {{ macros.displaysPhoto(observatoire.pathPhotoPrincipale, true) }}
-                    {{ macros.displaysPhoto(observatoire.pathPhotoSecondaire) }}
+                    {{ macros.displaysPhoto(observatoire.pathPhotoSecondaire, not observatoire.pathPhotoPrincipale) }}
                 </div>
-                <!-- Carousel nav -->
-                <a class="carousel-control left" href="#photos" data-slide="prev"><span class="glyphicon glyphicon-chevron-left carousel-control-button" aria-hidden="true"></span></a>
-                <a class="carousel-control right" href="#photos" data-slide="next"><span class="glyphicon glyphicon-chevron-right carousel-control-button" aria-hidden="true"></span></a>
+                {% if observatoire.pathPhotoPrincipale and observatoire.pathPhotoSecondaire %}
+                    <a class="carousel-control left" href="#photos" data-slide="prev" title="{{ 'photo.previous'|trans }}"><i class="icon-chevron-left" aria-hidden="true"></i></a>
+                    <a class="carousel-control right" href="#photos" data-slide="next" title="{{ 'photo.next'|trans }}"><i class="icon-chevron-right" aria-hidden="true"></i></a>
+                {% endif %}
             </div>
         {% endif %}
 

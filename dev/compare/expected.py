@@ -231,8 +231,42 @@ def header(lines):
             rest = [*rest[:title], *([f'A {site}'] if outward else []),
                     f'T {m.group(1)}{label} {m.group(2)}', *rest[title + 1:]]
     return [*lines[:start], 'A /', 'T BDOH', *lines[everything - 3:end], *(current or []),
-            *([data[0], DATA_LINK[data[1]]] if data else []), *found.get('contact', []), *lines[lang:lang + 7],
+            *([data[0], DATA_LINK[data[1]]] if data else []), *found.get('contact', []), *lang_switch(lines[lang:lang + 7]),
             *account_menu(lines[lang + 7:everything - 3]), *crumb, *rest]
+
+
+LANGUAGES = {'T Français': 'FR', 'T English': 'EN'}
+
+
+def lang_switch(block):
+    """Le choix de la langue de l'ancien, un menu au drapeau (« Français », puis le lien vers « English »), comme le
+    nouveau le montre (Lou, 2026-11-15) : « FR EN », la langue de la page en texte, l'autre en lien, sans drapeau ;
+    le lien vient d'abord, le texte des deux se lisant d'une seule ligne. Ce qu'elle ne reconnaît pas reste tel quel."""
+    if len(block) != 7 or block[3] not in LANGUAGES or block[6] not in LANGUAGES or LANGUAGES[block[3]] == LANGUAGES[block[6]]:
+        return block
+    return [block[4], 'T FR EN']
+
+
+FOOTER_INRAE = ['A https://www.inrae.fr/', 'G /images/Logo_INRAE_REPUBLIQUE.png Irstea']
+UPLOADED = re.compile(r'G /uploads/\S+(?: .+)?')
+
+
+def footer(lines):
+    """Le pied de page de l'ancien comme le nouveau le montre (Lou, 2026-11-15) : le bloc Marianne et INRAE seul. Les
+    logos des partenaires de l'observatoire, qui le suivaient (une image de /uploads/, avec son lien s'il en a un),
+    passent à l'onglet « Partenaires » de son accueil, où HOMES les admet."""
+    for k in range(len(lines) - 1):
+        if lines[k:k + 2] == FOOTER_INRAE:
+            end = k + 2
+            while True:
+                if end < len(lines) and UPLOADED.fullmatch(lines[end]):
+                    end += 1
+                elif end + 1 < len(lines) and re.fullmatch(r'A \S+', lines[end]) and UPLOADED.fullmatch(lines[end + 1]):
+                    end += 2
+                else:
+                    break
+            return [*lines[:k + 2], *lines[end:]]
+    return lines
 
 
 def per_page(rewrite):
@@ -419,6 +453,7 @@ RULES = [
     # L'en-tête et le début du fil d'Ariane, sur toute page du site, quel que soit le mode qui la compare : header()
     # les réécrit dans l'ancien, et la page doit alors être la même, sauf ce que d'autres règles admettent
     *(Rule(mode, r'.*', HEADER, rewrite=header) for mode in ('pages', 'admin', 'imports', 'accounts')),
+    *(Rule(mode, r'.*', HEADER, rewrite=footer) for mode in ('pages', 'admin', 'imports', 'accounts')),
     # (les pages des autres modes ne nomment pas la recherche : « Règle sans écart » le 13 et le 15 novembre)
     Rule('pages', r'.*', SEARCH_NAME, rewrite=search_renamed),
     Rule('pages', r'.*', TERMS, rewrite=doi_links),
@@ -426,6 +461,7 @@ RULES = [
     Rule('pages', r'(?!anonyme ).*', FAVORITES, lines=FAVORITE_STAR),
     # Les mêmes, dans les étapes de state, qui montrent les pages d'une chronique après qu'on l'a vidée sur une période
     Rule('state', 'étapes', HEADER, rewrite=per_page(header)),
+    Rule('state', 'étapes', HEADER, rewrite=per_page(footer)),
     Rule('state', 'étapes', SEARCH_NAME, rewrite=search_renamed),
     Rule('state', 'étapes', FAVORITES, lines=(*FAVORITE_MENU, *FAVORITE_STAR)),
     Rule('state', 'étapes', CSV_FORMAT, lines=CSV_OPTION),
@@ -456,7 +492,9 @@ RULES = [
     # boutons des sites sous la carte, et ses photos passent avant les listes.
     Rule('pages', rf'{ROLE} /', HOMES, lines=(
         RX(r'-.*'), '+L stylesheet /bundles/irsteabdohconsult/css/homes.css', RX(r'\+T Observato(?:ires|ries)'),
-        RX(rf'\+A {OBS}/home'), RX(r'\+D a data-map-observatoire=.+'), RX(r'\+G /uploads/\S+'), RX(r'\+T .+')),
+        RX(rf'\+A {OBS}/home'), RX(r'\+D a data-map-observatoire=.+'), RX(r'\+G /uploads/\S+'), RX(r'\+T .+'),
+        # les pastilles des observatoires sous la carte (Lou, 2026-11-15)
+        RX(r'\+I button button(?: disabled)?'), RX(r'\+D button data-map-observatoire=.+')),
         must=('-S /assets/home.js', RX(r'\+D a data-map-observatoire=.+'))),
     Rule('pages', rf'{ROLE} (?!/INCONNU/){OBS}/(?:home)?', HOMES, lines=(
         '+L stylesheet /bundles/irsteabdohconsult/css/homes.css', '+S /bundles/irsteabdohconsult/js/read-more.js',
@@ -464,7 +502,10 @@ RULES = [
         RX(r'\+D li data-map-site=\d+'),
         RX(r'\+D div data-read-less=(?:Réduire|Show less) data-read-more=(?:Lire la suite|Read more)'),
         RX(r'[-+]D div data-interval=false data-ride=carousel'), RX(r'[-+]G /uploads/\S+ .+'), RX(r'[-+]A #photos'),
-        RX(r'[-+]D a data-slide=(?:prev|next)')),
+        RX(r'[-+]D a data-slide=(?:prev|next)'),
+        # le logo de l'observatoire à côté de son nom, et ceux des partenaires dans leur onglet, sans texte : le nom est
+        # à côté (Lou, 2026-11-15)
+        RX(r'\+G /uploads/\S+')),
         must=('+S /bundles/irsteabdohconsult/js/read-more.js',)),
     # La bande de toute la chronique, sous son graphique : un élément de plus sur la page d'une chronique, que le
     # JavaScript remplit (« nouveau seul : bande de toute la chronique » vérifie sa route)

@@ -6,6 +6,11 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/). Numéros de v
 
 ### Modifié
 
+- Les deux barres alignent chaque élément au milieu de leur hauteur ; la langue s'écrit « FR EN », sans drapeau ni menu, et l'aide est une icône « ? ».
+- Le pied de page ne garde que le bloc Marianne et INRAE ; les logos des partenaires d'un observatoire passent à l'onglet « Partenaires » de son accueil, chacun à côté de son nom.
+- L'accueil d'un observatoire montre son logo à gauche de son nom, et ses photos dans un cadre de taille fixe, chacune entière, avec deux flèches discrètes s'il y en a deux : le texte ne bouge plus d'une photo à l'autre.
+- Sur l'accueil de BDOH, une pastille par observatoire sous la carte allume ses stations, au survol ou d'un clic.
+- « Mes favoris » n'est plus que dans la barre, plus dans le menu du compte.
 - Installation sur la VM : `NOM=prod` n'est plus à donner aux cibles, puisqu'il n'y a plus qu'une instance. La mise à jour vers cette version le demande encore, une dernière fois, au script de la 0.7.0.
 
 ## 0.7.0 - 2026-11-15

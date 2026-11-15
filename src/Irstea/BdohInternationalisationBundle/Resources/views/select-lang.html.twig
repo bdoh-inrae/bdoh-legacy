@@ -1,21 +1,11 @@
-<li class="dropdown">
-    <a href="#" class="dropdown-toggle" data-toggle="dropdown">
-        {% if app.session.get('_locale')=='en' %}
-            <img src="{{ asset('images/i18n/gb.png') }}">
-        {% else %}
-            <img src="{{ asset('images/i18n/fr.png') }}">
-        {% endif %}
-        <small>{{ 'lang.selector'|trans }}</small>
-        <b class="caret"></b></a>
-    <ul class="dropdown-menu">
-        {% if app.session.get('_locale')=='en' %}
-            <li><a href="{{ path('irstea_bdoh_internationalisation', {'_locale' : 'fr'}) }}"><img src="{{ asset('images/i18n/fr.png') }}">
-                    <small>Français</small>
-                </a></li>
-        {% else %}
-            <li><a href="{{ path('irstea_bdoh_internationalisation', {'_locale' : 'en'}) }}"><img src="{{ asset('images/i18n/gb.png') }}">
-                    <small>English</small>
-                </a></li>
-        {% endif %}
-    </ul>
+{#- La langue (Lou, 2026-11-15) : « FR EN », celle de la page en évidence, l'autre en lien ; plus de drapeaux, ni de
+ # menu pour un seul autre choix. Le nom entier se lit au survol. -#}
+<li class="lang-switch">
+    {% if app.session.get('_locale') == 'en' %}
+        <a href="{{ path('irstea_bdoh_internationalisation', {'_locale' : 'fr'}) }}" lang="fr" title="Français">FR</a>
+        <span class="lang-current" aria-current="true" title="English">EN</span>
+    {% else %}
+        <span class="lang-current" aria-current="true" title="Français">FR</span>
+        <a href="{{ path('irstea_bdoh_internationalisation', {'_locale' : 'en'}) }}" lang="en" title="English">EN</a>
+    {% endif %}
 </li>

@@ -221,6 +221,54 @@ h1 a.external-link {
     margin-left: 0.15em;
     font-size: 0.8em;
 }
+// L'aide en icône, un « ? », et les flèches des photos d'un observatoire (Lou, 2026-11-15)
+.icon-help { .bdoh-icon(help); display: inline-block; width: 20px; height: 20px; vertical-align: -4px; }
+.icon-chevron-left { .bdoh-icon(chevron_left); display: inline-block; }
+.icon-chevron-right { .bdoh-icon(chevron_right); display: inline-block; }
+// La langue, « FR EN » : celle de la page en gras, l'autre en lien (Lou, 2026-11-15)
+#navbar .navbar-nav > li.lang-switch {
+    display: flex;
+    align-items: center;
+    // La hauteur des autres liens de la barre : 15 px de Bootstrap la grandissaient, et tout le reste remontait
+    > a, > .lang-current {
+        padding: @navbar-padding-vertical 4px;
+        font-size: 1.1em;
+        line-height: @line-height-computed;
+        letter-spacing: 0.04em;
+    }
+    > :first-child { padding-left: 10px; }
+    > a { font-weight: normal; opacity: 0.8; }
+    > a:hover, > a:focus { opacity: 1; text-decoration: underline; }
+    > .lang-current { font-weight: bold; color: @navbar-default-link-color; }
+    > :last-child { padding-right: 15px; }
+}
+// Les onglets d'un observatoire, Présentation et Partenaires, juste au-dessus de ce qu'ils montrent : un trait sous
+// celui qui est ouvert, au lieu d'une pastille (Lou, 2026-11-15)
+#consult-observatoire > .nav-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin: 16px 15px 12px;
+    padding: 0;
+    background: none;
+    border-bottom: 1px solid @lineColor;
+    > li { float: none; margin: 0; }
+    > li > a {
+        padding: 6px 12px;
+        margin-bottom: -1px;
+        border-radius: 0;
+        border-bottom: 2px solid transparent;
+        color: @text-color;
+        background: none;
+    }
+    > li > a:hover, > li > a:focus { color: @inkColor; background: none; border-bottom-color: @lineColor; }
+    > li.active > a, > li.active > a:hover, > li.active > a:focus {
+        color: @inkColor;
+        background: none;
+        border-bottom-color: @inkColor;
+        font-weight: 600;
+    }
+}
 
 // Une ligne de liste qui mène à sa fiche, une chronique ou une station (bdoh/row-links.js) : toute la ligne se clique.
 // Le survol fonce un peu son fond, quel qu'il soit (ligne blanche, rayée, en-tête de station) : toujours dans le même

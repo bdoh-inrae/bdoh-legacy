@@ -360,6 +360,8 @@ class Register(unittest.TestCase):
     # et pied de page ») : les mêmes liens, rangés autrement, « BDOH » à la place du logo, le fil qui le nomme
     LANG = ['A #', 'D a data-toggle=dropdown', 'G /images/i18n/fr.png', 'T Français', 'A /select_lang/en',
             'G /images/i18n/gb.png', 'T English']
+    # La langue dans le nouveau, « FR EN » (Lou, 2026-11-15) : le lien vers l'autre, puis le texte des deux
+    NEW_LANG = ['A /select_lang/en', 'T FR EN']
     ACCOUNT = ['A /OBS/login', 'T Se connecter', 'T ou', 'A /OBS/user/new', 'T Créer un compte']
     SELECTOR = ['A #', 'D a data-toggle=dropdown', 'T Observatoires', 'A /?_observatoire=ALL', 'T Tous les observatoires',
                 'A /AUTRE/home', 'T Autre', 'A /OBS/home', 'T Obs']
@@ -368,7 +370,7 @@ class Register(unittest.TestCase):
                   'A /OBS/contact', 'T Aide', *LANG, *ACCOUNT, *SELECTOR, 'A /OBS/home', 'T Accueil', 'T Station',
                   'D div data-notices=[]']
     NEW_HEADER = ['T BDOH - Obs - Station', 'L stylesheet /css/themes/OBS.min.css', 'A /', 'T BDOH', *SELECTOR,
-                  'A /OBS/home', 'T Obs', 'A /OBS/nos-donnees', 'T Recherche', 'A /OBS/contact', 'T Aide', *LANG,
+                  'A /OBS/home', 'T Obs', 'A /OBS/nos-donnees', 'T Recherche', 'A /OBS/contact', 'T Aide', *NEW_LANG,
                   *ACCOUNT, 'A /', 'T BDOH', 'A /OBS/home', 'T Obs', 'T Station', 'D div data-notices=[]']
     # Le compte d'un gestionnaire, dans l'ancien puis dans le nouveau : le nom ouvre son menu, le tableau de bord passe
     # en tête du menu Administration (Lou, 2026-11-13)
@@ -416,6 +418,26 @@ class Register(unittest.TestCase):
             with self.subTest(fault):
                 self.assertEqual(self.verdict(rules, name, self.OLD_HEADER, faulty), 'différents')
 
+    def test_the_footer_loses_the_partner_logos_only(self):
+        # Le bloc Marianne et INRAE reste ; les logos des partenaires, avec ou sans lien, partent (Lou, 2026-11-15)
+        rules = [r for r in compare.expected.RULES if r.mode == 'pages']
+        tail = ['S /assets/manifest.js']
+        old = ['T page', *compare.expected.FOOTER_INRAE, 'A https://a.example/', 'G /uploads/A-logo.png A',
+               'G /uploads/B-logo.png B', *tail]
+        new = ['T page', *compare.expected.FOOTER_INRAE, *tail]
+        self.assertEqual(compare.expected.footer(old), new)
+        self.assertEqual(self.verdict(rules, 'anonyme /OBS/station/S', old, new), 'écarts admis')
+        self.assertEqual(self.verdict(rules, 'anonyme /OBS/station/S', old, new[:-1]), 'différents')
+        # Sans le bloc INRAE, rien ne se réécrit : l'écart se voit
+        self.assertEqual(compare.expected.footer(old[2:]), old[2:])
+
+    def test_the_language_reads_fr_en(self):
+        en = ['A #', 'D a data-toggle=dropdown', 'G /images/i18n/gb.png', 'T English', 'A /select_lang/fr',
+              'G /images/i18n/fr.png', 'T Français']
+        self.assertEqual(compare.expected.lang_switch(self.LANG), ['A /select_lang/en', 'T FR EN'])
+        self.assertEqual(compare.expected.lang_switch(en), ['A /select_lang/fr', 'T FR EN'])
+        self.assertEqual(compare.expected.lang_switch(self.LANG[:-1] + ['T Deutsch']), self.LANG[:-1] + ['T Deutsch'])
+
     def test_the_account_of_a_manager_opens_a_menu(self):
         rules = [r for r in compare.expected.RULES if r.mode == 'pages']
         name = 'gestionnaire /OBS/station/S'
@@ -425,9 +447,9 @@ class Register(unittest.TestCase):
                if l not in self.ACCOUNT[1:]]
         self.assertEqual(compare.expected.header(old), new)
         favorites = ['A /favorites', 'T Mes favoris']
-        lang_end = new.index('T English') + 1
-        with_favorites = [*new[:lang_end], *favorites, *new[lang_end:new.index('A /OBS/logout')], *favorites,
-                          *new[new.index('A /OBS/logout'):]]
+        # Les favoris, dans la barre du compte seulement, plus dans son menu (Lou, 2026-11-15)
+        lang_end = new.index('T FR EN') + 1
+        with_favorites = [*new[:lang_end], *favorites, *new[lang_end:]]
         self.assertEqual(self.verdict(rules, name, old, with_favorites), 'écarts admis')
         for fault, faulty in [
             ('la déconnexion perdue', [l for l in with_favorites if l not in ('A /OBS/logout', 'T Déconnexion')]),
@@ -475,7 +497,7 @@ class Register(unittest.TestCase):
 
     def test_the_portal_shows_the_account_and_nothing_else(self):
         old = ['T BDOH', 'G /images/inrae_logo.svg Irstea', *self.LANG, *self.SELECTOR, 'T Présentation']
-        new = ['T BDOH', 'A /', 'T BDOH', *self.SELECTOR, *self.LANG]
+        new = ['T BDOH', 'A /', 'T BDOH', *self.SELECTOR, *self.NEW_LANG]
         # La règle de l'en-tête et celles du portail seules : les autres écarts du portail (carte, fiches) ont leurs règles
         portal = compare.expected.portal_rules({'utilisateur': 'Camille Essai'})
         rules = [r for r in compare.expected.RULES if r.mode == 'pages' and r.rewrite] + portal

@@ -229,6 +229,28 @@ a.bdoh-brand {
     height: @navbar-height - 14;
 }
 
+// Les deux barres, chacune une ligne flexible : chaque élément centré en hauteur, quelle que soit sa taille, la liste
+// de droite poussée au bout ; au lieu des flottements de Bootstrap, où un élément plus haut que les autres grandissait la
+// barre et laissait le reste en haut (Lou, 2026-11-15). Sous @screen-sm-min, Bootstrap empile les listes, comme avant.
+@media (min-width: @screen-sm-min) {
+    #navbar, #userbar {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        > .navbar-nav {
+            display: flex;
+            align-items: center;
+            float: none !important;
+            margin: 0;
+            > li { float: none; }
+        }
+        > .navbar-right {
+            margin-left: auto;
+            margin-right: 0;
+        }
+    }
+}
+
 // Les liens de la barre du haut, en gras et plus grands ; pas ceux de ses menus (2026-11-12, Lou)
 #navbar .navbar-nav > li > a {
     font-weight: bold;
@@ -304,6 +326,16 @@ a.bdoh-brand {
     // Le sous-titre d'un titre (« Arc-Isère   Bienvenue ») : plus détaché du titre (2026-11-12, Lou)
     h1 > small {
         margin-left: 0.4em;
+    }
+    // L'accueil d'un observatoire, son logo à gauche du nom (Lou, 2026-11-15) : le filet passe sous les deux, sur
+    // toute la largeur, comme sous un titre seul
+    .observatory-head {
+        margin-bottom: 1em;
+        border-bottom: 1px solid @lineColor;
+        h1 {
+            margin-bottom: 0;
+            border-bottom: 0;
+        }
     }
 }
 

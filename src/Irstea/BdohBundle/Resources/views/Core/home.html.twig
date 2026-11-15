@@ -16,14 +16,15 @@
 
 {#
  # L'accueil du portail : la carte de toutes les stations en tête, la présentation, puis une fiche par observatoire.
- # Survoler une fiche allume ses stations sur la carte (stations-map.js, data-map-observatoire) ; rien ne bouge.
+ # Survoler une fiche allume ses stations sur la carte (stations-map.js, data-map-observatoire) ; rien ne bouge. Les
+ # mêmes, en pastilles sous la carte, le font sans descendre jusqu'aux fiches, et un clic garde allumé (Lou, 2026-11-15).
  # Le texte entier de chaque observatoire est sur sa page ; la fiche n'en montre que le début, en texte simple.
  #}
 {% block main %}
     <h1>{{ 'home.title'|trans }}</h1>
 
     <div class="col-md-24 portal-home">
-        {% include 'Core/stations-map.html.twig' with {stations: mapStations, france: true, title: false, height: 440} %}
+        {% include 'Core/stations-map.html.twig' with {stations: mapStations, france: true, title: false, height: 440, observatories: allObservatoires()} %}
 
         <h2>{{ 'presentation'|trans }}</h2>
         <div class="portal-presentation">

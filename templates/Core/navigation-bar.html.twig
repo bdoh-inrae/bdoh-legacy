@@ -1,7 +1,7 @@
 {%- from 'macros.html.twig' import richLink %}
 {#-- Navigation bar : ce qui tient à l'observatoire (Lou, 2026-11-13). À gauche, le choix d'un observatoire, celui
  # qu'on consulte et sa recherche (l'ancienne « Consultation des données », puis « Recherche avancée »), à sa place de
- # l'ancien ; à droite, l'aide et la langue. Le compte est dans la barre du dessous.
+ # l'ancien ; à droite, l'aide et la langue, en icône et en « FR EN » (Lou, 2026-11-15). Le compte est dans la barre du dessous.
 ================================================== -#}
 <nav id="navbar" class="navbar navbar-default">
     <ul class="nav navbar-nav">
@@ -19,7 +19,8 @@
     {#-- Contact and language links  -#}
     <ul class="nav navbar-nav navbar-right">
         {% if currentObservatoire() %}
-            <li><a href="{{ path('bdoh_consult_contact') }}"><small>{{ 'contactHelp'|trans }}</small></a></li>
+            {#- L'aide en icône, un « ? » (Lou, 2026-11-15) ; son nom reste pour les lecteurs d'écran et au survol #}
+            <li><a class="help-link" href="{{ path('bdoh_consult_contact') }}" title="{{ 'contactHelp'|trans }}"><i class="icon-help" aria-hidden="true"></i><span class="sr-only">{{ 'contactHelp'|trans }}</span></a></li>
             <li class="divider"></li>
         {% endif %}
         {% include "@IrsteaBdohInternationalisation/select-lang.html.twig" %}
