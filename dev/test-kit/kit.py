@@ -197,6 +197,12 @@ def fill(template, **values):
     return re.sub(r'\n{3,}', '\n\n', text)
 
 
+# Un code Theia, mais aucune fiche publiée sur le portail Theia/OZCAR : 22 producteurs le 15 novembre, dont DRAIX-BLEONE,
+# OHMCV, Oracle, Real Collobrier et Yzeron, pas OTHU (https://in-situ.theia-land.fr/api-observation/search/facets).
+# Son paragraphe propre (SPECIAL) lui demande s'il envoie ses fiches.
+NOT_ON_THEIA = {'OTHU'}
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__.split('\n')[0])
     parser.add_argument('--site', default=TO_FILL, help='adresse du site d’essai de la production')
@@ -219,7 +225,7 @@ def main():
             values = dict(
                 observatoire=name, comptes=counts_sentence(name, opened, closed), date=args.deadline,
                 site=args.site, special=SPECIAL.get(slug, ''),
-                theia='Theia : vos fiches publiées ont des coordonnées décalées de 300 à 700 m, un bogue de l’ancien. C’est corrigé au prochain envoi, à la réouverture. Avant cet envoi, ressaisissez le mot de passe Theia/OZCAR de votre observatoire dans sa fiche (Administration > Observatoires) : BDOH le garde chiffré, et le nouveau ne peut pas relire celui de l’ancien.' if theia == 't' else '')
+                theia='Theia : vos fiches publiées ont des coordonnées décalées de 300 à 700 m, un bogue de l’ancien. C’est corrigé au prochain envoi, à la réouverture. Avant cet envoi, ressaisissez le mot de passe Theia/OZCAR de votre observatoire dans sa fiche (Administration > Observatoires) : BDOH le garde chiffré, et le nouveau ne peut pas relire celui de l’ancien.' if theia == 't' and slug not in NOT_ON_THEIA else '')
             # Les deux messages d'avant le 15 novembre, s'il en reste : un seul part désormais
             for old in ('message-inrae.txt', 'message-hors-inrae.txt'):
                 (folder / old).unlink(missing_ok=True)
