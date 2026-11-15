@@ -5,17 +5,18 @@ Bonjour,
 BDOH a été porté sur une version à jour. Mêmes pages, mêmes formats, mêmes données : tout a été comparé à l'ancien, et normalement ça colle.
 
 Cinq changements :
-- plus de mot de passe, on se connecte par un lien reçu par mail ;
+- plus de mot de passe : à votre prochaine visite, saisissez votre adresse, vous recevrez un lien par mail ;
 - les données s'ouvrent : une chronique visible se télécharge sans compte, sous Licence Ouverte. Une chronique cachée reste fermée, sur demande, comme avant ;
 - une carte des stations, sur l'accueil du site et sur celui de chaque observatoire, et une apparence rafraîchie ;
-- les conditions d'utilisation sont les mêmes pour tous les observatoires : une page, au lien « Conditions d'utilisation » de votre accueil.
+- les conditions d'utilisation sont les mêmes pour tous les observatoires : une page, au lien « Conditions d'utilisation » de votre accueil ;
 - l'export propose un CSV standard (virgule, point décimal, dates ISO), à côté des formats BDOH et QTVAR, qui ne changent pas ; chaque archive porte un nom qui dit ce qu'elle contient, et un README qui décrit ses fichiers, sa licence et comment citer.
 
 Il me faut deux choses de votre part avant le {date} :
 
 1. Le tableau joint. {comptes}
 
-2. Le site d'essai, sous VPN : {site}
+2. Le site d'essai : {site}
+   Pour l'instant, il n'est accessible que sous le VPN d'INRAE. Si vous n'y avez pas accès, faites seulement le tableau : je vous écris dès qu'il s'ouvre sans VPN.
    identifiant : test
    mot de passe : [à compléter]
    C'est l'accès au site d'essai ; ensuite, on se connecte à BDOH comme d'habitude, avec son adresse.

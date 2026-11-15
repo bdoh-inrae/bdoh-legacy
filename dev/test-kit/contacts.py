@@ -112,7 +112,7 @@ def write_files(found):
         detail = [f"{email} ; {people[email][0]} ; {', '.join(people[email][1])}"
                   + (' ; ancienne adresse' if OLD_DOMAIN.search(email) else '') for email in sorted(people)]
         (OUT / f'{slug}.txt').write_text('\n'.join([
-            '# INRAE : message-inrae.txt', ', '.join(inside), '', '# Hors INRAE : message-hors-inrae.txt', ', '.join(outside), '', '# Détail', *detail, '']))
+            '# Destinataires de message.txt, INRAE puis hors INRAE', ', '.join(inside + outside), '', '# INRAE : le site sous VPN dès l’envoi', ', '.join(inside), '', '# Hors INRAE : le site quand il s’ouvre sans VPN', ', '.join(outside), '', '# Détail', *detail, '']))
         known[slug] = [str(len(inside)), str(len(outside))]
     with COUNTS.open('w', newline='') as file:
         csv.writer(file, delimiter=';').writerows([slug, *values] for slug, values in sorted(known.items()))

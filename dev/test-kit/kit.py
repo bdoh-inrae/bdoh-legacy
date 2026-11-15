@@ -3,7 +3,7 @@
 
     make test-kit ARGS="--site https://… --deadline 'dimanche 15 novembre'"
 
-Écrit dans ../bdoh_reference/test-kit/<OBSERVATOIRE>/ le tableur de ses chroniques et ses deux messages, à partir
+Écrit dans ../bdoh_reference/test-kit/<OBSERVATOIRE>/ le tableur de ses chroniques et son message, le même pour tous ses destinataires (Lou, 15 novembre), à partir
 des bases anonymisées, qui gardent les codes, les libellés et les stations. Aucune adresse n'y figure : elles
 viennent de contacts.py, que Lou lance sur le dump brut. Tient aussi le fichier de suivi (dev/local/test-tracking.md),
 créé une fois, jamais écrasé. Les constats propres à une station ou une chronique viennent de
@@ -220,8 +220,10 @@ def main():
                 observatoire=name, comptes=counts_sentence(name, opened, closed), date=args.deadline,
                 site=args.site, special=SPECIAL.get(slug, ''),
                 theia='Theia : vos fiches publiées ont des coordonnées décalées de 300 à 700 m, un bogue de l’ancien. C’est corrigé au prochain envoi, à la réouverture. Avant cet envoi, ressaisissez le mot de passe Theia/OZCAR de votre observatoire dans sa fiche (Administration > Observatoires) : BDOH le garde chiffré, et le nouveau ne peut pas relire celui de l’ancien.' if theia == 't' else '')
-            (folder / 'message-inrae.txt').write_text(fill('inrae.txt', **values, onglet=f'{attachment}, à faire quand vous aurez le temps.' if items else ''))
-            (folder / 'message-hors-inrae.txt').write_text(fill('outside.txt', **values, onglet=f'{attachment}, à faire après la réouverture, quand vous aurez le temps.' if items else ''))
+            # Les deux messages d'avant le 15 novembre, s'il en reste : un seul part désormais
+            for old in ('message-inrae.txt', 'message-hors-inrae.txt'):
+                (folder / old).unlink(missing_ok=True)
+            (folder / 'message.txt').write_text(fill('message.txt', **values, onglet=f'{attachment}, à faire quand vous aurez le temps.' if items else ''))
             summary.append((slug, opened, closed, items))
 
     # Le fichier de suivi : une fois, puis il vit sa vie
