@@ -43,20 +43,18 @@
 .observatory-card-text { flex: 1; color: #555; }
 .observatory-card-count { color: #777; font-size: 11px; }
 
-/* Un observatoire (Lou, 2026-11-15) : le logo à gauche du nom, les onglets dessous, puis la carte, la présentation
-   coulant autour des photos, puis les listes. L'ordre de la page ne change pas : seule la grille place les blocs. */
-#consult-observatoire {
-    display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 10px;
-    grid-template-areas: "head tools" "tabs tabs" "map map" "content content" "lists lists";
-}
-#consult-observatoire > .observatory-head { grid-area: head; }
-#consult-observatoire > .toolbox-btns { grid-area: tools; align-self: center; }
-#consult-observatoire > .observatory-map { grid-area: map; }
-#consult-observatoire > .nav-pills { grid-area: tabs; }
-#consult-observatoire > .tab-content { grid-area: content; }
-#consult-observatoire > .observatory-lists { grid-area: lists; }
-.observatory-head { display: flex; align-items: center; gap: 16px; min-width: 0; padding: 4px 0 8px; }
-.observatory-head h1 { margin: 12px 0; }
+/* Un observatoire : la ligne du nom, comme dans la 0.7.0 (Lou, 2026-11-16) : le logo et le nom à gauche, sur le filet,
+   qui s'arrête avant les onglets ; les onglets à droite, au niveau du nom, qui ne passent jamais à la ligne (le nom se
+   replie s'il est trop long), puis la boîte à outils d'un gestionnaire. Le logo à gauche du nom date du 15 novembre.
+   L'ordre de la page est celui de l'ancien (les onglets d'abord) : seul le style place les blocs. */
+.observatory-headline { display: flex; align-items: flex-end; column-gap: 16px; }
+.observatory-headline > .observatory-head { order: 1; flex: 1 1 auto; }
+.observatory-headline > .nav-pills { order: 2; flex: none; margin-bottom: 2px; }
+.observatory-headline > .toolbox-btns { order: 3; flex: none; margin-bottom: 2px; }
+.observatory-headline > .toolbox-btns:empty { display: none; }
+.observatory-head { display: flex; align-items: flex-end; gap: 16px; min-width: 0; padding: 4px 0 6px; }
+.observatory-head h1 { margin: 12px 0 0; }
+@media (max-width: 767px) { .observatory-headline { flex-wrap: wrap; } }
 .observatory-logo { flex: none; max-height: 60px; max-width: 150px; object-fit: contain; }
 
 /* Les photos : un cadre de taille fixe, chacune entière dedans, si bien que le texte ne bouge pas de l'une à l'autre ;
@@ -132,3 +130,7 @@
 /* Les bulles des stations : Leaflet les écrit à 12 px, trop petit à côté du texte de la page ; 14 px était trop grand (Lou) */
 .stations-map .leaflet-popup-content { font-size: 13px; line-height: 1.45; margin: 10px 14px; }
 .stations-map .leaflet-popup-content strong { font-size: 14px; }
+/* Les gestionnaires d'un observatoire, dans leur onglet : un nom par ligne, l'adresse à côté pour qui est connecté */
+.manager-list { list-style: none; margin: 0 0 10px; padding: 0; }
+.manager-list > li { padding: 3px 0; }
+.manager-email { margin-left: 10px; }

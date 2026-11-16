@@ -228,10 +228,29 @@ def month(number, last=False):
 
 def public_steps(s, station, chronique):
     def footer(page):
-        assert page.locator('a[href*="github.com/bdoh-inrae/bdoh-legacy"]').count() == 1, 'pas de lien vers le code source'
-        assert 'GNU AGPL' in page.inner_text('body'), 'licence absente'
+        # La ligne des liens de tout BDOH, au pied de chaque page, et l'aide au bout de la barre (Lou, 2026-11-16)
+        links = page.locator('#footer .footer-links a')
+        hrefs = [links.nth(i).get_attribute('href') for i in range(links.count())]
+        assert hrefs == ['/help', '/terms_of_use', '/legal', '/legal#accessibilite',
+                         'https://github.com/bdoh-inrae/bdoh-legacy'], f'liens du pied de page : {hrefs}'
+        assert 'AGPL-3.0' in page.inner_text('#footer'), 'licence absente'
+        assert page.locator('a.help-link').get_attribute('href') == '/help', 'le « ? » ne mène pas à la page d’aide'
 
-    s.step('accueil, licence et code source', f'/{SLUG}/', footer)
+    s.step('accueil, liens du pied de page et aide', f'/{SLUG}/', footer)
+
+    def managers(page):
+        # L'ancienne page de contact ouvre l'onglet des gestionnaires de l'accueil ; l'adresse suit l'onglet ouvert
+        assert page.url.endswith(f'/{SLUG}/#managers'), f'adresse : {page.url}'
+        visible(page, '#managers .manager-name')
+        assert page.locator('#description').is_hidden(), 'la présentation reste ouverte'
+        assert page.locator('.observatory-headline').bounding_box()['y'] < 200, 'la vue ne revient pas au nom'
+        page.locator('a[href="#description"]').click()
+        visible(page, '#description')
+        assert page.url.endswith(f'/{SLUG}/'), f'adresse après « Présentation » : {page.url}'
+        page.locator('a[href="#managers"]').click()
+        assert page.url.endswith(f'/{SLUG}/#managers'), f'adresse après « Gestionnaires » : {page.url}'
+
+    s.step('onglet des gestionnaires, depuis la page de contact', f'/{SLUG}/contact', managers)
 
     def our_data(page):
         visible(page, '#main-table tbody tr')

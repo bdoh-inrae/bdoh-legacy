@@ -575,10 +575,14 @@ EXPORT_TERMS = re.compile(r'<!-- Link which triggers the modal for Terms of Uses
 EXPORT_HELP = re.compile(r'<div class="export-help-content">.*?</div>', re.S)
 EXPORT_ARCHIVE = re.compile(r'--write-to\s+\S+\.zip\s*')  # le chemin de l'archive, dans les pages de suivi des tâches
 EXPORT_MARK = b'<!-- Link which triggers the modal for export -->'
+# L'onglet des gestionnaires de l'accueil d'un observatoire (Lou, 2026-11-16), que l'ancien montrait sur sa page de
+# contact : il sort de la comparaison des pages, et « nouveau seul : gestionnaires » le compare à cette page
+MANAGERS_TAB = re.compile(r'<!-- Managers tab -->.*?<!-- END_Managers tab -->', re.S)
 
 
-def page_lines(site, status, headers, body, strip_export=False):
-    """Ce que montre une réponse, en lignes ; l'adresse de l'instance devient <site>."""
+def page_lines(site, status, headers, body, strip_export=False, strip_managers=True):
+    """Ce que montre une réponse, en lignes ; l'adresse de l'instance devient <site>. L'onglet des gestionnaires sort,
+    sauf pour `merge`, qui compare le nouveau à lui-même (MANAGERS_TAB)."""
     lines = [f'statut {status}']
     if 300 <= status < 400:
         lines.append(f"redirection {headers.get('Location', '')}")
@@ -587,6 +591,7 @@ def page_lines(site, status, headers, body, strip_export=False):
     if kind == 'text/html':
         parser = Extract()
         text = LEGAL_NOTICE.sub('', body.decode('utf-8', 'replace'))
+        text = MANAGERS_TAB.sub('', text) if strip_managers else text
         text = EXPORT_WIDGETS.sub('', text) if strip_export else text
         parser.feed(EXPORT_ARCHIVE.sub('', EXPORT_HELP.sub('', EXPORT_TERMS.sub('', text))))
         parser.flush()
@@ -952,6 +957,7 @@ def run_pages(args):
         cards_checks(args.base, new, report)
         terms_checks(new, slug, report)
         help_legal_checks(args.base, new, slug, report)
+        managers_checks(args.base, old, new, report)
         overview_checks(args.base, new, report)
         thinned_checks(args.base, new, report)
     report.close()
@@ -1084,8 +1090,8 @@ def help_legal_checks(base, side, slug, report):
                 continue
             problems += [f'{language} {path} : « {w} » absent' for w in words if w not in text]
             if path == '/help':
-                problems += [f'{language} /help : pas de lien vers /{s}/home#managers' for s in slugs
-                             if f'href="/{s}/home#managers"' not in text]
+                problems += [f'{language} /help : pas de lien vers /{s}/#managers' for s in slugs
+                             if f'href="/{s}/#managers"' not in text]
     links = [b'href="/help"', b'href="/terms_of_use"', b'href="/legal"', b'href="/legal#accessibilite"',
              f'href="{expected.SOURCE}"'.encode()]
     for path in ('/', f'/{slug}/', f'/{slug}/nos-donnees'):
@@ -1095,6 +1101,46 @@ def help_legal_checks(base, side, slug, report):
             help_problems.append(f'{path} : le « ? » ne mène pas à /help')
     report.add('nouveau seul : aide, /help', ['conforme'], help_problems or ['conforme'])
     report.add('nouveau seul : mentions légales et accessibilité, /legal', ['conforme'], legal_problems or ['conforme'])
+
+
+def managers_checks(base, old_side, new_side, report):
+    """L'onglet des gestionnaires de l'accueil d'un observatoire, que seul le nouveau a (Lou, 2026-11-16), comparé à la
+    page de contact de l'ancien, pour chaque observatoire de la base : les mêmes noms ; leur adresse pour un compte
+    connecté, et pour lui seul ; sans compte, la phrase qui dit de se connecter, avec le lien de connexion de
+    l'observatoire. Les noms se comparent sans leur ordre, que la requête ne fixe pas pour deux noms de famille égaux."""
+    slugs = [r[0] for r in query(base, "SELECT slug FROM observatoire ORDER BY id")]
+    old_row = re.compile(r'<tr>\s*<td>(.*?)</td>\s*<td>(.*?)</td>\s*<td>(.*?)</td>', re.S)
+    new_row = re.compile(r'<span class="manager-name">(.*?)</span>(?:\s*<a class="manager-email" href="mailto:([^"]*)")?', re.S)
+    problems, users = [], profiles(base)
+    for profile in ('anonyme', 'utilisateur'):
+        email = users.get(profile)
+        if profile != 'anonyme' and not email:
+            problems.append(f'{profile} : {NO_CASE}')
+            continue
+        old_client, new_client = Client(old_side, email, slugs[0]), Client(new_side, email, slugs[0])
+        for slug in slugs:
+            # Le tableau des gestionnaires seul : le pied de page de l'ancien range ses logos dans un autre tableau
+            old_page = old_client.get(f'/{slug}/contact')[2].decode('utf-8', 'replace')
+            old_page = html.unescape((re.findall(r'<table style="width:50%.*?</table>', old_page, re.S) or [''])[0])
+            status, _, body = new_client.get(f'/{slug}/')
+            tab = MANAGERS_TAB.search(body.decode('utf-8', 'replace'))
+            if status != 200 or not tab:
+                problems.append(f'{profile} /{slug}/ : statut {status}, onglet {"présent" if tab else "absent"}')
+                continue
+            tab = html.unescape(tab.group(0))
+            old_people = sorted((' '.join(f'{first.strip()} {last.strip()}'.split()), (re.findall(r'mailto:([^"]+)', mail) or [''])[0])
+                                for first, last, mail in old_row.findall(old_page))
+            new_people = sorted((' '.join(name.split()), mail or '') for name, mail in new_row.findall(tab))
+            if [n for n, _ in old_people] != [n for n, _ in new_people]:
+                problems.append(f'{profile} /{slug}/ : noms {len(new_people)} au lieu de {len(old_people)}, ou différents')
+            if email and old_people != new_people:
+                problems.append(f'{profile} /{slug}/ : adresses différentes de la page de contact')
+            if not email and any(mail for _, mail in new_people):
+                problems.append(f'{profile} /{slug}/ : une adresse montrée sans compte')
+            login = f'href="/{slug}/login"'
+            if bool(email) == (login in tab) and new_people:
+                problems.append(f'{profile} /{slug}/ : phrase de connexion {"montrée" if email else "absente"}')
+    report.add('nouveau seul : gestionnaires, onglet de l’accueil', ['conforme'], problems or ['conforme'])
 
 
 def overview_checks(base, side, report):
@@ -5563,7 +5609,7 @@ def run_merge(args):
 
     def fetch(paths):
         client = Client(SIDES['new'], None, slug)
-        return [page_lines(client.side.url, *client.get(path)) for path in paths]
+        return [page_lines(client.side.url, *client.get(path), strip_managers=False) for path in paths]
 
     paths = [p for p in page_cases(args.base) if p.startswith(f'/{slug}/') and args.only in p]
     cases, _ = export_cases(args.base)

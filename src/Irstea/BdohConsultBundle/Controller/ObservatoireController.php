@@ -85,6 +85,8 @@ class ObservatoireController extends Controller
             'sites'                 => $this->getBdohRepo('SiteExperimental')->findAll(),
             'countChroniquesBySite' => $this->getBdohRepo('SiteExperimental')->countChroniquesBySite(),
             'mapStations'           => $this->getBdohRepo('Station')->findForMap($this->getCurrentObservatoire()->getId()),
+            // L'onglet des gestionnaires (Lou, 2026-11-16), qui remplace la page de contact
+            'gestionnaires'         => $this->getRepository(Utilisateur::class)->findGestionnairesByObservatoire($this->getCurrentObservatoire()),
         ];
     }
 
@@ -213,22 +215,14 @@ class ObservatoireController extends Controller
     }
 
     /**
-     * @return array
+     * L'ancienne page de contact d'un observatoire, ses gestionnaires, la notice et le support : les gestionnaires
+     * sont dans l'onglet de son accueil, la notice et le support sur la page d'aide de tout BDOH (Lou, 2026-11-16).
+     * L'adresse reste valide, le courriel de bienvenue y menant (askManager) : elle renvoie à l'onglet.
      */
     #[Route('/contact', name: 'bdoh_consult_contact', methods: ['GET'])]
-    #[Template('@IrsteaBdohConsult/Observatoire/contact.html.twig')]
-    public function contactAction()
+    public function contactAction(): RedirectResponse
     {
-        $obs = $this->get('irstea_bdoh.manager.observatoire')->getCurrent();
-        $gestionnaires = $this->getRepository('Irstea\BdohSecurityBundle\Entity\Utilisateur')->findGestionnairesByObservatoire($obs);
-
-        $dataToShow = [];
-        /** @var Utilisateur $gest */
-        foreach ($gestionnaires as $gest) {
-            $dataToShow[] = ['firstName' => $gest->getPrenom(), 'lastName' => $gest->getNom(), 'email' => $gest->getEmail()];
-        }
-
-        return ['dataToShow' => $dataToShow];
+        return $this->redirectToRoute('bdoh_consult_observatoire', ['_fragment' => 'managers'], Response::HTTP_MOVED_PERMANENTLY);
     }
 
     /**

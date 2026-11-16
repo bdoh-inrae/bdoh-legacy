@@ -456,6 +456,48 @@ class Register(unittest.TestCase):
         # Sans le bloc INRAE, rien ne se réécrit : l'écart se voit
         self.assertEqual(compare.expected.footer(old[2:]), old[2:])
 
+    def test_the_contact_page_leads_to_the_managers_tab(self):
+        # La page de contact renvoie à l'onglet des gestionnaires de l'accueil (Lou, 2026-11-16)
+        rules = [r for r in compare.expected.RULES if r.mode == 'pages']
+        old = ['statut 200', 'type text/html', 'T Pour contacter un gestionnaire de cet observatoire adressez-vous à :',
+               'T Camille', 'T Essai']
+        new = ['statut 301', 'redirection /OBS/#managers', 'type text/html', 'T Redirecting to /OBS/#managers',
+               'A /OBS/#managers', 'T Redirecting to /OBS/#managers.']
+        self.assertEqual(self.verdict(rules, 'anonyme /OBS/contact', old, new), 'écarts admis')
+        for fault, faulty in [('ailleurs', [l.replace('#managers', '') for l in new]),
+                              ('la page gardée', ['statut 200', 'type text/html', 'T Camille Essai'])]:
+            with self.subTest(fault):
+                self.assertEqual(self.verdict(rules, 'anonyme /OBS/contact', old, faulty), 'différents')
+
+    def test_the_managers_tab_is_compared_apart(self):
+        # Son contenu sort des pages comparées ; sa pastille reste, admise sur l'accueil seulement
+        body = ('<ul><li><a href="#description">Présentation</a></li><li><a href="#managers">Gestionnaires</a></li></ul>'
+                '<!-- Managers tab --><div id="managers"><span class="manager-name">Camille Essai</span></div>'
+                '<!-- END_Managers tab --><p>Suite</p>').encode()
+        lines = compare.page_lines('http://x', 200, {'Content-Type': 'text/html'}, body)
+        self.assertNotIn('T Camille Essai', lines)
+        self.assertIn('T Suite', lines)
+        self.assertIn('T Camille Essai', compare.page_lines('http://x', 200, {'Content-Type': 'text/html'}, body,
+                                                             strip_managers=False))
+        rules = [r for r in compare.expected.RULES if r.mode == 'pages' and r.why == compare.expected.HOMES]
+        old, new = ['T a'], ['A #managers', 'T Gestionnaires', 'T a', 'S /bundles/irsteabdohconsult/js/read-more.js']
+        self.assertEqual(self.verdict(rules, 'anonyme /OBS/', old, new), 'écarts admis')
+        self.assertEqual(self.verdict(rules, 'anonyme /OBS/station/S', old, new), 'différents')
+
+    def test_the_titles_lose_their_quotes(self):
+        # Le type au-dessus du nom, le nom seul (Lou, 2026-11-16)
+        rules = [r for r in compare.expected.RULES if r.mode == 'pages']
+        for old, new in [('T Station « Laval amont »', 'T Station Laval amont'),
+                         ('T Chronique « LAVAL / Q »', 'T Chronique LAVAL / Q'),
+                         ('T Jeu(x) de données « Débits de Draix »', 'T Jeu de données Débits de Draix'),
+                         ('T Time series “ LAVAL / Q ”', 'T Time series LAVAL / Q'),
+                         ('T Dataset “ Draix flows ”', 'T Dataset Draix flows')]:
+            with self.subTest(old):
+                self.assertEqual(self.verdict(rules, 'anonyme /OBS/station/S', ['T a', old], ['T a', new]), 'écarts admis')
+                self.assertEqual(self.verdict(rules, 'anonyme /OBS/station/S', ['T a', old], ['T a', old]), 'différents')
+        self.assertEqual(self.verdict(rules, 'anonyme /OBS/station/S', ['T Station « Laval »'], ['T Station Autre']),
+                         'différents')
+
     def test_the_terms_of_an_observatory_lead_to_the_common_page(self):
         rules = [r for r in compare.expected.RULES if r.mode == 'pages']
         old = ['statut 200', 'type application/octet-stream']

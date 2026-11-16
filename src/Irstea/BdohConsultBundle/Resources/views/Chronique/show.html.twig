@@ -68,7 +68,9 @@
             {% endif %}
         </div>
 
-        <h1>{{ 'Chronique' | trans }} <em>{{ 'open_quote'|trans }}{{ chronique }}{{ 'close_quote'|trans }}</em></h1>
+        {#- Le titre : le type en petit au-dessus, le nom seul, sans guillemets ni italique, le même sur les pages d'une station,
+         # d'une chronique et d'un jeu de données (Lou, 2026-11-16) #}
+        <h1 class="page-title"><span class="page-type">{{ 'Chronique' | trans }}</span> {{ chronique }}</h1>
 
         {% if hasActiveJobs and is_granted('JOB_LIST', currentObservatoire()) %}
             <div class="col-md-24 alert alert-info">

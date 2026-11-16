@@ -55,7 +55,7 @@
 {% endif %}
     <ul class="help-observatories">
         {% for observatoire in allObservatoires() %}
-            <li><a href="{{ path('bdoh_home', {'_observatoire': observatoire.slug}) }}#managers">{{ observatoire.nom }}</a></li>
+            <li><a href="{{ path('bdoh_consult_observatoire', {'_observatoire': observatoire.slug}) }}#managers">{{ observatoire.nom }}</a></li>
         {% endfor %}
     </ul>
 </div>

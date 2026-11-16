@@ -8,6 +8,7 @@
 {% block javascripts %}
     {{ parent() }}
     <script src="{{ asset('assets/consult/observatoire.js') }}"></script>
+    <script src="{{ asset('bundles/irsteabdohconsult/js/home-tabs.js') }}" defer></script>
     <script src="{{ asset('bundles/irsteabdohconsult/vendor/leaflet/leaflet.js') }}"></script>
     <script src="{{ asset('bundles/irsteabdohconsult/js/stations-map.js') }}" defer></script>
     <script src="{{ asset('bundles/irsteabdohconsult/js/read-more.js') }}" defer></script>
@@ -111,8 +112,10 @@
  # la présentation (ou les partenaires), que le texte fait couler autour des photos ; puis la recherche avancée, les
  # sites et les jeux de données d'un côté, les paramètres, deux fois plus larges, de l'autre (homes.css), les longues
  # descriptions repliées (read-more.js). Les blocs restent où ils sont : seul le contenu des onglets change.
- # Depuis le 15 novembre (Lou) : le logo à gauche du nom, les onglets juste au-dessus de ce qu'ils montrent, les photos
- # dans un cadre fixe ; l'ordre de la page ne change pas, la grille de homes.css place les blocs.
+ # Depuis le 15 novembre (Lou) : le logo à gauche du nom, les photos dans un cadre fixe. Depuis le 16 (Lou) : les
+ # onglets sur la ligne du nom, à droite, comme avant, le filet sous toute la ligne, et un troisième onglet, les
+ # gestionnaires, où mènent l'aide et l'ancienne page de contact (/contact). L'adresse porte l'onglet (#managers),
+ # que home-tabs.js ouvre.
  #}
 {% block main %}
 <div id="consult-observatoire">
@@ -120,23 +123,29 @@
     {% set partenaireTab = ((not observatoire.partenaires is empty)) %}
     {% set photos = observatoire.pathPhotoPrincipale or observatoire.pathPhotoSecondaire %}
 
+    <!-- La ligne du nom : le logo et le nom à gauche, les onglets et la boîte à outils à droite, le filet dessous
+         (homes.css place les blocs ; l'ordre de la page est celui de l'ancien) -->
+    <div class="observatory-headline">
+
     <!-- Menu for variable part -->
-    <ul class="nav nav-pills pull-right">
+    <ul class="nav nav-pills">
         <li class="active"><a href="#description" data-toggle="pill">{{ 'presentation'|trans }}</a></li>
         {% if partenaireTab %}
             <li><a href="#partners" data-toggle="pill">{{ 'partners'|trans }}</a></li>
         {% endif %}
-        {#- Les conditions d'utilisation, communes à tout BDOH, sont au pied de chaque page (Lou, 2026-11-15) #}
+        {#- Les gestionnaires (Lou, 2026-11-16) ; les conditions d'utilisation, communes à tout BDOH, sont au pied de
+         # chaque page (Lou, 2026-11-15) #}
+        <li><a href="#managers" data-toggle="pill">{{ 'managers'|trans }}</a></li>
     </ul>
 
     <!-- Toolbox for 'observatoire' -->
-    <div class="toolbox-btns pull-left">
-        {% if is_granted('EDIT', observatoire) %}
+    <div class="toolbox-btns">
+        {%- if is_granted('EDIT', observatoire) %}
             {{ edit(
             path('bdoh_admin_observatoire_edit', {'id': observatoire.id}),
             'editObservatoire'|trans
             ) }}
-        {% endif %}
+        {% endif -%}
     </div>
 
     <!-- Title -->
@@ -153,6 +162,7 @@
         {% endif %}
         <small>{{ 'welcome'|trans }}</small>
     </h1>
+    </div>
     </div>
 
     <!-- Carte des stations, en bandeau -->
@@ -209,6 +219,27 @@
                 {% endif %}
             </div>
         {% endif %}
+
+        {#- Les gestionnaires, comme la page de contact de l'ancien : leurs noms pour tous, leur adresse pour qui est
+         # connecté, et on le dit (Lou, 2026-11-16). Un formulaire qui ne montre pas l'adresse viendra plus tard
+         # (ROADMAP.md, Modernisations). compare.py retire cet onglet de la page et le relit à part (« nouveau seul :
+         # gestionnaires »), d'après les marques qui l'entourent. #}
+        <!-- Managers tab -->
+        <div id="managers" class="tab-pane">
+            <h2>{{ 'contactGestionnaire'|trans }}</h2>
+            <ul class="manager-list">
+                {% for gestionnaire in gestionnaires %}
+                    <li><span class="manager-name">{{ gestionnaire.prenom }} {{ gestionnaire.nom }}</span>
+                        {%- if is_granted('ROLE_USER') %} <a class="manager-email" href="mailto:{{ gestionnaire.email }}">{{ gestionnaire.email }}</a>{% endif %}</li>
+                {% else %}
+                    <li>{{ 'noOne'|trans }}</li>
+                {% endfor %}
+            </ul>
+            {% if not is_granted('ROLE_USER') and gestionnaires is not empty %}
+                <p class="manager-login">{{ 'managers.login(%link%)'|trans({'%link%': path(accountRoute('login'))})|raw }}</p>
+            {% endif %}
+        </div>
+        <!-- END_Managers tab -->
 
     </div>
 

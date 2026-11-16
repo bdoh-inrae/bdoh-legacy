@@ -159,6 +159,8 @@ $various = [
     'or'                                      => 'ou',
     'overlap'                                 => 'Chevauchement',
     'parametersStudied'                       => 'Paramètres étudiés',
+    'managers'                                => 'Gestionnaires',
+    'managers.login(%link%)'                  => '<a href="%link%">Connectez-vous</a> pour voir leur adresse.',
     'partners'                                => 'Partenaires',
     'cgu'                                     => "Conditions d'utilisation",
     'period'                                  => 'Période',

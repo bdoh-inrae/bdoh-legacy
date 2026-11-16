@@ -109,7 +109,9 @@
         </div>
         {% from 'macros.html.twig' import i18nEntityLabel %}
         <!-- Title -->
-        <h1>{{ 'dataSet' | trans }} <em>{{ 'open_quote'|trans }}{{ i18nEntityLabel(dataset, 'titre', 'noDescription') }}{{ 'close_quote'|trans }}</em></h1>
+        {#- Le titre : le type en petit au-dessus, le nom seul, sans guillemets ni italique, le même sur les pages d'une station,
+         # d'une chronique et d'un jeu de données (Lou, 2026-11-16) #}
+        <h1 class="page-title"><span class="page-type">{{ 'dataset' | trans }}</span> {{ i18nEntityLabel(dataset, 'titre', 'noDescription') }}</h1>
 
         <!-- First section : identification / map -->
         <div class="row">

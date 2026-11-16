@@ -160,6 +160,8 @@ $various = [
     'or'                                      => 'or',
     'overlap'                                 => 'Overlap',
     'parametersStudied'                       => 'Parameters',
+    'managers'                                => 'Managers',
+    'managers.login(%link%)'                  => '<a href="%link%">Log in</a> to see their address.',
     'partners'                                => 'Partners',
     'cgu'                                     => 'Terms of use',
     'period'                                  => 'Period',

@@ -106,7 +106,9 @@
         </div>
 
         <!-- Title -->
-        <h1>{{ 'Station' | trans }} <em>{{ 'open_quote'|trans }}{{ station.nom }}{{ 'close_quote'|trans }}</em></h1>
+        {#- Le titre : le type en petit au-dessus, le nom seul, sans guillemets ni italique, le même sur les pages d'une station,
+         # d'une chronique et d'un jeu de données (Lou, 2026-11-16) #}
+        <h1 class="page-title"><span class="page-type">{{ 'Station' | trans }}</span> {{ station.nom }}</h1>
 
         <!-- First section : identification / map -->
         <div class="row">

@@ -123,8 +123,6 @@ $besoin = [
 
 $various = [
     'contactGestionnaire'       => 'To contact a manager of this observatory please contact:',
-    'userManual(%link%)'        => 'For more information about using BDOH you may read <a href="%link%">the BDOH documentaion</a>.',
-    'technicalContact'          => 'For technical questions about using BDOH please contact <a href="mailto:bdoh.support@listes.inrae.fr">bdoh.support@listes.inrae.fr</a>.',
 
     // A user's favourites and their labels (dev/plans/2026-11-12_favorites.md)
     'favorite' => [

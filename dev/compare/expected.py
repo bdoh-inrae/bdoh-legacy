@@ -49,7 +49,7 @@ def replaced(mode, case, why, status, *lines):
 
 OPEN = 'Ouverture des données'
 LINK = 'Connexion par lien, sans mot de passe'
-CONTACT = 'Adresse de contact'
+MANAGERS = "Les gestionnaires d'un observatoire, dans un onglet de son accueil"
 HOMES = 'Accueils autour de la carte'
 GRAPH = "Graphique d'une chronique"
 OLD_TERMS = "Pour pouvoir télécharger des données il faudra, une fois connecté, faire des demandes d'accès spécifiques sur les observatoires qui vous intéressent via le formulaire de demande d'accès aux données ou contacter un gestionnaire"
@@ -128,7 +128,7 @@ CHANGED_KEYS = """accueilMessage | measure.export.help-content | measure.export.
     security.besoin.create.title | security.login_form.connectTo | security.utilisateur.create.info.isTheFirstStep
     security.utilisateur.create.info.yourIdentifier | security.utilisateur.create.isCompleted
     security.utilisateur.newMailUtilisateur.body.step2 | security.utilisateur.newMailUtilisateur.body.step4
-    technicalContact | utilisateur.newAccountMail.body"""
+    utilisateur.newAccountMail.body"""
 
 
 def NO_MANAGER_MAIL(lines):
@@ -336,6 +336,24 @@ def search_renamed(lines):
     return [renamed(line) for line in lines]
 
 
+TITLES = "Titres des pages d'une station, d'une chronique, d'un jeu de données"
+# Le titre de l'ancien, « Station « nom » », le nom entre guillemets (français ou anglais) et en italique
+TITLE = re.compile(r'T (Station|Chronique|Time series|Jeu\(x\) de données|Dataset) [«“] (.+) [»”]')
+
+
+def titles(lines):
+    """Le titre d'une station, d'une chronique, d'un jeu de données (Lou, 2026-11-16) : le type au-dessus du nom, le nom
+    seul, sans guillemets ; « Jeu de données » au singulier, comme le titre de l'onglet du navigateur. Les deux restent
+    dans le même titre (h1), d'où une seule ligne."""
+    def rewritten(line):
+        m = TITLE.fullmatch(line)
+        if not m:
+            return line
+        kind = 'Jeu de données' if m.group(1) == 'Jeu(x) de données' else m.group(1)
+        return f'T {kind} {m.group(2)}'
+    return [rewritten(line) for line in lines]
+
+
 FAVORITES = 'Favoris et étiquettes'
 # L'entrée du menu du compte, sur toute page d'un compte connecté, et l'étoile d'une chronique, dans les pages de
 # consultation (dev/plans/2026-11-12_favorites.md) ; le reste se vérifie à part (« nouveau seul : favoris » dans accounts)
@@ -459,8 +477,9 @@ def merge_rules(renamed, others, families, admins):
              lines=tuple(x for slug, name in others for x in (RX(rf'\+A /{re.escape(slug)}/(?:home)?'), f'+T {name}'))),
         Rule('merge', r'anonyme /.*', MERGE, lines=(*regrouped, RX(r'[-+]A #(?:famille-|family|param-).*'),
                                                     RX(r'[-+]D a data-toggle=collapse'))) if families else None,
-        # Les administrateurs d'OTHU, devenus gestionnaires de l'observatoire, s'ajoutent à ses contacts
-        Rule('merge', r'anonyme /[A-Z][A-Z0-9-]*/contact', MERGE, lines=tuple(f'+T {x}' for names in admins for x in names)),
+        # Les administrateurs d'OTHU, devenus gestionnaires de l'observatoire, s'ajoutent à l'onglet de ses
+        # gestionnaires, sur son accueil (Lou, 2026-11-16 ; la page de contact y renvoie)
+        Rule('merge', r'anonyme /[A-Z][A-Z0-9-]*/', MERGE, lines=tuple(f'+T {" ".join(names)}' for names in admins)),
         Rule('merge', r'bdoh:export:instantaneous .*', MERGE, lines=(
             RX(r'\+\d\d/\d\d/\d{4} \d\d:\d\d:\d\d;.*'), RX(r'-\s*Aucune mesure exportée'), RX(r'\+\s*\d+ mesures exportées'))),
         Rule('merge', r'bdoh:export:.* --format qtvar .*', MERGE,
@@ -475,6 +494,7 @@ RULES = [
     *(Rule(mode, r'.*', HEADER, rewrite=footer) for mode in ('pages', 'admin', 'imports', 'accounts')),
     # (les pages des autres modes ne nomment pas la recherche : « Règle sans écart » le 13 et le 15 novembre)
     Rule('pages', r'.*', SEARCH_NAME, rewrite=search_renamed),
+    Rule('pages', r'.*', TITLES, rewrite=titles),
     Rule('pages', r'.*', TERMS, rewrite=doi_links),
     *(Rule(mode, r'(?!anonyme ).*', FAVORITES, lines=FAVORITE_MENU) for mode in ('pages', 'admin', 'accounts')),
     Rule('pages', r'(?!anonyme ).*', FAVORITES, lines=FAVORITE_STAR),
@@ -482,6 +502,7 @@ RULES = [
     Rule('state', 'étapes', HEADER, rewrite=per_page(header)),
     Rule('state', 'étapes', HEADER, rewrite=per_page(footer)),
     Rule('state', 'étapes', SEARCH_NAME, rewrite=search_renamed),
+    Rule('state', 'étapes', TITLES, rewrite=titles),
     Rule('state', 'étapes', FAVORITES, lines=(*FAVORITE_MENU, *FAVORITE_STAR)),
     Rule('state', 'étapes', CSV_FORMAT, lines=CSV_OPTION),
     Rule('state', 'étapes', GRAPH, lines=(
@@ -527,6 +548,9 @@ RULES = [
         RX(r'\+G /uploads/\S+'),
         # l'onglet des conditions d'utilisation, passées au pied de toutes les pages (Lou, 2026-11-15 ; expected.footer)
         RX(rf'-A {OBS}/terms_of_use'), RX(r"-T (?:Conditions d'utilisation|Terms of use)"),
+        # celui des gestionnaires (Lou, 2026-11-16), dont le contenu sort de la comparaison des pages (MANAGERS_TAB) et
+        # que « nouveau seul : gestionnaires » compare à la page de contact de l'ancien
+        '+A #managers', RX(r'\+T (?:Gestionnaires|Managers)'),
         # comment citer l'observatoire, comme le README de ses exports (Lou, 2026-11-15)
         RX(r'\+T (?:Comment citer|How to cite)'),
         RX(r'\+T Source ?: INRAE, BDOH, (?:observatoire|observatory) .+, (?:données téléchargées le|data downloaded on)'
@@ -542,10 +566,10 @@ RULES = [
     Rule('pages', rf'{ROLE} {OBS}/viewer', GRAPH, lines=(*FIVE_YEARS, *DATE_TIP), must=FIVE_YEARS[:1]),
     # L'astuce de saisie des dates passe dans la bulle des champs, sur la recherche avancée aussi
     Rule('pages', rf'{ROLE} {OBS}/nos-donnees', GRAPH, lines=DATE_TIP),
-    Rule('pages', rf'{ROLE} {OBS}/contact', CONTACT, lines=(
-        '-A mailto:bdoh.support@lists.irstea.fr', '+A mailto:bdoh.support@listes.inrae.fr',
-        "-T Pour les demandes techniques concernant l'utilisation de BDOH veuillez contacter bdoh.support@lists.irstea.fr.",
-        "+T Pour les demandes techniques concernant l'utilisation de BDOH veuillez contacter bdoh.support@listes.inrae.fr.")),
+    # La page de contact d'un observatoire renvoie à l'onglet de ses gestionnaires, sur son accueil ; la notice et le
+    # support sont sur la page d'aide de tout BDOH (Lou, 2026-11-16)
+    replaced('pages', rf'{ROLE} {OBS}/contact', MANAGERS, 301, RX(rf'\+redirection {OBS}/#managers'),
+             RX(rf'\+T Redirecting to {OBS}/#managers\.?'), RX(rf'\+A {OBS}/#managers')),
     # Une chronique visible montre ses points de contrôle à tous. Une cachée répond 403 sans droit, ce que vérifie
     # « nouveau seul : ouverture », de `state` : cette règle ne distingue pas les deux.
     Rule('pages', rf'(?:anonyme|utilisateur|utilisateur-chronique) {OBS}/[^/ ]+/[^/ ]+', OPEN, lines=(
@@ -591,6 +615,9 @@ RULES = [
     # Les flèches des photos d'un observatoire, et le libellé des pastilles du portail (Lou, 2026-11-15)
     Rule('pages', rf'{ROLE} /translations/messages\.js', HOMES,
          lines=(translation(r'\+', 'photo.previous | photo.next | map.observatories | cite.title | cite.observatory | cite.preferDoi'),)),
+    # L'onglet des gestionnaires ; les textes de la page de contact qui passent sur la page d'aide (Lou, 2026-11-16)
+    Rule('pages', rf'{ROLE} /translations/messages\.js', MANAGERS,
+         lines=(translation(r'\+', 'managers | managers.login(%link%)'), translation('-', 'userManual(%link%) | technicalContact'))),
     # Le format CSV : son nom, et l'aide de la fenêtre d'export qui le décrit
     Rule('pages', rf'{ROLE} /translations/messages\.js', CSV_FORMAT,
          lines=(translation(r'\+', 'export.Csv'), translation('[-+]', 'measure.export.help-content'))),

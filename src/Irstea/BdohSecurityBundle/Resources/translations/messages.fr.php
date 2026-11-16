@@ -123,8 +123,6 @@ $besoin = [
 
 $various = [
     'contactGestionnaire'       => 'Pour contacter un gestionnaire de cet observatoire adressez-vous à :',
-    'userManual(%link%)'        => "Pour plus d'informations sur l'utilisation de BDOH vous pouvez consulter <a href=\"%link%\">la documentation de BDOH</a>.",
-    'technicalContact'          => "Pour les demandes techniques concernant l'utilisation de BDOH veuillez contacter <a href=\"mailto:bdoh.support@listes.inrae.fr\">bdoh.support@listes.inrae.fr</a>.",
 
     // Les favoris d'un compte et leurs étiquettes (dev/plans/2026-11-12_favorites.md)
     'favorite' => [
