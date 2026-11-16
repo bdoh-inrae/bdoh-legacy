@@ -7,7 +7,7 @@
 - **Fait, sans passe encore** (16 novembre, Suivi) : étapes 1 à 4 de l'ordre de travail, et le message du kit (étape 6, sauf le second onglet des tableurs). Ce qui était « à revoir dans 4df998b » l'est : onglets sur la ligne du nom, bloc de citation, « ? » partout vers la page d'aide.
 - **Passes faites** sur le code de ces étapes (étape 7, Suivi) : tous les modes et `make browser-check` passent.
 - **Publié** : la 0.7.1, le 16 novembre, sur le code de ces passes, pour que Lou montre la dernière version en ligne.
-- **Reste** : la passe de relecture du contenu et sa migration globale (point 10, à part, avec Lou), qui font la 0.7.2 ; puis les passes qu'elle appelle et `CHANGELOG.md` ; puis l'étape de Lou (étape 8). Le délai et le message du kit sont à revoir après le point de Lou avec sa responsable (`ROADMAP.md`, « En cours »).
+- **Reste** : la passe de relecture du contenu et sa migration globale (point 10, à part, avec Lou), le point 12, puis l'étape de Lou (étape 8) : suivis désormais dans `dev/plans/2026-11-16_reopening.md`. Le délai et le message du kit sont à revoir après le point de Lou avec sa responsable (`ROADMAP.md`, « En cours »).
 - Le poste a dans `public/uploads/` les images de la production, pour que Lou juge les accueils : tout sauf `CEREGE-logo.gif`, seul de l'état d'origine. Copies dans `../bdoh_reference/uploads/` et `bdoh-uploads-prod.tar.gz`. Mises de côté le temps de chaque passe d'`admin`, puis remises.
 
 ## Méthode
@@ -123,7 +123,7 @@ Un « point zéro » de la base juste après l'installation de la 0.7.1, avant l
 
 ### 12. Les photographies sous Licence Ouverte
 
-Décidé par Lou le 16 novembre (`dev/decisions.md`, « Ouverture des données ») ; part avec la 0.7.2.
+Décidé par Lou le 16 novembre (`dev/decisions.md`, « Ouverture des données »)  ; sa réalisation se suit dans `dev/plans/2026-11-16_reopening.md`, point 7.
 - Sous les deux champs des photos du formulaire d'un observatoire (`Admin/Data/Observatoire.php`) : la photo est diffusée sous Licence Ouverte 2.0, comme les données ; ne la déposer que si on en est l'auteur, ou avec son accord.
 - La page des conditions, en français et en anglais : les photographies sortent des exceptions de la licence (restent les logos et les coordonnées des personnes). Les mentions légales, « Crédits » : les logos à leurs titulaires, les photographies sous Licence Ouverte.
 - Le message du kit : une ligne pour que les gestionnaires vérifient les photos de leur accueil (17 dans la base complète, deux au plus par observatoire).
@@ -137,8 +137,8 @@ Décidé par Lou le 16 novembre (`dev/decisions.md`, « Ouverture des données �
 4. Fenêtre d'export (valeurs par défaut, portes d'entrée) et nom de l'archive. Fait le 16 novembre (Suivi).
 5. La passe de relecture du contenu, à part (Lou, 16 novembre) : une migration globale pour les erreurs mineures, après les captures des accueils montrées à Lou ; les erreurs plus importantes au second onglet des tableurs.
 6. Le kit : son message (le CSV par défaut, l'aide au « ? », l'onglet Gestionnaires ; et, à proposer à Lou, que le site s'ouvre aussi sans VPN depuis le réseau filaire d'un bureau INRAE, d'après elle le 16 novembre, quand le message dit aujourd'hui « que sous le VPN ») et le second onglet des tableurs (OHM-CV : quel DOI principal ; ORACLE : ses deux autres DOI ; Arc-Isère : un article pris comme DOI d'un jeu ; Ardières-Morcille : un article seul). Message fait le 16 novembre, à relire par Lou ; le second onglet attend la relecture du contenu.
-7. Retirer les images de la production de `public/uploads/`, puis toutes les passes (`pages`, `admin`, `accounts`, `state`, `exports`, `theia`, `imports` ; leurs commandes, et `make mail-start` d'abord : `dev/plans/2026-11-04_validation.md`, « Commandes »), `make browser-check`, `CHANGELOG.md`, la 0.7.1. Passes faites le 16 novembre sur le code des étapes 1 à 4 (Suivi), et la 0.7.1 publiée ; après la migration globale, rejouer les modes qu’elle touche, puis publier la 0.7.2.
-8. Lou : `vm-update` vers la 0.7.1 (`NOM=prod` une dernière fois), puis vers la 0.7.2 ; le `.env` au nom `bdoh.inrae.fr` (fait le 16 novembre : `dev/plans/2026-10-26_deployment.md`, Suivi) ; le point zéro, après la 0.7.2 ; la restauration éprouvée à part, `make test-kit` avec `--site https://bdoh.inrae.fr`, l'envoi.
+7. Retirer les images de la production de `public/uploads/`, puis toutes les passes (`pages`, `admin`, `accounts`, `state`, `exports`, `theia`, `imports` ; leurs commandes, et `make mail-start` d'abord : `dev/plans/2026-11-04_validation.md`, « Commandes »), `make browser-check`, `CHANGELOG.md`, la 0.7.1. Passes faites le 16 novembre sur le code des étapes 1 à 4 (Suivi), et la 0.7.1 publiée ; après la migration globale, rejouer les modes qu’elle touche, puis publier (`dev/plans/2026-11-16_reopening.md`).
+8. Lou : `vm-update` vers la 0.7.1 (`NOM=prod` une dernière fois), puis vers la version suivante (`dev/plans/2026-11-16_reopening.md`) ; le `.env` au nom `bdoh.inrae.fr` (fait le 16 novembre : `dev/plans/2026-10-26_deployment.md`, Suivi) ; le point zéro, juste avant l'envoi du kit ; la restauration éprouvée à part, `make test-kit` avec `--site https://bdoh.inrae.fr`, l'envoi.
 
 ## Suivi
 

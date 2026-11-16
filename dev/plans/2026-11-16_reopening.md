@@ -1,74 +1,104 @@
 # La réouverture : pré-essai, essais, ouverture à tous et toutes
 
-État : en cours, ouvert le 2026-11-16. Le plan que Lou a rapporté de son point du 16 novembre avec sa responsable : plus de temps pour les gestionnaires, plus d'accompagnement de l'ouverture des données, une réouverture mi-décembre. Il prend la suite de [2026-11-16_before-kit.md](2026-11-16_before-kit.md), dont la 0.7.1 est publiée et installée ; ses points 10 (relecture du contenu) et 12 (photographies) passent ici, avec leurs décisions là-bas.
+État : en cours, ouvert le 2026-11-16. Le plan que Lou a rapporté de son point du 16 novembre avec sa responsable : plus de temps pour les gestionnaires, plus d'accompagnement de l'ouverture des données, une réouverture mi-décembre. Il prend la suite de [2026-11-16_before-kit.md](2026-11-16_before-kit.md), terminé avec la 0.7.1 (publiée et installée sur la VM, au nom `bdoh.inrae.fr`) ; les décisions de ses points 10 (relecture du contenu) et 12 (photographies) y restent, leur réalisation se suit ici (point 7).
+
+Rien n'est encore commencé dans le code (fin de la session du 16 novembre) : « Pour reprendre », en bas, donne l'ordre de travail.
 
 ## Le calendrier (Lou, 16 novembre)
 
 - **16 novembre** : Lou invite la liste large des utilisateurs et utilisatrices de BDOH à une visio de présentation de la nouvelle plateforme, sur un sondage des deux semaines qui viennent.
-- **Avant la visio** : un pré-essai par deux gestionnaires d'observatoire bien plus présents que les autres (noms dans `dev/local/test-tracking.md`) ; leurs retours avant ceux des autres testeurs et testeuses, et beaucoup de cas couverts d'emblée. L'une d'eux a fait les remarques de ce plan : le pré-essai vient une fois ce lot corrigé, avec le kit de leur observatoire, pour qu'ils voient aussi ce qui partira aux autres gestionnaires et les corrections qu'on leur propose (Lou, 16 novembre).
+- **Avant la visio** : un pré-essai par deux gestionnaires d'observatoire bien plus présents que les autres (noms dans `dev/local/test-tracking.md`). Les remarques des points 1 à 4 viennent de l'une des deux personnes du pré-essai : il vient une fois ce lot corrigé, avec le kit de leur observatoire, pour qu'ils voient aussi ce qui partira aux autres gestionnaires et les corrections qu'on leur propose. Leurs retours viennent avant ceux des autres, et couvrent déjà beaucoup de cas.
 - **30 novembre** : les essais pour tous et toutes, deux semaines, avec le kit (message et tableur par observatoire).
 - **Mi-décembre** : la réouverture à tous et toutes.
-- **En parallèle** (Lou) : contacter OTHU et OHGE, une autre instance de BDOH, pas encore fondue, pour discuter de tout réunir dans l'instance actuelle : la preuve que BDOH porte toutes ces données, une gestion du service plus simple, et une seule base pour une future migration du modèle de données.
+- **En parallèle** (Lou) : contacter OTHU et OHGE (une autre instance de BDOH, pas encore fondue) pour discuter de tout réunir dans l'instance actuelle : la preuve que BDOH porte toutes ces données, une gestion du service plus simple, une seule base pour une future migration du modèle de données. OTHU est déjà fondu sur la VM (0.6.0) ; reste à en parler avec ses gestionnaires.
 
-## Les versions (Lou, 16 novembre)
+## Les versions
 
-Pas de découpage en versions avec ou sans : tout ce qui est ici se fait avant le 30 novembre, pour les essais. Une version pour le pré-essai, dès que le lot de remarques (points 1 à 5, 7, 8) est fait ; puis celle des essais, avec les retours du pré-essai et le reste. Seules les listes de diffusion par observatoire peuvent attendre, si elles dépendent d'échanges avec l'administration d'INRAE.
+Comme d'habitude (`~/.claude/rules/project.md`, « Les versions ») : une version se publie quand « Non publié » forme un ensemble utilisable, sans numéro fixé d'avance (Lou, 16 novembre : on ne sait pas encore à quelle vitesse on avancera). Deux repères seulement :
+- le pré-essai demande une version installée sur la VM avec au moins les points 1 à 4, 7 et 8 ;
+- les essais du 30 novembre, tout ce qu'on peut du reste, avec les retours du pré-essai. Seules les listes de diffusion par observatoire (5) peuvent attendre, si elles dépendent d'échanges avec l'administration d'INRAE.
 
 ## Les points
 
-### 1. Les chroniques à accès restreint (Lou, 16 novembre)
+Chaque point dit ce qui est décidé, et ce qui attend Lou avant d'être codé.
 
-Ce ne sont pas des données qu'on demande : ce sont les données intermédiaires des observatoires, réservées à leurs membres, dont BDOH ne peut pas assurer la diffusion en l'état ; d'où l'ancien mot « cachées ». Les textes ne doivent pas laisser croire que n'importe qui peut en demander l'accès, sans fermer la porte : qui en a besoin s'adresse aux partenaires responsables de leur diffusion.
-- Aujourd'hui, la page des conditions (`Core/terms.html.twig`, « Les chroniques en accès restreint ») dit « leurs valeurs sont fournies sur demande : créez un compte, puis […] faites une demande d'accès ». À réécrire, en français et en anglais, comme la page de la demande d'accès (`BesoinController`) et ce que voit un visiteur sans droit sur une telle chronique.
+### 1. Les chroniques réservées à l'observatoire
+
+**Décidé (Lou, 16 novembre).** Les chroniques à accès restreint (`estvisible = false`, « cachées » dans l'ancien) ne sont pas des données qu'on demande : ce sont les données intermédiaires des observatoires, réservées à leurs membres, dont BDOH ne peut pas assurer la diffusion en l'état. Les textes ne doivent pas laisser croire que n'importe qui peut en demander l'accès, sans fermer la porte. Texte retenu par Lou, à décliner en français et en anglais : elles sont réservées aux membres de l'observatoire pour son travail interne ; BDOH n'en assure pas la diffusion : pour les obtenir, s'adresser aux partenaires qui la portent.
+- À réécrire : la page des conditions (`Core/terms.html.twig`, section « Les chroniques en accès restreint », qui dit aujourd'hui « leurs valeurs sont fournies sur demande : créez un compte, puis […] faites une demande d'accès »), la page de la demande d'accès (`BesoinController`), et ce que voit un visiteur sans droit sur une telle chronique.
 - La demande d'accès reste, pour les membres d'un observatoire (un nouveau membre la fait encore) ; son texte le dit.
-- Le producteur d'une chronique est renseigné pour la moitié d'entre elles (1 502 sur 3 012, `dev/plans/2026-11-04_open-data.md`). La liste des chroniques d'une station le montre déjà, chroniques réservées comprises (`Station/_chronique-inList.html.twig`) ; la page de la chronique aussi, mais un visiteur sans droit sur une chronique réservée y reçoit un refus (403). À creuser : dire, sur ce refus ou dans la liste, que la chronique est réservée à l'observatoire, et à qui s'adresser.
+- **À proposer à Lou, en captures** : la page d'une chronique réservée répond aujourd'hui par un refus sec (403) à un visiteur sans droit. Le producteur, quand il est renseigné (1 502 chroniques sur 3 012), se voit déjà dans la liste des chroniques d'une station, chroniques réservées comprises (`Station/_chronique-inList.html.twig`). Proposer, sur ce refus ou dans la liste, de dire que la chronique est réservée à l'observatoire, et à qui s'adresser.
 
 ### 2. L'export
 
-**a. « Le pas de temps est trop faible par rapport à la période sélectionnée. »** Une règle de l'ancien, dans le navigateur seulement (`export-modal.js`, `ALLOWED_YEARS_PER_MINUTE = 2`) : pour un export rééchantillonné (instantané, moyenne, cumul), la période ne dépasse pas 2 ans par minute de pas, soit 30 ans au pas de 15 minutes, environ un million de valeurs calculées par chronique. Une limite technique, sans raison scientifique ; le serveur ne la vérifie pas. La période entière par défaut (0.7.1) la rend visible dès l'ouverture de la fenêtre, sur toute chronique plus longue (Yzeron, dont un débit commence en 1969 : relevé de Lou, 16 novembre), avec un message qui ne dit ni la limite ni quoi faire, et un anglais tronqué. **Décidé (Lou, 16 novembre)** : on peut faire tout export que la plateforme permet scientifiquement ; cette règle part. Restent les règles scientifiques de chaque type : les pas permis pour une moyenne ou un cumul, un pas d'interpolation d'une minute à un jour, la moyenne et le cumul aux seuls formats BDOH et CSV. Le reste est une question de volume (b).
+**a. La limite entre période et pas part.** Décidé (Lou, 16 novembre) : on peut faire tout export que la plateforme permet scientifiquement. « Le pas de temps est trop faible par rapport à la période sélectionnée » vient d'une règle de l'ancien, dans le navigateur seulement (`export-modal.js`, `ALLOWED_YEARS_PER_MINUTE = 2`) : pour un export rééchantillonné (instantané, moyenne, cumul), la période ne dépasse pas 2 ans par minute de pas, soit 30 ans au pas de 15 minutes. Une garde technique, sans raison scientifique, que le serveur ne vérifie pas. La période entière par défaut (0.7.1) la rend visible dès l'ouverture de la fenêtre sur toute chronique plus longue (un débit d'Yzeron qui commence en 1969 : relevé de Lou). Restent les règles scientifiques de chaque type : les pas permis pour une moyenne ou un cumul, un pas d'interpolation d'une minute à un jour, la moyenne et le cumul aux seuls formats BDOH et CSV.
 
-**b. Une seule règle de volume, quel que soit le type.** Aujourd'hui, sans compte, une demande de plus de 5 millions de mesures lues demande un compte, et une chronique seule passe toujours (`ExportController::isTooHeavyWithoutAccount`) ; avec un compte, aucune garde (`dev/differences.md`, « Ces gardes ne jouent pas pour un compte »). Sans la règle de a, une chronique seule interpolée à la minute sur 50 ans écrirait 26 millions de lignes, sans compte. Le volume d'une demande compte donc les valeurs écrites, pas seulement les mesures lues : pour un export à l'identique, les mesures de la période ; pour un rééchantillonnage, le nombre de pas de la période, par chronique. Au-dessus d'un premier seuil, un compte est demandé (le lien arrive par courriel) ; au-dessus d'un second, plus haut, l'export est refusé même avec un compte, pour qu'une demande sur tout BDOH ne bloque pas la file des heures, ni ne remplisse `/tmp` (8 Go sur la VM), où passent aussi les imports. Le temps, lui, dépend du type : sur le poste, la plus grosse chronique (2,4 millions de mesures) s'exporte en 43 s à l'identique et en 422 s en moyenne horaire (`dev/plans/2026-11-04_open-data.md`, « Les choix de Lou ») ; les seuils se règlent sur le cas le plus lent, mesuré sur la VM. Sans compte, la page de suivi donne le lien et son adresse le garde 7 jours, mais rien ne le dit : le dire, et proposer un compte (4). L'écart avec l'ancien s'inscrit dans `dev/differences.md`.
+**b. Une seule règle de volume, quel que soit le type.** Décidé (Lou, 16 novembre) dans son principe ; les seuils attendent une mesure sur la VM.
+- Aujourd'hui : sans compte, une demande de plus de 5 millions de mesures lues demande un compte, et une chronique seule passe toujours (`ExportController::isTooHeavyWithoutAccount`, `MAX_MEASURES_WITHOUT_ACCOUNT`) ; avec un compte, aucune garde (`dev/differences.md`, « Ces gardes ne jouent pas pour un compte »), si bien que des favoris sur tout BDOH partent sans plafond, un export par observatoire.
+- Le volume d'une demande compte les valeurs écrites : pour un export à l'identique, les mesures de la période ; pour un rééchantillonnage, le nombre de pas de la période ; la somme sur les chroniques de la demande. Sans la limite de a, une chronique seule interpolée à la minute sur 50 ans écrirait 26 millions de lignes : une chronique seule n'est donc plus exemptée.
+- Deux seuils : au-dessus du premier, un compte est demandé (le lien arrive par courriel) ; au-dessus du second, plus haut, l'export est refusé même avec un compte, pour qu'une demande ne bloque pas la file des heures, ni ne remplisse `/tmp` (8 Go sur la VM), où passent aussi les imports. Le message de refus dit le volume demandé, le seuil, et quoi faire (réduire la période, le nombre de chroniques, ou augmenter le pas).
+- Les seuils se règlent sur le type le plus lent : sur le poste, la plus grosse chronique (2,4 millions de mesures) s'exporte en 43 s à l'identique et en 422 s en moyenne horaire (`dev/plans/2026-11-04_open-data.md`, « Les choix de Lou »). Jusqu'à la mesure sur la VM (Lou, avec une marche à suivre que Claude prépare), le premier reste à 5 millions, et le second se pose provisoirement d'après les mesures du poste, dit comme tel dans `dev/differences.md`.
+- Sans compte, la page de suivi donne le lien, et son adresse le garde 7 jours, mais rien ne le dit : le dire, et proposer un compte (point 4).
+- Écart avec l'ancien : entrée dans `dev/differences.md` ; cas de `compare.py` pour chaque seuil, avec et sans compte, et pour une chronique seule rééchantillonnée au-delà du premier.
 
-**c. Les noms des colonnes du CSV** (Lou, 16 novembre) : en anglais, les mêmes quelle que soit la langue, pour qu'un script lise tous les exports ; ce qui s'explique se donne dans les deux langues : le README, et les titres des colonnes dans la description CSVW, qui permet un titre par langue. Le détail (un README par langue ou un seul pour les deux) en passe de convergence avec Lou.
+**c. Les noms des colonnes du CSV.** Décidé (Lou, 16 novembre) : en anglais, les mêmes quelle que soit la langue de BDOH, pour qu'un script lise tous les exports. Ce qui s'explique se donne dans les deux langues : le README, et les titres des colonnes dans la description CSVW (un titre par langue). **À voir avec Lou** : un README par langue, ou un seul pour les deux.
 
-**d. Les métadonnées dans le format long** (Lou) : l'unité de la chronique dans chaque fichier de données, absolument ; d'autres (position de la station…) à peser, pour un équilibre gérable entre fichiers séparés et colonnes répétées. Un entre-deux pour les essais, ajusté sur les retours.
+**d. Les métadonnées dans le format long.** Décidé (Lou, 16 novembre) : l'unité de la chronique dans chaque fichier de données, absolument. **À voir avec Lou** : d'autres métadonnées dans les fichiers de données (position de la station…), pour un équilibre gérable entre fichiers séparés et colonnes répétées ; un entre-deux pour les essais, ajusté sur les retours. Ce qui change le CSV se répercute dans le README (lecture en R et en Python), la description CSVW, `compare.py` (mode `exports`) et `dev/browser/check.py`.
 
-### 3. L'historique : « Utilisateur supprimé depuis » pour un export sans compte
+### 3. L'historique : un export sans compte
 
-Un export sans compte s'écrit sans auteur, et `historique/base.html.twig` affiche alors « Utilisateur supprimé depuis ». Mesuré sur la base complète anonymisée : avant l'ouverture, aucun export n'a d'auteur vide (une seule ligne de tout l'historique en a un, une administration de compte). Un export sans auteur est donc un téléchargement sans compte : l'afficher ainsi. Limite : la clé étrangère vide l'auteur à la suppression d'un compte (`ON DELETE SET NULL`) ; aucun compte n'est supprimé aujourd'hui.
+Décidé : un export sans compte s'écrit sans auteur, et `historique/base.html.twig` affiche alors « Utilisateur supprimé depuis », ce qui trompe. Mesuré sur la base complète anonymisée : avant l'ouverture, aucun export n'a d'auteur vide (une seule ligne de tout l'historique en a un, une administration de compte). Un export sans auteur est donc un téléchargement sans compte : l'afficher ainsi (« Sans compte »). Limite connue : la clé étrangère vide l'auteur à la suppression d'un compte (`ON DELETE SET NULL`) ; aucun compte n'est supprimé aujourd'hui.
 
-### 4. Inviter à créer un compte (Lou)
+### 4. Inviter à créer un compte
 
-Dans la fenêtre d'export sans compte, et sur sa page de suivi : ce qu'un compte apporte, les favoris et leurs étiquettes, le lien de l'export par courriel, les nouvelles des observatoires (5).
+Décidé (Lou, 16 novembre) : dans la fenêtre d'export sans compte, et sur sa page de suivi, dire ce qu'un compte apporte : les favoris et leurs étiquettes, le lien de l'export par courriel, les nouvelles des observatoires (point 5, quand leurs listes existent).
 
-### 5. Des listes de diffusion (Lou, pour la confiance après l'ouverture)
+### 5. Des listes de diffusion
 
-Une liste technique des utilisateurs et utilisatrices du service, et une par observatoire, où ses gestionnaires envoient à la main les nouvelles de sa vie scientifique ; une page pour s'y inscrire (au pied de page), et la proposition à la création d'un compte et dans la fenêtre d'export (4).
-- Côté BDOH : un champ par observatoire, l'adresse d'inscription à sa liste, vide tant qu'elle n'existe pas ; la page liste la liste technique et celles des observatoires qui en ont une. Rien d'autre à envoyer ni à garder : faisable pour les essais.
-- Les listes elles-mêmes, à creuser par Lou : celles d'INRAE (`listes.inrae.fr`, où vivent déjà `bdoh.support` et la liste large des utilisateurs et utilisatrices), une par observatoire, créées à la main à la demande (une nouvelle liste est rare : un nouvel observatoire), avec ses gestionnaires pour propriétaires ; un observatoire hors INRAE (OTHU, OHGE) peut préférer la sienne, que le champ accepte aussi. L'autre voie, que BDOH envoie lui-même les messages écrits par les gestionnaires, demanderait plus de code et un traitement de données personnelles de plus ; écartée tant que les listes d'INRAE suffisent.
+Voulu par Lou (16 novembre), pour la confiance après l'ouverture : une liste technique des utilisateurs et utilisatrices du service, et une par observatoire, où ses gestionnaires envoient à la main les nouvelles de sa vie scientifique ; une page pour s'y inscrire (au pied de page), et la proposition à la création d'un compte et dans la fenêtre d'export. **À voir avec Lou avant tout code** (« on voit ensemble après »). La piste de Claude, à lui expliquer :
+- côté BDOH, un champ par observatoire, l'adresse d'inscription à sa liste, vide tant qu'elle n'existe pas ; la page montre la liste technique et celles des observatoires qui en ont une ; BDOH n'envoie rien lui-même ;
+- les listes elles-mêmes sur le serveur de listes d'INRAE (`listes.inrae.fr`, où vivent déjà `bdoh.support` et la liste large des utilisateurs et utilisatrices), créées à la main, une par observatoire, ses gestionnaires pour propriétaires ; un observatoire hors INRAE (OTHU, OHGE) peut avoir la sienne ailleurs, que le champ accepte aussi. Ce qu'INRAE permet est à creuser par Lou.
 
 ### 6. Les statistiques d'usage
 
-`ROADMAP.md`, « Suivi de l'usage » : en public, consultations et téléchargements par chronique ; pour les gestionnaires, la vie de l'observatoire.
+Décidé (Lou, 16 novembre) : en public, les consultations et les téléchargements de chaque chronique ; pour les gestionnaires, la vie de l'observatoire. Un comptage à nous, Make Data Count laissé de côté pour cette version. Le détail, les mesures de l'historique et ses pièges (nomenclature changée le 20 novembre 2018) : `ROADMAP.md`, « Suivi de l'usage ». La présentation se montre à Lou en captures avant d'être finie.
 
 ### 7. La relecture du contenu et les photographies
 
-[2026-11-16_before-kit.md](2026-11-16_before-kit.md), points 10 et 12 : une migration globale pour les erreurs de forme (descriptions d'observatoire, DOI principaux évidents), les captures des accueils montrées à Lou d'abord ; les photographies sous Licence Ouverte.
+Décidés dans [2026-11-16_before-kit.md](2026-11-16_before-kit.md) :
+- point 10 : une passe de relecture du contenu de la base ; ses erreurs de forme (descriptions d'observatoire copiées de Word, paragraphes vides, DOI principaux évidents) dans une migration globale, écrite à la main, avec son retour arrière, essayée sur la base complète anonymisée ; **les captures des cinq accueils, avant et après, montrées à Lou avant d'écrire la migration** ; ses erreurs plus importantes au second onglet des tableurs du kit (`dev/local/test-kit-notes.csv`) ;
+- point 12 : les photographies sous Licence Ouverte (aide des deux champs du formulaire d'un observatoire, page des conditions, mentions légales, une ligne du kit).
 
 ### 8. Les messages
 
-- Le pré-essai : le kit de leur observatoire (message et tableur, avec les corrections qu'on leur propose), précédé de quelques lignes qui disent ce qu'est le pré-essai.
-- Le kit des essais : la visio, deux semaines, et un court paragraphe sur l'ouverture (la loi, ce qui ne change pas, la case « visible » qui reste aux gestionnaires, les chroniques réservées à l'observatoire) ; les photographies à vérifier ; la date limite.
+- Le pré-essai : le kit de leur observatoire (message et tableur, avec les corrections qu'on leur propose), précédé de quelques lignes qui disent ce qu'est le pré-essai. `make test-kit` écrit les kits de tous les observatoires ; Lou n'envoie que les leurs.
+- Le kit des essais (`dev/test-kit/messages/message.txt`) : la visio, deux semaines à partir du 30 novembre, et un court paragraphe sur l'ouverture (la loi, ce qui ne change pas, la case « visible » qui reste aux gestionnaires, les chroniques réservées à l'observatoire) ; les photographies à vérifier ; la date limite. À relire par Lou. Avant l'envoi du 30 novembre : le point zéro de la base et la restauration éprouvée à part ([2026-11-16_before-kit.md](2026-11-16_before-kit.md), « Les données après les essais »), puis `make test-kit` avec `--site https://bdoh.inrae.fr` et la date limite.
 
-### 9. Ce que demande la réouverture
+### 9. Ce que demande la réouverture, mi-décembre
 
-Ce qui était « avant l'ouverture au public » tombe d'ici mi-décembre :
-- le port 443 ouvert à Internet, la nouvelle adresse IP et le certificat (Lou, avec l'infra ; `dev/plans/2026-10-26_deployment.md`, Suivi du 16 novembre) ;
-- les trois défauts relevés dans le JavaScript le 15 novembre (`dev/local/security.md`, « À corriger ») ;
-- le juridique, en partie couvert par les essais : l'accord des gestionnaires sur leurs chroniques ouvertes vient avec les tableurs ; reste à savoir si l'accord d'un gestionnaire vaut celui d'un producteur extérieur (EDF pour Arc-Isère, INSA et UCBL pour OTHU), question que le kit leur pose déjà ; et les durées de conservation des comptes, que la page des mentions légales dit « à fixer » avec la déléguée à la protection des données, sans bloquer la réouverture (`ROADMAP.md`, « Suites de la passe juridique ») ;
-- le mot de passe d'accès retiré, `MAILER_DIVERT_TO` et `MAILER_ALLOWED_RECIPIENTS` vidés (`dev/deploy/README.md`) ;
-- la validation : invariants, pannes provoquées, relecture, puis le code gelé et toutes les passes ([2026-11-04_validation.md](2026-11-04_validation.md)).
+- Le port 443 ouvert à Internet, la nouvelle adresse IP de la VM et le certificat (Lou, avec l'infra ; `dev/plans/2026-10-26_deployment.md`, Suivi du 16 novembre).
+- Les trois défauts relevés dans le JavaScript le 15 novembre, chacun éprouvé par un cas de `compare.py` (`dev/local/security.md`, « À corriger »).
+- Le mot de passe d'accès retiré, `MAILER_DIVERT_TO` et `MAILER_ALLOWED_RECIPIENTS` vidés (`dev/deploy/README.md`, « À l'ouverture au public »).
+- La validation, autant que le temps le permet : invariants, pannes provoquées, relecture, puis le code gelé et toutes les passes ([2026-11-04_validation.md](2026-11-04_validation.md)).
+- Pas le juridique (Lou, 16 novembre) : l'accord des producteurs extérieurs est l'affaire des gestionnaires, qui savent y répondre ; la mise en conformité (durées de conservation des comptes, registre des traitements) attend la remise en route de BDOH (`ROADMAP.md`, « Plus tard »).
+
+## Ce que fait Lou
+
+Hors du code, et sans attendre Claude : l'invitation à la visio ; OTHU et OHGE ; l'infra (port, adresse, certificat) ; les listes d'INRAE (point 5) ; la restauration d'une sauvegarde éprouvée sur la VM (`dev/local/notes-for-lou.md`). Avec Claude : les points « à voir avec Lou » (2c, 2d, 5), les captures (1, 6, 7), la mesure des exports sur la VM (2b), la relecture des messages (8).
+
+## Pour reprendre
+
+Méthode : celle de [2026-11-16_before-kit.md](2026-11-16_before-kit.md), « Méthode » (les passes de `compare.py` à la fin, une fois les changements faits ; entre-temps, les tests de l'outil, `lint:twig`, `lint:container`, des captures ; ce qui se voit se montre à Lou avant d'aller plus loin). Chaque écart avec l'ancien s'inscrit dans `dev/differences.md` et, s'il est admis, dans `dev/compare/expected.py`.
+
+Ordre de travail proposé :
+1. Point 1, les textes des chroniques réservées ; puis les captures de la proposition sur le refus.
+2. Point 2a et 2b : la limite retirée, la règle de volume et ses deux seuils, les messages, la page de suivi ; la marche à suivre de la mesure sur la VM, pour Lou.
+3. Point 3, l'historique ; point 4, l'invitation à créer un compte.
+4. Point 2d, l'unité dans les fichiers de données ; 2c et le reste de 2d après en avoir vu le détail avec Lou.
+5. Point 7 : les captures des accueils pour Lou, puis la migration globale et le second onglet des tableurs ; les photographies.
+6. Point 8, les messages ; puis toutes les passes, `make browser-check`, `CHANGELOG.md`, une version ; Lou l'installe (`sudo make vm-update V=…`), puis envoie le pré-essai.
+7. Points 6 et 5 (après en avoir parlé avec Lou), les retours du pré-essai, une version pour les essais du 30 novembre ; point 9 pour la réouverture.
 
 ## Suivi
 
-- 2026-11-16 : ouvert, sur le plan de Lou ; les relevés des points 2 et 3 faits le même jour. Revu avec Lou le soir : plus de découpage en versions, le pré-essai après le lot de remarques et avec le kit, la limite période et pas retirée au profit d'une règle de volume, des colonnes en anglais, des listes de diffusion qui ne sont qu'un champ par observatoire côté BDOH.
+- 2026-11-16, soir : ouvert sur le plan de Lou, revu avec Lou point par point ; relevés faits pour les points 2 et 3 (code, base complète anonymisée). Rien n'est commencé dans le code.
