@@ -22,9 +22,10 @@
 {% endblock %}
 
 {% block main %}
+{#- Le titre de la page, sur son filet, comme celui des autres pages (Lou, 2026-11-16) #}
+<h1>{% if english %}Help and contact{% else %}Aide et contact{% endif %}</h1>
 <div id="help" class="well">
 {% if english %}
-    <h2>Help and contact</h2>
 
     <h3>User manual</h3>
     <p><a href="{{ path('bdoh_user_manual') }}">The BDOH user manual</a> (PDF, in French) describes how to search,
@@ -39,7 +40,6 @@
         restricted-access time series), write to its managers: they are listed in the “Managers” tab of its home
         page.</p>
 {% else %}
-    <h2>Aide et contact</h2>
 
     <h3>Notice d'utilisation</h3>
     <p><a href="{{ path('bdoh_user_manual') }}">La notice d'utilisation de BDOH</a> (PDF) décrit comment chercher,

@@ -485,13 +485,13 @@ class Register(unittest.TestCase):
         self.assertEqual(self.verdict(rules, 'anonyme /OBS/station/S', old, new), 'différents')
 
     def test_the_titles_lose_their_quotes(self):
-        # Le type au-dessus du nom, le nom seul (Lou, 2026-11-16)
+        # Le nom seul, puis ce qu'est la page (Lou, 2026-11-16)
         rules = [r for r in compare.expected.RULES if r.mode == 'pages']
-        for old, new in [('T Station « Laval amont »', 'T Station Laval amont'),
-                         ('T Chronique « LAVAL / Q »', 'T Chronique LAVAL / Q'),
-                         ('T Jeu(x) de données « Débits de Draix »', 'T Jeu de données Débits de Draix'),
-                         ('T Time series “ LAVAL / Q ”', 'T Time series LAVAL / Q'),
-                         ('T Dataset “ Draix flows ”', 'T Dataset Draix flows')]:
+        for old, new in [('T Station « Laval amont »', 'T Laval amont Station'),
+                         ('T Chronique « LAVAL / Q »', 'T LAVAL / Q Chronique'),
+                         ('T Jeu(x) de données « Débits de Draix »', 'T Débits de Draix Jeu de données'),
+                         ('T Time series “ LAVAL / Q ”', 'T LAVAL / Q Time series'),
+                         ('T Dataset “ Draix flows ”', 'T Draix flows Dataset')]:
             with self.subTest(old):
                 self.assertEqual(self.verdict(rules, 'anonyme /OBS/station/S', ['T a', old], ['T a', new]), 'écarts admis')
                 self.assertEqual(self.verdict(rules, 'anonyme /OBS/station/S', ['T a', old], ['T a', old]), 'différents')
@@ -570,11 +570,11 @@ class Register(unittest.TestCase):
         # Le fil de l'accueil d'un observatoire : « Accueil », sans lien
         old = [*self.OLD_HEADER[:-4], 'T Accueil', 'T « Obs » Bienvenue', 'D div data-notices=[]']
         new = compare.expected.header(old)
-        self.assertEqual(new[-5:], ['T BDOH', 'T Obs', 'A https://obs.example/', "T Obs Site de l'observatoire Bienvenue",
+        self.assertEqual(new[-5:], ['T BDOH', 'T Obs', 'A https://obs.example/', "T Obs Site de l'observatoire Observatoire",
                                     'D div data-notices=[]'])
         # Sans site, ni lien ni mention
         old = [l for l in old if l != 'A https://obs.example/']
-        self.assertEqual(compare.expected.header(old)[-2:], ['T Obs Bienvenue', 'D div data-notices=[]'])
+        self.assertEqual(compare.expected.header(old)[-2:], ['T Obs Observatoire', 'D div data-notices=[]'])
 
     def test_a_page_without_breadcrumb_gets_its_beginning(self):
         old = [*self.OLD_HEADER[:-4], 'T Contact', 'D div data-notices=[]']

@@ -24,9 +24,10 @@
 {% endblock %}
 
 {% block main %}
+{#- Le titre de la page, sur son filet, comme celui des autres pages (Lou, 2026-11-16) #}
+<h1>{% if app.request.locale starts with 'en' %}Terms of use of the data{% else %}Conditions d'utilisation des données{% endif %}</h1>
 <div id="terms-of-use" class="well">
 {% if app.request.locale starts with 'en' %}
-    <h2>Terms of use of the data</h2>
     <p>These terms are the same for all observatories of BDOH. Its time series come in two kinds:</p>
     <table class="table table-condensed">
         <thead><tr><th>Time series</th><th>Access</th><th>Terms</th></tr></thead>
@@ -68,7 +69,6 @@
     <h3>Contact</h3>
     <p>bdoh.support@listes.inrae.fr</p>
 {% else %}
-    <h2>Conditions d'utilisation des données</h2>
     <p>Ces conditions sont les mêmes pour tous les observatoires de BDOH. Ses chroniques sont de deux sortes :</p>
     <table class="table table-condensed">
         <thead><tr><th>Chronique</th><th>Accès</th><th>Conditions</th></tr></thead>

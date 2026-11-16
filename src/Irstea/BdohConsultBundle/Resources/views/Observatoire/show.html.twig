@@ -160,7 +160,9 @@
         {% if observatoire.lien and observatoire.lien != 'http://' %}
             <a class="external-link" href="{{ observatoire.lien }}" target="_blank" rel="noopener" title="{{ 'observatoryWebsite'|trans }}"><i class="icon-external" aria-hidden="true"></i><span class="sr-only">{{ 'observatoryWebsite'|trans }}</span></a>
         {% endif %}
-        <small>{{ 'welcome'|trans }}</small>
+        {#- Ce qu'est la page, après le nom, comme sur les pages d'une station, d'une chronique, d'un jeu de données
+         # (Lou, 2026-11-16 ; l'ancien disait « Bienvenue ») #}
+        <small>{{ 'Observatoire'|trans({}, 'entitiesSingulars') }}</small>
     </h1>
     </div>
     </div>

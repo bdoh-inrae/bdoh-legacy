@@ -229,8 +229,10 @@ def header(lines):
             m = OBS_TITLE.fullmatch(rest[title])
             outward = site and site != 'http://'
             label = " Site de l'observatoire" if outward else ''
+            # « Bienvenue » laisse la place à ce qu'est la page, comme sur les autres (`titles`, Lou, 2026-11-16)
+            kind = {'Bienvenue': 'Observatoire', 'Welcome': 'Observatory'}[m.group(2)]
             rest = [*rest[:title], *([f'A {site}'] if outward else []),
-                    f'T {m.group(1)}{label} {m.group(2)}', *rest[title + 1:]]
+                    f'T {m.group(1)}{label} {kind}', *rest[title + 1:]]
     language = LANGUAGES.get(lines[lang + 3], 'FR')
     return [*lines[:start], 'A /', 'T BDOH', *lines[everything - 3:end], *(current or []),
             *([data[0], DATA_LINK[data[1]]] if data else []), *lang_switch(lines[lang:lang + 7]), *HELP[language],
@@ -342,15 +344,16 @@ TITLE = re.compile(r'T (Station|Chronique|Time series|Jeu\(x\) de données|Datas
 
 
 def titles(lines):
-    """Le titre d'une station, d'une chronique, d'un jeu de données (Lou, 2026-11-16) : le type au-dessus du nom, le nom
-    seul, sans guillemets ; « Jeu de données » au singulier, comme le titre de l'onglet du navigateur. Les deux restent
-    dans le même titre (h1), d'où une seule ligne."""
+    """Le titre d'une station, d'une chronique, d'un jeu de données (Lou, 2026-11-16) : le nom seul, sans guillemets,
+    puis ce qu'est la page, en petit, comme « Observatoire » sur l'accueil d'un observatoire (`header`) ; « Jeu de
+    données » au singulier, comme le titre de l'onglet du navigateur. Les deux restent dans le même titre (h1), d'où une
+    seule ligne."""
     def rewritten(line):
         m = TITLE.fullmatch(line)
         if not m:
             return line
         kind = 'Jeu de données' if m.group(1) == 'Jeu(x) de données' else m.group(1)
-        return f'T {kind} {m.group(2)}'
+        return f'T {m.group(2)} {kind}'
     return [rewritten(line) for line in lines]
 
 
@@ -615,6 +618,8 @@ RULES = [
     # Les flèches des photos d'un observatoire, et le libellé des pastilles du portail (Lou, 2026-11-15)
     Rule('pages', rf'{ROLE} /translations/messages\.js', HOMES,
          lines=(translation(r'\+', 'photo.previous | photo.next | map.observatories | cite.title | cite.observatory | cite.preferDoi'),)),
+    # « Bienvenue », après le nom d'un observatoire, laisse la place à « Observatoire » (Lou, 2026-11-16)
+    Rule('pages', rf'{ROLE} /translations/messages\.js', TITLES, lines=(translation('-', 'welcome'),)),
     # L'onglet des gestionnaires ; les textes de la page de contact qui passent sur la page d'aide (Lou, 2026-11-16)
     Rule('pages', rf'{ROLE} /translations/messages\.js', MANAGERS,
          lines=(translation(r'\+', 'managers | managers.login(%link%)'), translation('-', 'userManual(%link%) | technicalContact'))),

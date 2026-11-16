@@ -319,23 +319,16 @@ a.bdoh-brand {
     margin: 0;
     padding-bottom: 1em;
 
+    // Un peu d'air entre le titre et son filet, le même sur toutes les pages que sur l'accueil d'un observatoire
+    // (Lou, 2026-11-16)
     h1 {
         margin-bottom: 1em;
+        padding-bottom: 6px;
         border-bottom: 1px solid @lineColor;
     }
     // Le sous-titre d'un titre (« Arc-Isère   Bienvenue ») : plus détaché du titre (2026-11-12, Lou)
     h1 > small {
         margin-left: 0.4em;
-    }
-    // Le titre d'une station, d'une chronique, d'un jeu de données : le type en petit, gris, au-dessus du nom (Lou,
-    // 2026-11-16). Il reste dans le titre, pour qui le lit d'un lecteur d'écran (« Station Laval »).
-    h1.page-title > .page-type {
-        display: block;
-        margin-bottom: 2px;
-        font-family: @font-family-base;
-        font-size: 13px;
-        font-weight: normal;
-        color: @text-muted;
     }
     // L'accueil d'un observatoire, son logo à gauche du nom (Lou, 2026-11-15) : le filet passe sous les deux, de la
     // couleur du thème, comme sous un titre seul, et s'arrête avant les onglets, comme dans la 0.7.0 (Lou, 2026-11-16 ;
@@ -347,6 +340,7 @@ a.bdoh-brand {
         border-bottom: 1px solid @lineColor;
         h1 {
             margin-bottom: 0;
+            padding-bottom: 0;
             border-bottom: 0;
         }
     }

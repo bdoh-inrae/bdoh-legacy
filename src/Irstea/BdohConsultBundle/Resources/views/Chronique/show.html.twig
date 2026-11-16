@@ -68,9 +68,9 @@
             {% endif %}
         </div>
 
-        {#- Le titre : le type en petit au-dessus, le nom seul, sans guillemets ni italique, le même sur les pages d'une station,
-         # d'une chronique et d'un jeu de données (Lou, 2026-11-16) #}
-        <h1 class="page-title"><span class="page-type">{{ 'Chronique' | trans }}</span> {{ chronique }}</h1>
+        {#- Le titre : le nom seul, sans guillemets ni italique, puis ce qu'est la page, en petit, comme « Observatoire » sur
+         # l'accueil d'un observatoire (Lou, 2026-11-16) #}
+        <h1>{{ chronique }} <small>{{ 'Chronique'|trans({}, 'entitiesSingulars') }}</small></h1>
 
         {% if hasActiveJobs and is_granted('JOB_LIST', currentObservatoire()) %}
             <div class="col-md-24 alert alert-info">

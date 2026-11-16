@@ -191,7 +191,6 @@ $various = [
     'viewStation'                             => 'Voir la fiche de la station',
     'viewDataset'                             => 'Voir la fiche du jeu de données',
     'viewObservatoire'                        => 'Voir cet observatoire',
-    'welcome'                                 => 'Bienvenue',
     'yes'                                     => 'Oui',
 ];
 

@@ -82,7 +82,7 @@ Guyane, Haute-Loire, TPG, OTHU : aucun DOI. Des identifiants sont écrits avec �
 
 ### 7. Les titres des pages
 
-Station, chronique, jeu de données s'écrivent aujourd'hui `Type « nom »`, en italique (`Station/show`, `Chronique/show`, `Dataset/show`). Désormais : le type en petit, gris, au-dessus (un surtitre), le nom seul en titre, sans guillemets ni italique, partout pareil (Lou : « on teste comme ça »). Un titre de jeu de données est souvent long : sur une seule ligne, il passerait à la ligne au milieu.
+Station, chronique, jeu de données s'écrivaient `Type « nom »`, en italique (`Station/show`, `Chronique/show`, `Dataset/show`). Essayé d'abord : le type en petit, gris, au-dessus du nom ; refusé par Lou le 16 novembre, après l'avoir vu : il ressemble au fil d'Ariane et nuit à la lecture. Retenu (Lou) : le nom seul, puis ce qu'est la page en petit, à la place de « Bienvenue » sur l'accueil d'un observatoire : « Observatoire », « Station », « Chronique », « Jeu de données ». Et le même espace entre chaque titre et son filet, celui de l'accueil d'un observatoire, sur toutes les pages, aide, conditions et mentions légales comprises, qui prennent un titre sur filet.
 
 ### 8. La fenêtre d'export
 
@@ -106,12 +106,15 @@ BDOH-export_obs-DRAIX_n-12_type-mean_step-1day_format-csv_period-20200101-202412
 
 Ce qui le lit : `ExportController::archiveName`, `compare.py` (`open_data_checks`, le nom de l'archive sans compte), `dev/browser/check.py` (`export_to_file`), l'entrée « Le nom de l'archive d'un export » de `dev/differences.md`.
 
-### 10. Deux migrations de données
+### 10. La relecture du contenu, et une migration globale
+
+Revu par Lou le 16 novembre : plutôt que deux migrations isolées, une passe à part de relecture du contenu de la base, avant l'envoi du kit. Les erreurs mineures qu'elle relève (forme, saisie évidente, les deux points ci-dessous) se corrigent dans une seule migration globale ; les erreurs plus importantes croisées en route partent aux gestionnaires avec le kit (second onglet de leur tableur), pour qu'ils les tranchent. Ce qui suit en est le point de départ.
+
 
 La forme seulement, jamais le contenu. Chacune écrite à la main, essayée sur la base complète anonymisée, avec son retour arrière. Elles passent sur la VM avec la mise à jour vers la 0.7.1, qui sauvegarde la base avant (`/var/backups/bdoh-kept/`).
 - **Les DOI principaux évidents** : Lônes de l'Ain (`10.17180/OBS.LONES-AIN`), ORACLE (`10.17180/obs.oracle`), Réal Collobrier (`10.17180/obs.real`), s'ils n'en ont pas déjà un ; le retour arrière les remet à vide. OHM-CV en a deux, un par bassin : la question part aux gestionnaires avec le kit.
 - **Les descriptions des observatoires** (Lou : une passe dédiée aux défauts de forme laissés par la saisie). Mesuré sur la base complète le 16 novembre : seules les descriptions d'observatoire en ont (sites, stations et jeux de données sont propres). Ardières-Morcille : un copier-coller de Word, 165 000 caractères pour 16 000 de texte, 20 commentaires, environ 2 000 balises de Word. Lônes de l'Ain et TPG : un paragraphe vide chacun (un grand blanc). Réal Collobrier et Yzeron : un double saut de ligne chacun. Retirer les balises de Word, les paragraphes vides, les sauts doublés. La preuve : le texte de chaque description, balises retirées et espaces ramenées à une, identique avant et après. L'ancienne version reste dans une table, pour le retour arrière. Avant d'écrire la migration : montrer à Lou les cinq accueils avant et après, en captures. L'anonymisation garde la forme des textes (`anon.scramble` : balises, entités, espaces), si bien que la base anonymisée suffit à l'essayer.
-- Avant ces migrations, peut-être (Lou, pour plus tard, pas pour cette session) : une passe légère sur les erreurs de saisie évidentes, à proposer aux gestionnaires ou à corriger si elles sont vraiment évidentes (`ROADMAP.md`).
+- La passe de relecture elle-même, sur les autres tables (sites, stations, chroniques, jeux de données, DOI, partenaires) : ce qui est évident et sans risque pour le contenu va dans la migration globale, le reste au tableur des gestionnaires (`dev/local/data-issues.md`, pour ce qui cite des données).
 
 ### 11. Les données après les essais
 
@@ -123,7 +126,7 @@ Un « point zéro » de la base juste après l'installation de la 0.7.1, avant l
 2. Accueil d'un observatoire (onglets, Gestionnaires, `/contact`) et titres des pages.
 3. Blocs de citation et citation officielle.
 4. Fenêtre d'export (valeurs par défaut, portes d'entrée) et nom de l'archive.
-5. Les deux migrations, après les captures montrées à Lou.
+5. La passe de relecture du contenu, à part (Lou, 16 novembre) : une migration globale pour les erreurs mineures, après les captures des accueils montrées à Lou ; les erreurs plus importantes au second onglet des tableurs.
 6. Le kit : son message (le CSV par défaut, l'aide au « ? », l'onglet Gestionnaires ; et, à proposer à Lou, que le site s'ouvre aussi sans VPN depuis le réseau filaire d'un bureau INRAE, d'après elle le 16 novembre, quand le message dit aujourd'hui « que sous le VPN ») et le second onglet des tableurs (OHM-CV : quel DOI principal ; ORACLE : ses deux autres DOI ; Arc-Isère : un article pris comme DOI d'un jeu ; Ardières-Morcille : un article seul).
 7. Retirer les images de la production de `public/uploads/`, puis toutes les passes (`pages`, `admin`, `accounts`, `state`, `exports`, `theia`, `imports` ; leurs commandes, et `make mail-start` d'abord : `dev/plans/2026-11-04_validation.md`, « Commandes »), `make browser-check`, `CHANGELOG.md`, la 0.7.1.
 8. Lou : `vm-update` vers la 0.7.1 (`NOM=prod` une dernière fois), le point zéro, la restauration éprouvée à part, `make test-kit`, l'envoi.

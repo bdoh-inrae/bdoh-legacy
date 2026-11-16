@@ -27,9 +27,10 @@
 {% endblock %}
 
 {% block main %}
+{#- Le titre de la page, sur son filet, comme celui des autres pages (Lou, 2026-11-16) #}
+<h1>{% if english %}Legal notice{% else %}Mentions légales{% endif %}</h1>
 <div id="legal" class="well">
 {% if english %}
-    <h2>Legal notice</h2>
 
     <h3>Publisher</h3>
     <p>INRAE, French National Research Institute for Agriculture, Food and Environment, a public scientific and
@@ -90,7 +91,6 @@
         stamp: Défenseur des droits, Libre réponse 71120, 75342 Paris CEDEX 07, France.</p>
     <p>This statement was made on 16 November 2026.</p>
 {% else %}
-    <h2>Mentions légales</h2>
 
     <h3>Éditeur</h3>
     <p>INRAE, Institut national de recherche pour l'agriculture, l'alimentation et l'environnement, établissement

@@ -191,7 +191,6 @@ $various = [
     'viewChronique'                           => 'Show this time series',
     'viewStation'                             => 'Show this station',
     'viewObservatoire'                        => 'Show this observatory',
-    'welcome'                                 => 'Welcome',
     'yes'                                     => 'Yes',
 ];
 
