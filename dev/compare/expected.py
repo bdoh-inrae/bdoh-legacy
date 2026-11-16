@@ -107,7 +107,7 @@ GONE_KEYS = """Bad credentials. | User account has expired. | consult.help.chron
     security.utilisateur.edit.info.changePassword | security.utilisateur.newAccountMail.body
     security.utilisateur.newAccountMail.title"""
 NEW_KEYS = """Error.file.cantWrite(%file%) | dateMonthShort | oneMonth | admin.sendJson.missingCredentials | export.exportMail.body(%link%, %days%)
-    legal.freeSoftware | legal.sourceCode | map.onMap | map.seeStation | map.sites | map.title | map.withoutPosition | map.zoomHint | overview.hint | overview.title | measure.export.busy | measure.export.licence | measure.export.status.download
+    map.onMap | map.seeStation | map.sites | map.title | map.withoutPosition | map.zoomHint | overview.hint | overview.title | measure.export.busy | measure.export.licence | measure.export.status.download
     measure.export.status.expired | measure.export.status.failed | measure.export.status.finished(%days%)
     measure.export.status.running | measure.export.status.title | measure.export.status.waiting | measure.export.tooHeavy
     measure.export.tooMany | security.login_check.info(%email%) | security.login_check.submit
@@ -184,7 +184,8 @@ def header(lines):
     l'observatoire de la page, sa « Recherche » (l'ancien « Consultation des données », à sa place), la langue puis
     l'aide, au bout (Lou, 2026-11-15) ; dans celle du dessous, le compte (`account_menu`) ; le fil commence par « BDOH » puis l'observatoire, au
     lieu de « Accueil », et toute page en a un. Les mêmes liens, déplacés : rien ne s'ajoute ni ne se perd qu'ici,
-    sinon l'ouverture du menu du compte."""
+    sinon l'ouverture du menu du compte, et l'aide, qui mène à la page de tout BDOH, sur toutes les pages, là où
+    l'ancien menait aux gestionnaires de l'observatoire, sur ses pages seulement (`HELP`, Lou, 2026-11-16)."""
     def at(k, *wanted):
         return all(0 <= k + i < len(lines) and (w(lines[k + i]) if callable(w) else lines[k + i] == w)
                    for i, w in enumerate(wanted))
@@ -230,12 +231,15 @@ def header(lines):
             label = " Site de l'observatoire" if outward else ''
             rest = [*rest[:title], *([f'A {site}'] if outward else []),
                     f'T {m.group(1)}{label} {m.group(2)}', *rest[title + 1:]]
+    language = LANGUAGES.get(lines[lang + 3], 'FR')
     return [*lines[:start], 'A /', 'T BDOH', *lines[everything - 3:end], *(current or []),
-            *([data[0], DATA_LINK[data[1]]] if data else []), *lang_switch(lines[lang:lang + 7]), *found.get('contact', []),
+            *([data[0], DATA_LINK[data[1]]] if data else []), *lang_switch(lines[lang:lang + 7]), *HELP[language],
             *account_menu(lines[lang + 7:everything - 3]), *crumb, *rest]
 
 
 LANGUAGES = {'T Français': 'FR', 'T English': 'EN'}
+# L'aide, au bout de la barre du haut de toutes les pages, portail compris : la page de tout BDOH (Lou, 2026-11-16)
+HELP = {'FR': ['A /help', 'T Aide'], 'EN': ['A /help', 'T Help']}
 
 
 def lang_switch(block):
@@ -251,16 +255,24 @@ FOOTER_INRAE = ['A https://www.inrae.fr/', 'G /images/Logo_INRAE_REPUBLIQUE.png 
 UPLOADED = re.compile(r'G /uploads/\S+(?: .+)?')
 
 
-# Le lien des conditions d'utilisation, au pied de chaque page, selon la langue de la page (Lou, 2026-11-15)
-TERMS_LINK = {'fr': ['A /terms_of_use', "T Conditions d'utilisation"], 'en': ['A /terms_of_use', 'T Terms of use']}
+# La ligne des liens de tout BDOH, au pied de chaque page, selon la langue de la page (Lou, 2026-11-15 et 16)
+SOURCE = 'https://github.com/bdoh-inrae/bdoh-legacy'
+FOOTER_LINKS = {
+    'fr': ['A /help', 'T Aide et contact', 'A /terms_of_use', "T Conditions d'utilisation", 'A /legal', 'T Mentions légales',
+           'A /legal#accessibilite', 'T Accessibilité : non conforme', f'A {SOURCE}', 'T Code source (AGPL-3.0)'],
+    'en': ['A /help', 'T Help and contact', 'A /terms_of_use', 'T Terms of use', 'A /legal', 'T Legal notice',
+           'A /legal#accessibilite', 'T Accessibility: not compliant', f'A {SOURCE}', 'T Source code (AGPL-3.0)'],
+}
 
 
 def footer(lines):
-    """Le pied de page de l'ancien comme le nouveau le montre (Lou, 2026-11-15) : le bloc Marianne et INRAE, puis le
-    lien des conditions d'utilisation, communes à tout BDOH. Les logos des partenaires de l'observatoire, qui
-    suivaient le bloc (une image de /uploads/, avec son lien s'il en a un), passent à l'onglet « Partenaires » de son
-    accueil, où HOMES les admet. La langue de la page se lit au lien de l'autre langue, dans l'en-tête de l'ancien
-    comme une fois réécrit (`lang_switch`)."""
+    """Le pied de page de l'ancien comme le nouveau le montre (Lou, 2026-11-16) : la ligne des liens de tout BDOH
+    (l'aide, les conditions d'utilisation, les mentions légales, la mention d'accessibilité, le code source), puis le
+    bloc Marianne et INRAE. Les logos des partenaires de l'observatoire, qui suivaient le bloc (une image de
+    /uploads/, avec son lien s'il en a un), passent à l'onglet « Partenaires » de son accueil, où HOMES les admet ; le
+    paragraphe des mentions légales, que compare.py retire des deux côtés (LEGAL_NOTICE), passe sur sa page, /legal.
+    La langue de la page se lit au lien de l'autre langue, dans l'en-tête de l'ancien comme une fois réécrit
+    (`lang_switch`)."""
     language = 'en' if 'A /select_lang/fr' in lines else 'fr'
     for k in range(len(lines) - 1):
         if lines[k:k + 2] == FOOTER_INRAE:
@@ -272,7 +284,7 @@ def footer(lines):
                     end += 2
                 else:
                     break
-            return [*lines[:k + 2], *TERMS_LINK[language], *lines[end:]]
+            return [*lines[:k], *FOOTER_LINKS[language], *FOOTER_INRAE, *lines[end:]]
     return lines
 
 
@@ -572,7 +584,9 @@ RULES = [
     # Les clés de l'en-tête : « Consultation des données » devenu « Recherche avancée », le titre du portail sans
     # guillemets, le lien vers le site d'un observatoire
     Rule('pages', rf'{ROLE} /translations/messages\.js', HEADER, lines=(
-        translation('-', 'dataAccess'), translation('[-+]', 'home.title'), translation(r'\+', 'observatoryWebsite'))),
+        translation('-', 'dataAccess'), translation('[-+]', 'home.title'), translation(r'\+', 'observatoryWebsite'),
+        # la ligne des liens du pied de page (Lou, 2026-11-16)
+        translation(r'\+', 'footer.help | footer.legal | footer.accessibility | footer.sourceCode'))),
     Rule('pages', rf'{ROLE} /translations/messages\.js', SEARCH_NAME, lines=(translation('[-+]', 'advancedSearch'),)),
     # Les flèches des photos d'un observatoire, et le libellé des pastilles du portail (Lou, 2026-11-15)
     Rule('pages', rf'{ROLE} /translations/messages\.js', HOMES,

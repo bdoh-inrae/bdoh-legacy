@@ -370,7 +370,7 @@ class Register(unittest.TestCase):
                   'A /OBS/contact', 'T Aide', *LANG, *ACCOUNT, *SELECTOR, 'A /OBS/home', 'T Accueil', 'T Station',
                   'D div data-notices=[]']
     NEW_HEADER = ['T BDOH - Obs - Station', 'L stylesheet /css/themes/OBS.min.css', 'A /', 'T BDOH', *SELECTOR,
-                  'A /OBS/home', 'T Obs', 'A /OBS/nos-donnees', 'T Recherche', *NEW_LANG, 'A /OBS/contact', 'T Aide',
+                  'A /OBS/home', 'T Obs', 'A /OBS/nos-donnees', 'T Recherche', *NEW_LANG, 'A /help', 'T Aide',
                   *ACCOUNT, 'A /', 'T BDOH', 'A /OBS/home', 'T Obs', 'T Station', 'D div data-notices=[]']
     # Le compte d'un gestionnaire, dans l'ancien puis dans le nouveau : le nom ouvre son menu, le tableau de bord passe
     # en tête du menu Administration (Lou, 2026-11-13)
@@ -402,7 +402,8 @@ class Register(unittest.TestCase):
         self.assertEqual(self.verdict(rules, name, self.OLD_HEADER, self.NEW_HEADER), 'écarts admis')
         new = self.NEW_HEADER
         for fault, faulty in [
-            ("l'aide perdue", [l for l in new if l not in ('A /OBS/contact', 'T Aide')]),
+            ("l'aide perdue", [l for l in new if l not in ('A /help', 'T Aide')]),
+            ("l'aide aux gestionnaires de l'observatoire", [l if l != 'A /help' else 'A /OBS/contact' for l in new]),
             ('la recherche perdue', [l for l in new if l not in ('A /OBS/nos-donnees', 'T Recherche')]),
             ('un lien de plus', [*new[:4], 'A /ailleurs', 'T Ailleurs', *new[4:]]),
             ("l'ancien libellé gardé", [l if l != 'T Recherche' else 'T Consultation des données' for l in new]),
@@ -414,31 +415,44 @@ class Register(unittest.TestCase):
             ("le fil sans l'observatoire", [*new[:-4], 'T Station', 'D div data-notices=[]']),
             ('la connexion perdue', [l for l in new if l not in self.ACCOUNT]),
             ("l'en-tête de l'ancien gardé", self.OLD_HEADER),
-            ("l'aide avant la langue", [*new[:new.index('A /select_lang/en')], 'A /OBS/contact', 'T Aide', *self.NEW_LANG,
+            ("l'aide avant la langue", [*new[:new.index('A /select_lang/en')], 'A /help', 'T Aide', *self.NEW_LANG,
                                          *new[new.index('T Aide') + 1:]]),
         ]:
             with self.subTest(fault):
                 self.assertEqual(self.verdict(rules, name, self.OLD_HEADER, faulty), 'différents')
 
-    def test_the_footer_loses_the_partner_logos_and_links_the_terms(self):
-        # Le bloc Marianne et INRAE reste ; les logos des partenaires, avec ou sans lien, partent ; le lien des
-        # conditions d'utilisation, communes à tout BDOH, suit le bloc, dans la langue de la page (Lou, 2026-11-15)
+    def test_the_help_reads_in_the_language_of_the_page(self):
+        # « Aide » ou « Help », vers la même page de tout BDOH (Lou, 2026-11-16)
+        en = ['A #', 'D a data-toggle=dropdown', 'G /images/i18n/gb.png', 'T English', 'A /select_lang/fr',
+              'G /images/i18n/fr.png', 'T Français']
+        k = self.OLD_HEADER.index('A /OBS/contact') + 2
+        old = [*self.OLD_HEADER[:k], *en, *self.OLD_HEADER[k + len(self.LANG):]]
+        new = compare.expected.header(old)
+        self.assertEqual(new[new.index('A /help') + 1], 'T Help')
+
+    def test_the_footer_loses_the_partner_logos_and_links_the_general_pages(self):
+        # Le bloc Marianne et INRAE reste ; les logos des partenaires, avec ou sans lien, partent ; la ligne des liens
+        # de tout BDOH le précède, dans la langue de la page (Lou, 2026-11-15 et 16)
         rules = [r for r in compare.expected.RULES if r.mode == 'pages']
         tail = ['S /assets/manifest.js']
-        terms = ['A /terms_of_use', "T Conditions d'utilisation"]
+        links = compare.expected.FOOTER_LINKS['fr']
         old = ['T page', *compare.expected.FOOTER_INRAE, 'A https://a.example/', 'G /uploads/A-logo.png A',
                'G /uploads/B-logo.png B', *tail]
-        new = ['T page', *compare.expected.FOOTER_INRAE, *terms, *tail]
+        new = ['T page', *links, *compare.expected.FOOTER_INRAE, *tail]
         self.assertEqual(compare.expected.footer(old), new)
         self.assertEqual(self.verdict(rules, 'anonyme /OBS/station/S', old, new), 'écarts admis')
         self.assertEqual(self.verdict(rules, 'anonyme /OBS/station/S', old, new[:-1]), 'différents')
-        without_terms = [l for l in new if l not in terms]
-        self.assertEqual(self.verdict(rules, 'anonyme /OBS/station/S', old, without_terms), 'différents')
+        for lost in ('A /terms_of_use', 'A /legal', 'A /legal#accessibilite', 'A /help'):
+            with self.subTest(lost):
+                without = [l for l in new if l != lost]
+                self.assertEqual(self.verdict(rules, 'anonyme /OBS/station/S', old, without), 'différents')
+        after = ['T page', *compare.expected.FOOTER_INRAE, *links, *tail]
+        self.assertEqual(self.verdict(rules, 'anonyme /OBS/station/S', old, after), 'différents')
         # Une page en anglais : le lien vers le français est dans son en-tête
         english = ['A /select_lang/fr', 'T FR EN', *old]
         self.assertEqual(compare.expected.footer(english),
-                         ['A /select_lang/fr', 'T FR EN', 'T page', *compare.expected.FOOTER_INRAE, 'A /terms_of_use',
-                          'T Terms of use', *tail])
+                         ['A /select_lang/fr', 'T FR EN', 'T page', *compare.expected.FOOTER_LINKS['en'],
+                          *compare.expected.FOOTER_INRAE, *tail])
         # Sans le bloc INRAE, rien ne se réécrit : l'écart se voit
         self.assertEqual(compare.expected.footer(old[2:]), old[2:])
 
@@ -527,7 +541,8 @@ class Register(unittest.TestCase):
 
     def test_the_portal_shows_the_account_and_nothing_else(self):
         old = ['T BDOH', 'G /images/inrae_logo.svg Irstea', *self.LANG, *self.SELECTOR, 'T Présentation']
-        new = ['T BDOH', 'A /', 'T BDOH', *self.SELECTOR, *self.NEW_LANG]
+        # L'aide, que l'ancien n'avait pas sur le portail, y mène à la page de tout BDOH (Lou, 2026-11-16)
+        new = ['T BDOH', 'A /', 'T BDOH', *self.SELECTOR, *self.NEW_LANG, 'A /help', 'T Aide']
         # La règle de l'en-tête et celles du portail seules : les autres écarts du portail (carte, fiches) ont leurs règles
         portal = compare.expected.portal_rules({'utilisateur': 'Camille Essai'})
         rules = [r for r in compare.expected.RULES if r.mode == 'pages' and r.rewrite] + portal
@@ -539,6 +554,7 @@ class Register(unittest.TestCase):
                                   ('le compte connecté sur une page anonyme', 'anonyme /', user),
                                   ('un lien de plus', 'anonyme /', [*guest[:-1], 'A /ailleurs', 'T Présentation']),
                                   ('l’inscription perdue', 'anonyme /', [l for l in guest if l not in ('A /user/new', 'T Créer un compte')]),
+                                  ('l’aide perdue', 'anonyme /', [l for l in guest if l not in ('A /help', 'T Aide')]),
                                   ("le compte sur la page d'erreur", 'anonyme /INCONNU/', guest)]:
             with self.subTest(name):
                 self.assertEqual(self.verdict(rules, case, old, lines), 'différents')

@@ -19,11 +19,11 @@
     {#-- La langue, puis l'aide au bout (Lou, 2026-11-15) -#}
     <ul class="nav navbar-nav navbar-right">
         {% include "@IrsteaBdohInternationalisation/select-lang.html.twig" %}
-        {% if currentObservatoire() %}
-            <li class="divider"></li>
-            {#- L'aide en icône, un « ? » (Lou, 2026-11-15) ; son nom reste pour les lecteurs d'écran et au survol #}
-            <li><a class="help-link" href="{{ path('bdoh_consult_contact') }}" title="{{ 'contactHelp'|trans }}"><i class="icon-help" aria-hidden="true"></i><span class="sr-only">{{ 'contactHelp'|trans }}</span></a></li>
-        {% endif %}
+        <li class="divider"></li>
+        {#- L'aide en icône, un « ? » (Lou, 2026-11-15) ; son nom reste pour les lecteurs d'écran et au survol. Elle
+         # mène à la page d'aide de tout BDOH, sur toutes les pages (Lou, 2026-11-16) : les gestionnaires d'un
+         # observatoire sont dans l'onglet de son accueil #}
+        <li><a class="help-link" href="{{ path('bdoh_help') }}" title="{{ 'contactHelp'|trans }}"><i class="icon-help" aria-hidden="true"></i><span class="sr-only">{{ 'contactHelp'|trans }}</span></a></li>
     </ul>
 </nav>
 {#-- END_Navigation bar -#}

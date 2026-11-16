@@ -1,0 +1,62 @@
+{% extends 'layout.html.twig' %}
+{#-
+ # L'aide, une page pour tout BDOH, sans observatoire dans son adresse, où mène le « ? » de toutes les pages (Lou,
+ # 2026-11-16 ; dev/decisions.md, « Ce qui vaut pour tout BDOH, ce qui tient à un observatoire ») : la notice, le
+ # support pour le site, et les gestionnaires de chaque observatoire pour ses données, dans l'onglet de son accueil.
+ # Une aide intégrée au site viendra plus tard (ROADMAP.md). Le texte est ici, en français et en anglais, comme celui
+ # des conditions d'utilisation.
+ #}
+{% from 'macros.html.twig' import pageTitle, breadcrumbRoot %}
+
+{% set english = app.request.locale starts with 'en' %}
+
+{% block title %}
+    {{ pageTitle('contactHelp'|trans) }}
+{% endblock %}
+
+{% block breadcrumb %}
+    <ul class="breadcrumb">
+        {{ breadcrumbRoot() }}
+        <li class="active">{{ 'contactHelp'|trans }}</li>
+    </ul>
+{% endblock %}
+
+{% block main %}
+<div id="help" class="well">
+{% if english %}
+    <h2>Help and contact</h2>
+
+    <h3>User manual</h3>
+    <p><a href="{{ path('bdoh_user_manual') }}">The BDOH user manual</a> (PDF, in French) describes how to search,
+        view and export data, and how managers administer their observatory. It dates from 2019: login by link, open
+        data and the CSV export are not in it yet.</p>
+
+    <h3>The website</h3>
+    <p>For a question about the website (an account, a page, an export, an error): bdoh.support@listes.inrae.fr.</p>
+
+    <h3>The data of an observatory</h3>
+    <p>For a question about the data of an observatory (its measurements, its stations, access to its
+        restricted-access time series), write to its managers: they are listed in the “Managers” tab of its home
+        page.</p>
+{% else %}
+    <h2>Aide et contact</h2>
+
+    <h3>Notice d'utilisation</h3>
+    <p><a href="{{ path('bdoh_user_manual') }}">La notice d'utilisation de BDOH</a> (PDF) décrit comment chercher,
+        afficher et exporter les données, et comment les gestionnaires administrent leur observatoire. Elle date de
+        2019 : la connexion par lien, l'ouverture des données et l'export CSV n'y sont pas encore.</p>
+
+    <h3>Le site</h3>
+    <p>Pour une question sur le site (un compte, une page, un export, une erreur) : bdoh.support@listes.inrae.fr.</p>
+
+    <h3>Les données d'un observatoire</h3>
+    <p>Pour une question sur les données d'un observatoire (ses mesures, ses stations, l'accès à ses chroniques en
+        accès restreint), écrivez à ses gestionnaires : ils sont dans l'onglet « Gestionnaires » de son accueil.</p>
+{% endif %}
+    <ul class="help-observatories">
+        {% for observatoire in allObservatoires() %}
+            <li><a href="{{ path('bdoh_home', {'_observatoire': observatoire.slug}) }}#managers">{{ observatoire.nom }}</a></li>
+        {% endfor %}
+    </ul>
+</div>
+{% endblock main %}

@@ -562,7 +562,8 @@ def canonical_query(query, per_page_option=False):
     return urllib.parse.urlencode(sorted(pairs))
 
 
-# Les mentions légales, réécrites pour INRAE, et le lien vers le code source (dev/differences.md)
+# Les mentions légales de l'ancien, en petit sous chaque page, passées sur leur page, /legal, que
+# « nouveau seul : mentions légales » lit (dev/differences.md, « En-tête, fil d'Ariane et pied de page »)
 LEGAL_NOTICE = re.compile(r"<p style='text-align: center;'>\s*(?:Institut national|INRAE).*?</p>", re.S)
 # Les boutons et la fenêtre d'export suivent le droit de télécharger, que le nouveau ouvre à qui n'a pas de compte
 # (dev/decisions.md, « Ouverture des données »). Là où l'ancien ne les montrait pas, ils sortent de la comparaison
@@ -950,6 +951,7 @@ def run_pages(args):
         map_checks(args.base, new, slug, report)
         cards_checks(args.base, new, report)
         terms_checks(new, slug, report)
+        help_legal_checks(args.base, new, slug, report)
         overview_checks(args.base, new, report)
         thinned_checks(args.base, new, report)
     report.close()
@@ -1051,6 +1053,48 @@ def terms_checks(side, slug, report):
         if b'href="/terms_of_use"' not in Client(side, None, slug).get(path)[2]:
             problems.append(f'{path} : pas de lien vers /terms_of_use')
     report.add("nouveau seul : conditions d'utilisation, /terms_of_use", ['conforme'], problems or ['conforme'])
+
+
+def help_legal_checks(base, side, slug, report):
+    """L'aide et les mentions légales, deux pages pour tout BDOH que seul le nouveau a (Lou, 2026-11-16 ;
+    dev/differences.md, « En-tête, fil d'Ariane et pied de page ») : en français et en anglais, l'aide donne la
+    notice, le support, et l'onglet des gestionnaires de chaque observatoire de la base ; les mentions légales, leurs
+    sections, ce qu'elles disent des données personnelles et la déclaration d'accessibilité, à son ancre. Le « ? »
+    de la barre et la ligne des liens du pied de page mènent à elles sur toute page, portail compris : `expected.header`
+    et `expected.footer` les comparent sur les pages des modes ; ici, sur trois pages, leurs adresses exactes."""
+    help_problems, legal_problems = [], []
+    slugs = [r[0] for r in query(base, "SELECT slug FROM observatoire ORDER BY id")]
+    wanted = {
+        'fr': (["La notice d'utilisation de BDOH", 'href="/user_manual"', 'bdoh.support@listes.inrae.fr', '« Gestionnaires »'],
+               ['Éditeur', 'Publication', 'Hébergement', 'Données personnelles', 'Crédits', 'id="accessibilite"',
+                'non conforme', 'Défenseur des droits', 'cil-dpo@inrae.fr', 'effacement']),
+        'en': (['The BDOH user manual', 'href="/user_manual"', 'bdoh.support@listes.inrae.fr', '“Managers”'],
+               ['Publisher', 'Publication', 'Hosting', 'Personal data', 'Credits', 'id="accessibilite"',
+                'not compliant', 'Défenseur des droits', 'cil-dpo@inrae.fr', 'erased']),
+    }
+    for language, (help_words, legal_words) in wanted.items():
+        guest = Client(side, None, slug)
+        if language == 'en':
+            guest.get('/select_lang/en')
+        for path, words, problems in (('/help', help_words, help_problems), ('/legal', legal_words, legal_problems)):
+            status, _, body = guest.get(path)
+            text = html.unescape(body.decode('utf-8', 'replace'))
+            if status != 200:
+                problems.append(f'{language} {path} : statut {status}')
+                continue
+            problems += [f'{language} {path} : « {w} » absent' for w in words if w not in text]
+            if path == '/help':
+                problems += [f'{language} /help : pas de lien vers /{s}/home#managers' for s in slugs
+                             if f'href="/{s}/home#managers"' not in text]
+    links = [b'href="/help"', b'href="/terms_of_use"', b'href="/legal"', b'href="/legal#accessibilite"',
+             f'href="{expected.SOURCE}"'.encode()]
+    for path in ('/', f'/{slug}/', f'/{slug}/nos-donnees'):
+        body = Client(side, None, slug).get(path)[2]
+        legal_problems += [f'{path} : pas de lien {link.decode()}' for link in links if link not in body]
+        if b'class="help-link" href="/help"' not in body:
+            help_problems.append(f'{path} : le « ? » ne mène pas à /help')
+    report.add('nouveau seul : aide, /help', ['conforme'], help_problems or ['conforme'])
+    report.add('nouveau seul : mentions légales et accessibilité, /legal', ['conforme'], legal_problems or ['conforme'])
 
 
 def overview_checks(base, side, report):

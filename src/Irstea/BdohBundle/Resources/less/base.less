@@ -342,12 +342,28 @@ a.bdoh-brand {
 /******************************************************************************
  * Footer
  */
-// Allégé (2026-11-12, Lou) : un filet de la couleur du thème, les logos sur une ligne, puis les mentions légales en
-// petit ; de l'air au-dessus, pour que la plus longue colonne d'une page ne le touche pas
+// Allégé (2026-11-12, Lou) : un filet de la couleur du thème, puis la ligne des liens de tout BDOH et le bloc
+// Marianne et INRAE (Lou, 2026-11-16) ; de l'air au-dessus, pour que la plus longue colonne d'une page ne le touche pas
 #footer {
     margin-top: 48px;
-    padding: 28px 0 16px;
+    padding: 20px 0 16px;
     border-top: 1px solid @lineColor;
+
+    // Les liens, séparés par un point médian que pose le style, pas le texte (la comparaison lit les liens seuls)
+    .footer-links {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        margin: 0 0 16px;
+        padding: 0;
+        list-style: none;
+        font-size: 13px;
+        li + li::before {
+            content: "·";
+            margin: 0 10px;
+            color: @text-muted;
+        }
+    }
 
     #partenaires {
         display: flex;
@@ -368,22 +384,12 @@ a.bdoh-brand {
             max-width: none;
         }
     }
+}
 
-    .legal-notice {
-        margin-top: 24px;
-        font-size: 12px;
-        line-height: 1.6;
-        color: @text-muted;
-        p {
-            margin: 0;
-        }
-        // Les conditions d'utilisation, au-dessus des mentions, un peu plus grandes qu'elles (Lou, 2026-11-15)
-        p.footer-links {
-            text-align: center;
-            margin-bottom: 8px;
-            font-size: 13px;
-        }
-    }
+// La page d'aide : les observatoires, chacun vers l'onglet de ses gestionnaires, en colonnes
+#help .help-observatories {
+    columns: 3 220px;
+    padding-left: 20px;
 }
 
 /******************************************************************************

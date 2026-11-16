@@ -1,25 +1,11 @@
-{#-- Les mentions légales, sous les logos, en petit (2026-11-12, Lou). Le paragraphe garde sa balise d'origine :
- # dev/compare/compare.py le reconnaît à elle (LEGAL_NOTICE). Au-dessus, les conditions d'utilisation des données,
- # communes à tout BDOH, sur toutes les pages (Lou, 2026-11-15) : la comparaison les voit (expected.footer). -#}
-<div class="legal-notice">
-    <p class="footer-links"><a href="{{ path('bdoh_terms_of_use') }}">{{ 'cgu'|trans }}</a></p>
-    <p style='text-align: center;'>
-        INRAE, Institut national de recherche pour l'agriculture, l'alimentation et l'environnement,
-        établissement public à caractère scientifique et technologique
-        <br/>
-        {{'Siège'|trans}} :
-        <i class="glyphicon glyphicon-envelope"></i>
-        147 rue de l'Université, 75338 Paris Cedex 07,
-        Tel : +33 1 42 75 90 00
-        SIREN : 180 070 039
-        <br/>
-        {{'Directeur de la Publication'|trans}} : Philippe Mauguin, {{'président-directeur général'|trans}}
-        <br/>
-        {{'Responsable de la publication'|trans}} : Flora Branger
-        <br/>
-        {{'Hébergeur'|trans}} : INRAE
-        <br/>
-        {{ 'legal.freeSoftware'|trans }}
-        <a href="https://github.com/bdoh-inrae/bdoh-legacy">{{ 'legal.sourceCode'|trans }}</a>
-    </p>
-</div>
+{#-- Le pied de page de tout BDOH, la même ligne sur toutes les pages, sur le modèle de j2000.inrae.fr (Lou,
+ # 2026-11-16) : l'aide, les conditions d'utilisation, les mentions légales, la mention d'accessibilité que la loi
+ # demande visible (loi n° 2005-102, article 47), le code source. Les mentions elles-mêmes, qui étaient ici en petit,
+ # sont sur leur page (/legal). Les séparateurs sont en CSS : la comparaison ne lit que les liens (expected.footer). -#}
+<ul class="footer-links">
+    <li><a href="{{ path('bdoh_help') }}">{{ 'footer.help'|trans }}</a></li>
+    <li><a href="{{ path('bdoh_terms_of_use') }}">{{ 'cgu'|trans }}</a></li>
+    <li><a href="{{ path('bdoh_legal') }}">{{ 'footer.legal'|trans }}</a></li>
+    <li><a href="{{ path('bdoh_legal') }}#accessibilite">{{ 'footer.accessibility'|trans }}</a></li>
+    <li><a href="https://github.com/bdoh-inrae/bdoh-legacy">{{ 'footer.sourceCode'|trans }}</a></li>
+</ul>

@@ -198,8 +198,10 @@ $various = [
  ************************************************/
 
 $legal = [
-    'legal.freeSoftware' => "BDOH est un logiciel libre sous licence GNU AGPL v3, fourni sans garantie.",
-    'legal.sourceCode'   => "Code source",
+    'footer.help'          => 'Aide et contact',
+    'footer.legal'         => 'Mentions légales',
+    'footer.accessibility' => 'Accessibilité : non conforme',
+    'footer.sourceCode'    => 'Code source (AGPL-3.0)',
 ];
 
 $map = [

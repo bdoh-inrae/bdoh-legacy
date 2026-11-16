@@ -1,0 +1,158 @@
+{% extends 'layout.html.twig' %}
+{#-
+ # Les mentions légales, une page pour tout BDOH, liée au pied de chaque page (Lou, 2026-11-16, sur le modèle de
+ # j2000.inrae.fr) : le paragraphe qui était sous chaque page (éditeur, publication, hébergeur, code source), en
+ # sections, avec ce que l'on sait des données personnelles, les crédits, et la déclaration d'accessibilité (#accessibilite),
+ # que la loi demande d'atteindre depuis toute page (loi n° 2005-102, article 47 ; décret n° 2019-768, article 6, lus
+ # sur Légifrance le 16 novembre 2026 ; modèle de déclaration d'accessibilite.numerique.gouv.fr). La durée de
+ # conservation des comptes reste à fixer avec la déléguée à la protection des données (ROADMAP.md) : la page dit
+ # l'état d'aujourd'hui, sans l'inventer. Le texte est ici, en français et en anglais, comme celui des conditions.
+ #}
+{% from 'macros.html.twig' import pageTitle, breadcrumbRoot %}
+
+{% set english = app.request.locale starts with 'en' %}
+{% set title = english ? 'Legal notice' : 'Mentions légales' %}
+{% set support = 'bdoh.support@listes.inrae.fr' %}
+{% set source = 'https://github.com/bdoh-inrae/bdoh-legacy' %}
+
+{% block title %}
+    {{ pageTitle(title) }}
+{% endblock %}
+
+{% block breadcrumb %}
+    <ul class="breadcrumb">
+        {{ breadcrumbRoot() }}
+        <li class="active">{{ title }}</li>
+    </ul>
+{% endblock %}
+
+{% block main %}
+<div id="legal" class="well">
+{% if english %}
+    <h2>Legal notice</h2>
+
+    <h3>Publisher</h3>
+    <p>INRAE, French National Research Institute for Agriculture, Food and Environment, a public scientific and
+        technological institution. Head office: 147 rue de l'Université, 75338 Paris Cedex 07, France.
+        Telephone: +33 1 42 75 90 00. SIREN: 180 070 039.</p>
+
+    <h3>Publication</h3>
+    <p>Director of publication: Philippe Mauguin, Chair and CEO of INRAE.<br>
+        Publication manager: Flora Branger.<br>
+        Contact: {{ support }}.</p>
+
+    <h3>Hosting</h3>
+    <p>INRAE, 147 rue de l'Université, 75338 Paris Cedex 07, France. Telephone: +33 1 42 75 90 00.</p>
+
+    <h3>Personal data</h3>
+    <ul>
+        <li>Accounts: INRAE processes the information of an account to give access to BDOH and to the data requested;
+            the managers of the observatory concerned receive access requests. An account is kept until its holder
+            asks for it to be erased. What is done with an account (imports, changes, exports) is recorded in the
+            history of the observatory.</li>
+        <li>Logs: those of the application (errors, logins) are kept for ten days, those of the web server (IP
+            address, page requested, date) for fourteen days. Exports without an account, sign-ups and requests for a
+            login link are limited in frequency: the IP address is kept for the duration of the limit, from a quarter
+            of an hour to an hour.</li>
+        <li>Cookies: only those the website needs, the session, until the browser is closed, and the login, for
+            thirty days. No audience measurement. Fonts are served by the website; the background of the map comes
+            from the Géoplateforme of IGN, which therefore receives the IP address of the visitor.</li>
+        <li>Your rights: you may access the information of your account, have it corrected or erased, and object to
+            its processing (Regulation (EU) 2016/679 and the French Data Protection Act). Write to {{ support }}, or to
+            the data protection officer of INRAE, cil-dpo@inrae.fr; you may also lodge a complaint with the CNIL
+            (www.cnil.fr).</li>
+    </ul>
+
+    <h3>Credits</h3>
+    <ul>
+        <li>BDOH is free software, under the GNU AGPL licence, version 3 or later, provided without warranty:
+            <a href="{{ source }}">source code</a>. The libraries it uses keep their own licences, listed in the
+            source code.</li>
+        <li>Fonts Inter and Raleway (SIL Open Font License 1.1); icons Material Symbols (Google, Apache 2.0) and Silk
+            (Mark James, CC BY 2.5); map drawn by Leaflet (BSD 2-Clause), on the Plan IGN.</li>
+        <li>The logos and photographs belong to their holders. The data and metadata are under the
+            <a href="{{ path('bdoh_terms_of_use') }}">terms of use</a>.</li>
+    </ul>
+
+    <h3 id="accessibilite">Accessibility</h3>
+    <p>INRAE is committed to making its online services accessible, in accordance with article 47 of the French law
+        no. 2005-102 of 11 February 2005.</p>
+    <p><strong>Compliance status.</strong> BDOH is not compliant with the French accessibility framework (RGAA): it has
+        not yet been audited. Without an audit, the list of inaccessible content is not established. Already known: the
+        graphs of the time series and the map of the stations have no complete text equivalent; the measurements can be
+        read in an export (CSV format), the stations and their position on their own page.</p>
+    <p><strong>Feedback and contact.</strong> If you cannot access a content or a service, write to {{ support }} to be
+        directed to an accessible alternative or to receive the content in another form.</p>
+    <p><strong>Remedies.</strong> If you have reported to us an accessibility defect that prevents you from accessing a
+        content or a service, and have not received a satisfactory answer, you may refer the matter to the Défenseur
+        des droits: through its <a href="https://www.defenseurdesdroits.fr/nous-contacter-355">online form</a>, to its
+        <a href="https://www.defenseurdesdroits.fr/carte-des-delegues">nearest delegate</a>, or by free post, without a
+        stamp: Défenseur des droits, Libre réponse 71120, 75342 Paris CEDEX 07, France.</p>
+    <p>This statement was made on 16 November 2026.</p>
+{% else %}
+    <h2>Mentions légales</h2>
+
+    <h3>Éditeur</h3>
+    <p>INRAE, Institut national de recherche pour l'agriculture, l'alimentation et l'environnement, établissement
+        public à caractère scientifique et technologique. Siège : 147 rue de l'Université, 75338 Paris Cedex 07.
+        Téléphone : +33 1 42 75 90 00. SIREN : 180 070 039.</p>
+
+    <h3>Publication</h3>
+    <p>Directeur de la publication : Philippe Mauguin, président-directeur général d'INRAE.<br>
+        Responsable de la publication : Flora Branger.<br>
+        Contact : {{ support }}.</p>
+
+    <h3>Hébergement</h3>
+    <p>INRAE, 147 rue de l'Université, 75338 Paris Cedex 07. Téléphone : +33 1 42 75 90 00.</p>
+
+    <h3>Données personnelles</h3>
+    <ul>
+        <li>Les comptes : INRAE traite les informations d'un compte pour donner accès à BDOH et aux données demandées ;
+            les gestionnaires de l'observatoire concerné reçoivent les demandes d'accès. Un compte est gardé jusqu'à ce
+            que son titulaire en demande l'effacement. Ce qui est fait avec un compte (imports, modifications, exports)
+            est inscrit dans l'historique de l'observatoire.</li>
+        <li>Les journaux : ceux de l'application (erreurs, connexions) sont gardés dix jours, ceux du serveur web
+            (adresse IP, page demandée, date) quatorze jours. Les exports faits sans compte, les inscriptions et les
+            demandes d'un lien de connexion sont limités en fréquence : l'adresse IP est gardée le temps de la limite,
+            d'un quart d'heure à une heure.</li>
+        <li>Les cookies : seulement ceux dont le site a besoin, la session, jusqu'à la fermeture du navigateur, et la
+            connexion, trente jours. Aucune mesure d'audience. Les polices sont servies par le site ; le fond de la
+            carte vient de la Géoplateforme de l'IGN, qui reçoit donc l'adresse IP du visiteur.</li>
+        <li>Vos droits : vous pouvez accéder aux informations de votre compte, les faire rectifier ou effacer, et vous
+            opposer à leur traitement (règlement (UE) 2016/679 et loi Informatique et Libertés). Écrivez à {{ support }},
+            ou à la déléguée à la protection des données d'INRAE, cil-dpo@inrae.fr ; vous pouvez aussi saisir la CNIL
+            (www.cnil.fr).</li>
+    </ul>
+
+    <h3>Crédits</h3>
+    <ul>
+        <li>BDOH est un logiciel libre, sous licence GNU AGPL, version 3 ou ultérieure, fourni sans garantie :
+            <a href="{{ source }}">code source</a>. Les bibliothèques qu'il emploie gardent leur propre licence,
+            indiquée dans le code source.</li>
+        <li>Polices Inter et Raleway (SIL Open Font License 1.1) ; icônes Material Symbols (Google, Apache 2.0) et Silk
+            (Mark James, CC BY 2.5) ; carte dessinée par Leaflet (BSD 2-Clause), sur le Plan IGN.</li>
+        <li>Les logos et les photographies appartiennent à leurs titulaires. Les données et les métadonnées relèvent
+            des <a href="{{ path('bdoh_terms_of_use') }}">conditions d'utilisation</a>.</li>
+    </ul>
+
+    <h3 id="accessibilite">Accessibilité</h3>
+    <p>INRAE s'engage à rendre ses services en ligne accessibles, conformément à l'article 47 de la loi n° 2005-102 du
+        11 février 2005.</p>
+    <p><strong>État de conformité.</strong> BDOH est non conforme au référentiel général d'amélioration de
+        l'accessibilité (RGAA) : il n'a pas encore fait l'objet d'un audit. Sans audit, la liste des contenus non
+        accessibles n'est pas établie. On sait déjà que les graphiques des chroniques et la carte des stations n'ont
+        pas d'équivalent textuel complet ; les mesures se lisent dans un export (format CSV), les stations et leur
+        position sur leur propre page.</p>
+    <p><strong>Retour d'information et contact.</strong> Si vous n'arrivez pas à accéder à un contenu ou à un service,
+        écrivez à {{ support }} pour être orienté vers une alternative accessible ou obtenir le contenu sous une autre
+        forme.</p>
+    <p><strong>Voies de recours.</strong> Si vous nous avez signalé un défaut d'accessibilité qui vous empêche
+        d'accéder à un contenu ou à un service, et n'avez pas obtenu de réponse satisfaisante, vous pouvez saisir le
+        Défenseur des droits : par son <a href="https://www.defenseurdesdroits.fr/nous-contacter-355">formulaire en
+        ligne</a>, auprès de son <a href="https://www.defenseurdesdroits.fr/carte-des-delegues">délégué le plus
+        proche</a>, ou par courrier gratuit, sans timbre : Défenseur des droits, Libre réponse 71120, 75342 Paris
+        CEDEX 07.</p>
+    <p>Cette déclaration a été établie le 16 novembre 2026.</p>
+{% endif %}
+</div>
+{% endblock main %}
