@@ -199,6 +199,7 @@ $messages = [
             'Partenaire'                => 'Partner removed since then',
             'Utilisateur'               => 'User removed since then',
         ],
+        'withoutAccount'         => 'Without an account',
         'advancedSearch'         => 'All logs',
         'advancedSearchRecent'   => 'Recent logs',
         'go-to-menus-for-detail' => 'To see the detail of actions please filter the latter with the menus below.',

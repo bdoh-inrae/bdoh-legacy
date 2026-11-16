@@ -27,6 +27,13 @@
                         <td data-order="{{ historique.auteur.nom }} {{ historique.auteur.prenom }}">
                             {{- historique.auteur -}}
                         </td>
+                    {%- elseif historique.typeExport is defined %}
+                        {#- Un export de mesures sans auteur est un téléchargement sans compte, possible depuis l'ouverture
+                            des données : avant elle, aucun export n'en manquait (base complète, 2026-11-16). Limite : un
+                            compte supprimé perdrait aussi son nom ici (ON DELETE SET NULL), mais aucun ne l'est. #}
+                        <td data-search="{{ 'historique.withoutAccount'|trans }}">
+                            {{- 'historique.withoutAccount'|trans -}}
+                        </td>
                     {%- else %}
                         <td data-search="">
                             {{- 'historique.deleted.Utilisateur'|trans -}}

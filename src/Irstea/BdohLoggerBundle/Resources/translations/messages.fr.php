@@ -199,6 +199,7 @@ $messages = [
             'Partenaire'                => 'Partenaire supprimé depuis',
             'Utilisateur'               => 'Utilisateur supprimé depuis',
         ],
+        'withoutAccount'         => 'Sans compte',
         'advancedSearch'         => 'Tous les historiques',
         'advancedSearchRecent'   => 'Historiques récents',
         'go-to-menus-for-detail' => "Pour voir le détail des actions veuillez filtrer ces dernières à l'aide des menus ci-dessous.",
