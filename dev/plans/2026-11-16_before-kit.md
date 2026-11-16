@@ -122,13 +122,13 @@ Un « point zéro » de la base juste après l'installation de la 0.7.1, avant l
 
 ## Ordre de travail
 
-1. Pages générales : `/help`, `/legal` avec l'accessibilité, pied de page, « ? » partout.
-2. Accueil d'un observatoire (onglets, Gestionnaires, `/contact`) et titres des pages.
-3. Blocs de citation et citation officielle.
-4. Fenêtre d'export (valeurs par défaut, portes d'entrée) et nom de l'archive.
+1. Pages générales : `/help`, `/legal` avec l'accessibilité, pied de page, « ? » partout. Fait le 16 novembre (Suivi).
+2. Accueil d'un observatoire (onglets, Gestionnaires, `/contact`) et titres des pages. Fait le 16 novembre (Suivi).
+3. Blocs de citation et citation officielle. Fait le 16 novembre (Suivi).
+4. Fenêtre d'export (valeurs par défaut, portes d'entrée) et nom de l'archive. Fait le 16 novembre (Suivi).
 5. La passe de relecture du contenu, à part (Lou, 16 novembre) : une migration globale pour les erreurs mineures, après les captures des accueils montrées à Lou ; les erreurs plus importantes au second onglet des tableurs.
-6. Le kit : son message (le CSV par défaut, l'aide au « ? », l'onglet Gestionnaires ; et, à proposer à Lou, que le site s'ouvre aussi sans VPN depuis le réseau filaire d'un bureau INRAE, d'après elle le 16 novembre, quand le message dit aujourd'hui « que sous le VPN ») et le second onglet des tableurs (OHM-CV : quel DOI principal ; ORACLE : ses deux autres DOI ; Arc-Isère : un article pris comme DOI d'un jeu ; Ardières-Morcille : un article seul).
-7. Retirer les images de la production de `public/uploads/`, puis toutes les passes (`pages`, `admin`, `accounts`, `state`, `exports`, `theia`, `imports` ; leurs commandes, et `make mail-start` d'abord : `dev/plans/2026-11-04_validation.md`, « Commandes »), `make browser-check`, `CHANGELOG.md`, la 0.7.1.
+6. Le kit : son message (le CSV par défaut, l'aide au « ? », l'onglet Gestionnaires ; et, à proposer à Lou, que le site s'ouvre aussi sans VPN depuis le réseau filaire d'un bureau INRAE, d'après elle le 16 novembre, quand le message dit aujourd'hui « que sous le VPN ») et le second onglet des tableurs (OHM-CV : quel DOI principal ; ORACLE : ses deux autres DOI ; Arc-Isère : un article pris comme DOI d'un jeu ; Ardières-Morcille : un article seul). Message fait le 16 novembre, à relire par Lou ; le second onglet attend la relecture du contenu.
+7. Retirer les images de la production de `public/uploads/`, puis toutes les passes (`pages`, `admin`, `accounts`, `state`, `exports`, `theia`, `imports` ; leurs commandes, et `make mail-start` d'abord : `dev/plans/2026-11-04_validation.md`, « Commandes »), `make browser-check`, `CHANGELOG.md`, la 0.7.1. Passes faites le 16 novembre sur le code des étapes 1 à 4 (Suivi) ; après la migration globale, rejouer les modes qu’elle touche, puis publier.
 8. Lou : `vm-update` vers la 0.7.1 (`NOM=prod` une dernière fois), le point zéro, la restauration éprouvée à part, `make test-kit`, l'envoi.
 
 ## Suivi
