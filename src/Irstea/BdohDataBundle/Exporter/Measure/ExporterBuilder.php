@@ -8,6 +8,7 @@ use Irstea\BdohDataBundle\Entity\JeuQualite;
 use Irstea\BdohDataBundle\Exporter\Measure\Csv\Metadata;
 use Irstea\BdohDataBundle\Entity\Observatoire;
 use Irstea\BdohDataBundle\Exporter\Measure\Extractor\Factory as ExtractorFactory;
+use Irstea\BdohDataBundle\Exporter\Measure\Formatter\Csv as CsvFormatter;
 use Irstea\BdohDataBundle\Exporter\Measure\Formatter\Factory as FormatterFactory;
 use Irstea\BdohDataBundle\Exporter\Measure\Reporter\LoggerDecorator;
 use Irstea\BdohBundle\Doi\Citations;
@@ -95,6 +96,9 @@ class ExporterBuilder
     public function getExporter(array $parameters, ArchiverInterface $archiver)
     {
         $formatter = $this->createFormatter($parameters['format'], $parameters['observatoire']);
+        if ($formatter instanceof CsvFormatter) {
+            $formatter->setLang($parameters['lang'] ?? 'fr');
+        }
         $extractor = $this->createExtractor($parameters['extractor'], $formatter, $parameters);
         $reporter = $this->createReporter($parameters);
 

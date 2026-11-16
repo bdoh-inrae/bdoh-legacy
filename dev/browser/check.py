@@ -449,7 +449,7 @@ def open_data_steps(s, station, chronique, console, hidden):
             wanted = {f'{station}_{chronique}.csv', 'meta_series.csv', 'meta_station.csv', 'meta_quality.csv', 'csv-metadata.json'}
             assert wanted <= set(names), f'il manque {wanted - set(names)}'
             header = archive.read(f'{station}_{chronique}.csv').decode().splitlines()[0]
-            assert header == 'station,series,time,time_end,value,quality,value_min,value_max', f'en-tête {header}'
+            assert header == 'station,series,time,time_end,value,unit,quality,value_min,value_max', f'en-tête {header}'
         else:
             assert any(name.endswith('.txt') and name != 'README.txt' for name in names), f'pas de données dans le zip : {names}'
 

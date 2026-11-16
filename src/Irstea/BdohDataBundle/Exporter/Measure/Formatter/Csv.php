@@ -4,13 +4,15 @@
 
 namespace Irstea\BdohDataBundle\Exporter\Measure\Formatter;
 
+use Irstea\BdohDataBundle\Entity\Unite;
 use Irstea\BdohDataBundle\Exporter\Measure\Csv\Tables;
 
 /**
  * Le format CSV (dev/plans/2026-11-13_fair-exports.md) : un fichier par chronique, aux mêmes colonnes pour toutes,
  * station et chronique comprises, si bien que les mettre bout à bout donne le format long. UTF-8, virgule, point
- * décimal, une ligne d'en-tête, dates ISO 8601 avec le décalage du fuseau choisi, `NA` pour une valeur absente. Les
- * colonnes et leur description : Csv\Tables.
+ * décimal, une ligne d'en-tête, dates ISO 8601 avec le décalage du fuseau choisi, `NA` pour une valeur absente. Chaque
+ * ligne porte l'unité de sa valeur (Lou, 2026-11-16), celle que donne meta_series.csv. Les colonnes et leur
+ * description : Csv\Tables.
  */
 class Csv extends AbstractFormatter
 {
@@ -19,6 +21,12 @@ class Csv extends AbstractFormatter
 
     /** @var string|null */
     private $gapCode;
+
+    /** @var string la langue de l'export, pour le libellé de l'unité, comme dans meta_series.csv */
+    private $lang = 'fr';
+
+    /** @var string|null l'unité des valeurs écrites */
+    private $unit;
 
     /** @var string|null la première et la dernière date écrites, pour meta_series.csv */
     private $firstTime;
@@ -31,6 +39,11 @@ class Csv extends AbstractFormatter
         return true;
     }
 
+    public function setLang(string $lang): void
+    {
+        $this->lang = $lang;
+    }
+
     protected function writeHeader()
     {
         // Le décalage que prend le SQL des extractions (ChroniqueRepository::getTzCorrectionForSql)
@@ -38,6 +51,11 @@ class Csv extends AbstractFormatter
         $gap = $this->jeuToJeu->getDefaultGapQualite();
         $this->gapCode = $gap ? $gap->getCode() : null;
         $this->firstTime = $this->lastTime = null;
+        // L'unité des valeurs exportées, celle des cumuls pour un export en cumul (Extractor\Cumulative), dans la langue
+        // de l'export : ce qu'écrit Csv\Metadata::writeSeries
+        $unite = ($this->extractorReport['unite'] ?? null) instanceof Unite ? $this->extractorReport['unite'] : $this->chronique->getUnite();
+        $english = $unite && $this->lang === 'en' ? trim((string) $unite->getLibelleEn()) : '';
+        $this->unit = $unite ? ($english !== '' ? $unite->getLibelleEn() : $unite->getLibelle()) : null;
         $this->writeRow(Tables::MEASURE_COLUMNS);
     }
 
@@ -86,6 +104,7 @@ class Csv extends AbstractFormatter
             $time,
             $fin === null ? Tables::MISSING : $this->isoDate($fin),
             $valeur ?? Tables::MISSING,
+            $this->unit,
             $qualite ?? Tables::MISSING,
             $minimum ?? Tables::MISSING,
             $maximum ?? Tables::MISSING,

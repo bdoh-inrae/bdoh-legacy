@@ -1621,7 +1621,7 @@ CSV_CASES = [
     ('cachée et ouverte', ["c.dtype = 'continue' AND NOT c.estvisible", "c.dtype = 'continue' AND c.estvisible"], 'identical', [], '+01:00', 'fr'),
 ]
 CSV_COLUMNS = {
-    'measures': ['station', 'series', 'time', 'time_end', 'value', 'quality', 'value_min', 'value_max'],
+    'measures': ['station', 'series', 'time', 'time_end', 'value', 'unit', 'quality', 'value_min', 'value_max'],
     'meta_series.csv': ['station', 'series', 'name', 'parameter', 'parameter_code', 'unit', 'kind', 'sampling',
                         'direction', 'valid_min', 'valid_max', 'producer', 'dataset', 'dataset_doi', 'access',
                         'licence', 'page', 'file', 'n_values', 'n_gaps', 'time_first', 'time_last'],
@@ -1650,7 +1650,8 @@ def csv_case_chroniques(base, wheres):
 def csv_checks(base, side, report):
     """Le format CSV, que seul le nouveau a (dev/plans/2026-11-13_fair-exports.md), pour chaque cas de CSV_CASES : l'export
     CSV contre le même au format BDOH, que la comparaison à l'ancien juge par ailleurs (mêmes lignes, dates de début et de
-    fin, valeurs, codes de qualité hors lacunes, minimum et maximum ; l'unité, celle des cumuls pour un cumul), puis la
+    fin, valeurs, codes de qualité hors lacunes, minimum et maximum ; l'unité, celle des cumuls pour un cumul, dans
+    meta_series.csv et sur chaque ligne des fichiers de données), puis la
     forme : en-têtes, valeurs manquantes, dates ISO 8601 au fuseau demandé, codes de qualité décrits et lacunes cohérentes,
     métadonnées contre la base et les fichiers, licence de chaque chronique et de chaque table du CSVW, description CSVW
     fidèle aux fichiers, README qui nomme chaque fichier et décrit chaque colonne, en 80 colonnes."""
@@ -1686,7 +1687,16 @@ def csv_checks(base, side, report):
         qualities = {row[0]: row[2] for row in tables['meta_quality.csv'][1:]}
         series = {(row[0], row[1]): dict(zip(CSV_COLUMNS['meta_series.csv'], row)) for row in tables['meta_series.csv'][1:]}
         for (cid, code, _, station, visible, _), measure_file in zip(chroniques, measure_files):
-            values = tables[measure_file][1:]
+            # L'unité de chaque ligne (Lou, 2026-11-16) : retirée ici après avoir été comparée à celle de meta_series.csv,
+            # pour que la suite lise station, chronique, dates, valeur, qualité, minimum, maximum
+            rows = tables[measure_file][1:]
+            wanted_unit = series.get((station, code), {}).get('unit')
+            if any(len(row) != 9 for row in rows):
+                problems.append(f'{measure_file} : une ligne n’a pas 9 colonnes')
+                continue
+            if {row[5] for row in rows} - {wanted_unit}:
+                problems.append(f'{measure_file} : unité {sorted({row[5] for row in rows})}, {wanted_unit} dans meta_series.csv')
+            values = [row[:5] + row[6:] for row in rows]
             for row in values:
                 if len(row) != 8 or row[:2] != [station, code] or not iso.fullmatch(row[2]) or not row[2].endswith(tz) \
                         or not (row[3] == 'NA' or iso.fullmatch(row[3])) or row[5] not in qualities \

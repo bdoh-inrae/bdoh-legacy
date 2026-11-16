@@ -15,7 +15,7 @@ final class Tables
 {
     public const MISSING = 'NA';
 
-    public const MEASURE_COLUMNS = ['station', 'series', 'time', 'time_end', 'value', 'quality', 'value_min', 'value_max'];
+    public const MEASURE_COLUMNS = ['station', 'series', 'time', 'time_end', 'value', 'unit', 'quality', 'value_min', 'value_max'];
 
     public const SERIES_FILE = 'meta_series.csv';
     public const STATION_FILE = 'meta_station.csv';
@@ -49,16 +49,21 @@ final class Tables
                     ['time_end', 'dateTime', null,
                         'Fin de la période couverte par la valeur (chronique discontinue, moyenne ou cumul à pas de temps fixe) ; NA pour une valeur à un instant.',
                         'End of the period covered by the value (discontinuous series, mean or cumulative over a fixed time step); NA for a value at an instant.'],
-                    ['value', 'double', 'unit (meta_series.csv)',
-                        'Valeur, dans l\'unité de la chronique ; NA pour une lacune, dont le code de qualité dit la nature.',
-                        'Value, in the unit of the series; NA for a gap, whose quality code tells its kind.'],
+                    ['value', 'double', 'column unit',
+                        'Valeur, dans l\'unité que donne la colonne unit ; NA pour une lacune, dont le code de qualité dit la nature.',
+                        'Value, in the unit given by the unit column; NA for a gap, whose quality code tells its kind.'],
+                    // L'unité, dans chaque fichier de données (Lou, 2026-11-16) : une table de valeurs se lit sans les
+                    // métadonnées, et le format long, fichiers mis bout à bout, garde l'unité de chaque ligne
+                    ['unit', 'string', null,
+                        'Unité de la valeur, de son minimum et de son maximum, la même sur toutes les lignes du fichier et dans meta_series.csv : celle des cumuls pour un export en cumul.',
+                        'Unit of the value, of its minimum and of its maximum, the same on every row of the file and in meta_series.csv: that of the totals for a cumulative export.'],
                     ['quality', 'string', null,
                         'Code de qualité de la valeur (meta_quality.csv).',
                         'Quality code of the value (meta_quality.csv).'],
-                    ['value_min', 'double', 'unit (meta_series.csv)',
+                    ['value_min', 'double', 'column unit',
                         'Minimum sur la période, quand BDOH le connaît ; NA sinon.',
                         'Minimum over the period, when BDOH has it; NA otherwise.'],
-                    ['value_max', 'double', 'unit (meta_series.csv)',
+                    ['value_max', 'double', 'column unit',
                         'Maximum sur la période, quand BDOH le connaît ; NA sinon.',
                         'Maximum over the period, when BDOH has it; NA otherwise.'],
                 ],
