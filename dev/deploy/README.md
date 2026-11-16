@@ -134,4 +134,4 @@ Chaque étape s'annonce à l'heure ; la sauvegarde et les deux contrôles de la 
 
 ## À l'ouverture au public
 
-Retirer le bloc `<Location />` du site (`config/deploy/apache-site.conf`) ; vider `MAILER_DIVERT_TO` et `MAILER_ALLOWED_RECIPIENTS` ; le nom public, son certificat et `SYMFONY_TRUSTED_HOSTS` ; le flux vers Theia/OZCAR ; le reste dans `dev/plans/2026-10-26_deployment.md`.
+Retirer le bloc `<Location />` du site (`config/deploy/apache-site.conf`) ; vider `MAILER_DIVERT_TO` et `MAILER_ALLOWED_RECIPIENTS` ; le certificat du nom public, par `mod_md` une fois le port ouvert à Internet ; `SYMFONY_TRUSTED_HOSTS` réduit au nom, l'ancienne adresse IP retirée. Le nom est dans `DEFAULT_URI` et `SYMFONY_TRUSTED_HOSTS` depuis le 16 novembre (`dev/plans/2026-10-26_deployment.md`, Suivi) : `vm-env` ne réécrit pas un `.env` existant, ces deux lignes se changent à la main, points échappés dans `SYMFONY_TRUSTED_HOSTS` (`'^(nom\.public|adresse\.ip)$'`), puis la file se relance ; le flux vers Theia/OZCAR ; le reste dans `dev/plans/2026-10-26_deployment.md`.

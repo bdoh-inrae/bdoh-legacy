@@ -88,7 +88,7 @@ Hors du code, et sans attendre Claude : l'invitation à la visio ; OTHU et OHGE 
 
 ## Pour reprendre
 
-Méthode : celle de [2026-11-16_before-kit.md](2026-11-16_before-kit.md), « Méthode » (les passes de `compare.py` à la fin, une fois les changements faits ; entre-temps, les tests de l'outil, `lint:twig`, `lint:container`, des captures ; ce qui se voit se montre à Lou avant d'aller plus loin). Chaque écart avec l'ancien s'inscrit dans `dev/differences.md` et, s'il est admis, dans `dev/compare/expected.py`.
+Méthode : celle de [2026-11-16_before-kit.md](2026-11-16_before-kit.md), « Méthode » (les passes de `compare.py` à la fin, une fois les changements faits ; entre-temps, les tests de l'outil, `lint:twig`, `lint:container`, des captures ; ce qui se voit se montre à Lou avant d'aller plus loin). Chaque écart avec l'ancien s'inscrit dans `dev/differences.md` et, s'il est admis, dans `dev/compare/expected.py`. Le poste a dans `public/uploads/` les images de la production, pour les captures des accueils : les mettre de côté le temps de chaque passe d'`admin`, puis les remettre (copies dans `../bdoh_reference/uploads/`).
 
 Ordre de travail proposé :
 1. Point 1, les textes des chroniques réservées ; puis les captures de la proposition sur le refus.
