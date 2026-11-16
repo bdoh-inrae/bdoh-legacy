@@ -44,10 +44,19 @@ use Symfony\Component\Validator\Constraints\NotBlank;
 class ExportController extends Controller
 {
     /**
-     * Sans compte, ce qu'un ensemble de chroniques peut demander à la file ; une chronique seule passe toujours
-     * (dev/plans/2026-11-04_open-data.md).
+     * Le volume d'une demande, en valeurs écrites, quels que soient son type et le nombre de ses chroniques, et ses deux
+     * seuils (Lou, 2026-11-16 ; dev/plans/2026-11-16_reopening.md, point 2b) : au-delà du premier, un compte est
+     * demandé ; au-delà du second, la demande est refusée, pour qu'elle ne retienne pas la file ni ne remplisse le
+     * dossier temporaire, où les fichiers s'écrivent avant l'archive. Les valeurs lues (export à l'identique, valeurs
+     * interpolées) s'écrivent à 90 000 par seconde, et pèsent 56 octets en CSV ; les valeurs calculées (moyenne, cumul)
+     * à 640 par seconde, d'où des seuils cinquante fois plus bas : le second vaut alors la limite de l'ancien, 2 ans par
+     * minute de pas, soit 1 051 200 valeurs. Mesuré sur le poste le 16 novembre 2026 : le second seuil est provisoire,
+     * à régler sur la machine de production (dev/differences.md, « Le volume d'un export »).
      */
-    private const MAX_MEASURES_WITHOUT_ACCOUNT = 5000000;
+    private const VOLUME_LIMITS = [
+        'read'     => [5000000, 50000000],
+        'computed' => [100000, 1000000],
+    ];
 
     /**
      * Sans compte, ce qui peut attendre dans la file des exports : un seul visiteur ne doit pas la saturer pour tous.
@@ -129,32 +138,47 @@ class ExportController extends Controller
         /** @var \DateTime $endDate */
         $endDate = $params['endDate'];
 
-        $user = $this->getUser();
-        if ($user === null) {
-            if (!$this->exportIpLimiter->create($request->getClientIp())->consume()->isAccepted()) {
-                return $this->refuse($request, 'measure.export.tooMany');
-            }
-            if ($this->isTooHeavyWithoutAccount($chroniques->toArray(), $beginDate, $endDate)) {
-                return $this->refuse($request, 'measure.export.tooHeavy');
-            }
-            if ($this->getEm()->getRepository(Job::class)->countWaiting('job_queue_export') >= self::MAX_WAITING_WITHOUT_ACCOUNT) {
-                return $this->refuse($request, 'measure.export.busy');
-            }
-        }
-
-        $timezone = new \DateTimeZone(sprintf('%+03d00', $params['timezone']));
-
         switch ($params['exportType']) {
             case 'instantaneous':
                 $timestep = $params['instantStep'];
                 break;
             case 'cumulative':
             case 'mean':
+                if ($params['meanCumulStep'] === null) {
+                    $form->get('meanCumulStep')->addError(new FormError(
+                        $this->getTranslator()->trans('This value should not be blank.', [], 'validators')
+                    ));
+
+                    return $this->reportFormErrors($form);
+                }
                 $timestep = $params['meanCumulStep']->getId();
                 break;
             default:
                 $timestep = null;
         }
+
+        $user = $this->getUser();
+        if ($user === null && !$this->exportIpLimiter->create($request->getClientIp())->consume()->isAccepted()) {
+            return $this->refuse($request, 'measure.export.tooMany');
+        }
+        $kind = \in_array($params['exportType'], ['mean', 'cumulative'], true) ? 'computed' : 'read';
+        [$withoutAccount, $atMost] = self::VOLUME_LIMITS[$kind];
+        $limit = $user === null ? $withoutAccount : $atMost;
+        $volume = $this->volume($params, $chroniques->toArray(), $beginDate, $endDate, $limit);
+        if ($volume > $limit) {
+            // Au-delà du second seuil, le refus vaut avec ou sans compte : c'est lui que dit le message
+            return $this->refuse($request, $volume > $atMost ? 'measure.export.tooLarge' : 'measure.export.tooHeavy', [
+                '%volume%' => number_format($volume, 0, ',', ' '),
+                '%max%'    => number_format($volume > $atMost ? $atMost : $limit, 0, ',', ' '),
+                '%what%'   => $this->getTranslator()->trans('measure.export.values.' . $kind),
+            ]);
+        }
+        if ($user === null
+            && $this->getEm()->getRepository(Job::class)->countWaiting('job_queue_export') >= self::MAX_WAITING_WITHOUT_ACCOUNT) {
+            return $this->refuse($request, 'measure.export.busy');
+        }
+
+        $timezone = new \DateTimeZone(sprintf('%+03d00', $params['timezone']));
 
         $token = $this->exportFiles->newToken();
         $job = $this->jobManager->enqueueExport(
@@ -328,30 +352,55 @@ class ExportController extends Controller
     }
 
     /**
+     * Le volume d'une demande : les valeurs qu'elle écrirait, toutes chroniques réunies. À l'identique, les mesures de
+     * la période ; en valeurs interpolées, les pas de la période demandée, que l'export écrit tous, lacunes comprises ;
+     * en moyenne ou en cumul, les pas de la période où la chronique a des mesures, une seule valeur pour le pas
+     * « événement ».
+     *
      * @param Chronique[] $chroniques
+     * @param int         $limit      le seuil à comparer : à l'identique, les mesures ne se comptent en base que si
+     *                                toutes celles des chroniques le dépassent
      */
-    private function isTooHeavyWithoutAccount(array $chroniques, \DateTime $beginDate, \DateTime $endDate): bool
+    private function volume(array $params, array $chroniques, \DateTime $beginDate, \DateTime $endDate, int $limit): int
     {
-        if (\count($chroniques) < 2) {
-            return false;
-        }
-        $total = 0;
-        foreach ($chroniques as $chronique) {
-            $total += (int) $chronique->getNbMesures();
-        }
+        $steps = fn (int $seconds, int $step) => $seconds < 0 ? 0 : intdiv($seconds, $step) + 1;
+        switch ($params['exportType']) {
+            case 'instantaneous':
+                return \count($chroniques)
+                    * $steps($endDate->getTimestamp() - $beginDate->getTimestamp(), 60 * max(1, (int) $params['instantStep']));
+            case 'mean':
+            case 'cumulative':
+                /** @var PasEchantillonnage $step */
+                $step = $params['meanCumulStep'];
+                $utc = new \DateTimeZone('UTC');
+                $total = 0;
+                foreach ($chroniques as $chronique) {
+                    if (!$chronique->getDateDebutMesures() || !$chronique->getDateFinMesures()) {
+                        continue;
+                    }
+                    $first = max($beginDate->getTimestamp(), (new \DateTime($chronique->getDateDebutMesures(), $utc))->getTimestamp());
+                    $last = min($endDate->getTimestamp(), (new \DateTime($chronique->getDateFinMesures(), $utc))->getTimestamp());
+                    if ($last >= $first) {
+                        $total += $step->getUnite() === 'event' ? 1 : $steps($last - $first, max(1, $step->getApproxSecondes()));
+                    }
+                }
 
-        return $total > self::MAX_MEASURES_WITHOUT_ACCOUNT
-            && $this->getBdohRepo('Chronique')->countMeasuresBetween($chroniques, $beginDate, $endDate) > self::MAX_MEASURES_WITHOUT_ACCOUNT;
+                return $total;
+            default:
+                $total = 0;
+                foreach ($chroniques as $chronique) {
+                    $total += (int) $chronique->getNbMesures();
+                }
+
+                return $total > $limit ? $this->getBdohRepo('Chronique')->countMeasuresBetween($chroniques, $beginDate, $endDate) : $total;
+        }
     }
 
-    private function refuse(Request $request, string $message): RedirectResponse
+    private function refuse(Request $request, string $message, array $parameters = []): RedirectResponse
     {
         /** @var Session $session */
         $session = $request->getSession();
-        $session->getFlashBag()->add(
-            'error',
-            $this->getTranslator()->trans($message, ['%max%' => number_format(self::MAX_MEASURES_WITHOUT_ACCOUNT, 0, ',', ' ')])
-        );
+        $session->getFlashBag()->add('error', $this->getTranslator()->trans($message, $parameters));
 
         return $this->back($request);
     }

@@ -3,7 +3,6 @@ validation:
     end-after-start: La date de fin doit être après la date de début.
     out-of-valid-range: La période sélectionnée dépasse celle de la chronique.
     invalid-time-step: Ce pas de temps est trop élevé ou trop faible.
-    invalid-time-span: Le pas de temps est trop faible par rapport à la période sélectionnée.
     check-term-of-uses: Veuillez accepter les conditions d'utilisation pour pouvoir exporter des mesures.
     select-a-chronique: Veuillez sélectionner au moins une chronique.
     start:

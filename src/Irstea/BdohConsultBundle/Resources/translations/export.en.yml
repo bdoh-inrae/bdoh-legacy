@@ -3,7 +3,6 @@ validation:
     end-after-start: The end date must be posterior to the start date.
     out-of-valid-range: The selected period is out of bounds.
     invalid-time-step: This time step is out of bounds.
-    invalid-time-span: The time step is too with regard to the selected period.
     check-term-of-uses: Please accept the terms of use before downloading.
     select-a-chronique: Please select at least one time series.
     start:

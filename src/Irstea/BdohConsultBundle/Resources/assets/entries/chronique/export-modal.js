@@ -10,8 +10,6 @@ const Translator = require('translator');
 require('jquery-ui/ui/widget');
 require('@IrsteaBdohBundle/lib/date-time/range-picker');
 
-const ALLOWED_YEARS_PER_MINUTE = 2;
-
 function alwaysTrue() {
     return true
 }
@@ -21,10 +19,9 @@ function isBdohFormat(fmt) {
     return fmt === 'Bdoh' || fmt === 'Csv';
 }
 
-function isLessThenYearPerMinute(start, end, timeStep) {
-    const span = end.diff(start, 'years');
-    return span <= timeStep * ALLOWED_YEARS_PER_MINUTE;
-}
+// La période ne dépend plus du pas de temps : l'ancien refusait ici plus de 2 ans par minute de pas, une garde technique
+// que le serveur ne vérifiait pas. Le serveur compte désormais le volume de la demande (ExportController::volume ;
+// Lou, 2026-11-16, dev/differences.md, « Le volume d'un export »).
 
 const allowedTypes = {
     'Bdoh': ['identical', 'instantaneous', 'mean', 'cumulative'],
@@ -36,28 +33,24 @@ const exportTypes = {
     identical: {
         timeStepSelector: 'none',
         isFormatValid: alwaysTrue,
-        isTimeStepValid: alwaysTrue,
-        isTimeSpanValid: alwaysTrue
+        isTimeStepValid: alwaysTrue
     },
     instantaneous: {
         timeStepSelector: 'free',
         isFormatValid: alwaysTrue,
         isTimeStepValid(timeStep) {
             return 0 < timeStep && timeStep <= 1440;
-        },
-        isTimeSpanValid: isLessThenYearPerMinute
+        }
     },
     mean: {
         timeStepSelector: 'list',
         isFormatValid: isBdohFormat,
-        isTimeStepValid: alwaysTrue,
-        isTimeSpanValid: isLessThenYearPerMinute
+        isTimeStepValid: alwaysTrue
     },
     cumulative: {
         timeStepSelector: 'list',
         isFormatValid: isBdohFormat,
-        isTimeStepValid: alwaysTrue,
-        isTimeSpanValid: isLessThenYearPerMinute
+        isTimeStepValid: alwaysTrue
     }
 };
 
@@ -189,7 +182,7 @@ $.widget(
             const errors = {
                 start: startError ? `start.${startError}` : null,
                 end: endError ? `end.${endError}` : null,
-                timeStep: this._getTimeStepError(status.value.start, status.value.end, exportType, this._getTimeStep()),
+                timeStep: this._getTimeStepError(exportType, this._getTimeStep()),
                 termsOfUses: this._getTermsOfUsesError(),
                 chroniques: this._getChroniquesError()
             };
@@ -208,14 +201,8 @@ $.widget(
             return status.isValid ? false : status.status;
         },
 
-        _getTimeStepError(start, end, exportType, timeStep) {
-            if (!exportType.isTimeStepValid(timeStep)) {
-                return 'invalid-time-step';
-            }
-            if (!exportType.isTimeSpanValid(start, end, timeStep)) {
-                return 'invalid-time-span';
-            }
-            return false;
+        _getTimeStepError(exportType, timeStep) {
+            return exportType.isTimeStepValid(timeStep) ? false : 'invalid-time-step';
         },
 
         _getTermsOfUsesError() {

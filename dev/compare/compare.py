@@ -2164,6 +2164,9 @@ def open_data_checks(side, console, runner, base, checks):
     page = f'/{slug}/mesure/export/{job}/{token}'
     status, headers, body = anonymous.get(page)
     check('page de suivi, en attente, qui se recharge', status == 200 and headers.get('Refresh'), f'statut {status}')
+    # Sans compte, seule l'adresse de cette page mène à l'export : elle le dit, avec sa durée (Lou, 2026-11-16)
+    check('page de suivi, sans compte : garder son adresse, 7 jours',
+          'Gardez l\'adresse de cette page' in html.unescape(body.decode('utf-8', 'replace')) and b'7 jours' in body)
     check('archive pas encore prête', anonymous.get(f'{page}/file')[0] == 404)
     drain(console, runner, base)
     status, headers, body = anonymous.get(page)
@@ -2273,33 +2276,69 @@ def open_data_checks(side, console, runner, base, checks):
     done = subprocess.run([*console, 'bdoh:export:identical', *period, visible, '--write-to', '/tmp/essai.zip', '--send-to', role(slug, 'gestionnaire'), '--env=prod'], capture_output=True)
     check('--send-to sans tâche, refusé', done.returncode != 0, f'code {done.returncode}')
 
-    # Le seuil : une chronique seule passe toujours, un ensemble lourd demande un compte
+    # Le volume d'une demande, en valeurs écrites, et ses deux seuils (dev/differences.md, « Le volume d'un export ») :
+    # au-delà du premier, un compte est demandé ; au-delà du second, la demande est refusée même avec un compte. Une
+    # chronique seule n'est plus exemptée, et les valeurs calculées (moyenne, cumul) ont des seuils cinquante fois plus
+    # bas. La chronique reçoit 5 000 100 mesures à partir de 1800 : plus de 5 millions de mesures à l'identique, et
+    # 225 ans de pas pour une moyenne.
     subprocess.run(['docker', 'exec', '-i', NEW_SERVER, 'psql', '-U', 'bdoh', '-d', base, '-v', 'ON_ERROR_STOP=1', '-q'], check=True, capture_output=True, text=True, input=f"""
         INSERT INTO mesure (id, chronique_id, qualite_id, date, valeur, estcalculee)
         SELECT nextval('mesure_id_seq'), {visible}, (SELECT qualite_id FROM mesure WHERE chronique_id = {visible} LIMIT 1),
                timestamp '1800-01-01' + n * interval '1 minute', 1, false FROM generate_series(1, 5000100) n;
-        UPDATE chronique SET nbmesures = nbmesures + 5000100 WHERE id = {visible};""")
+        UPDATE chronique SET nbmesures = nbmesures + 5000100, datedebutmesures = '1800-01-01 00:01:00' WHERE id = {visible};""")
     limiter()
-    before = jobs()
-    status, headers, _ = export(anonymous, slug, [visible, other])
-    check('ensemble trop lourd, refusé sans compte', status == 302 and jobs() == before and '/mesure/export/' not in headers.get('Location', ''),
-          f"statut {status}, {before} tâches puis {jobs()}")
-    check('la même chronique seule, acceptée', export(anonymous, slug, visible)[0] == 302 and int(jobs()) == int(before) + 1, f'{jobs()} tâches')
-    status = export(owner, slug, [visible, other], termsOfUses='1')[0]
-    check('ensemble trop lourd, accepté avec un compte', status == 302 and int(jobs()) == int(before) + 2, f'statut {status}, {jobs()} tâches')
 
-    # La limite de fréquence, par adresse IP et sans compte
+    def asked(name, client, ids, accepted, said=(), **extra):
+        """Une demande d'export : acceptée, elle ajoute une tâche ; refusée, aucune, et le message dit le volume et le seuil."""
+        before = int(jobs())
+        status, headers, _ = export(client, slug, ids, **extra)
+        queued = int(jobs()) - before
+        notices = re.search(r'data-notices="([^"]*)"', client.get(f'/{slug}/')[2].decode('utf-8', 'replace'))
+        shown = json.loads(html.unescape(notices.group(1))) if notices else []  # une liste vide sans message
+        message = ' '.join(shown.get('error', [])) if isinstance(shown, dict) else ''
+        ok = status == 302 and queued == (1 if accepted else 0) and all(text in message for text in said)
+        check(name, ok, f'statut {status}, {queued} tâche de plus, message : {message[:160]}')
+
+    anonymous = Client(side, None, slug)
+    asked('à l’identique, deux chroniques au-delà du premier seuil, refusé sans compte', anonymous, [visible, other], False,
+          ('sans compte, la limite est de 5 000 000',))
+    asked('à l’identique, une chronique seule au-delà du premier seuil, refusée sans compte', anonymous, visible, False,
+          ('sans compte, la limite est de 5 000 000',))
+    asked('la même, sur une période sous le seuil, acceptée sans compte', anonymous, visible, True, beginDate='2024-01-01T00:00:00Z')
+    asked('à l’identique, au-delà du premier seuil, accepté avec un compte', owner, [visible, other], True, termsOfUses='1')
+    # Valeurs interpolées : tous les pas de la période demandée, soit 6 millions à 20 minutes, 121 millions à la minute
+    asked('valeurs interpolées, une chronique seule au-delà du premier seuil, refusée sans compte', anonymous, visible, False,
+          ('6 048 433 valeurs', 'sans compte, la limite est de 5 000 000'), exportType='instantaneous', instantStep='20')
+    asked('valeurs interpolées, au-delà du premier seuil, acceptées avec un compte', owner, visible, True,
+          exportType='instantaneous', instantStep='20')
+    asked('valeurs interpolées, au-delà du second seuil, refusées avec un compte', owner, visible, False,
+          ('120 968 641 valeurs', 'la limite est de 50 000 000 par demande'), exportType='instantaneous', instantStep='1')
+    asked('valeurs interpolées, au-delà du second seuil, refusées sans compte', anonymous, visible, False,
+          ('la limite est de 50 000 000 par demande',), exportType='instantaneous', instantStep='1')
+    # Moyennes et cumuls : les pas de la période où la chronique a des mesures (1800 à 2024), comptés par
+    # approxsecondes ; 6 heures, 1 heure, 1 jour, 1 événement (pasechantillonnage 6, 5, 7, 10)
+    asked('moyenne, au-delà du premier seuil des valeurs calculées, refusée sans compte', anonymous, visible, False,
+          ('valeurs calculées', 'sans compte, la limite est de 100 000'), exportType='mean', meanCumulStep='6')
+    asked('moyenne, au-delà du premier seuil, acceptée avec un compte', owner, visible, True, exportType='mean', meanCumulStep='6')
+    asked('cumul, au-delà du second seuil des valeurs calculées, refusé avec un compte', owner, visible, False,
+          ('valeurs calculées', 'la limite est de 1 000 000 par demande'), exportType='cumulative', meanCumulStep='5')
+    asked('moyenne journalière, sous le premier seuil, acceptée sans compte', anonymous, visible, True, exportType='mean', meanCumulStep='7')
+    asked('moyenne d’un événement, une seule valeur, acceptée sans compte', anonymous, visible, True, exportType='mean', meanCumulStep='10')
+    status = export(anonymous, slug, visible, exportType='mean', meanCumulStep='')[0]
+    check('moyenne sans pas de temps, refusée', status == 400, f'statut {status}')
+
+    # La limite de fréquence, par adresse IP et sans compte (sur 2024 : toute la chronique passe désormais le premier seuil)
     limiter()
     before = jobs()
     for _ in range(21):
-        export(Client(side, None, slug), slug, visible)
+        export(Client(side, None, slug), slug, visible, beginDate='2024-01-01T00:00:00Z')
     check('limite de fréquence sans compte', int(jobs()) == int(before) + 20, f'{before} tâches puis {jobs()}')
 
-    # La file chargée : les 2 demandes du seuil et ces 20-là font 22 tâches en attente, sur 30 admises sans compte
+    # La file chargée : les 6 demandes acceptées du volume et ces 20-là font 26 tâches en attente, sur 30 admises sans compte
     limiter()
     before = jobs()
     for _ in range(10):
-        export(Client(side, None, slug), slug, visible)
+        export(Client(side, None, slug), slug, visible, beginDate='2024-01-01T00:00:00Z')
     waiting = query(base, "SELECT count(*) FROM jms_jobs WHERE queue = 'job_queue_export' AND state IN ('new', 'pending')", NEW_SERVER)[0][0]
     check('file chargée, refusé sans compte', waiting == '30', f'{waiting} en attente')
     limiter()

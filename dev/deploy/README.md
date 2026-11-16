@@ -132,6 +132,29 @@ La mise à jour part du script de la version installée : depuis la 0.7.0, elle 
 
 Chaque étape s'annonce à l'heure ; la sauvegarde et les deux contrôles de la base, muets, prennent quelques minutes chacun sur la base complète. Arrête la file, sauvegarde la base sous un nom à part (`/var/backups/bdoh-kept/prod-avant-…`, que la sauvegarde de la nuit ne vide pas ; jusqu'à la 0.6.0, `/var/backups/bdoh/`, vidé au bout de 8 jours), passe au tag, puis laisse la suite au script de la version installée : il reconstruit, applique les migrations entre deux contrôles, recharge Apache et relance la file. Les thèmes compilés se recompilent avec la nouvelle version. Pour revenir en arrière : la version précédente par la même commande, et, si les migrations ont touché la base, ce dump.
 
+## Mesurer les exports
+
+Les seuils de volume d'un export (`ExportController::VOLUME_LIMITS` ; `dev/differences.md`, « Le volume d'un export ») ont été posés d'après le poste de développement : le second est provisoire. Sur la VM, mesurer ce que durent une lecture et un calcul, et la place du dossier temporaire, pour le régler. La sortie des commandes est jetée : rien ne s'écrit, la file n'est pas touchée, et seuls s'affichent des durées, un nombre de lignes et un nombre d'octets. À un moment calme, dans le dossier de l'instance :
+
+```
+df -h /tmp
+sudo runuser -u postgres -- psql -d bdoh_prod -Atc "SELECT id, nbmesures, datedebutmesures::date, datefinmesures::date FROM chronique WHERE estvisible AND dtype = 'continue' ORDER BY nbmesures DESC NULLS LAST LIMIT 1"
+```
+
+Avec l'identifiant de cette chronique à la place de `ID`, et une année où elle a des mesures :
+
+```
+mesure() { time sudo runuser -u www-data -- php bin/console --env=prod --no-interaction "$@" --format csv --timezone '+00:00' 2>/dev/null | wc -lc; }
+AN="2015-01-01T00:00:00+00:00 2016-01-01T00:00:00+00:00"
+mesure bdoh:export:identical $AN ID
+mesure bdoh:export:instantaneous 1 $AN ID
+mesure bdoh:export:mean 5 $AN ID
+mesure bdoh:export:mean 1 $AN ID
+mesure bdoh:export:cumulative 1 $AN ID
+```
+
+Sur le poste, le 16 novembre : 1,3 s (128 000 lignes), 6,1 s (526 000), 15 s (9 500), 164 s (106 000) et 163 s. Le second seuil des valeurs lues (50 millions) vaut la place de `/tmp` : 56 octets par valeur en CSV, que l'export écrit sans compression avant l'archive, à côté des imports. Celui des valeurs calculées (1 million) vaut une durée de file : la dernière commande, multipliée par dix, donne celle d'un export au seuil.
+
 ## À l'ouverture au public
 
 Retirer le bloc `<Location />` du site (`config/deploy/apache-site.conf`) ; vider `MAILER_DIVERT_TO` et `MAILER_ALLOWED_RECIPIENTS` ; le certificat du nom public, par `mod_md` une fois le port ouvert à Internet ; `SYMFONY_TRUSTED_HOSTS` réduit au nom, l'ancienne adresse IP retirée. Le nom est dans `DEFAULT_URI` et `SYMFONY_TRUSTED_HOSTS` depuis le 16 novembre (`dev/plans/2026-10-26_deployment.md`, Suivi) : `vm-env` ne réécrit pas un `.env` existant, ces deux lignes se changent à la main, points échappés dans `SYMFONY_TRUSTED_HOSTS` (`'^(nom\.public|adresse\.ip)$'`), puis la file se relance ; le flux vers Theia/OZCAR ; le reste dans `dev/plans/2026-10-26_deployment.md`.

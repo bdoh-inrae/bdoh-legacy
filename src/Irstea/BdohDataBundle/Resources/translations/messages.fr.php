@@ -49,18 +49,18 @@ $export = [
         <ul>
             <li>pas de modification du pas de temps par rapport à la chronique stockée (le pas de temps est potentiellement variable)</li>
             <li>on peut exporter plusieurs chroniques d'une même station</li>
-            <li>il n'y a pas de limitation de longueur des chroniques, et le fichier se récupère par un lien.</li>
+            <li>la longueur d'une chronique n'est pas limitée, et le fichier se récupère par un lien.</li>
         </ul>
     </li>
     <li>Un export à pas de temps fixe (avec interpolation linéaire ou calcul de moyenne ou de cumul) est possible pour certaines chroniques :</li>
     <ul>
         <li>on ne peut exporter qu'une chronique à la fois</li>
-        <li>de façon à limiter l'encombrement du serveur qui réalise les calculs, la longueur maximale d'un export est de 2 ans par minute de pas de temps, soit 1051200 valeurs (~ 10<sup>6</sup> lignes)</li>
-        <li>en cas de besoin d'export de chronique plus long, il faudra réaliser l'export en plusieurs fois</li>
+        <li>la période ne dépend plus du pas de temps : toute la chronique peut se demander d'un coup, dans la limite de volume décrite plus bas</li>
         <li>le fichier se télécharge par un lien, valable 7 jours ; avec un compte, ce lien arrive aussi par e-mail</li>
         <li>Les options pour l'export à pas de temps fixe sont : (i) pour l'export avec interpolation linéaire, un pas de temps compris entre 1 et 1440 minutes ; (ii) pour l'export avec calcul de moyenne ou cumul, un des pas de temps proposés dans la liste déroulante. L'export commence à une heure ronde. L'option «\u{a0}événement\u{a0}» calcule la moyenne ou le cumul sur toute la durée de l'événement (1 seule valeur résultat).</li>
     </ul>
     <li>On exporte un fichier par chronique.</li>
+    <li>Le volume d'un export se compte en valeurs écrites, toutes chroniques réunies. Au-delà d'un premier seuil, un compte est demandé\u{a0}; au-delà d'un second, dix fois plus haut, la demande est refusée, et le message donne le volume demandé et la limite\u{a0}: il faut alors réduire la période, le nombre de chroniques, ou augmenter le pas de temps, quitte à exporter en plusieurs fois. Les moyennes et les cumuls, bien plus longs à calculer, ont des seuils plus bas.</li>
     <li>Pour l'export de chroniques continues à l'identique ou à pas de temps fixe avec interpolation linéaire, trois formats de fichier sont possibles : BDOH standard, Hydro2 QTVAR ou CSV.</li>
     <li>Pour l'export de moyennes, cumuls ou chroniques discontinues, deux formats sont possibles : BDOH discontinu ou CSV.</li>
     <li>Le format CSV est un CSV standard (UTF-8, virgule entre les colonnes, point décimal, dates ISO 8601), qui se lit dans R ou Python, et dans un tableur par son import de CSV (encodage UTF-8, séparateur virgule) ; ses fichiers ont tous les mêmes colonnes, et des tables de métadonnées les accompagnent. Le fichier README.txt de l'archive les décrit.</li>
@@ -69,7 +69,13 @@ HELP
         ,
         'underway'     => "L'export de chronique est en cours. Vous recevrez prochainement un lien par e-mail.",
         'licence'      => 'Ces données sont sous <a href="https://www.data.gouv.fr/datasets/licence-ouverte-2-0" target="_blank" rel="noopener">Licence Ouverte Etalab 2.0</a> : leur réutilisation est libre, y compris commerciale, en mentionnant leur source (INRAE, BDOH) et la date de leur dernière mise à jour, à défaut celle du téléchargement. Pour les citer dans une publication : <a href="%url%">conditions d\'utilisation</a>.',
-        'tooHeavy'     => 'Sans compte, un ensemble de chroniques ne peut pas dépasser %max% mesures : connectez-vous, ou exportez-les une par une.',
+        // Le volume d'une demande et ses deux seuils (ExportController::VOLUME_LIMITS ; Lou, 2026-11-16)
+        'tooHeavy'     => "Cet export compte %volume% %what% : sans compte, la limite est de %max%. Connectez-vous (le lien de l'export arrive alors par e-mail), ou réduisez la période, le nombre de chroniques, ou augmentez le pas de temps.",
+        'tooLarge'     => "Cet export compte %volume% %what% : la limite est de %max% par demande, pour que la file des exports reste disponible à tous. Réduisez la période, le nombre de chroniques, ou augmentez le pas de temps, quitte à exporter en plusieurs fois.",
+        'values'       => [
+            'read'     => 'valeurs',
+            'computed' => 'valeurs calculées (moyennes ou cumuls)',
+        ],
         'tooMany'      => "Trop d'exports demandés depuis votre adresse : réessayez dans une heure, ou connectez-vous.",
         'busy'         => "La file des exports est chargée : réessayez plus tard, ou connectez-vous.",
         'status'       => [
@@ -80,6 +86,8 @@ HELP
             'download'          => 'Télécharger',
             'failed'            => "Cet export n'a pas pu se faire. Vous pouvez réessayer, ou écrire aux gestionnaires de l'observatoire.",
             'expired'           => 'Ce lien a expiré : le fichier a été retiré. Demandez de nouveau cet export.',
+            // Sans compte, rien d'autre que cette adresse ne mène à l'export (Lou, 2026-11-16)
+            'keep(%days%)'      => "Gardez l'adresse de cette page, en marque-page ou en la copiant : sans compte, c'est elle qui mène à votre export, jusqu'à %days% jours après sa fin.",
         ],
         'error'        => [
             'abort'                               => "Pour des raisons techniques l'export de mesures n'a pas pu se faire.",

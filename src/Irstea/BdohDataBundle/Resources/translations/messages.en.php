@@ -49,18 +49,18 @@ $export = [
         <ul>
             <li>the original time step of the time series is conserved (it is potentially variable)</li>
             <li>several time series belonging to a same station can be downloaded at the same time</li>
-            <li>the file is retrieved through a link, without any size restriction.</li>
+            <li>the length of a time series is not limited, and the file is retrieved through a link.</li>
         </ul>
     </li>
     <li>Some time series can be downloaded with an option for fixed time step calculation (using linear interpolation, mean calculation or sum calculation):</li>
     <ul>
         <li>only one time series can be downloaded at a time</li>
-        <li>in order not to block the server, each download is limited to a maximum span of 2 years per minute of time step, i.e. 1051200 values (~ 10<sup>6</sup> lines)</li>
-        <li>if a calculation is needed on a longer span, the download must be performed onto a series of smaller spans</li>
+        <li>the period no longer depends on the time step: the whole time series can be requested at once, within the volume limit described below</li>
         <li>data are downloaded through a link, valid for 7 days; with an account, this link also arrives by e-mail</li>
         <li>the options for fiexed time step calculation are: (i) for linear interpolation, a time step between 1 and 1440 minutes; (ii) for mean and sum calculations, one of the time steps available in the drop-down list. The interpolated values start at a round time. Option “\u{a0}event\u{a0}” calculates the mean or sum of the values in the time range of the event (1 output value).</li>
     </ul>
     <li>One separate file is downloaded for each time series.</li>
+    <li>The volume of a download is counted in written values, all time series together. Above a first threshold, an account is required; above a second one, ten times higher, the request is refused, and the message gives the requested volume and the limit: reduce the period, the number of time series, or increase the time step, splitting the download if needed. Means and sums, much longer to compute, have lower thresholds.</li>
     <li>For downloads of continuous time series with identical time step or linear interpolation, three file formats are available: BDOH standard, Hydro2 QTVAR or CSV.</li>
     <li>For fixed time steps with mean/sum calculation options, and for discontinuous time series, two formats are available: "BDOH discontinu" or CSV.</li>
     <li>The CSV format is a standard CSV (UTF-8, comma between columns, decimal point, ISO 8601 dates), readable in R or Python, and in a spreadsheet through its CSV import (UTF-8 encoding, comma separator); its files all have the same columns, and metadata tables come with them. The README.txt file of the archive describes them.</li>
@@ -69,7 +69,13 @@ HELP
         ,
         'underway'     => 'The download of the time series is underway. You will shortly receive a link by e-mail.',
         'licence'      => 'These data are under the <a href="https://www.data.gouv.fr/datasets/licence-ouverte-2-0" target="_blank" rel="noopener">Etalab Open Licence 2.0</a>: they may be reused freely, including commercially, provided you mention their source (INRAE, BDOH) and the date of their last update, or failing that the download date. To cite them in a publication: <a href="%url%">terms of use</a>.',
-        'tooHeavy'     => 'Without an account, a set of time series cannot exceed %max% measures: sign in, or download them one by one.',
+        // The volume of a request and its two thresholds (ExportController::VOLUME_LIMITS; Lou, 2026-11-16)
+        'tooHeavy'     => 'This download amounts to %volume% %what%: without an account, the limit is %max%. Sign in (the link to the download is then sent by e-mail), or reduce the period, the number of time series, or increase the time step.',
+        'tooLarge'     => 'This download amounts to %volume% %what%: the limit is %max% per request, so that the download queue stays available to everyone. Reduce the period, the number of time series, or increase the time step, splitting the download if needed.',
+        'values'       => [
+            'read'     => 'values',
+            'computed' => 'computed values (means or sums)',
+        ],
         'tooMany'      => 'Too many downloads requested from your address: try again in an hour, or sign in.',
         'busy'         => 'The download queue is busy: try again later, or sign in.',
         'status'       => [
@@ -80,6 +86,8 @@ HELP
             'download'          => 'Download',
             'failed'            => 'This download could not be done. You can try again, or write to the managers of the observatory.',
             'expired'           => 'This link has expired: the file has been removed. Request this download again.',
+            // Without an account, nothing else than this address leads to the download (Lou, 2026-11-16)
+            'keep(%days%)'      => 'Keep the address of this page, as a bookmark or by copying it: without an account, it is what leads to your download, until %days% days after it is done.',
         ],
         'error'        => [
             'abort'                               => "For technical reasons the download couldn't be achieved.",

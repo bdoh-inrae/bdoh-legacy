@@ -4,6 +4,16 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/). Numéros de v
 
 ## Non publié
 
+### Modifié
+
+- Les chroniques en accès restreint sont dites réservées aux membres de leur observatoire, pour son travail interne : la page des conditions, l'accueil de BDOH, l'inscription, le courriel de bienvenue, l'aide, la fenêtre d'export des favoris et la bulle du cadenas ne proposent plus au public d'en demander l'accès, et renvoient aux partenaires qui en portent la diffusion. La demande d'accès reste, pour les membres, et sa page le dit.
+- Un export à pas de temps fixe n'est plus limité à 2 ans par minute de pas : toute la période se demande d'un coup. À la place, le serveur compte le volume de chaque demande en valeurs écrites, toutes chroniques réunies : au-delà d'un premier seuil, un compte est demandé ; au-delà d'un second, la demande est refusée, et le message donne le volume, la limite et quoi faire. Les seuils : 5 et 50 millions de valeurs lues (à l'identique, interpolées), 100 000 et 1 million de valeurs calculées (moyenne, cumul) ; le second est provisoire, à régler sur la machine de production.
+- La page de suivi d'un export sans compte dit de garder son adresse, qui seule mène à l'export, jusqu'à 7 jours après sa fin.
+
+### Corrigé
+
+- Un export en moyenne ou en cumul demandé sans pas de temps répond « requête invalide » au lieu d'une erreur interne.
+
 ## 0.7.1 - 2026-11-16
 
 Ce qui vaut pour tout BDOH, au pied de chaque page : l'aide, les mentions légales et la déclaration d'accessibilité ; sur l'accueil d'un observatoire, ses gestionnaires et un bloc de citation, comme dans Dataverse ; une fenêtre d'export ouverte sur toute la période, en CSV.

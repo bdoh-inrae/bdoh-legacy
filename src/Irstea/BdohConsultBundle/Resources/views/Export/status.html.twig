@@ -16,4 +16,9 @@
     {% else %}
         <p>{{ ('measure.export.status.' ~ state)|trans }}</p>
     {% endif %}
+    {#- Sans compte, seule l'adresse de cette page mène à l'export, tant que son archive est gardée : le dire
+        (Lou, 2026-11-16 ; dev/plans/2026-11-16_reopening.md, point 2b) #}
+    {% if state in ['waiting', 'running', 'finished'] and not app.user %}
+        <p class="export-status-keep">{{ 'measure.export.status.keep(%days%)'|trans({'%days%': keepDays}) }}</p>
+    {% endif %}
 {% endblock %}
