@@ -53,7 +53,8 @@ MANAGERS = "Les gestionnaires d'un observatoire, dans un onglet de son accueil"
 HOMES = 'Accueils autour de la carte'
 GRAPH = "Graphique d'une chronique"
 OLD_TERMS = "Pour pouvoir télécharger des données il faudra, une fois connecté, faire des demandes d'accès spécifiques sur les observatoires qui vous intéressent via le formulaire de demande d'accès aux données ou contacter un gestionnaire"
-NEW_TERMS = "Les données ouvertes se téléchargent sans compte. Pour accéder aux données fermées, il faudra, une fois connecté, faire des demandes d'accès spécifiques sur les observatoires qui vous intéressent via le formulaire de demande d'accès aux données ou contacter un gestionnaire"
+# Les chroniques en accès restreint, réservées aux membres de leur observatoire, ne se proposent plus au public (Lou, 2026-11-16)
+NEW_TERMS = "Les données ouvertes se téléchargent sans compte. Les chroniques en accès restreint sont réservées aux membres de leur observatoire : si vous en êtes membre, vous en demanderez l'accès, une fois connecté, par le formulaire de demande d'accès de l'observatoire, ou auprès d'un de ses gestionnaires"
 RIGHTS_NOTICE = "Conformément aux articles 39 et 40 de la loi Informatique et Libertés modifiée par la loi n° 2004-801 du 6 août 2004 relative à la protection des personnes physiques à l'égard des traitements de données à caractère personnel, vous disposez d'un droit d'accès et de rectification des données vous concernant. Pour toute demande de rectification veuillez vous adresser à : "
 
 # L'information sur les données personnelles, à l'inscription et dans le courriel de bienvenue (RGPD, article 13)
@@ -69,6 +70,17 @@ PRIVACY_NOTICE = ("INRAE (147 rue de l'Université, 75338 Paris Cedex 07) traite
                   "pouvez aussi saisir la CNIL (www.cnil.fr).")
 PRIVACY_FORM = (f"+T Données personnelles : {PRIVACY_NOTICE} Le téléphone et l'adresse sont facultatifs.",)
 
+# La page de la demande d'accès : son titre, et à qui la demande est réservée (Lou, 2026-11-16). Seul un compte sans
+# droit la voit : celui que crée accounts ; les comptes de pages y sont renvoyés à la recherche.
+RESERVED_REQUEST = (
+    RX(r"-T BDOH - .* - Demande d'accès aux données"),
+    RX(r"\+T BDOH - .* - Demande d'accès aux chroniques réservées à l'observatoire"),
+    "-T Demande d'accès aux données", "+T Demande d'accès aux chroniques réservées à l'observatoire",
+    "+T Les chroniques en accès restreint (cadenas) sont réservées aux membres de l'observatoire, pour son travail "
+    "interne : cette demande est la leur. BDOH n'en assure pas la diffusion : si vous n'êtes pas membre de "
+    "l'observatoire, adressez-vous aux partenaires qui la portent.",
+    '+T Les chroniques ouvertes se téléchargent sans compte ni demande.',
+)
 # La page de connexion, que montre aussi l'inscription réussie
 LOGIN_PAGE = (
     "+T Saisissez l'adresse e-mail de votre compte : BDOH vous y envoie un lien de connexion, valable 15 minutes. Il n'y a plus de mot de passe.",
@@ -112,7 +124,7 @@ NEW_KEYS = """Error.file.cantWrite(%file%) | dateMonthShort | oneMonth | admin.s
     map.onMap | map.seeStation | map.sites | map.title | map.withoutPosition | map.zoomHint | overview.hint | overview.title | measure.export.busy | measure.export.licence | measure.export.status.download
     measure.export.status.expired | measure.export.status.failed | measure.export.status.finished(%days%)
     measure.export.status.running | measure.export.status.title | measure.export.status.waiting | measure.export.tooHeavy
-    measure.export.tooMany | security.login_check.info(%email%) | security.login_check.submit
+    measure.export.tooMany | security.besoin.members | security.besoin.open | security.login_check.info(%email%) | security.login_check.submit
     security.login_form.createAccount | security.login_form.info | security.login_form.noAccount
     security.login_link.invalidForm | security.login_link.mail.body | security.login_link.mail.footer
     security.login_link.mail.hello | security.login_link.mail.notYou | security.login_link.mail.title
@@ -126,7 +138,7 @@ NEW_KEYS = """Error.file.cantWrite(%file%) | dateMonthShort | oneMonth | admin.s
     favorite.error.nothingChecked | favorite.error.noLabel | favorite.error.invalidForm
     favorite.exportModal.notAllowed | favorite.exportModal.askAccess | favorite.exportModal.withoutMeasures
     favorite.exportModal.nothing"""
-CHANGED_KEYS = """accueilMessage | measure.export.help-content | measure.export.job_queued(%job_id%) | measure.export.underway
+CHANGED_KEYS = """accueilMessage | consult.help.chronique.notVisible | measure.export.help-content | measure.export.job_queued(%job_id%) | measure.export.underway
     security.besoin.create.title | security.login_form.connectTo | security.utilisateur.create.info.isTheFirstStep
     security.utilisateur.create.info.yourIdentifier | security.utilisateur.create.isCompleted
     security.utilisateur.newMailUtilisateur.body.step2 | security.utilisateur.newMailUtilisateur.body.step4
@@ -606,14 +618,12 @@ RULES = [
     Rule('pages', rf'{ROLE} {OBS}/user/edit', LINK, lines=EDIT_ACCOUNT),
     replaced('pages', rf'{ROLE} {OBS}/resetting/(?:request|check-email)', LINK, 301,
              RX(rf'\+redirection {OBS}/login'), RX(rf'\+T Redirecting to {OBS}/login\.?'), RX(rf'\+A {OBS}/login')),
-    Rule('pages', rf'{ROLE} {OBS}/besoin/new', OPEN, lines=(
-        RX(r"-T BDOH - .* - Demande d'accès aux données"), RX(r"\+T BDOH - .* - Demande d'accès aux données fermées"),
-        "-T Demande d'accès aux données", "+T Demande d'accès aux données fermées")),
+    Rule('pages', rf'{ROLE} {OBS}/besoin/new', OPEN, lines=RESERVED_REQUEST),
     replaced('pages', rf'{ROLE} /select_lang/(?:en|fr)', 'Erreurs 500 sur des pages publiques', 302,
              '+redirection /', '+T Redirecting to /', '+T Redirecting to /.', '+A /'),
     Rule('pages', rf'{ROLE} /', OPEN, lines=(
         RX(r"-T Ces données sont utilisées à des fins scientifiques .* Les données sont accessibles à tous gratuitement moyennant une inscription sur le site et le respect des conditions d'utilisation\."),
-        RX(r"\+T Ces données sont utilisées à des fins scientifiques .*\.Les données ouvertes sont accessibles à tous, gratuitement et sans inscription, sous Licence Ouverte Etalab ; les données fermées le sont sur demande d'accès\."))),
+        RX(r"\+T Ces données sont utilisées à des fins scientifiques .*\.Les données ouvertes sont accessibles à tous, gratuitement et sans inscription, sous Licence Ouverte Etalab 2\.0 ; quelques chroniques, données intermédiaires d'un observatoire, sont réservées à ses membres\."))),
     Rule('pages', rf'{ROLE} /translations/messages\.js', OPEN,
          lines=(translation('-', GONE_KEYS), translation(r'\+', NEW_KEYS), translation('[-+]', CHANGED_KEYS))),
     # Les clés de l'en-tête : « Consultation des données » devenu « Recherche avancée », le titre du portail sans
@@ -692,6 +702,7 @@ RULES = [
          OPEN, lines=NEW_ACCOUNT),
     Rule('accounts', 'inscription, (?:téléphone trop court|adresse sans MX|adresse mal formée|adresse déjà prise|nom manquant)',
          PRIVACY, lines=PRIVACY_FORM, must=PRIVACY_FORM),
+    Rule('accounts', "demande d'accès, page", OPEN, lines=RESERVED_REQUEST, must=RESERVED_REQUEST[-1:]),
     Rule('accounts', 'inscription, valide', LINK, lines=(
         *LOGIN_PAGE,
         '-D div data-notices={"success":["Votre compte BDOH a bien \\u00e9t\\u00e9 cr\\u00e9\\u00e9. Vous pouvez d\\u00e9sormais vous connecter."]}',

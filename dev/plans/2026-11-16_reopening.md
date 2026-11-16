@@ -69,6 +69,15 @@ Décidés dans [2026-11-16_before-kit.md](2026-11-16_before-kit.md) :
 - point 10 : une passe de relecture du contenu de la base ; ses erreurs de forme (descriptions d'observatoire copiées de Word, paragraphes vides, DOI principaux évidents) dans une migration globale, écrite à la main, avec son retour arrière, essayée sur la base complète anonymisée ; **les captures des cinq accueils, avant et après, montrées à Lou avant d'écrire la migration** ; ses erreurs plus importantes au second onglet des tableurs du kit (`dev/local/test-kit-notes.csv`) ;
 - point 12 : les photographies sous Licence Ouverte (aide des deux champs du formulaire d'un observatoire, page des conditions, mentions légales, une ligne du kit).
 
+Ajouté par Lou le 16 novembre au soir, pour la migration globale : retirer le logo d'INRAE là où il sert de logo d'observatoire. INRAE n'est pas un observatoire mais un partenaire : son logo a sa place à l'onglet « Partenaires », pas à côté du nom d'un observatoire. À relever d'abord (quels observatoires, quel fichier), à montrer dans les captures des accueils, avec son retour arrière.
+
+### 7 bis. Deux retouches de l'apparence (Lou, 16 novembre au soir)
+
+- Sur l'accueil d'un observatoire, son logo passe à gauche du bloc de citation, au lieu d'être à côté du titre : il s'y intègre mieux.
+- Sur l'accueil de BDOH, le logo de chaque observatoire à gauche de son titre, le titre centré en hauteur par rapport au logo.
+
+À faire avec la première partie, et à montrer à Lou en captures.
+
 ### 8. Les messages
 
 - Le pré-essai : le kit de leur observatoire (message et tableur, avec les corrections qu'on leur propose), précédé de quelques lignes qui disent ce qu'est le pré-essai. `make test-kit` écrit les kits de tous les observatoires ; Lou n'envoie que les leurs.
@@ -101,4 +110,5 @@ Ordre de travail proposé :
 
 ## Suivi
 
+- 2026-11-16, nuit, **point 1, les textes des chroniques réservées** : la page des conditions (tableau et section), l'accueil de BDOH, l'inscription et le courriel de bienvenue, l'aide, la fenêtre d'export des favoris, la bulle du cadenas et la page de la demande d'accès (titre, deux lignes en tête), en français et en anglais ; « en accès restreint » reste le nom de la catégorie, que les exports emploient. Outil : « nouveau seul : chroniques réservées, textes » et « … bulle du cadenas » dans `pages` (`reserved_checks`, conformes sur `bdoh_small`), la page de la demande comparée dans `accounts` (aucun compte de `pages` ne la voyait : `expected.RESERVED_REQUEST`), un test de l'outil. Le refus d'une chronique réservée n'est pas codé : maquettes pour Lou (`dev/local/notes-for-lou.md`). Sans passe (méthode).
 - 2026-11-16, soir : ouvert sur le plan de Lou, revu avec Lou point par point ; relevés faits pour les points 2 et 3 (code, base complète anonymisée). Rien n'est commencé dans le code.

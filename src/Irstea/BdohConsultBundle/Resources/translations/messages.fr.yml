@@ -33,7 +33,7 @@ consult:
     help:
         chronique:
             noGenealogie: Aucune généalogie
-            notVisible: Cette chronique n'est pas publique
+            notVisible: Chronique réservée aux membres de l'observatoire
             display-checkpoints: Afficher les points de contrôle
             time-step-depends-on-span: Le pas des cumuls suit la durée de la période.
             no-data-to-plot: Pas de mesure à afficher dans cet intervalle de dates

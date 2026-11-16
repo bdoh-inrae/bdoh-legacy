@@ -961,6 +961,7 @@ def run_pages(args):
         cards_checks(args.base, new, report)
         terms_checks(new, slug, report)
         help_legal_checks(args.base, new, slug, report)
+        reserved_checks(args.base, new, slug, report)
         managers_checks(args.base, old, new, report)
         citations_checks(args.base, new, slug, report)
         overview_checks(args.base, new, report)
@@ -1064,6 +1065,55 @@ def terms_checks(side, slug, report):
         if b'href="/terms_of_use"' not in Client(side, None, slug).get(path)[2]:
             problems.append(f'{path} : pas de lien vers /terms_of_use')
     report.add("nouveau seul : conditions d'utilisation, /terms_of_use", ['conforme'], problems or ['conforme'])
+
+
+# Ce qu'aucun texte ne dit plus d'une chronique en accès restreint : qu'elle se demande (Lou, 2026-11-16)
+RESERVED_GONE = {'fr': ('données fermées', 'sur demande'), 'en': ('closed data', 'on request', 'on access request', 'on accepted request')}
+RESERVED_TIP = {'fr': "Chronique réservée aux membres de l'observatoire", 'en': 'Time series reserved for the members of the observatory'}
+
+
+def reserved_problems(language, path, text, words):
+    """Ce qui manque à une page qui parle des chroniques en accès restreint, et ce qu'elle dit encore de trop."""
+    return ([f'{language} {path} : « {w} » absent' for w in words if w not in text]
+            + [f'{language} {path} : « {w} » encore écrit' for w in RESERVED_GONE[language] if w in text])
+
+
+def reserved_checks(base, side, slug, report):
+    """Les chroniques en accès restreint sont réservées aux membres de leur observatoire, et BDOH n'en assure pas la
+    diffusion (Lou, 2026-11-16 ; dev/differences.md, « Ouverture des données ») : aucun texte ne propose plus au public
+    d'en demander l'accès. En français et en anglais, sans compte : les conditions, l'accueil de BDOH, l'aide et
+    l'inscription le disent, et ne parlent plus de « données fermées » fournies « sur demande » ; la bulle du cadenas,
+    dans la liste des chroniques d'une station qui en a une, dit à qui elle est réservée (un attribut `title`, que la
+    comparaison des pages ne lit pas). La page de la demande d'accès se compare dans le mode (expected.py)."""
+    wanted = {
+        'fr': {'/terms_of_use': ['réservées aux membres de leur observatoire', "réservée aux membres de l'observatoire",
+                                 'adressez-vous aux partenaires qui la portent', "Un membre de l'observatoire en demande l'accès"],
+               '/': ['sont réservées à ses membres'], '/help': ['réservées à ses membres'],
+               f'/{slug}/user/new': ['réservées aux membres de leur observatoire', 'si vous en êtes membre']},
+        'en': {'/terms_of_use': ['reserved for the members of their observatory', 'reserved for the members of the observatory',
+                                 'please contact the partners who do', 'A member of the observatory requests access'],
+               '/': ['are reserved for its members'], '/help': ['reserved for its members'],
+               f'/{slug}/user/new': ['reserved for the members of their observatory', 'if you are a member']},
+    }
+    hidden = query(base, f"""SELECT c.slug, c.station FROM ({CHRONIQUES}) c WHERE NOT c.estvisible ORDER BY c.id LIMIT 1""")
+    problems, tips = [], []
+    for language, pages in wanted.items():
+        guest = Client(side, None, slug)
+        if language == 'en':
+            guest.get('/select_lang/en')
+        for path, words in pages.items():
+            status, _, body = guest.get(path)
+            if status != 200:
+                problems.append(f'{language} {path} : statut {status}')
+                continue
+            text = ' '.join(html.unescape(re.sub(r'<[^>]+>', '', body.decode('utf-8', 'replace'))).split())
+            problems += reserved_problems(language, path, text, words)
+        for hidden_slug, station in hidden:
+            status, _, body = guest.get(f'/{hidden_slug}/station/{station}')
+            if status != 200 or f'title="{RESERVED_TIP[language]}"' not in html.unescape(body.decode('utf-8', 'replace')):
+                tips.append(f'{language} /{hidden_slug}/station/{station} : la bulle ne dit pas à qui la chronique est réservée')
+    report.add('nouveau seul : chroniques réservées, textes', ['conforme'], problems or ['conforme'])
+    report.add('nouveau seul : chroniques réservées, bulle du cadenas', ['conforme'], (tips or ['conforme']) if hidden else [NO_CASE])
 
 
 def help_legal_checks(base, side, slug, report):
@@ -4056,6 +4106,9 @@ def run_accounts(args):
         login('connexion après la modification', NEW_EMAIL, 'essai-2026')  # l'ancien : mot de passe inchangé
 
         need = f'/{slug}/besoin/new'
+        # La page elle-même, que seul un compte sans droit voit : pages n'en a pas (ses comptes y sont renvoyés à la
+        # recherche), et elle dit désormais à qui la demande est réservée (expected.py, RESERVED_REQUEST)
+        steps["demande d'accès, page"] = page_lines(side.url, *user.get(need))
         for name, changes in [('détails manquants', {'[details]': ''}), ('valide', {})]:
             form = form_of(user, need)
             post(f"demande d'accès, {name}", user, need, form.filled({

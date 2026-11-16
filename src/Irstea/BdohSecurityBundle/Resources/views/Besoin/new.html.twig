@@ -42,6 +42,8 @@
         <div class="alert alert-info">
             <h4 class="alert-heading">{{ 'information'|trans }}{{ 'deux_points'|trans }}</h4>
             <ul>
+                <li>{{ 'security.besoin.members'|trans }}</li>
+                <li>{{ 'security.besoin.open'|trans }}</li>
                 <li>{{ 'security.besoin.scope(%observatoire%)' | trans({ '%observatoire%': currentObservatoire().nom }) | raw }}</li>
             </ul>
         </div>

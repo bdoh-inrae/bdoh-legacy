@@ -16,7 +16,7 @@ $user = [
             'submit'      => 'Register',
             'isCompleted' => 'Your BDOH account has been created. An e-mail has just been sent to you: follow its link to confirm your address and sign in.',
             'info'        => [
-                'isTheFirstStep' => 'The account you are creating will be valid for the whole BDOH application. Open data can be downloaded without an account. To access closed data, once signed in, you will have to make <b>specific access requests</b> on observatories you are interested in by using the data access request form or by contacting a manager.',
+                'isTheFirstStep' => 'The account you are creating will be valid for the whole BDOH application. Open data can be downloaded without an account. Restricted-access time series are reserved for the members of their observatory: if you are a member, you will request access, once signed in, with the <b>access request form</b> of the observatory, or from one of its managers.',
                 'yourIdentifier' => 'The <b>e-mail address</b> will be your <u>login</u>: you will sign in with a link sent to this address, without a password.',
                 'personalData'   => "Personal data: INRAE (147 rue de l'Université, 75338 Paris Cedex 07, France) processes the information of your account to give you access to BDOH and to the data you request; the managers of the observatory concerned receive your access requests. You may access this information, have it corrected or erased, and object to its processing, as provided by Regulation (EU) 2016/679 and the French law “Informatique et Libertés”. Write to bdoh.support@listes.inrae.fr, or to the data protection officer of INRAE, cil-dpo@inrae.fr; you may also lodge a complaint with the CNIL (www.cnil.fr). Phone and address are optional.",
             ],
@@ -70,8 +70,8 @@ You receive this e-mail because new rights have been assigned to you on BDOH.',
                 'step1'        => 'You have created an account on BDOH. It is valid for the whole application.',
                 'confirm'      => 'To confirm your address and sign in, follow this link, valid for 15 minutes and once only:',
                 'confirmLater' => 'After that, ask for a new link from the BDOH sign-in page.',
-                'portal'       => "Choose the observatory whose data you want on the BDOH home page: you will find its access request and its managers there",
-                'step2'        => 'Open data can be downloaded without an account. To access closed data, once signed in, you will have to make specific access requests on observatories you are interested in by using the data access request form or by contacting a manager:',
+                'portal'       => "Choose your observatory on the BDOH home page: you will find its access request and its managers there",
+                'step2'        => 'Open data can be downloaded without an account. Restricted-access time series are reserved for the members of their observatory: if you are a member, you will request access, once signed in, with the access request form of the observatory, or from one of its managers:',
                 'step3'        => "INRAE (147 rue de l'Université, 75338 Paris Cedex 07, France) processes the information of your account to give you access to BDOH and to the data you request; the managers of the observatory concerned receive your access requests. You may access this information, have it corrected or erased, and object to its processing, as provided by Regulation (EU) 2016/679 and the French law “Informatique et Libertés”.",
                 'step4'        => "Write to bdoh.support@listes.inrae.fr, or to the data protection officer of INRAE, cil-dpo@inrae.fr; you may also lodge a complaint with the CNIL (www.cnil.fr).",
             ],
@@ -107,12 +107,16 @@ This e-mail is automatically generated, thank you for not replying.',
 $besoin = [
     'security.besoin' => [
         'create'                => [
-            'title'       => 'Request for access to closed data',
+            'title'       => 'Request for access to the time series reserved for the observatory',
             'submit'      => 'Send the request',
             'isCompleted' => 'Your request for data access has been registered, an administrator will respond.',
             'info'        => [
             ],
         ],
+        // Restricted-access time series are not requested by the public: they are reserved for the members of the
+        // observatory (Lou, 2026-11-16; dev/decisions.md, « Ouverture des données »)
+        'members'               => 'Restricted-access time series (padlock) are reserved for the members of the observatory, for its internal work: this request is theirs. BDOH does not distribute them: if you are not a member of the observatory, please contact the partners who do.',
+        'open'                  => 'Open time series can be downloaded without an account or a request.',
         'scope(%observatoire%)' => "This request <u>only applies to</u> the observatory <b>“\u{a0}%observatoire%\u{a0}”</b>.",
     ],
 ];
@@ -154,8 +158,8 @@ $various = [
             'invalidForm'    => 'The form has expired: please try again.',
         ],
         'exportModal' => [
-            'notAllowed'   => 'Without a right on these time series, they cannot be exported:',
-            'askAccess'    => 'Request access',
+            'notAllowed'   => 'Reserved for the members of their observatory, these time series cannot be exported without a right:',
+            'askAccess'    => 'A member of the observatory? Request access',
             'withoutMeasures' => 'These time series have no measures:',
             'nothing'      => 'None of the ticked time series can be exported.',
         ],

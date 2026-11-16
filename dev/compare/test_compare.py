@@ -154,6 +154,21 @@ class Pages(unittest.TestCase):
                          self.lines('{"b": 2, "a": 1}', kind='application/json'))
 
 
+class Reserved(unittest.TestCase):
+    """reserved_problems : une chronique en accès restreint ne se propose plus « sur demande »."""
+
+    def test_the_old_wording_is_seen(self):
+        old = "Leurs métadonnées restent visibles, leurs valeurs sont fournies sur demande : créez un compte."
+        self.assertEqual(compare.reserved_problems('fr', '/terms_of_use', old, ['réservées aux membres']),
+                         ['fr /terms_of_use : « réservées aux membres » absent', 'fr /terms_of_use : « sur demande » encore écrit'])
+        self.assertEqual(compare.reserved_problems('en', '/', 'closed data on access request.', []),
+                         ['en / : « closed data » encore écrit', 'en / : « on access request » encore écrit'])
+
+    def test_the_request_of_a_member_stays(self):
+        new = "Elles sont réservées aux membres de leur observatoire. Un membre en demande l'accès depuis son compte."
+        self.assertEqual(compare.reserved_problems('fr', '/terms_of_use', new, ['réservées aux membres']), [])
+
+
 class Moments(unittest.TestCase):
     """Les masques du moment : ce qui change d'une exécution à l'autre, et rien d'autre."""
 

@@ -3,8 +3,9 @@
  # Les conditions d'utilisation des données, une page pour tout BDOH, sans observatoire dans son adresse, liée depuis le
  # pied de page de toutes les pages (Lou, 2026-11-15 ; dev/differences.md, « Conditions d'utilisation communes ») : la
  # Licence Ouverte 2.0 pour une chronique visible, les conditions générales de BDOH (le PDF qu'on accepte par une case)
- # pour une chronique en accès restreint. Le texte est ici, en français et en anglais, plutôt qu'en traductions : c'est
- # un texte suivi, qu'on relit d'un bloc.
+ # pour une chronique en accès restreint, réservée aux membres de son observatoire : le texte ne propose pas sa
+ # demande au public (Lou, 2026-11-16 ; dev/decisions.md, « Ouverture des données »). Le texte est ici, en français et
+ # en anglais, plutôt qu'en traductions : c'est un texte suivi, qu'on relit d'un bloc.
  #}
 {% from 'macros.html.twig' import pageTitle %}
 
@@ -33,7 +34,7 @@
         <thead><tr><th>Time series</th><th>Access</th><th>Terms</th></tr></thead>
         <tbody>
             <tr><td>open</td><td>without an account</td><td>Etalab Open Licence 2.0</td></tr>
-            <tr><td>restricted access (padlock)</td><td>with an account, on accepted request</td><td>BDOH general terms of use</td></tr>
+            <tr><td>restricted access (padlock)</td><td>reserved for the members of the observatory</td><td>BDOH general terms of use</td></tr>
         </tbody>
     </table>
 
@@ -58,12 +59,15 @@
         gives that of the observatory. This is a recommendation, which does not restrict the licence.</p>
 
     <h3>Restricted-access time series</h3>
-    <p>Some time series come from partners whose agreements with INRAE ask that INRAE not be the first to redistribute
-        them. Their metadata stay visible, their values are provided on request: create an account, then, on the pages
-        of the observatory, request access (in the bar of your account) or write to its managers (the “Managers” tab
-        of its home page). The request and every
-        export of such a time series require accepting the <a href="{{ terms }}">BDOH general terms of use</a>, which
-        provide in particular for non-commercial use and forbid passing the data on to third parties.</p>
+    <p>Some time series are reserved for the members of their observatory, for its internal work: they are its
+        intermediate data, coming from partners whose agreements with INRAE ask that INRAE not be the first to
+        redistribute them. BDOH therefore does not distribute them: to obtain them, please contact the partners who
+        do. Their metadata stay visible, including their producer when it is recorded.</p>
+    <p>A member of the observatory requests access from their account, on the pages of the observatory (“Ask for data
+        access”, in the account bar), or from its managers (the “Managers” tab of its home page). The request and
+        every export of such a time series require accepting the <a href="{{ terms }}">BDOH general terms of
+        use</a>, which provide in particular for non-commercial use and forbid passing the data on to third
+        parties.</p>
 
     <h3>Contact</h3>
     <p>bdoh.support@listes.inrae.fr</p>
@@ -73,7 +77,7 @@
         <thead><tr><th>Chronique</th><th>Accès</th><th>Conditions</th></tr></thead>
         <tbody>
             <tr><td>ouverte</td><td>sans compte</td><td>Licence Ouverte Etalab 2.0</td></tr>
-            <tr><td>en accès restreint (cadenas)</td><td>avec un compte, sur demande acceptée</td><td>conditions générales d'utilisation de BDOH</td></tr>
+            <tr><td>en accès restreint (cadenas)</td><td>réservée aux membres de l'observatoire</td><td>conditions générales d'utilisation de BDOH</td></tr>
         </tbody>
     </table>
 
@@ -100,13 +104,15 @@
         export donne celle de l'observatoire. C'est une recommandation, qui ne restreint pas la licence.</p>
 
     <h3>Les chroniques en accès restreint</h3>
-    <p>Certaines chroniques viennent de partenaires dont les accords avec INRAE demandent qu'INRAE n'en soit pas le
-        premier rediffuseur. Leurs métadonnées restent visibles, leurs valeurs sont fournies sur demande : créez un
-        compte, puis, sur les pages de l'observatoire, faites une demande d'accès (dans la barre de votre compte) ou
-        écrivez à ses gestionnaires (onglet « Gestionnaires » de son accueil). La demande et chaque
-        export d'une telle chronique demandent d'accepter les <a href="{{ terms }}">conditions générales d'utilisation
-        de BDOH</a>, qui prévoient notamment un usage non commercial et l'interdiction de transmettre les données à un
-        tiers.</p>
+    <p>Certaines chroniques sont réservées aux membres de leur observatoire, pour son travail interne : ce sont ses
+        données intermédiaires, venues de partenaires dont les accords avec INRAE demandent qu'INRAE n'en soit pas le
+        premier rediffuseur. BDOH n'en assure donc pas la diffusion : pour les obtenir, adressez-vous aux partenaires
+        qui la portent. Leurs métadonnées restent visibles, dont leur producteur quand il est renseigné.</p>
+    <p>Un membre de l'observatoire en demande l'accès depuis son compte, sur les pages de l'observatoire (« Demander
+        un accès aux données », dans la barre du compte), ou auprès de ses gestionnaires (onglet « Gestionnaires » de
+        son accueil). La demande et chaque export d'une telle chronique demandent d'accepter les
+        <a href="{{ terms }}">conditions générales d'utilisation de BDOH</a>, qui prévoient notamment un usage non
+        commercial et l'interdiction de transmettre les données à un tiers.</p>
 
     <h3>Contact</h3>
     <p>bdoh.support@listes.inrae.fr</p>

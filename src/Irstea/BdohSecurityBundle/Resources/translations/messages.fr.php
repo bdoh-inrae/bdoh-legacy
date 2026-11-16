@@ -16,7 +16,7 @@ $user = [
             'submit'      => 'Créer le compte',
             'isCompleted' => "Votre compte BDOH a bien été créé. Un e-mail vient de vous être envoyé : suivez le lien qu'il contient pour confirmer votre adresse et vous connecter.",
             'info'        => [
-                'isTheFirstStep' => "Le compte que vous allez créer sera valable sur toute l'application BDOH. Les données ouvertes se téléchargent sans compte. Pour accéder aux données fermées, il faudra, une fois connecté, faire <b>des demandes d'accès spécifiques</b> sur les observatoires qui vous intéressent via le formulaire de demande d'accès aux données ou contacter un gestionnaire.",
+                'isTheFirstStep' => "Le compte que vous allez créer sera valable sur toute l'application BDOH. Les données ouvertes se téléchargent sans compte. Les chroniques en accès restreint sont réservées aux membres de leur observatoire : si vous en êtes membre, vous en demanderez l'accès, une fois connecté, par le <b>formulaire de demande d'accès</b> de l'observatoire, ou auprès d'un de ses gestionnaires.",
                 'yourIdentifier' => "L'<b>adresse e-mail</b> sera votre <u>identifiant de connexion</u> : vous vous connecterez par un lien envoyé à cette adresse, sans mot de passe.",
                 'personalData'   => "Données personnelles : INRAE (147 rue de l'Université, 75338 Paris Cedex 07) traite les informations de votre compte pour vous donner accès à BDOH et aux données que vous demandez ; les gestionnaires de l'observatoire concerné reçoivent vos demandes d'accès. Vous pouvez accéder à ces informations, les faire rectifier ou effacer, et vous opposer à leur traitement, comme le prévoient le règlement (UE) 2016/679 et la loi Informatique et Libertés. Écrivez à bdoh.support@listes.inrae.fr, ou à la déléguée à la protection des données d'INRAE, cil-dpo@inrae.fr ; vous pouvez aussi saisir la CNIL (www.cnil.fr). Le téléphone et l'adresse sont facultatifs.",
             ],
@@ -70,8 +70,8 @@ Vous recevez cet e-mail car de nouveaux droits vous ont été attribués sur BDO
                 'step1'        => "Vous avez créé un compte sur BDOH. Il est valable pour toute l'application.",
                 'confirm'      => 'Pour confirmer votre adresse et vous connecter, suivez ce lien, valable 15 minutes et une seule fois :',
                 'confirmLater' => 'Passé ce délai, demandez un nouveau lien depuis la page de connexion de BDOH.',
-                'portal'       => "Choisissez l'observatoire dont vous voulez les données sur l'accueil de BDOH : vous y trouverez sa demande d'accès et ses gestionnaires",
-                'step2'        => "Les données ouvertes se téléchargent sans compte. Pour accéder aux données fermées, il faudra, une fois connecté, faire des demandes d'accès spécifiques sur les observatoires qui vous intéressent via le formulaire de demande d'accès aux données ou contacter un gestionnaire :",
+                'portal'       => "Choisissez votre observatoire sur l'accueil de BDOH : vous y trouverez sa demande d'accès et ses gestionnaires",
+                'step2'        => "Les données ouvertes se téléchargent sans compte. Les chroniques en accès restreint sont réservées aux membres de leur observatoire : si vous en êtes membre, vous en demanderez l'accès, une fois connecté, par le formulaire de demande d'accès de l'observatoire, ou auprès d'un de ses gestionnaires :",
                 'step3'        => "INRAE (147 rue de l'Université, 75338 Paris Cedex 07) traite les informations de votre compte pour vous donner accès à BDOH et aux données que vous demandez ; les gestionnaires de l'observatoire concerné reçoivent vos demandes d'accès. Vous pouvez accéder à ces informations, les faire rectifier ou effacer, et vous opposer à leur traitement, comme le prévoient le règlement (UE) 2016/679 et la loi Informatique et Libertés.",
                 'step4'        => "Écrivez à bdoh.support@listes.inrae.fr, ou à la déléguée à la protection des données d'INRAE, cil-dpo@inrae.fr ; vous pouvez aussi saisir la CNIL (www.cnil.fr).",
             ],
@@ -107,12 +107,16 @@ Cet e-mail est généré automatiquement, merci de ne pas y répondre.',
 $besoin = [
     'security.besoin' => [
         'create'                => [
-            'title'       => "Demande d'accès aux données fermées",
+            'title'       => "Demande d'accès aux chroniques réservées à l'observatoire",
             'submit'      => 'Envoyer la demande',
             'isCompleted' => "Votre demande d'accès a bien été enregistrée, un administrateur va y répondre.",
             'info'        => [
             ],
         ],
+        // Les chroniques en accès restreint ne se demandent pas : elles sont réservées aux membres de l'observatoire
+        // (Lou, 2026-11-16 ; dev/decisions.md, « Ouverture des données »)
+        'members'               => "Les chroniques en accès restreint (cadenas) sont réservées aux membres de l'observatoire, pour son travail interne : cette demande est la leur. BDOH n'en assure pas la diffusion : si vous n'êtes pas membre de l'observatoire, adressez-vous aux partenaires qui la portent.",
+        'open'                  => 'Les chroniques ouvertes se téléchargent sans compte ni demande.',
         'scope(%observatoire%)' => "Cette demande <u>ne concernera que</u> l'observatoire <b>«\u{a0}%observatoire%\u{a0}»</b>.",
     ],
 ];
@@ -154,8 +158,8 @@ $various = [
             'invalidForm'    => 'Le formulaire a expiré : recommencez.',
         ],
         'exportModal' => [
-            'notAllowed'   => "Sans droit sur ces chroniques, elles ne s'exportent pas :",
-            'askAccess'    => "Demander l'accès",
+            'notAllowed'   => "Réservées aux membres de leur observatoire, ces chroniques ne s'exportent pas sans droit :",
+            'askAccess'    => "Membre de l'observatoire ? Demander l'accès",
             'withoutMeasures' => "Ces chroniques n'ont aucune mesure :",
             'nothing'      => 'Aucune des chroniques cochées ne peut être exportée.',
         ],
