@@ -9,9 +9,15 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/). Numéros de v
 - Les deux barres alignent chaque élément au milieu de leur hauteur ; la langue s'écrit « FR EN », sans drapeau ni menu, et l'aide est une icône « ? ».
 - Le pied de page ne garde que le bloc Marianne et INRAE ; les logos des partenaires d'un observatoire passent à l'onglet « Partenaires » de son accueil, chacun à côté de son nom.
 - L'accueil d'un observatoire montre son logo à gauche de son nom, et ses photos dans un cadre de taille fixe, chacune entière, avec deux flèches discrètes s'il y en a deux : le texte ne bouge plus d'une photo à l'autre.
-- Sur l'accueil de BDOH, une pastille par observatoire sous la carte allume ses stations, au survol ou d'un clic.
+- Sur l'accueil de BDOH, une pastille par observatoire sous la carte allume ses stations au survol ; un clic les garde allumées et cadre la carte sur elles, un second ramène la vue de départ. Les boutons des sites d'un observatoire font de même. Les points se cachent pendant un zoom, au lieu de grossir avec la carte.
 - « Mes favoris » n'est plus que dans la barre, plus dans le menu du compte.
+- Les conditions d'utilisation tiennent en une page pour tout BDOH, `/terms_of_use`, liée au pied de chaque page ; l'adresse des conditions de chaque observatoire y renvoie, et les fiches envoyées à Theia la citent.
+- Le site d'un observatoire et ceux de ses partenaires s'ouvrent dans un nouvel onglet.
 - Installation sur la VM : `NOM=prod` n'est plus à donner aux cibles, puisqu'il n'y a plus qu'une instance. La mise à jour vers cette version le demande encore, une dernière fois, au script de la 0.7.0.
+
+### Corrigé
+
+- Installation sur la VM : la construction vide le cache de l'application avant ses commandes, qui démarraient avec le conteneur compilé de la version d'avant (« Too few arguments » à la mise à jour vers la 0.7.0).
 
 ## 0.7.0 - 2026-11-15
 

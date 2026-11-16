@@ -121,6 +121,10 @@ build() {
     # Les thèmes compilés de la version précédente : CssManager ne recompile un thème que s'il manque, à la
     # première page de chaque observatoire, avec les feuilles et les couleurs de cette version.
     rm -f public/css/themes/*.css
+    # Le conteneur compilé de la version précédente : en prod, sans débogage, toute commande de la console démarre
+    # avec lui sans le revérifier, cache:clear compris, et le code nouveau n'y trouve pas ses services (« Too few
+    # arguments », mise à jour vers la 0.7.0, 2026-11-15). cache:clear, plus bas, le reconstruit.
+    rm -rf var/cache/prod
     php bin/console assets:install public --env=prod --no-debug
     step "Droits et cache"
     # Le code est celui du dépôt public : lisible par tous, pour qu'on y lise le Makefile ; fermés aux autres

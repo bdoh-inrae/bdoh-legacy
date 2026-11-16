@@ -94,6 +94,10 @@
         }).addTo(map);
         L.tileLayer(HYDROGRAPHY, {minZoom: 9, maxZoom: 18, opacity: 0.85}).addTo(map);
         wheelZoom(map, element);
+        // Pendant un zoom, Leaflet agrandit les points avec la carte et ne les redessine à leur taille qu'à la fin :
+        // ils grossissent à l'écran. On les cache le temps du zoom, et ils reviennent en fondu (Lou, 2026-11-16).
+        map.on('zoomstart', () => element.classList.add('stations-map-zooming'));
+        map.on('zoomend', () => element.classList.remove('stations-map-zooming'));
         const markers = stations.map((station) => {
             const marker = L.circleMarker([parseFloat(station.lat), parseFloat(station.lon)], BASE)
                 .bindPopup(popup(station, element.dataset.seeStation, observatories.size > 1));

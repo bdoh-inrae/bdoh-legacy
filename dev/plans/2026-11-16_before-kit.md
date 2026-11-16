@@ -1,0 +1,133 @@
+# Avant l'envoi du kit : la 0.7.1
+
+État : en cours, ouvert le 2026-11-16. Ce qui reste avant d'envoyer le kit des essais aux gestionnaires, convenu avec Lou dans la nuit du 15 au 16 novembre, point par point. Il prend la suite de « Reste à faire » de `dev/plans/2026-11-11_interface.md`, élargi : pages générales, citations, export, deux migrations de données. Le kit attend que ce soit fait proprement, quitte à partir un jour plus tard (Lou : « il faut faire les choses proprement, et je vais pas leur faire faire 10 tests »).
+
+## Où on en est
+
+- **Fait et comparé** (4df998b, passe `pages` du 16 novembre à 0 h 17 : 484/0/0/1096/0) : règle des trois traductions ; logo d'un observatoire à gauche de son nom ; clic d'une pastille de la carte qui cadre ses stations, second clic qui ramène la vue de départ (portail et sites d'un observatoire) ; « FR EN » puis « ? » ; une seule page des conditions, `/terms_of_use`, au pied de chaque page, l'adresse de chaque observatoire y renvoyant en 301 et les fiches Theia la citant (« nouveau seul : conditions d'utilisation ») ; sites d'un observatoire et de ses partenaires dans un nouvel onglet ; encart « Comment citer » dans la présentation.
+- **Fait ensuite, sans passe** (le commit qui ouvre ce plan) : les points de la carte cachés pendant un zoom (Leaflet les agrandissait avec la carte avant de les redessiner, Lou) ; `vm.sh` vide `var/cache/prod` avant les commandes de la console.
+- **À revoir dans 4df998b**, d'après les décisions plus bas : les onglets de l'accueil (sous le titre ; ils remontent sur la ligne du nom), l'encart « Comment citer » (remplacé par le bloc de citation), le « ? » réservé aux pages d'un observatoire (il va partout, vers une page d'aide).
+- Le poste a dans `public/uploads/` les images de la production, pour que Lou juge les accueils : tout sauf `CEREGE-logo.gif`, seul de l'état d'origine. À retirer avant toute passe d'`admin`.
+
+## Méthode
+
+- Les passes se lancent à la fin, une fois les changements faits, pas pendant qu'on touche encore au code (Lou, 16 novembre) : une passe interdit d'écrire dans `src/`, et serait de toute façon à refaire. Entre-temps : les tests de l'outil (`python3 -m unittest discover -s dev/compare`) à chaque règle changée, `lint:twig`, `lint:container`, et des captures.
+- Ce qui se voit se montre à Lou en captures avant d'aller plus loin ; elle tranche. Les captures se font sur le poste (base réduite, Playwright de `.python_env`), sans erreur de la console.
+- Après un changement de gabarit ou de traduction : `cache:clear` ; de `public/` d'un bundle (`stations-map.js`, `homes.css`) : `assets:install` (les bundles sont copiés, pas liés) ; d'une feuille LESS : effacer `public/css/themes/*.css`.
+
+## Les décisions (Lou, nuit du 15 au 16 novembre)
+
+### 1. Ce qui vaut pour tout BDOH, ce qui tient à un observatoire
+
+Deux niveaux, nettement séparés, sans insister au-delà : un observatoire a ses gestionnaires, un site web a ses responsables.
+- **Tout BDOH**, sur toutes les pages, au « ? » de la barre et au pied de page : l'aide, le contact du support, les conditions d'utilisation, les mentions légales, l'accessibilité, le code source.
+- **Un observatoire**, sur ses pages seulement : sa présentation, ses partenaires, ses gestionnaires, sa citation.
+
+### 2. La page d'aide
+
+- `/help`, sans observatoire dans l'adresse, comme `/terms_of_use` (`MainController`). Le « ? » y mène sur toutes les pages, portail compris : une page, pas de menu déroulant.
+- Pour l'instant : la notice d'utilisation (`/user_manual`, le PDF) ; le contact du support, `bdoh.support@listes.inrae.fr`, pour le site et l'infrastructure ; une phrase qui renvoie les questions scientifiques aux observatoires, chez leurs gestionnaires (onglet « Gestionnaires » de leur accueil).
+- Plus tard : une aide intégrée au site (`ROADMAP.md`).
+- Comparaison : le lien de l'aide change d'adresse dans l'en-tête de toutes les pages et apparaît sur le portail (`expected.header`) ; la page, en « nouveau seul ».
+
+### 3. Le pied de page, les mentions légales, l'accessibilité
+
+Sur le modèle de j2000.inrae.fr (relevé le 16 novembre : trois liens au pied, « Mentions légales », « Accessibilité : non conforme », « Code source (GPL-3.0) » ; la déclaration d'accessibilité est une section de la page des mentions légales, `#accessibilite`).
+- **Pied de page** : une ligne de liens, la même partout : Aide et contact · Conditions d'utilisation · Mentions légales · Accessibilité : non conforme · Code source (AGPL-3.0) ; puis le bloc Marianne et INRAE. Les séparateurs en CSS, pour ne pas ajouter de texte que la comparaison lirait.
+- **Mentions légales** : une page, `/legal`, qui reprend le paragraphe d'aujourd'hui (`Core/mentionLegale.html.twig` : éditeur, directeur de publication, responsable de la publication, hébergeur, code source), en sections comme j2000 : Éditeur, Publication, Hébergement, Données personnelles, Crédits, Accessibilité.
+- **Données personnelles**, rien que ce qu'on sait : les comptes (ce que dit l'inscription) ne sont jamais supprimés (le champ « fin d'accès » n'a aucun effet : `Utilisateur::isAccountNonExpired` rend toujours vrai, comme dans l'ancien) ; journaux de l'application gardés 10 jours (`monolog.yaml`, `max_files: 10`, dont `security.log`) ; journaux d'Apache gardés 14 jours (`/etc/logrotate.d/apache2` de la VM : `daily`, `rotate 14`, relevé par Lou le 16 novembre) ; seuls cookies, la session et la connexion ; aucune mesure d'audience ; contact : la déléguée à la protection des données d'INRAE (`cil-dpo@inrae.fr`, comme j2000). La durée de conservation des comptes reste à fixer avec elle (`ROADMAP.md`, « Suites de la passe juridique ») : ne pas l'inventer.
+- **Crédits** : code sous AGPL-3.0 (GitHub) ; polices Inter et Raleway (SIL OFL), icônes Material Symbols (Apache 2.0), Leaflet, fond de carte de l'IGN ; logos à leurs titulaires.
+- **Accessibilité** : obligatoire, donc dans cette version, pas plus tard (Lou). « Ce site est non conforme au RGAA ; il n'a pas encore fait l'objet d'un audit. » Signaler une difficulté : le support. Sans réponse satisfaisante : le Défenseur des droits. Base : décret 2019-768, lu dans des sources secondaires le 16 novembre (marche-public.fr, sk-web.fr) ; vérifier le texte sur Légifrance en l'écrivant. L'audit et les corrections, chantier à part : `ROADMAP.md`.
+- Comparaison : `compare.py` retire le paragraphe des mentions de chaque page (`LEGAL_NOTICE`) ; le pied de page de l'ancien se réécrit comme le nouveau (`expected.footer`, qui ajoute déjà le lien des conditions) ; les pages `/help` et `/legal` en « nouveau seul ».
+
+### 4. L'accueil d'un observatoire
+
+- **Onglets** Présentation, Partenaires, Gestionnaires : sur la ligne du nom, à droite, comme avant la 0.7.1 (`nav-pills pull-right`) ; le logo reste petit, à gauche du nom (4df998b). Le filet passe sous toute la ligne.
+- **Onglet « Gestionnaires »** (le mot de BDOH) : leurs noms pour tous, leur adresse pour qui est connecté, comme la page de contact de l'ancien, et on le dit : « Connectez-vous pour voir leur adresse. » Un formulaire de contact à la manière de Dataverse, sans montrer l'adresse : plus tard (`ROADMAP.md`, Modernisations).
+- **`/{observatoire}/contact`** reste valide : il renvoie à l'accueil, onglet Gestionnaires ouvert (l'adresse porte l'onglet, un petit script l'ouvre). Le courriel de bienvenue, qui y mène (`askManager`), y mène toujours.
+- La liste « Pour citer ces données… » (déjà dans l'ancien) et l'encart de 4df998b laissent la place au bloc de citation (point 5).
+- Comparaison : l'onglet des gestionnaires se retire de la page avant de comparer, et une vérification « nouveau seul » le relit (les noms de la page de contact, les adresses selon la connexion) ; les pastilles, dans la règle des accueils.
+
+### 5. Les blocs de citation
+
+Comme Dataverse : un bloc par sorte d'objet, de même forme, en haut de sa page, sans ambiguïté sur ce qu'on cite. Une citation ne porte jamais d'adresse électronique, et les gestionnaires n'en sont pas les auteurs.
+- **Observatoire**, sous la ligne du nom, au-dessus de la carte, court. Avec un DOI principal : la citation officielle (point 6), dont les auteurs sont ceux que l'observatoire a déclarés chez Recherche Data Gouv. Sans : « Observatoire X. BDOH, INRAE. https://…/X/home, données téléchargées le [date]. » (l'adresse de son accueil dans BDOH, pas son propre site).
+- **Jeu de données**, en haut de sa page, même forme. Avec son propre DOI : la citation officielle. S'il emprunte le DOI de son observatoire, ou n'en a pas : sa citation composée par BDOH (titre, observatoire, adresse de sa page), puis « Fait partie de : » et la citation de l'observatoire.
+- **Autres DOI**, sous le bloc de l'observatoire : ceux qu'il a enregistrés sans qu'ils soient son DOI principal ni celui d'un de ses jeux, chacun avec sa citation officielle.
+- **Le README d'un export** reprend la citation de l'observatoire.
+- La colonne des jeux de données, en bas de l'accueil, mène à leurs pages : pas de citations de jeux sur l'accueil.
+
+Comment c'est construit (code et base complète, 16 novembre) : chaque DOI appartient à un observatoire (`doi` : identifiant, description écrite à la main) ; un observatoire désigne un « DOI principal » (`doiprincipal_id`, ajouté pour Theia, qui veut un DOI par producteur ; aucune page ne l'affiche) ; un jeu pointe vers un DOI de son observatoire (`dataset.doi_id`). Les DOI `10.17180/obs.<nom>` sont ceux des observatoires : chez DataCite, des fiches de Recherche Data Gouv, une par observatoire. 20 jeux sur 28 ont un DOI ; OTHU n'en a aucun.
+
+```
+Observatoire       DOI de l'observatoire          principal   jeux qui l'empruntent   DOI propres à des jeux   autres DOI
+Arc-Isère          OBS.ARC-ISERE                  oui         0                       2                        1 article (10.1002/hyp.14044), pris comme DOI d'un jeu
+Draix              obs.draix                      oui         7 sur 7                 0
+Lônes de l'Ain     OBS.LONES-AIN                  non         0                       0
+OSR                OBS.OSR                        oui         0                       1
+OHM-CV             OBS.OHM-CV.ARDECHE, .GARDONS   non         0                       0
+ORACLE             obs.oracle                     non         1 sur 1                 0                        2 jeux hébergés hors de BDOH (10.15454/9PUYPN, M7OK9E)
+Réal Collobrier    obs.real                       non         3 sur 3                 0
+Ardières-Morcille  aucun                          -           -                       0                        1 article décrivant le site (10.1002/hyp.14384)
+Yzeron             OBS.YZERON                     oui         0                       4
+Guyane, Haute-Loire, TPG, OTHU : aucun DOI. Des identifiants sont écrits avec « https://doi.org/ », d'autres nus.
+```
+
+### 6. La citation officielle
+
+- Le serveur la demande à doi.org (`Accept: text/x-bibliography; style=apa; locale=fr-FR`, ou `en-US`), une fois par DOI, et la garde un mois (cache de Symfony) ; Guzzle est déjà là (envoi vers Theia). Si doi.org ne répond pas : la citation composée par BDOH. Le plus robuste et le plus simple (Lou : « on essaie le plus robuste et simple ») : le visiteur n'appelle aucun tiers, aucune colonne en base, le style se règle.
+- doi.org et non l'API de DataCite : les articles sont enregistrés chez Crossref (`10.1002/hyp.14044` absent de DataCite, vérifié le 16 novembre), et doi.org répond pour les deux (documentation DataCite, « content resolver »).
+- La réponse peut porter de petites balises (`<scp>` vu dans celle d'un article) : la réduire à du texte et de l'italique.
+- Le réseau du développement n'a pas d'accès à l'extérieur : la comparaison passera par le repli. Prévoir de quoi éprouver l'autre chemin (une réponse servie par un faux serveur, ou une entrée de cache posée).
+
+### 7. Les titres des pages
+
+Station, chronique, jeu de données s'écrivent aujourd'hui `Type « nom »`, en italique (`Station/show`, `Chronique/show`, `Dataset/show`). Désormais : le type en petit, gris, au-dessus (un surtitre), le nom seul en titre, sans guillemets ni italique, partout pareil (Lou : « on teste comme ça »). Un titre de jeu de données est souvent long : sur une seule ligne, il passerait à la ligne au milieu.
+
+### 8. La fenêtre d'export
+
+- Par défaut : toute la période, de la première à la dernière mesure, et le CSV (BDOH et Qtvar restent au choix ; garder l'ordre des options, que la vérification des favoris de `accounts` lit).
+- Vérifier chaque porte d'entrée : page d'une chronique et bouton de son graphique (qui pose sa période), page d'une station (une fenêtre pour toutes, une par chronique), page d'un jeu de données (de même), favoris : mêmes formats, types, pas et valeurs par défaut selon les chroniques.
+- Soupçon à vérifier dans un navigateur : `export-modal.js` crée le widget au premier `show.bs.modal` de la page seulement (`$(document).one(…)`, hérité de l'ancien) ; sur une page qui a plusieurs fenêtres, la deuxième ouverte n'aurait ni sélecteur de dates ni validation. Essai : ouvrir l'export d'une chronique dans la liste d'une station, fermer, ouvrir celui d'une autre, cliquer sur le bouton de début. Si c'est le cas, corriger (`.on`, en ne créant le widget qu'une fois par fenêtre) et l'inscrire dans `dev/differences.md`.
+- Les valeurs par défaut se posent dans le JavaScript (`setDateRange` à la création, que le bouton du graphique écrase ensuite) et l'option `selected` du CSV dans le gabarit, que `pages` verra (`CSV_OPTION`).
+
+### 9. Le nom de l'archive
+
+Pas de point dans un nom de fichier (Lou : il se lit comme une extension) ; ni `+`, qui devient une espace dans une adresse.
+- Des champs `clé-valeur` séparés par `_` ; la clé est ce qui précède le premier `-`.
+- La station et la chronique en deux champs, `sta-` et `chr-` (le code d'une chronique n'est pas un nom de variable : une station peut avoir deux chroniques de la même grandeur).
+- Dans une valeur, rien que des lettres, des chiffres et `-` : le reste devient `-`, dont le `_` des 4 codes de station qui en ont un. Le nom n'a qu'à être lisible et sûr ; les codes exacts sont dans le README.
+- Dates compactes (ISO 8601 de base).
+
+```
+BDOH-export_obs-DRAIX_sta-LAVAL_chr-Q_type-identical_format-csv_period-20200101-20241231_on-20261116.zip
+BDOH-export_obs-DRAIX_n-12_type-mean_step-1day_format-csv_period-20200101-20241231_on-20261116.zip
+```
+
+Ce qui le lit : `ExportController::archiveName`, `compare.py` (`open_data_checks`, le nom de l'archive sans compte), `dev/browser/check.py` (`export_to_file`), l'entrée « Le nom de l'archive d'un export » de `dev/differences.md`.
+
+### 10. Deux migrations de données
+
+La forme seulement, jamais le contenu. Chacune écrite à la main, essayée sur la base complète anonymisée, avec son retour arrière. Elles passent sur la VM avec la mise à jour vers la 0.7.1, qui sauvegarde la base avant (`/var/backups/bdoh-kept/`).
+- **Les DOI principaux évidents** : Lônes de l'Ain (`10.17180/OBS.LONES-AIN`), ORACLE (`10.17180/obs.oracle`), Réal Collobrier (`10.17180/obs.real`), s'ils n'en ont pas déjà un ; le retour arrière les remet à vide. OHM-CV en a deux, un par bassin : la question part aux gestionnaires avec le kit.
+- **Les descriptions des observatoires** (Lou : une passe dédiée aux défauts de forme laissés par la saisie). Mesuré sur la base complète le 16 novembre : seules les descriptions d'observatoire en ont (sites, stations et jeux de données sont propres). Ardières-Morcille : un copier-coller de Word, 165 000 caractères pour 16 000 de texte, 20 commentaires, environ 2 000 balises de Word. Lônes de l'Ain et TPG : un paragraphe vide chacun (un grand blanc). Réal Collobrier et Yzeron : un double saut de ligne chacun. Retirer les balises de Word, les paragraphes vides, les sauts doublés. La preuve : le texte de chaque description, balises retirées et espaces ramenées à une, identique avant et après. L'ancienne version reste dans une table, pour le retour arrière. Avant d'écrire la migration : montrer à Lou les cinq accueils avant et après, en captures. L'anonymisation garde la forme des textes (`anon.scramble` : balises, entités, espaces), si bien que la base anonymisée suffit à l'essayer.
+- Avant ces migrations, peut-être (Lou, pour plus tard, pas pour cette session) : une passe légère sur les erreurs de saisie évidentes, à proposer aux gestionnaires ou à corriger si elles sont vraiment évidentes (`ROADMAP.md`).
+
+### 11. Les données après les essais
+
+Un « point zéro » de la base juste après l'installation de la 0.7.1, avant l'envoi du kit (une sauvegarde dans `/var/backups/bdoh-kept/`). Les gestionnaires font leurs corrections pendant les essais, et on les garde : la base des essais devient la production, comme le message du kit le dit. Le point zéro ne sert qu'en cas de dégât. La restauration s'éprouve à part, dans une base séparée, avant l'envoi (`dev/deploy/README.md`, section 4 ; les commandes, avec la comparaison d'`inspect.sql`, dans `dev/local/notes-for-lou.md`).
+
+## Ordre de travail
+
+1. Pages générales : `/help`, `/legal` avec l'accessibilité, pied de page, « ? » partout.
+2. Accueil d'un observatoire (onglets, Gestionnaires, `/contact`) et titres des pages.
+3. Blocs de citation et citation officielle.
+4. Fenêtre d'export (valeurs par défaut, portes d'entrée) et nom de l'archive.
+5. Les deux migrations, après les captures montrées à Lou.
+6. Le kit : son message (le CSV par défaut, l'aide au « ? », l'onglet Gestionnaires) et le second onglet des tableurs (OHM-CV : quel DOI principal ; ORACLE : ses deux autres DOI ; Arc-Isère : un article pris comme DOI d'un jeu ; Ardières-Morcille : un article seul).
+7. Retirer les images de la production de `public/uploads/`, puis toutes les passes (`pages`, `admin`, `accounts`, `state`, `exports`, `theia`, `imports`), `make browser-check`, `CHANGELOG.md`, la 0.7.1.
+8. Lou : `vm-update` vers la 0.7.1 (`NOM=prod` une dernière fois), le point zéro, la restauration éprouvée à part, `make test-kit`, l'envoi.
+
+## Suivi
+
+- 2026-11-16, nuit : ouvert. Les décisions ci-dessus, prises avec Lou point par point ; les mesures de la base complète et de DataCite faites pour elles. Le travail commencé dans la nuit sur l'onglet des gestionnaires, l'encart de citation fusionné, les valeurs par défaut de l'export et un nom d'archive à point a été retiré : il suivait des choix revus depuis.
