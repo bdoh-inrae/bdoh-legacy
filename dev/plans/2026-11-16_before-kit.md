@@ -1,4 +1,4 @@
-# Avant l'envoi du kit : la 0.7.1, puis la 0.7.2
+# Avant l'envoi du kit : la 0.7.1
 
 État : terminé le 2026-11-16 pour la 0.7.1, publiée et installée ; ses points 10 et 12, et l'étape 8, se poursuivent dans [2026-11-16_reopening.md](2026-11-16_reopening.md), qui suit l'avancée. Ce qui reste avant d'envoyer le kit des essais aux gestionnaires, convenu avec Lou dans la nuit du 15 au 16 novembre, point par point. Il prend la suite de « Reste à faire » de `dev/plans/2026-11-11_interface.md`, élargi : pages générales, citations, export, deux migrations de données. Le kit attend que ce soit fait proprement, quitte à partir un jour plus tard (Lou : « il faut faire les choses proprement, et je vais pas leur faire faire 10 tests »).
 
