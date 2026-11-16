@@ -2,7 +2,7 @@
 
 {% set observatoire = currentObservatoire() %}
 
-{% from 'macros.html.twig' import richLink, i18nEntityLabel, doi_list %}
+{% from 'macros.html.twig' import richLink, i18nEntityLabel, citationBlock %}
 {% from '@IrsteaBdohConsult/macros.html.twig' import advancedSearch_link, edit, dataset_view %}
 
 {% block javascripts %}
@@ -167,6 +167,9 @@
     </div>
     </div>
 
+    {#- Comment citer l'observatoire, sous son nom, et ses autres DOI (Lou, 2026-11-16) #}
+    {{ citationBlock('cite.observatoryTitle'|trans, observatoryCitation(observatoire), null, otherDois(observatoire)) }}
+
     <!-- Carte des stations, en bandeau -->
     <div class="col-md-24 observatory-map">
         {% include 'Core/stations-map.html.twig' with {stations: mapStations, sites: sites, title: false, height: 320} %}
@@ -194,15 +197,6 @@
         <div id="description" class="tab-pane active">
             <h2>{{ i18nEntityLabel(observatoire, 'titre', 'noDescription') }}</h2>
             {{ i18nEntityLabel(observatoire, 'description', 'noDescription') }}
-
-            {{ doi_list(observatoire.dois) }}
-
-            {#- Comment citer l'observatoire, comme le README de ses exports (Lou, 2026-11-15) #}
-            <div class="observatory-cite">
-                <strong>{{ 'cite.title'|trans }}</strong>
-                <p>{{ 'cite.observatory'|trans({'%name%': observatoire.nom, '%url%': url('bdoh_home')}) }}</p>
-                {% if observatoire.dois is not empty %}<p>{{ 'cite.preferDoi'|trans }}</p>{% endif %}
-            </div>
 
             {% if observatoire.lien and observatoire.lien != 'http://' %}
                 <div>

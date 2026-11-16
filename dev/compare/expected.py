@@ -339,6 +339,7 @@ def search_renamed(lines):
 
 
 TITLES = "Titres des pages d'une station, d'une chronique, d'un jeu de données"
+CITATIONS = 'Blocs de citation'
 # Le titre de l'ancien, « Station « nom » », le nom entre guillemets (français ou anglais) et en italique
 TITLE = re.compile(r'T (Station|Chronique|Time series|Jeu\(x\) de données|Dataset) [«“] (.+) [»”]')
 
@@ -554,11 +555,11 @@ RULES = [
         # celui des gestionnaires (Lou, 2026-11-16), dont le contenu sort de la comparaison des pages (MANAGERS_TAB) et
         # que « nouveau seul : gestionnaires » compare à la page de contact de l'ancien
         '+A #managers', RX(r'\+T (?:Gestionnaires|Managers)'),
-        # comment citer l'observatoire, comme le README de ses exports (Lou, 2026-11-15)
-        RX(r'\+T (?:Comment citer|How to cite)'),
-        RX(r'\+T Source ?: INRAE, BDOH, (?:observatoire|observatory) .+, (?:données téléchargées le|data downloaded on)'
-           rf' \[date\], <site>{OBS}/home\.'),
-        RX(r'\+T (?:Si les données ont un DOI, ci-dessus, citez-le de préférence|If the data have a DOI, above, cite it preferably)\.')),
+        # la liste « Pour citer ces données… » de la présentation, que remplace le bloc de citation, hors de la
+        # comparaison des pages (CITATION_BLOCK) et lu par « nouveau seul : citations » (Lou, 2026-11-16)
+        RX(r'-T (?:Pour citer ces données vous pouvez vous référer (?:au DOI suivant|aux DOI suivants) :'
+           r'|To cite these data you may refer to the following DOIs?:)'),
+        RX(r'-A https?://(?:dx\.)?doi\.org/\S+'), RX(r'-T .*https?://(?:dx\.)?doi\.org/\S+')),
         must=('+S /bundles/irsteabdohconsult/js/read-more.js',)),
     # La bande de toute la chronique, sous son graphique : un élément de plus sur la page d'une chronique, que le
     # JavaScript remplit (« nouveau seul : bande de toute la chronique » vérifie sa route)
@@ -617,7 +618,11 @@ RULES = [
     Rule('pages', rf'{ROLE} /translations/messages\.js', SEARCH_NAME, lines=(translation('[-+]', 'advancedSearch'),)),
     # Les flèches des photos d'un observatoire, et le libellé des pastilles du portail (Lou, 2026-11-15)
     Rule('pages', rf'{ROLE} /translations/messages\.js', HOMES,
-         lines=(translation(r'\+', 'photo.previous | photo.next | map.observatories | cite.title | cite.observatory | cite.preferDoi'),)),
+         lines=(translation(r'\+', 'photo.previous | photo.next | map.observatories'),)),
+    # Les blocs de citation (Lou, 2026-11-16)
+    Rule('pages', rf'{ROLE} /translations/messages\.js', CITATIONS, lines=(
+        translation(r'\+', 'cite.observatoryTitle | cite.datasetTitle | cite.partOf | cite.otherDois'),
+        translation('-', 'citeWithDoi | citeWithDois'))),
     # « Bienvenue », après le nom d'un observatoire, laisse la place à « Observatoire » (Lou, 2026-11-16)
     Rule('pages', rf'{ROLE} /translations/messages\.js', TITLES, lines=(translation('-', 'welcome'),)),
     # L'onglet des gestionnaires ; les textes de la page de contact qui passent sur la page d'aide (Lou, 2026-11-16)

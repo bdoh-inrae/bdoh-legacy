@@ -393,6 +393,31 @@ a.bdoh-brand {
     }
 }
 
+// Un bloc de citation, sous le titre d'un observatoire ou d'un jeu de données (Lou, 2026-11-16) : discret, un filet
+// de la couleur du thème à gauche, le texte à la taille des aides
+.citation-block {
+    margin: 0 0 16px;
+    padding: 8px 14px;
+    border-left: 3px solid @lineColor;
+    background: #f5f6f7;
+    font-size: 13px;
+    .citation-title {
+        color: @text-muted;
+        font-size: 12px;
+    }
+    .citation {
+        margin: 2px 0 6px;
+        &:last-child { margin-bottom: 0; }
+    }
+    .citation-label {
+        color: @text-muted;
+    }
+    .citation-others {
+        margin: 2px 0 0;
+        padding-left: 18px;
+    }
+}
+
 // La page d'aide : les observatoires, chacun vers l'onglet de ses gestionnaires, en colonnes
 #help .help-observatories {
     columns: 3 220px;

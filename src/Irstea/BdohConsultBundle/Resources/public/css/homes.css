@@ -80,9 +80,6 @@
 .stations-map .leaflet-overlay-pane { transition: opacity 0.2s; }
 .stations-map.stations-map-zooming .leaflet-overlay-pane { opacity: 0; transition: none; }
 
-/* Comment citer l'observatoire : un encart discret dans la présentation (Lou, 2026-11-15) */
-.observatory-cite { margin: 14px 0; padding: 8px 12px; border-left: 3px solid #c9ced3; background: #f5f6f7; font-size: 13px; }
-.observatory-cite p { margin: 4px 0 0; }
 
 /* Les partenaires, chacun avec son logo, d'une même taille */
 .partner-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 8px 24px; }

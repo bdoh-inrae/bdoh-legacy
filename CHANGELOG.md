@@ -7,6 +7,7 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/). Numéros de v
 ### Ajouté
 
 - Une page d'aide, `/help`, où mène le « ? » de toutes les pages, portail compris : la notice d'utilisation, le contact du support pour le site, et, pour les données d'un observatoire, l'onglet de ses gestionnaires.
+- Un bloc de citation en haut de l'accueil d'un observatoire et de la page d'un jeu de données, comme Dataverse : la citation officielle de son DOI, tirée de doi.org et gardée un mois, sinon celle que compose BDOH ; pour un jeu sans DOI propre, ce dont il fait partie ; sous l'observatoire, ses autres DOI. Il remplace la liste des DOI de la présentation, et le README d'un export reprend la citation de l'observatoire.
 - Une page des mentions légales, `/legal` : éditeur, publication, hébergement, ce que deviennent les données personnelles, crédits, et la déclaration d'accessibilité ; BDOH, qui n'a pas encore été audité, y est déclaré non conforme.
 
 ### Modifié

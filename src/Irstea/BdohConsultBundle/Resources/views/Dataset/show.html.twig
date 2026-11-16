@@ -113,6 +113,11 @@
          # l'accueil d'un observatoire (Lou, 2026-11-16) #}
         <h1>{{ i18nEntityLabel(dataset, 'titre', 'noDescription') }} <small>{{ 'DataSet'|trans({}, 'entitiesSingulars') }}</small></h1>
 
+        {#- Comment citer le jeu de données, sous son titre (Lou, 2026-11-16) #}
+        {% from 'macros.html.twig' import citationBlock %}
+        {% set citation = datasetCitation(dataset) %}
+        {{ citationBlock('cite.datasetTitle'|trans, citation, citation.partOf, []) }}
+
         <!-- First section : identification / map -->
         <div class="row">
 

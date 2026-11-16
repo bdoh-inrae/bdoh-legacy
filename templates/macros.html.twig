@@ -191,30 +191,28 @@
 {##############################################################################}
 
 {# Macro to provide a DOI link & details #}
-{% macro doi_link(doi) %}
-    {%- import _self as macros %}
-    {#- Cinq DOI sont enregistrés avec le résolveur devant (https://doi.org/…) : gardé tel quel, sans le doubler #}
-    {% set doi_link = doi.identifiant starts with 'http' ? doi.identifiant : 'https://dx.doi.org/'~doi.identifiant %}
-    {{ macros.i18nEntityLabel(doi, 'description', 'noDescription') }} <a href="{{ doi_link }}">{{ doi_link }}</a>
-{% endmacro %}
-
-{% macro doi_list(dois) %}
-    {%- import _self as macros %}
-    {% set n_dois = dois|length %}
-    {% if n_dois > 0 %}
-        <p style="margin-bottom:0;">
-            {% if n_dois == 1 %}
-                <strong>{{ 'citeWithDoi'|trans }}</strong>
-            {% else %}
-                <strong>{{ 'citeWithDois'|trans }}</strong>
-            {% endif %}
-        </p>
-        <ul style="padding-inline-start:40px;">
-            {% for doi in dois %}
-                <li style="margin-top:4px;">{{- macros.doi_link(doi) -}}</li>
-            {% endfor %}
-        </ul>
-    {% endif %}
+{#-
+ # Un bloc de citation, le même pour un observatoire et un jeu de données, en haut de sa page, comme Dataverse (Lou,
+ # 2026-11-16 ; Irstea\BdohBundle\Doi\Citations) : la citation, ce dont l'objet fait partie s'il y a lieu, les autres
+ # DOI de l'observatoire. Il remplace la liste « Pour citer ces données… » de l'ancien. compare.py le retire des pages
+ # comparées, d'après ses marques, et le lit à part (« nouveau seul : citations »).
+ #}
+{% macro citationBlock(title, citation, partOf, others) %}
+    <!-- Citation block -->
+    <div class="citation-block">
+        <div class="citation-title">{{ title }}</div>
+        <p class="citation">{{ citation.html|raw }}</p>
+        {% if partOf %}
+            <p class="citation"><span class="citation-label">{{ 'cite.partOf'|trans }}</span> {{ partOf.html|raw }}</p>
+        {% endif %}
+        {% if others %}
+            <div class="citation-title">{{ 'cite.otherDois'|trans }}</div>
+            <ul class="citation-others">
+                {% for other in others %}<li>{{ other.html|raw }}</li>{% endfor %}
+            </ul>
+        {% endif %}
+    </div>
+    <!-- END_Citation block -->
 {% endmacro %}
 
 {#-

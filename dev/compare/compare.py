@@ -578,6 +578,9 @@ EXPORT_MARK = b'<!-- Link which triggers the modal for export -->'
 # L'onglet des gestionnaires de l'accueil d'un observatoire (Lou, 2026-11-16), que l'ancien montrait sur sa page de
 # contact : il sort de la comparaison des pages, et « nouveau seul : gestionnaires » le compare à cette page
 MANAGERS_TAB = re.compile(r'<!-- Managers tab -->.*?<!-- END_Managers tab -->', re.S)
+# Les blocs de citation d'un observatoire et d'un jeu de données (Lou, 2026-11-16), que seul le nouveau a : ils sortent
+# de la comparaison des pages, et « nouveau seul : citations » les lit
+CITATION_BLOCK = re.compile(r'<!-- Citation block -->.*?<!-- END_Citation block -->', re.S)
 
 
 def page_lines(site, status, headers, body, strip_export=False, strip_managers=True):
@@ -592,6 +595,7 @@ def page_lines(site, status, headers, body, strip_export=False, strip_managers=T
         parser = Extract()
         text = LEGAL_NOTICE.sub('', body.decode('utf-8', 'replace'))
         text = MANAGERS_TAB.sub('', text) if strip_managers else text
+        text = CITATION_BLOCK.sub('', text)
         text = EXPORT_WIDGETS.sub('', text) if strip_export else text
         parser.feed(EXPORT_ARCHIVE.sub('', EXPORT_HELP.sub('', EXPORT_TERMS.sub('', text))))
         parser.flush()
@@ -958,6 +962,7 @@ def run_pages(args):
         terms_checks(new, slug, report)
         help_legal_checks(args.base, new, slug, report)
         managers_checks(args.base, old, new, report)
+        citations_checks(args.base, new, slug, report)
         overview_checks(args.base, new, report)
         thinned_checks(args.base, new, report)
     report.close()
@@ -1141,6 +1146,92 @@ def managers_checks(base, old_side, new_side, report):
             if bool(email) == (login in tab) and new_people:
                 problems.append(f'{profile} /{slug}/ : phrase de connexion {"montrée" if email else "absente"}')
     report.add('nouveau seul : gestionnaires, onglet de l’accueil', ['conforme'], problems or ['conforme'])
+
+
+DOI_RESOLVER = HERE / 'doi-resolver.php'
+
+
+def citations_checks(base, side, slug, report):
+    """Les blocs de citation, que seul le nouveau a (Lou, 2026-11-16 ; dev/differences.md, « Blocs de citation »),
+    sur l'accueil de chaque observatoire et la page de chaque jeu de données de la base, attendus d'après la base, sans
+    le code de BDOH : l'observatoire cite son DOI principal, sinon l'adresse de son accueil et la date ; un jeu de
+    données cite son propre DOI, sinon (il emprunte celui de son observatoire, ou n'en a pas) l'adresse de sa page et
+    la date, puis « Fait partie de » et la citation de l'observatoire ; les autres DOI de l'observatoire, ni principal
+    ni d'un jeu, sont sous son bloc. Deux fois : par le repli de BDOH, le réseau du développement n'atteignant pas
+    doi.org ; puis avec un faux doi.org (doi-resolver.php), dont la citation officielle doit paraître, réduite à du
+    texte et à l'italique, en français et en anglais. Le cache des citations est vidé avant et après."""
+    def bare(doi):
+        return re.sub(r'^(?:https?://(?:dx\.)?doi\.org/|doi:)', '', doi.strip(), flags=re.I)
+
+    def block(path, client):
+        status, _, body = client.get(path)
+        found = CITATION_BLOCK.search(body.decode('utf-8', 'replace'))
+        return status, html.unescape(found.group(0)) if found else None
+
+    console = SIDES['new'].console
+    clear = lambda: subprocess.run([*console, 'cache:pool:clear', 'cache.doi', '--env=prod'], capture_output=True)
+    observatoires = query(base, """SELECT o.slug, o.nom, coalesce(p.identifiant, '') FROM observatoire o
+                                   LEFT JOIN doi p ON p.id = o.doiprincipal_id ORDER BY o.id""")
+    dois = query(base, "SELECT o.slug, d.identifiant FROM doi d JOIN observatoire o ON o.id = d.observatoire_id ORDER BY d.id")
+    datasets = query(base, """SELECT o.slug, d.uuid, coalesce(x.identifiant, ''),
+                                     (x.id IS NOT NULL AND (x.id = o.doiprincipal_id OR x.identifiant ~* '^(https?://(dx\\.)?doi\\.org/)?10\\.17180/obs\\.'))
+                              FROM dataset d JOIN observatoire o ON o.id = d.observatoire_id
+                              LEFT JOIN doi x ON x.id = d.doi_id ORDER BY d.id""")
+    taken = {(o, bare(i)) for o, _, i, _ in datasets if i} | {(o, bare(m)) for o, _, m in observatoires if m}
+    others = {(o, bare(i)) for o, i in dois} - taken
+    problems = []
+    guest = Client(side, None, slug)
+    clear()
+    for o, name, main in observatoires:
+        status, text = block(f'/{o}/', guest)
+        if not text:
+            problems.append(f'/{o}/ : statut {status}, pas de bloc')
+            continue
+        wanted = [f'https://doi.org/{bare(main)}'] if main else [f'/{o}/home', 'données téléchargées le [date]']
+        wanted += [f'https://doi.org/{i}' for x, i in sorted(others) if x == o]
+        problems += [f'/{o}/ : « {w} » absent' for w in wanted if w not in text]
+        if name.split()[0] not in text:
+            problems.append(f'/{o}/ : le nom de l’observatoire absent')
+    for o, uuid, doi, borrowed in datasets:
+        status, text = block(f'/{o}/dataset/{uuid}', guest)
+        if not text:
+            problems.append(f'/{o}/dataset/{uuid} : statut {status}, pas de bloc')
+            continue
+        own = doi and borrowed != 't'
+        wanted = [f'https://doi.org/{bare(doi)}'] if own else [f'/{o}/dataset/{uuid}', 'Fait partie de']
+        problems += [f'/{o}/dataset/{uuid} : « {w} » absent' for w in wanted if w not in text]
+        if own and 'Fait partie de' in text:
+            problems.append(f'/{o}/dataset/{uuid} : « Fait partie de » avec un DOI propre')
+    report.add('nouveau seul : citations, repli de BDOH', ['conforme'], problems or ['conforme'])
+
+    # Avec un faux doi.org : l'observatoire au DOI principal, ses jeux à DOI propre, les autres DOI ; en anglais aussi
+    problems = []
+    public = HERE.parent.parent / 'public'
+    (public / 'doi-resolver.php').write_bytes(DOI_RESOLVER.read_bytes())
+    try:
+        with new_on(base, base, f'DOI_RESOLVER={side.url}/doi-resolver.php/'):
+            clear()
+            english = Client(side, None, slug)
+            english.get('/select_lang/en')
+            cases = [(f'/{o}/', bare(m)) for o, _, m in observatoires if m]
+            cases += [(f'/{o}/dataset/{u}', bare(d)) for o, u, d, b in datasets if d and b != 't']
+            cases += [(f'/{o}/', i) for o, i in sorted(others)]
+            if not cases:
+                problems.append(NO_CASE)
+            for path, doi in cases:
+                for client, kind in ((guest, 'Jeu de données'), (english, 'Data set')):
+                    status, _, body = client.get(path)
+                    found = CITATION_BLOCK.search(body.decode('utf-8', 'replace'))
+                    raw = found.group(0) if found else ''
+                    official = f'<i>Citation officielle {html.escape(doi, quote=False)}</i> [{kind}]. Éditeur &amp; Cie.'
+                    if official not in raw:
+                        problems.append(f'{path} ({kind}) : citation officielle de {doi} absente ou mal réduite')
+                    if '<scp>' in raw or '&amp;amp;' in raw:
+                        problems.append(f'{path} ({kind}) : balise ou entité non réduite')
+            clear()
+    finally:
+        (public / 'doi-resolver.php').unlink(missing_ok=True)
+    report.add('nouveau seul : citations officielles, faux doi.org', ['conforme'], problems or ['conforme'])
 
 
 def overview_checks(base, side, report):

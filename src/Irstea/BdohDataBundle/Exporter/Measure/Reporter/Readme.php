@@ -4,6 +4,7 @@
 
 namespace Irstea\BdohDataBundle\Exporter\Measure\Reporter;
 
+use Irstea\BdohBundle\Doi\Citations;
 use Irstea\BdohDataBundle\Entity\Chronique;
 use Irstea\BdohDataBundle\Entity\PasEchantillonnage;
 use Irstea\BdohDataBundle\Exporter\Measure\Csv\Tables;
@@ -28,7 +29,7 @@ class Readme implements ReporterInterface
     /** @var string[] */
     private $lines = [];
 
-    public function __construct(private Environment $twig, private UrlGeneratorInterface $router)
+    public function __construct(private Environment $twig, private UrlGeneratorInterface $router, private Citations $citations)
     {
     }
 
@@ -133,18 +134,15 @@ class Readme implements ReporterInterface
 
         $this->lines[] = '';
         $this->lines[] = $this->t('Comment citer :', 'How to cite:');
+        // La citation de l'observatoire, celle du bloc de son accueil (Lou, 2026-11-16 ; Irstea\BdohBundle\Doi\Citations),
+        // datée du jour de l'export quand BDOH la compose
         $date = ($this->parameters['date'] ?? new \DateTime())->format('Y-m-d');
+        $this->paragraph($this->citations->observatory($observatoire, $this->lang(), $date)['text'], 2);
         $this->paragraph($this->t(
-            "Source : INRAE, BDOH, observatoire {$observatoire->getNom()}, données téléchargées le $date, "
-            . $this->url('bdoh_home', $slug) . '.',
-            "Source: INRAE, BDOH, observatory {$observatoire->getNom()}, data downloaded on $date, "
-            . $this->url('bdoh_home', $slug) . '.'
-        ), 2);
-        $this->paragraph($this->t(
-            "Si l'observatoire ou le jeu de données d'une chronique a un DOI (plus haut, ou dans meta_series.csv pour un "
-            . 'export CSV), le citer de préférence.',
-            'If the observatory or the dataset of a time series has a DOI (above, or in meta_series.csv for a CSV '
-            . 'export), cite it preferably.'
+            "Si le jeu de données d'une chronique a son propre DOI (sur sa page, ou dans meta_series.csv pour un export "
+            . 'CSV), le citer de préférence.',
+            'If the dataset of a time series has its own DOI (on its page, or in meta_series.csv for a CSV export), '
+            . 'cite it preferably.'
         ), 2);
     }
 

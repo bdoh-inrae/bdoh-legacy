@@ -10,6 +10,7 @@ use Irstea\BdohDataBundle\Entity\Observatoire;
 use Irstea\BdohDataBundle\Exporter\Measure\Extractor\Factory as ExtractorFactory;
 use Irstea\BdohDataBundle\Exporter\Measure\Formatter\Factory as FormatterFactory;
 use Irstea\BdohDataBundle\Exporter\Measure\Reporter\LoggerDecorator;
+use Irstea\BdohBundle\Doi\Citations;
 use Irstea\BdohDataBundle\Exporter\Measure\Reporter\Readme;
 use Irstea\BdohDataBundle\Util\JeuToJeu;
 use Irstea\BdohLoggerBundle\Logger\BdohLogger;
@@ -73,7 +74,8 @@ class ExporterBuilder
         #[Autowire('%irstea_bdoh_data.measure_export.formats_export_file%')] string $formatDocPath,
         #[Autowire('%irstea_bdoh_data.measure_export.default_termofuses_file%')] string $defaultTosPath,
         #[Autowire('%irstea_bdoh_data.measure_export.open_licence_files%')] private array $openLicenceFiles,
-        private UrlGeneratorInterface $router
+        private UrlGeneratorInterface $router,
+        private Citations $citations
     ) {
         $this->formatterFactory = $formatterFactory;
         $this->extractorFactory = $extractorFactory;
@@ -159,7 +161,7 @@ class ExporterBuilder
      */
     private function createReporter(array $parameters)
     {
-        $reporter = new Readme($this->twigEngine, $this->router);
+        $reporter = new Readme($this->twigEngine, $this->router, $this->citations);
         if (!empty($parameters['logged'])) {
             $reporter = new LoggerDecorator($this->bdohLogger, $reporter);
         }

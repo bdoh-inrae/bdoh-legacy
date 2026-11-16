@@ -29,6 +29,8 @@ parameters:
     env(THEIA_SCHEMA_URI): https://in-situ.theia-land.fr/json-schema/pivotSchemaDraft7.json
     uri_theia_send_data: '%env(THEIA_SEND_URI)%'
     uri_theia_ozcar_schema_json: '%env(THEIA_SCHEMA_URI)%'
+    # Le résolveur des DOI, dont BDOH tire la citation officielle de chacun ; compare.py le remplace par un faux
+    env(DOI_RESOLVER): https://doi.org/
     # Le détournement des courriels pendant les essais (.env.example) ; vides, rien n'est détourné
     env(MAILER_DIVERT_TO): ''
     env(MAILER_ALLOWED_RECIPIENTS): ''

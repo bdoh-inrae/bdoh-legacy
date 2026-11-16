@@ -15,5 +15,7 @@ framework:
         #app: cache.adapter.apcu
 
         # Namespaced pools use the above "app" backend by default
-        #pools:
-            #my.dedicated.cache: null
+        pools:
+            # Les citations officielles des DOI, tirées de doi.org (Irstea\BdohBundle\Doi\Citations) : à part, pour
+            # qu'on les vide seules (bin/console cache:pool:clear cache.doi)
+            cache.doi: null
