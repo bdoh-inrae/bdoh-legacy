@@ -4,6 +4,10 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/). Numéros de v
 
 ## Non publié
 
+## 0.7.1 - 2026-11-16
+
+Ce qui vaut pour tout BDOH, au pied de chaque page : l'aide, les mentions légales et la déclaration d'accessibilité ; sur l'accueil d'un observatoire, ses gestionnaires et un bloc de citation, comme dans Dataverse ; une fenêtre d'export ouverte sur toute la période, en CSV.
+
 ### Ajouté
 
 - Une page d'aide, `/help`, où mène le « ? » de toutes les pages, portail compris : la notice d'utilisation, le contact du support pour le site, et, pour les données d'un observatoire, l'onglet de ses gestionnaires.
