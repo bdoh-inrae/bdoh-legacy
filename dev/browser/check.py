@@ -264,6 +264,30 @@ def public_steps(s, station, chronique):
     s.step('nos données, recherche dans le tableau', f'/{SLUG}/nos-donnees', our_data)
     s.step('page de la station', f'/{SLUG}/station/{station}', lambda p: visible(p, 'text=Caractéristiques'))
 
+    def export_defaults(page):
+        # La fenêtre d'export d'une chronique : le CSV et toute la période, de la première à la dernière mesure, par
+        # défaut (Lou, 2026-11-16) ; puis le bouton « Exporter » du graphique, qui pose la période du graphique
+        open_export(page)
+        modal = page.locator('.modal.in')
+        first, last = modal.get_attribute('data-min-date'), modal.get_attribute('data-max-date')
+        fmt = modal.locator('[name=exportFormat]').input_value()
+        start, end = modal.locator('.start').input_value(), modal.locator('.end').input_value()
+        assert fmt == 'Csv', f'format par défaut : {fmt}'
+        assert start and end, f'période vide ({start!r}, {end!r})'
+        day = lambda iso: '/'.join(reversed(iso[:10].split('-')))
+        assert start.startswith(day(first)) and end.startswith(day(last)), f'période {start} - {end}, mesures {first} - {last}'
+        modal.locator('.modal-header [data-dismiss=modal]').click()
+        page.wait_for_timeout(600)
+        page.locator('.graph-export-button').click()
+        visible(page, '.modal.in [name=exportFormat]')
+        page.wait_for_timeout(400)
+        # (sur la base réduite, le graphique montre déjà toute la chronique : la période ne se distingue pas)
+        graph = page.locator('.modal.in .start').input_value()
+        assert graph, 'le bouton du graphique laisse la période vide'
+        assert page.locator('.modal.in input[type=submit]').is_enabled(), 'la fenêtre du graphique ne s’envoie pas'
+
+    s.step('chronique, fenêtre d’export : CSV et toute la période par défaut', f'/{SLUG}/{station}/{chronique}', export_defaults)
+
     s.step('chronique, taux de remplissage et graphique', f'/{SLUG}/{station}/{chronique}', chart_step)
     s.step('chronique, graphique dès l’ouverture et bande de toute la chronique', f'/{SLUG}/{station}/{chronique}', overview_step)
 
@@ -409,8 +433,9 @@ def open_data_steps(s, station, chronique, console, hidden):
             page.locator('a.btn-info').click()
         # Le nom de l'archive dit ce qu'elle contient (dev/plans/2026-11-13_fair-exports.md)
         name = download.value.suggested_filename
-        assert re.fullmatch(rf'BDOH-export\+obs-{SLUG}\+chr-{re.escape(station)}_{re.escape(chronique)}\+type-identical'
-                            rf'\+format-{fmt.lower()}\+period-2024-01-01_2024-02-01\+on-\d{{4}}-\d\d-\d\d\.zip', name), f'nom {name}'
+        safe = lambda text: re.sub(r'[^A-Za-z0-9-]+', '-', text).strip('-')
+        assert re.fullmatch(rf'BDOH-export_obs-{SLUG}_sta-{re.escape(safe(station))}_chr-{re.escape(safe(chronique))}_type-identical'
+                            rf'_format-{fmt.lower()}_period-20240101-20240201_on-\d{{8}}\.zip', name), f'nom {name}'
         saved = OUT / f'export-sans-compte-{fmt.lower()}.zip'
         download.value.save_as(saved)
         del s.problems[known:]

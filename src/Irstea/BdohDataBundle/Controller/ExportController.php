@@ -238,16 +238,19 @@ class ExportController extends Controller
     }
 
     /**
-     * Le nom de l'archive dit ce qu'elle contient (dev/plans/2026-11-13_fair-exports.md), à la manière de MEANDRE :
-     * des couples clé-valeur joints par « + ». Par exemple
-     * BDOH-export+obs-DRAIX+chr-LAVAL_Q+type-mean+step-1day+format-csv+period-2020-01-01_2024-12-31+on-2026-11-13.zip ;
-     * « n-12 » au lieu de « chr-… » pour plusieurs chroniques.
+     * Le nom de l'archive dit ce qu'elle contient (dev/plans/2026-11-13_fair-exports.md ; forme revue avec Lou le
+     * 2026-11-16, dev/plans/2026-11-16_before-kit.md, « Le nom de l'archive ») : des champs « clé-valeur » séparés par
+     * « _ », la clé étant ce qui précède le premier « - » ; dans une valeur, rien que des lettres, des chiffres et « - »
+     * (ni point, qui se lit comme une extension, ni « + », qui devient une espace dans une adresse) ; des dates
+     * compactes (ISO 8601 de base). La station et la chronique en deux champs ; « n-12 » pour plusieurs chroniques.
+     * Le nom n'a qu'à être lisible et sûr : les codes exacts sont dans le README. Par exemple
+     * BDOH-export_obs-DRAIX_sta-LAVAL_chr-Q_type-identical_format-csv_period-20200101-20241231_on-20261116.zip.
      *
      * @param Chronique[] $chroniques
      */
     private function archiveName(Job $job, array $chroniques): string
     {
-        $safe = fn (string $text) => trim(preg_replace('/[^A-Za-z0-9_.-]+/', '-', $text), '-');
+        $safe = fn (string $text) => trim(preg_replace('/[^A-Za-z0-9-]+/', '-', $text), '-') ?: 'x';
         $type = substr($job->getCommand(), strlen('bdoh:export:'));
         $positional = [];
         $options = [];
@@ -268,20 +271,23 @@ class ExportController extends Controller
                 $step = $pas->getUnite() === 'event' ? 'event' : $pas->getValeur() . $pas->getUnite();
             }
         }
-        $date = fn (?string $value) => $value ? (new \DateTime($value))->format('Y-m-d') : 'x';
+        $date = fn (?string $value) => $value ? (new \DateTime($value))->format('Ymd') : 'x';
         $parts = ['BDOH-export', 'obs-' . $safe($chroniques ? $chroniques[0]->getObservatoire()->getSlug() : 'x')];
-        $parts[] = count($chroniques) === 1
-            ? 'chr-' . $safe($chroniques[0]->getStation()->getCode() . '_' . $chroniques[0]->getCode())
-            : 'n-' . count($chroniques);
+        if (count($chroniques) === 1) {
+            $parts[] = 'sta-' . $safe($chroniques[0]->getStation()->getCode());
+            $parts[] = 'chr-' . $safe($chroniques[0]->getCode());
+        } else {
+            $parts[] = 'n-' . count($chroniques);
+        }
         $parts[] = 'type-' . $safe($type);
         if ($step !== null) {
             $parts[] = 'step-' . $safe($step);
         }
         $parts[] = 'format-' . $safe($options['format'] ?? 'bdoh');
-        $parts[] = 'period-' . $date($positional[0] ?? null) . '_' . $date($positional[1] ?? null);
-        $parts[] = 'on-' . ($job->getClosedAt() ?? $job->getCreatedAt() ?? new \DateTime())->format('Y-m-d');
+        $parts[] = 'period-' . $date($positional[0] ?? null) . '-' . $date($positional[1] ?? null);
+        $parts[] = 'on-' . ($job->getClosedAt() ?? $job->getCreatedAt() ?? new \DateTime())->format('Ymd');
 
-        return implode('+', $parts) . '.zip';
+        return implode('_', $parts) . '.zip';
     }
 
     /**

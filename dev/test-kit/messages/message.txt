@@ -4,19 +4,20 @@ Bonjour,
 
 BDOH a été porté sur une version à jour. Mêmes pages, mêmes formats, mêmes données : tout a été comparé à l'ancien, et normalement ça colle.
 
-Cinq changements :
+Six changements :
 - plus de mot de passe : à votre prochaine visite, saisissez votre adresse, vous recevrez un lien par mail ;
 - les données s'ouvrent : une chronique visible se télécharge sans compte, sous Licence Ouverte. Une chronique cachée reste fermée, sur demande, comme avant ;
 - une carte des stations, sur l'accueil du site et sur celui de chaque observatoire, et une apparence rafraîchie ;
-- les conditions d'utilisation sont les mêmes pour tous les observatoires : une seule page, au lien « Conditions d'utilisation » en bas de chaque page ;
-- l'export propose un CSV standard (virgule, point décimal, dates ISO), à côté des formats BDOH et QTVAR, qui ne changent pas ; chaque archive porte un nom qui dit ce qu'elle contient, et un README qui décrit ses fichiers, sa licence et comment citer.
+- les conditions d'utilisation sont les mêmes pour tous les observatoires : une seule page, en bas de chaque page, avec l'aide et les mentions légales ; l'aide est aussi au « ? » de la barre, et les gestionnaires de votre observatoire sont dans un onglet de son accueil ;
+- chaque observatoire et chaque jeu de données porte, en haut de sa page, la citation à reprendre (celle de son DOI s'il en a un) : regardez celle des vôtres ;
+- l'export propose, par défaut, un CSV standard (virgule, point décimal, dates ISO), à côté des formats BDOH et QTVAR, qui ne changent pas ; chaque archive porte un nom qui dit ce qu'elle contient, et un README qui décrit ses fichiers, sa licence et comment citer.
 
 Il me faut deux choses de votre part avant le {date} :
 
 1. Le tableau joint. {comptes}
 
 2. Le site d'essai : {site}
-   Pour l'instant, il n'est accessible que sous le VPN d'INRAE. Si vous n'y avez pas accès, faites seulement le tableau : je vous écris dès qu'il s'ouvre sans VPN.
+   Pour l'instant, il n'est accessible que depuis le réseau d'INRAE : sous le VPN, ou depuis votre bureau, en filaire. Si vous n'y avez pas accès, faites seulement le tableau : je vous écris dès qu'il s'ouvre au-delà.
    identifiant : test
    mot de passe : [à compléter]
    C'est l'accès au site d'essai ; ensuite, on se connecte à BDOH comme d'habitude, avec son adresse.

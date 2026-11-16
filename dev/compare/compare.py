@@ -2110,8 +2110,10 @@ def open_data_checks(side, console, runner, base, checks):
     check('page de suivi, prête', status == 200 and not headers.get('Refresh') and f'{token}/file'.encode() in body, f'statut {status}')
     status, headers, archive = anonymous.get(f'{page}/file')
     # Le nom de l'archive dit ce qu'elle contient (dev/differences.md, « Le nom de l'archive d'un export »)
-    named = re.search(rf'filename="?BDOH-export\+obs-{re.escape(slug)}\+chr-{re.escape(station)}_{re.escape(code)}\+type-\w+'
-                      r'(?:\+step-\w+)?\+format-\w+\+period-\d{4}-\d\d-\d\d_\d{4}-\d\d-\d\d\+on-\d{4}-\d\d-\d\d\.zip"?$',
+    # (forme du 16 novembre : champs séparés par « _ », valeurs en lettres, chiffres et « - », dates compactes)
+    safe = lambda text: re.sub(r'[^A-Za-z0-9-]+', '-', text).strip('-')
+    named = re.search(rf'filename="?BDOH-export_obs-{re.escape(safe(slug))}_sta-{re.escape(safe(station))}_chr-{re.escape(safe(code))}'
+                      r'_type-[a-z]+(?:_step-[A-Za-z0-9]+)?_format-[a-z]+_period-\d{8}-\d{8}_on-\d{8}\.zip"?$',
                       headers.get('Content-Disposition', ''))
     check('archive sans compte, nommée selon son contenu', status == 200 and archive[:2] == b'PK' and named,
           f"statut {status}, {headers.get('Content-Disposition')}")

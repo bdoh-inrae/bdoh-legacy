@@ -64,8 +64,9 @@
 
                         <div class="col-md-18">
                             <select id="{{ modalId }}format" name="exportFormat" class="form-control">
+                                {#- Le CSV par défaut (Lou, 2026-11-16) ; l'ordre des formats reste celui de l'ancien #}
                                 {% for format in allowedExportFormats %}
-                                    <option value="{{ format }}">
+                                    <option value="{{ format }}"{% if format == 'Csv' %} selected{% endif %}>
                                         {{ ('export.'~format)|trans }}
                                     </option>
                                 {% endfor %}

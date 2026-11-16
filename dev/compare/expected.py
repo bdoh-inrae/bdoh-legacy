@@ -167,7 +167,7 @@ HEADER = "En-tête, fil d'Ariane et pied de page"
 SEARCH_NAME = 'La recherche avancée devenue « Recherche »'
 CSV_FORMAT = 'Le format CSV'
 # Le format CSV dans la fenêtre d'export, partout où va le format BDOH (dev/plans/2026-11-13_fair-exports.md)
-CSV_OPTION = ('+O Csv', '+T CSV')
+CSV_OPTION = ('+O Csv selected', '+T CSV')  # sélectionné par défaut (Lou, 2026-11-16)
 LANG_FLAG = re.compile(r'G /images/i18n/\w+\.png')
 DATA_LINK = {'T Consultation des données': 'T Recherche', 'T See our data': 'T Search'}
 SEARCH = {'T Recherche avancée': 'T Recherche', 'T Advanced search': 'T Search'}

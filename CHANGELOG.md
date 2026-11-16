@@ -19,6 +19,8 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/). Numéros de v
 - Le titre d'une station, d'une chronique ou d'un jeu de données : le nom seul, sans guillemets ni italique, puis ce qu'est la page, en petit ; sur l'accueil d'un observatoire, « Observatoire » remplace « Bienvenue ». Le même espace entre chaque titre et son filet, et un titre sur son filet pour les pages d'aide, des conditions et des mentions légales.
 - Sur l'accueil de BDOH, une pastille par observatoire sous la carte allume ses stations au survol ; un clic les garde allumées et cadre la carte sur elles, un second ramène la vue de départ. Les boutons des sites d'un observatoire font de même. Les points se cachent pendant un zoom, au lieu de grossir avec la carte.
 - « Mes favoris » n'est plus que dans la barre, plus dans le menu du compte.
+- La fenêtre d'export s'ouvre sur toute la période de la chronique et le format CSV.
+- Le nom de l'archive d'un export sépare ses champs par « _ », écrit ses dates sans tirets et donne la station et la chronique à part, sans point ni « + » : `BDOH-export_obs-DRAIX_sta-LAVAL_chr-Q_type-identical_format-csv_period-20200101-20241231_on-20261116.zip`.
 - Les conditions d'utilisation tiennent en une page pour tout BDOH, `/terms_of_use`, liée au pied de chaque page ; l'adresse des conditions de chaque observatoire y renvoie, et les fiches envoyées à Theia la citent.
 - Le site d'un observatoire et ceux de ses partenaires s'ouvrent dans un nouvel onglet.
 - Installation sur la VM : `NOM=prod` n'est plus à donner aux cibles, puisqu'il n'y a plus qu'une instance. La mise à jour vers cette version le demande encore, une dernière fois, au script de la 0.7.0.

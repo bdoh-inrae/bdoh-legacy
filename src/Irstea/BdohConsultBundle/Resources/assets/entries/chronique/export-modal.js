@@ -93,6 +93,12 @@ $.widget(
             this._dateTimeRangePicker.dateTimeRangePicker('observeStatus')
                 .subscribe(selfUpdate);
 
+            // Par défaut, toute la période, de la première à la dernière mesure (Lou, 2026-11-16) ; le bouton
+            // « Exporter » du graphique pose ensuite la sienne
+            if (this.options.dateFirst && this.options.dateLast) {
+                this.setDateRange({start: moment.utc(this.options.dateFirst), end: moment.utc(this.options.dateLast)});
+            }
+
             selfUpdate();
         },
 
@@ -268,8 +274,14 @@ $.widget(
 
 $(() => {
     $('[data-export-modal] a[href="#chronique-export-help"]').tooltip();
-    $(document).one('show.bs.modal', '[data-export-modal]', (ev) => {
+    // Chaque fenêtre de la page a son widget, créé à sa première ouverture : l'ancien ne le créait que pour la première
+    // fenêtre ouverte (« one »), si bien qu'une autre, ouverte ensuite sur la même page (la liste d'une station, d'un
+    // jeu de données), n'avait ni sélecteur de dates ni validation (dev/differences.md)
+    $(document).on('show.bs.modal', '[data-export-modal]', (ev) => {
         const modal = $(ev.target);
+        if (!modal.is('[data-export-modal]') || modal.exportModal('instance')) {
+            return;
+        }
         modal.exportModal({
             dateFirst: modal.data('min-date'),
             dateLast: modal.data('max-date')
