@@ -37,15 +37,16 @@
 .observatory-card:hover, .observatory-card:focus, .observatory-card.map-lit {
     border-color: currentColor; background: #f6f8fb; color: inherit; text-decoration: none;
 }
-.observatory-card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
-.observatory-card-logo { max-height: 32px; max-width: 110px; object-fit: contain; }
+.observatory-card-head { display: flex; align-items: center; gap: 10px; min-height: 32px; }
+.observatory-card-logo { flex: none; max-height: 32px; max-width: 110px; object-fit: contain; }
 .observatory-card-name { margin: 0; font-size: 16px; }
 .observatory-card-text { flex: 1; color: #555; }
 .observatory-card-count { color: #777; font-size: 11px; }
 
-/* Un observatoire : la ligne du nom, comme dans la 0.7.0 (Lou, 2026-11-16) : le logo et le nom à gauche, sur le filet,
-   qui s'arrête avant les onglets ; les onglets à droite, au niveau du nom, qui ne passent jamais à la ligne (le nom se
-   replie s'il est trop long), puis la boîte à outils d'un gestionnaire. Le logo à gauche du nom date du 15 novembre.
+/* Un observatoire : la ligne du nom, comme dans la 0.7.0 (Lou, 2026-11-16) : le nom à gauche, sur le filet, qui
+   s'arrête avant les onglets ; les onglets à droite, au niveau du nom, qui ne passent jamais à la ligne (le nom se
+   replie s'il est trop long), puis la boîte à outils d'un gestionnaire. Le logo, à gauche du nom le 15 novembre, est
+   passé le 16 au soir à gauche du bloc de citation.
    L'ordre de la page est celui de l'ancien (les onglets d'abord) : seul le style place les blocs. */
 .observatory-headline { display: flex; align-items: flex-end; column-gap: 16px; }
 .observatory-headline > .observatory-head { order: 1; flex: 1 1 auto; }
@@ -55,6 +56,9 @@
 .observatory-head { display: flex; align-items: flex-end; gap: 16px; min-width: 0; padding: 4px 0 6px; }
 .observatory-head h1 { margin: 12px 0 0; }
 @media (max-width: 767px) { .observatory-headline { flex-wrap: wrap; } }
+/* Le logo d'un observatoire, à gauche de son bloc de citation, centré sur lui (Lou, 2026-11-16 au soir) */
+.observatory-citation { display: flex; align-items: center; gap: 16px; margin: 0 0 16px; }
+.observatory-citation > .citation-block { flex: 1 1 auto; min-width: 0; margin: 0; }
 .observatory-logo { flex: none; max-height: 60px; max-width: 150px; object-fit: contain; }
 
 /* Les photos : un cadre de taille fixe, chacune entière dedans, si bien que le texte ne bouge pas de l'une à l'autre ;

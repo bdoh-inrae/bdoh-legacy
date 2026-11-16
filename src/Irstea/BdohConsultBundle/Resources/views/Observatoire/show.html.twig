@@ -112,7 +112,8 @@
  # la présentation (ou les partenaires), que le texte fait couler autour des photos ; puis la recherche avancée, les
  # sites et les jeux de données d'un côté, les paramètres, deux fois plus larges, de l'autre (homes.css), les longues
  # descriptions repliées (read-more.js). Les blocs restent où ils sont : seul le contenu des onglets change.
- # Depuis le 15 novembre (Lou) : le logo à gauche du nom, les photos dans un cadre fixe. Depuis le 16 (Lou) : les
+ # Depuis le 15 novembre (Lou) : les photos dans un cadre fixe, et le logo, passé le 16 au soir de la gauche du nom
+ # à celle du bloc de citation. Depuis le 16 (Lou) : les
  # onglets sur la ligne du nom, à droite, comme avant, le filet sous toute la ligne, et un troisième onglet, les
  # gestionnaires, où mènent l'aide et l'ancienne page de contact (/contact). L'adresse porte l'onglet (#managers),
  # que home-tabs.js ouvre.
@@ -149,11 +150,9 @@
     </div>
 
     <!-- Title -->
-    {#- Le nom, sans guillemets (2026-11-12, Lou), avec le logo de l'observatoire à sa gauche (Lou, 2026-11-15) #}
+    {#- Le nom, sans guillemets (2026-11-12, Lou) ; le logo de l'observatoire, à sa gauche le 15 novembre, est passé
+     # à gauche du bloc de citation (Lou, 2026-11-16 au soir) #}
     <div class="observatory-head">
-    {% if observatoire.pathLogo %}
-        <img class="observatory-logo" src="{{ asset(observatoire.pathLogo) }}" alt="">
-    {% endif %}
     <h1>{{ observatoire.nom }}
         {#- Le site de l'observatoire, auquel menait son logo en haut de page (2026-11-12, Lou), dans un nouvel onglet
          # (Lou, 2026-11-15) #}
@@ -167,8 +166,15 @@
     </div>
     </div>
 
-    {#- Comment citer l'observatoire, sous son nom, et ses autres DOI (Lou, 2026-11-16) #}
-    {{ citationBlock('cite.observatoryTitle'|trans, observatoryCitation(observatoire), null, otherDois(observatoire)) }}
+    {#- Comment citer l'observatoire, sous son nom, et ses autres DOI (Lou, 2026-11-16), avec son logo à gauche : il
+     # s'y intègre mieux qu'à côté du titre (Lou, 2026-11-16 au soir). Le logo reste hors des marques du bloc, que la
+     # comparaison des pages retire (CITATION_BLOCK). #}
+    <div class="observatory-citation">
+        {% if observatoire.pathLogo %}
+            <img class="observatory-logo" src="{{ asset(observatoire.pathLogo) }}" alt="">
+        {% endif %}
+        {{ citationBlock('cite.observatoryTitle'|trans, observatoryCitation(observatoire), null, otherDois(observatoire)) }}
+    </div>
 
     <!-- Carte des stations, en bandeau -->
     <div class="col-md-24 observatory-map">
