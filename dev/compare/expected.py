@@ -125,7 +125,7 @@ NEW_KEYS = """Error.file.cantWrite(%file%) | dateMonthShort | oneMonth | admin.s
     measure.export.status.expired | measure.export.status.failed | measure.export.status.finished(%days%)
     measure.export.status.running | measure.export.status.title | measure.export.status.waiting | measure.export.tooHeavy
     measure.export.status.keep(%days%) | measure.export.tooLarge | measure.export.values.read | measure.export.values.computed
-    historique.withoutAccount
+    historique.withoutAccount | measure.export.account
     measure.export.tooMany | security.besoin.members | security.besoin.open | security.login_check.info(%email%) | security.login_check.submit
     security.login_form.createAccount | security.login_form.info | security.login_form.noAccount
     security.login_link.invalidForm | security.login_link.mail.body | security.login_link.mail.footer

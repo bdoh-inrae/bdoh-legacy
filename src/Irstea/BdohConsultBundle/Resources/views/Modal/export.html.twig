@@ -211,6 +211,10 @@
                         {% else %}
                         <div class="export-licence">{{ 'measure.export.licence'|trans({'%url%': path('bdoh_terms_of_use')})|raw }}</div>
                         {% endif %}
+                        {#- Sans compte, ce qu'un compte apporte (Lou, 2026-11-16) #}
+                        {% if not app.user %}
+                        <div class="export-account" style="margin-top:0.5em;">{{ 'measure.export.account'|trans({'%register%': path(accountRoute('new')), '%login%': path(accountRoute('login'))})|raw }}</div>
+                        {% endif %}
                         <div class="error-report help-block" style="margin-top:0;margin-bottom:0;">
                             <div class="errors"></div>
                         </div>

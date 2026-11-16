@@ -69,6 +69,9 @@ HELP
         ,
         'underway'     => 'The download of the time series is underway. You will shortly receive a link by e-mail.',
         'licence'      => 'These data are under the <a href="https://www.data.gouv.fr/datasets/licence-ouverte-2-0" target="_blank" rel="noopener">Etalab Open Licence 2.0</a>: they may be reused freely, including commercially, provided you mention their source (INRAE, BDOH) and the date of their last update, or failing that the download date. To cite them in a publication: <a href="%url%">terms of use</a>.',
+        // What an account brings, said to whoever downloads without one: in the export window and on the tracking page
+        // (Lou, 2026-11-16; dev/plans/2026-11-16_reopening.md, point 4)
+        'account'      => 'With an account, the link to the download is sent by e-mail, and your time series can be kept as favourites, sorted by labels, to download them all at once: <a href="%register%">create an account</a> or <a href="%login%">sign in</a>.',
         // The volume of a request and its two thresholds (ExportController::VOLUME_LIMITS; Lou, 2026-11-16)
         'tooHeavy'     => 'This download amounts to %volume% %what%: without an account, the limit is %max%. Sign in (the link to the download is then sent by e-mail), or reduce the period, the number of time series, or increase the time step.',
         'tooLarge'     => 'This download amounts to %volume% %what%: the limit is %max% per request, so that the download queue stays available to everyone. Reduce the period, the number of time series, or increase the time step, splitting the download if needed.',

@@ -2149,9 +2149,13 @@ def open_data_checks(side, console, runner, base, checks):
     status, _, body = anonymous.get(f'/{slug}/{station}/{code}')
     check('fenêtre d’export d’une chronique visible, sans compte, avec la licence',
           status == 200 and EXPORT_MARK in body and b'export-licence' in body and b'name="termsOfUses"' not in body and b'graph-export-button' in body, f'statut {status}')
+    # Sans compte, la fenêtre dit ce qu'un compte apporte, et mène à l'inscription et à la connexion (Lou, 2026-11-16)
+    invited = lambda body: b'class="export-account"' in body and f'href="/{slug}/user/new"'.encode() in body and f'href="/{slug}/login"'.encode() in body
+    check('fenêtre d’export sans compte, ce qu’un compte apporte', invited(body))
     status, _, body = manager.get(f'/{hidden_slug}/{hidden_station}/{hidden_code}')
     check('fenêtre d’export d’une chronique cachée, avec le droit, avec ses conditions',
           status == 200 and b'name="termsOfUses"' in body and b'export-licence' not in body, f'statut {status}')
+    check('fenêtre d’export avec un compte, sans invitation', b'export-account' not in body)
     check('page d’une chronique cachée, compte sans droit', Client(side, stranger, hidden_slug).get(f'/{hidden_slug}/{hidden_station}/{hidden_code}')[0] == 403)
 
     # Sans compte : une chronique visible, par son lien
@@ -2167,6 +2171,7 @@ def open_data_checks(side, console, runner, base, checks):
     # Sans compte, seule l'adresse de cette page mène à l'export : elle le dit, avec sa durée (Lou, 2026-11-16)
     check('page de suivi, sans compte : garder son adresse, 7 jours',
           'Gardez l\'adresse de cette page' in html.unescape(body.decode('utf-8', 'replace')) and b'7 jours' in body)
+    check('page de suivi, sans compte : ce qu’un compte apporte', invited(body))
     check('archive pas encore prête', anonymous.get(f'{page}/file')[0] == 404)
     drain(console, runner, base)
     status, headers, body = anonymous.get(page)
