@@ -59,6 +59,8 @@ RIGHTS_NOTICE = "Conformément aux articles 39 et 40 de la loi Informatique et L
 # L'information sur les données personnelles, à l'inscription et dans le courriel de bienvenue (RGPD, article 13)
 PRIVACY = 'Données personnelles des comptes'
 TERMS = "Conditions d'utilisation communes"
+# L'adresse des conditions d'un observatoire dans une ligne (« <site>\/DRAIX\/terms_of_use »), devenue celle de tout BDOH
+TERMS_PAGE = re.compile(r'(<site>(\\?/))[A-Z0-9_-]+\2terms_of_use')
 PRIVACY_NOTICE = ("INRAE (147 rue de l'Université, 75338 Paris Cedex 07) traite les informations de votre compte pour vous donner "
                   "accès à BDOH et aux données que vous demandez ; les gestionnaires de l'observatoire concerné reçoivent vos "
                   "demandes d'accès. Vous pouvez accéder à ces informations, les faire rectifier ou effacer, et vous opposer à "
@@ -494,13 +496,15 @@ def merge_rules(renamed, others, families, admins):
 RULES = [
     # L'en-tête et le début du fil d'Ariane, sur toute page du site, quel que soit le mode qui la compare : header()
     # les réécrit dans l'ancien, et la page doit alors être la même, sauf ce que d'autres règles admettent
-    *(Rule(mode, r'.*', HEADER, rewrite=header) for mode in ('pages', 'admin', 'imports', 'accounts')),
-    *(Rule(mode, r'.*', HEADER, rewrite=footer) for mode in ('pages', 'admin', 'imports', 'accounts')),
+    # (theia aussi, pour la page du contrôle des fiches, qu'il n'avait pas rejouée depuis le 11 novembre)
+    *(Rule(mode, r'.*', HEADER, rewrite=header) for mode in ('pages', 'admin', 'imports', 'accounts', 'theia')),
+    *(Rule(mode, r'.*', HEADER, rewrite=footer) for mode in ('pages', 'admin', 'imports', 'accounts', 'theia')),
     # (les pages des autres modes ne nomment pas la recherche : « Règle sans écart » le 13 et le 15 novembre)
     Rule('pages', r'.*', SEARCH_NAME, rewrite=search_renamed),
     Rule('pages', r'.*', TITLES, rewrite=titles),
     Rule('pages', r'.*', TERMS, rewrite=doi_links),
     *(Rule(mode, r'(?!anonyme ).*', FAVORITES, lines=FAVORITE_MENU) for mode in ('pages', 'admin', 'accounts')),
+    Rule('theia', r'contrôle .*', FAVORITES, lines=FAVORITE_MENU),
     Rule('pages', r'(?!anonyme ).*', FAVORITES, lines=FAVORITE_STAR),
     # Les mêmes, dans les étapes de state, qui montrent les pages d'une chronique après qu'on l'a vidée sur une période
     Rule('state', 'étapes', HEADER, rewrite=per_page(header)),
@@ -554,7 +558,8 @@ RULES = [
         RX(rf'-A {OBS}/terms_of_use'), RX(r"-T (?:Conditions d'utilisation|Terms of use)"),
         # celui des gestionnaires (Lou, 2026-11-16), dont le contenu sort de la comparaison des pages (MANAGERS_TAB) et
         # que « nouveau seul : gestionnaires » compare à la page de contact de l'ancien
-        '+A #managers', RX(r'\+T (?:Gestionnaires|Managers)'),
+        '+A #managers', RX(r'\+T (?:Gestionnaires|Managers)'), '+D a data-toggle=pill',
+        '+S /bundles/irsteabdohconsult/js/home-tabs.js',
         # la liste « Pour citer ces données… » de la présentation, que remplace le bloc de citation, hors de la
         # comparaison des pages (CITATION_BLOCK) et lu par « nouveau seul : citations » (Lou, 2026-11-16)
         RX(r'-T (?:Pour citer ces données vous pouvez vous référer (?:au DOI suivant|aux DOI suivants) :'
@@ -588,7 +593,9 @@ RULES = [
     Rule('pages', rf'{ROLE} {OBS}/terms_of_use', TERMS,
          lines=('-statut 200', '-type application/octet-stream', '+statut 301', '+redirection /terms_of_use'),
          must=('+redirection /terms_of_use',)),
-    # Les fiches envoyées à Theia citent cette page, et non plus l'adresse de l'observatoire (Mapper::mapDataConstraint)
+    # Les fiches envoyées à Theia citent cette page, et non plus l'adresse de l'observatoire (Mapper::mapDataConstraint) ;
+    # la page du contrôle des fiches les cite dans une ligne (TERMS_PAGE)
+    Rule('theia', r'contrôle .*', TERMS, rewrite=lambda lines: [TERMS_PAGE.sub(r'\1terms_of_use', line) for line in lines]),
     Rule('theia', r'.*', TERMS, lines=(RX(r'-\s*"urlDataPolicy": "<site>\\?/[A-Z0-9_-]+\\?/terms_of_use",?'),
                                        RX(r'\+\s*"urlDataPolicy": "<site>\\?/terms_of_use",?'))),
     Rule('pages', rf'{ROLE} {OBS}/dataset/[^/ ]+', TERMS, lines=("-T Data Constraint :", "+T Conditions d'accès et d'utilisation :")),

@@ -480,7 +480,8 @@ class Register(unittest.TestCase):
         self.assertIn('T Camille Essai', compare.page_lines('http://x', 200, {'Content-Type': 'text/html'}, body,
                                                              strip_managers=False))
         rules = [r for r in compare.expected.RULES if r.mode == 'pages' and r.why == compare.expected.HOMES]
-        old, new = ['T a'], ['A #managers', 'T Gestionnaires', 'T a', 'S /bundles/irsteabdohconsult/js/read-more.js']
+        old, new = ['T a'], ['A #managers', 'D a data-toggle=pill', 'T Gestionnaires', 'T a',
+                             'S /bundles/irsteabdohconsult/js/read-more.js', 'S /bundles/irsteabdohconsult/js/home-tabs.js']
         self.assertEqual(self.verdict(rules, 'anonyme /OBS/', old, new), 'écarts admis')
         self.assertEqual(self.verdict(rules, 'anonyme /OBS/station/S', old, new), 'différents')
 
@@ -515,6 +516,12 @@ class Register(unittest.TestCase):
         self.assertEqual(self.verdict(rules, 'JSON DRAIX', old, new), 'écarts admis')
         self.assertEqual(self.verdict(rules, 'JSON DRAIX', old, ['{', '  "urlDataPolicy": "<site>/ailleurs",', '}']),
                          'différents')
+        # La page du contrôle des fiches, qui les cite d'une ligne
+        old = ['T a', 'T {"x":1,"urlDataPolicy":"<site>\\/DRAIX\\/terms_of_use"}']
+        new = ['T a', 'T {"x":1,"urlDataPolicy":"<site>\\/terms_of_use"}']
+        self.assertEqual(self.verdict(rules, 'contrôle DRAIX', old, new), 'écarts admis')
+        self.assertEqual(self.verdict(rules, 'contrôle DRAIX', old, old), 'différents')
+        self.assertEqual(self.verdict(rules, 'contrôle DRAIX', old, [new[0], new[1].replace('"x":1', '"x":2')]), 'différents')
 
     def test_the_language_reads_fr_en(self):
         en = ['A #', 'D a data-toggle=dropdown', 'G /images/i18n/gb.png', 'T English', 'A /select_lang/fr',
@@ -632,7 +639,10 @@ class ReportFacts(unittest.TestCase):
     ]
     NEW = [
         '# INFORMATIONS GÉNÉRALES ____', 'Observatoire : Draix', "DOI de l'observatoire :",
-        '  - https://doi.org/10.17180/obs.draix (Données de Draix)', '', "# PARAMÈTRES DE L'EXPORT ____", 'Format : BDOH',
+        '  - https://doi.org/10.17180/obs.draix (Données de Draix)', '',
+        # la citation de l'observatoire, repliée : l'adresse de son DOI, en tête d'une ligne, ne compte pas une seconde fois
+        'Comment citer :', '  Observatoire Draix. BDOH, INRAE.', '  https://doi.org/10.17180/obs.draix', '',
+        "# PARAMÈTRES DE L'EXPORT ____", 'Format : BDOH',
         'Période demandée : du 2024-01-01 00:00:00 UTC au 2025-01-01 00:00:00 UTC', 'Fuseau horaire des dates : UTC+01:00',
         'Valeurs : rééchantillonnées à pas de temps fixe', 'Rééchantillonnage : moyenne', 'Pas de temps : 1 mois',
         'Chroniques : 3', '', '# INFORMATIONS MÉTHODOLOGIQUES ____', '', '## V3019111 / DEB ____', 'Nom : Débit',

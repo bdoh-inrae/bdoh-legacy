@@ -303,7 +303,8 @@ def favorites(trip, email, user):
             page.evaluate('url => { window.location = url }', re.sub(r'^https?://[^/]+', trip.site, link[0]))
         download.value.save_as(saved)
         del user.problems[known:]
-        names = [n for n in zipfile.ZipFile(saved).namelist() if n.endswith('.txt') and station in n]
+        # Le CSV est le format par défaut de la fenêtre (Lou, 2026-11-16) : un fichier par chronique
+        names = [n for n in zipfile.ZipFile(saved).namelist() if n.endswith('.csv') and station in n]
         assert len(names) == 2, f'fichiers de mesures : {names}'
 
     user.step('favoris : exporter les deux d’un coup, recevoir le fichier', None, export_both)

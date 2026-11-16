@@ -1077,10 +1077,10 @@ def help_legal_checks(base, side, slug, report):
     slugs = [r[0] for r in query(base, "SELECT slug FROM observatoire ORDER BY id")]
     wanted = {
         'fr': (["La notice d'utilisation de BDOH", 'href="/user_manual"', 'bdoh.support@listes.inrae.fr', '« Gestionnaires »'],
-               ['Éditeur', 'Publication', 'Hébergement', 'Données personnelles', 'Crédits', 'id="accessibilite"',
+               ['Éditeur', 'Publication', 'Hébergement', 'Données personnelles', 'Crédits', 'id="accessibilite"', 'GNU AGPL',
                 'non conforme', 'Défenseur des droits', 'cil-dpo@inrae.fr', 'effacement']),
         'en': (['The BDOH user manual', 'href="/user_manual"', 'bdoh.support@listes.inrae.fr', '“Managers”'],
-               ['Publisher', 'Publication', 'Hosting', 'Personal data', 'Credits', 'id="accessibilite"',
+               ['Publisher', 'Publication', 'Hosting', 'Personal data', 'Credits', 'id="accessibilite"', 'GNU AGPL',
                 'not compliant', 'Défenseur des droits', 'cil-dpo@inrae.fr', 'erased']),
     }
     for language, (help_words, legal_words) in wanted.items():
@@ -1444,6 +1444,9 @@ def report_facts(lines, old=False):
     tz = r'UTC[+-]\d\d(?::?\d\d)?'
     head, dois, chroniques, kind, steps = [], [], [], None, []
     block, waiting = None, None  # le texte qu'on recueille (généalogie, calcul), la ligne qu'on attend (pas, erreur)
+    # La section « Comment citer » du README, jusqu'au titre suivant : la citation de l'observatoire peut porter l'adresse
+    # de son DOI, déjà comptée dans la liste de ses DOI (Lou, 2026-11-16, dev/differences.md, « Blocs de citation »)
+    citing = False
     order = ['chronique', 'présentes', 'exportées', 'fichier', 'généalogie', 'calcul', 'erreur']
 
     def close():
@@ -1457,6 +1460,13 @@ def report_facts(lines, old=False):
     for raw in [*lines, '']:
         line = raw.strip()
         line = line[2:].strip() if line.startswith('- ') else line
+        if re.fullmatch(r'(?:Comment citer|How to cite) ?:', line):
+            citing = True
+            continue
+        if citing and raw[:1] not in ('', ' '):
+            citing = False
+        if citing:
+            continue
         current = chroniques[-1] if chroniques else head
         if waiting and line:
             if waiting == 'pas':
@@ -5236,8 +5246,10 @@ def run_admin(args):
                 ['conforme'] if '<b id="brut">' not in body and 'id=&quot;brut&quot;' in body
                 else ['écrit tel quel' if '<b id="brut">' in body else 'absent de la page'])
             home = client_for(email, slug).get(f'/{slug}/')[2].decode('utf-8', 'replace')
+            # La licence et le code source, à la ligne des liens du pied de page (Lou, 2026-11-16) ; le texte de la
+            # licence est sur /legal (« nouveau seul : mentions légales et accessibilité », de pages)
             results['nouveau seul : licence et lien vers le code source'] = (
-                ['conforme'] if 'GNU AGPL' in home and 'github.com/bdoh-inrae/bdoh-legacy' in home else ['absents de la page'])
+                ['conforme'] if 'AGPL-3.0' in home and 'href="https://github.com/bdoh-inrae/bdoh-legacy"' in home else ['absents de la page'])
             # Le point d'une station créée (dev/differences.md, « Point d'une station créée »)
             send(f'/{slug}/admin/station/create', '/station/create',
                  dict(admins['station']['create'], **{'[code]': 'ESSAI2'}), 'btn_create_and_edit')

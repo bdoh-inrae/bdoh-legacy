@@ -327,9 +327,11 @@ def public_steps(s, station, chronique):
         départ (Lou, 2026-11-16). Un site peut couvrir tout son observatoire, que la carte montre déjà : closer=False
         n'attend pas que ses stations s'écartent."""
         stations = json.loads(page.locator('.stations-map').first.get_attribute('data-stations'))
-        centres = """(lit) => Array.from(document.querySelectorAll('.stations-map path.leaflet-interactive'
+        # Les points, mesurés dans la carte : la page peut défiler quand on survole une pastille sous la carte
+        centres = """(lit) => { const m = document.querySelector('.stations-map').getBoundingClientRect();
+            return Array.from(document.querySelectorAll('.stations-map path.leaflet-interactive'
             + (lit ? '[fill-opacity="1"]' : ''))).map((p) => { const r = p.getBoundingClientRect();
-            return [Math.round(r.x + r.width / 2), Math.round(r.y + r.height / 2)]; }).sort()"""
+            return [Math.round(r.x + r.width / 2 - m.x), Math.round(r.y + r.height / 2 - m.y)]; }).sort(); }"""
         spread = lambda points: max(abs(a[0] - b[0]) + abs(a[1] - b[1]) for a in points for b in points)
         items = page.locator(legend)
         item = next((items.nth(i) for i in range(items.count())
