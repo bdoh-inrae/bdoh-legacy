@@ -121,6 +121,14 @@ La forme seulement, jamais le contenu. Chacune écrite à la main, essayée sur 
 
 Un « point zéro » de la base juste après l'installation de la 0.7.1, avant l'envoi du kit (une sauvegarde dans `/var/backups/bdoh-kept/`). Les gestionnaires font leurs corrections pendant les essais, et on les garde : la base des essais devient la production, comme le message du kit le dit. Le point zéro ne sert qu'en cas de dégât. La restauration s'éprouve à part, dans une base séparée, avant l'envoi (`dev/deploy/README.md`, section 4 ; les commandes, avec la comparaison d'`inspect.sql`, dans `dev/local/notes-for-lou.md`).
 
+### 12. Les photographies sous Licence Ouverte
+
+Décidé par Lou le 16 novembre (`dev/decisions.md`, « Ouverture des données ») ; part avec la 0.7.2.
+- Sous les deux champs des photos du formulaire d'un observatoire (`Admin/Data/Observatoire.php`) : la photo est diffusée sous Licence Ouverte 2.0, comme les données ; ne la déposer que si on en est l'auteur, ou avec son accord.
+- La page des conditions, en français et en anglais : les photographies sortent des exceptions de la licence (restent les logos et les coordonnées des personnes). Les mentions légales, « Crédits » : les logos à leurs titulaires, les photographies sous Licence Ouverte.
+- Le message du kit : une ligne pour que les gestionnaires vérifient les photos de leur accueil (17 dans la base complète, deux au plus par observatoire).
+- Comparaison : l'aide des deux champs, au registre du mode `admin` ; les pages des conditions et des mentions légales, dans leurs vérifications « nouveau seul ».
+
 ## Ordre de travail
 
 1. Pages générales : `/help`, `/legal` avec l'accessibilité, pied de page, « ? » partout. Fait le 16 novembre (Suivi).
