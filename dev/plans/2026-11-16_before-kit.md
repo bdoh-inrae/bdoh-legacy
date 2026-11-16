@@ -11,7 +11,7 @@
 
 ## Méthode
 
-- Les passes se lancent à la fin, une fois les changements faits, pas pendant qu'on touche encore au code (Lou, 16 novembre) : une passe interdit d'écrire dans `src/`, et serait de toute façon à refaire. Entre-temps : les tests de l'outil (`python3 -m unittest discover -s dev/compare`) à chaque règle changée, `lint:twig`, `lint:container`, et des captures.
+- Les passes à la fin, une fois les changements faits (`dev/decisions.md`, « Essayer une passe, et écrire à côté ») ; entre-temps, les tests de l'outil à chaque règle changée, `lint:twig`, `lint:container`, et des captures.
 - Ce qui se voit se montre à Lou en captures avant d'aller plus loin ; elle tranche. Les captures se font sur le poste (base réduite, Playwright de `.python_env`), sans erreur de la console.
 - Après un changement de gabarit ou de traduction : `cache:clear` ; de `public/` d'un bundle (`stations-map.js`, `homes.css`) : `assets:install` (les bundles sont copiés, pas liés) ; d'une feuille LESS : effacer `public/css/themes/*.css`.
 
@@ -124,8 +124,8 @@ Un « point zéro » de la base juste après l'installation de la 0.7.1, avant l
 3. Blocs de citation et citation officielle.
 4. Fenêtre d'export (valeurs par défaut, portes d'entrée) et nom de l'archive.
 5. Les deux migrations, après les captures montrées à Lou.
-6. Le kit : son message (le CSV par défaut, l'aide au « ? », l'onglet Gestionnaires) et le second onglet des tableurs (OHM-CV : quel DOI principal ; ORACLE : ses deux autres DOI ; Arc-Isère : un article pris comme DOI d'un jeu ; Ardières-Morcille : un article seul).
-7. Retirer les images de la production de `public/uploads/`, puis toutes les passes (`pages`, `admin`, `accounts`, `state`, `exports`, `theia`, `imports`), `make browser-check`, `CHANGELOG.md`, la 0.7.1.
+6. Le kit : son message (le CSV par défaut, l'aide au « ? », l'onglet Gestionnaires ; et, à proposer à Lou, que le site s'ouvre aussi sans VPN depuis le réseau filaire d'un bureau INRAE, d'après elle le 16 novembre, quand le message dit aujourd'hui « que sous le VPN ») et le second onglet des tableurs (OHM-CV : quel DOI principal ; ORACLE : ses deux autres DOI ; Arc-Isère : un article pris comme DOI d'un jeu ; Ardières-Morcille : un article seul).
+7. Retirer les images de la production de `public/uploads/`, puis toutes les passes (`pages`, `admin`, `accounts`, `state`, `exports`, `theia`, `imports` ; leurs commandes, et `make mail-start` d'abord : `dev/plans/2026-11-04_validation.md`, « Commandes »), `make browser-check`, `CHANGELOG.md`, la 0.7.1.
 8. Lou : `vm-update` vers la 0.7.1 (`NOM=prod` une dernière fois), le point zéro, la restauration éprouvée à part, `make test-kit`, l'envoi.
 
 ## Suivi
