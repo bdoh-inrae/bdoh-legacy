@@ -2211,12 +2211,13 @@ def open_data_checks(side, console, runner, base, checks):
     drain(console, runner, base)
     check('courriel d’un export avec compte, sans pièce jointe', len(mails()) == before + 1 and not mails()[0]['Attachments'],
           f'{before} courriels, puis {len(mails())}')
-    # L'historique : l'export sans compte s'y lit « Sans compte », dans l'onglet de tout et dans celui des exports, et
-    # non « Utilisateur supprimé depuis » ; celui du compte porte son nom (dev/differences.md, « Ouverture des données »)
+    # L'historique : l'export sans compte s'y lit « Sans compte », et non « Utilisateur supprimé depuis » ; celui du
+    # compte porte son nom (dev/differences.md, « Ouverture des données »). Un export est dans trois onglets : tout, les
+    # données et les exports, chacun lu par sa propre requête (HistoriqueController, $entitySuffixes)
     status, _, body = owner.get(f'/{slug}/historique/recent')
     log = html.unescape(body.decode('utf-8', 'replace'))
     without, deleted = len(re.findall(r'<td data-search="Sans compte">\s*Sans compte\s*</td>', log)), log.count('Utilisateur supprimé depuis')
-    check('historique : un export sans compte se lit « Sans compte »', status == 200 and without == 2 and deleted == 0,
+    check('historique : un export sans compte se lit « Sans compte »', status == 200 and without == 3 and deleted == 0,
           f'statut {status}, {without} fois « Sans compte », {deleted} fois « Utilisateur supprimé depuis »')
     link = last_link()
     same = link and owner.get(link.group(1))[2]
