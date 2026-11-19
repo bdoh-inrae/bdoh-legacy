@@ -13,10 +13,16 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/). Numéros de v
 - L'historique affiche « Sans compte » pour un export fait sans compte, au lieu de « Utilisateur supprimé depuis ».
 - La page de suivi d'un export sans compte dit de garder son adresse, qui seule mène à l'export, jusqu'à 7 jours après sa fin.
 - Sans compte, la fenêtre d'export et la page de suivi disent ce qu'un compte apporte : le lien de l'export par courriel, les favoris et leurs étiquettes.
+- Les photographies des observatoires sont sous Licence Ouverte 2.0, comme les données : la page des conditions et les mentions légales le disent, et le formulaire d'un observatoire rappelle, sous les champs des photos, de ne déposer que ses propres photos, ou avec l'accord de leur auteur.
+- Les textes relus, en français et en anglais (pages publiques, compte et courriels, administration, imports, historique, exports) : fautes, accords et accents, anglais fautif, incomplet ou resté en français, libellés anglais manquants. Les libellés familiers restent.
 
 ### Corrigé
 
 - Un export en moyenne ou en cumul demandé sans pas de temps répond « requête invalide » au lieu d'une erreur interne.
+- Les descriptions d'un observatoire et d'un site, mises en forme dans l'éditeur, ne doublent plus l'espace entre deux paragraphes, et un texte collé de Word n'y a plus ses lignes coupées.
+- Les pages d'erreur ont leur version anglaise.
+- Un message d'erreur sur l'unité de sortie d'un barème montrait, en anglais, `%uniteSortieBareme` au lieu de l'unité ; deux messages anglais du sélecteur de dates demandaient l'inverse de ce qu'il fallait ; la date maximale d'une chronique se disait « minimum » en anglais.
+- Dans l'administration, en anglais, les liens des aides des thèmes et des catégories INSPIRE étaient cassés (un attribut mal fermé) ; les aides de l'import de données géographiques avaient des balises orphelines.
 
 ## 0.7.1 - 2026-11-16
 
