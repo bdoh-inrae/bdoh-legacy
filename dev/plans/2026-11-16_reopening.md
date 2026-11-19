@@ -97,6 +97,39 @@ Décidé (Lou, 12 et 16 novembre) : sans compte devant les données, il reste à
 - Pour les gestionnaires, la vie de l'observatoire, par année : comptes, chroniques et stations créés, imports de mesures et de points de contrôle, exports ; par chronique, les mesures ajoutées chaque année. Le but (Lou, 16 novembre) : des chiffres utiles, clairs et cohérents, que les chercheurs et chercheuses montrent pour construire des projets autour de BDOH ; le script R de Lou (`analyse.R`, hors dépôt) est un point de départ, pas un modèle à copier. L'historique remonte au 6 février 2013, mais change de nomenclature le 20 novembre 2018 : avant, l'action est écrite en clair, en français ou en anglais (« Création », « Create »), et la date sans heure ; après, une clé de traduction (`historique.actions.UtilisateurCreate`). La sorte de l'entrée (`dtype`) ne change pas. Dans la base complète anonymisée : 44 à 79 comptes créés par an de 2014 à 2025, 1 100 à 2 900 chroniques exportées par an de 2015 à 2025 ; 593 lignes d'export n'ont plus leur chronique, supprimée depuis.
 - En public, les consultations et les téléchargements de chaque chronique, comme dans Dataverse. Make Data Count n'est pas un service prêt à brancher : c'est une norme (le Code of Practice for Research Data de COUNTER), un outil qui lit les journaux du site (Counter Processor) et l'envoi de rapports à DataCite, par DOI ([guide de Dataverse](https://guides.dataverse.org/en/6.6/admin/make-data-count.html), [DataCite](https://support.datacite.org/docs/counter-code-of-practice)). La plupart des chroniques n'ont pas de DOI, et ceux des observatoires sont enregistrés hors de BDOH : un comptage à nous, selon les règles de COUNTER (robots écartés, doubles clics), sans donnée personnelle ; les téléchargements tirés de l'historique, les consultations d'un compteur par chronique et par jour. Make Data Count est laissé de côté pour cette version de BDOH (Lou, 16 novembre).
 
+**Conception (Claude, 19 novembre au soir), sur des sources vérifiées.** La contrepartie de l'ouverture (`dev/decisions.md`, "Ouverture des données") : à revoir avec Lou sur les captures, comme les points 1 à 4.
+
+Ce qu'on compte, et d'où ça vient :
+
+```
+mesure                  source                                       depuis
+----------------------  -------------------------------------------  ----------------------------
+téléchargements         historique, une ligne donneesExport par      février 2013
+                        chronique exportée
+consultations           un compteur neuf, une table à part           la réouverture (ci-dessous)
+vie de l'observatoire   historique, par sorte (dtype) et action      février 2013
+```
+
+Les règles de comptage suivent le Code of Practice for Research Data de COUNTER ([version 1.0.1, section 10](https://coprd.countermetrics.org/en/1.0.1/10-processing.html)) :
+- **Une consultation** : la page d'une chronique affichée (réponse 200), comptée une fois par visiteur et par heure. C'est la session de COUNTER quand il n'y a pas de cookie : adresse IP, navigateur, date et heure, ce qui couvre aussi le double clic (30 secondes, compté une fois). Une chronique réservée refusée (403) ne compte pas. Le visualiseur de plusieurs chroniques ne compte pas : la page de la chronique est sa page d'accueil, au sens de COUNTER.
+- **Les robots** sont écartés par la liste de COUNTER ([`Project-Counter/counter-bots`](https://github.com/Project-Counter/counter-bots), licence MIT, `counter_bots.txt`, une expression par ligne, sans tenir compte de la casse), copiée dans le dépôt avec sa licence, comme Leaflet. COUNTER la publie au plus une fois par trimestre et au moins une fois par an : on la reprend une fois par an. COUNTER demande de ne pas écarter les outils des chercheurs (python, curl, wget) : ils comptent.
+- **Un téléchargement** : l'export fait d'une chronique, c'est-à-dire une ligne `donneesExport` de l'historique (`LoggerDecorator::addChronique`, qui n'écrit rien pour une chronique sans valeur). Un export de favoris compte une fois pour chacune de ses chroniques. On compte les exports faits, pas les clics sur le lien de l'archive, et sans dédoublonnage : l'historique n'a pas d'adresse IP, et n'en aura pas.
+- **Aucune donnée personnelle gardée.** L'empreinte d'une session (le hachage de l'adresse IP, du navigateur, de l'heure, de la chronique et d'un sel tiré chaque jour) vit dans le cache de l'application jusqu'à la fin de l'heure, puis disparaît. La base ne garde que des comptes par chronique et par jour, et BDOH ne pose aucun cookie pour cela. C'est dans les conditions de l'exemption de consentement de la CNIL pour la mesure d'audience ([page de la CNIL](https://www.cnil.fr/fr/cookies-et-autres-traceurs/regles/cookies-solutions-pour-les-outils-de-mesure-daudience)) : pour le seul compte de l'éditeur, des statistiques anonymes, ni recoupement ni suivi sur d'autres sites, les personnes informées. Les mentions légales le disent, à la place de "Aucune mesure d'audience".
+- **Le départ du compteur.** Il compte dès la version qui l'installe, donc aussi les essais. À l'ouverture, on le vide (`dev/deploy/README.md`, "À l'ouverture au public") : le compte public part de la réouverture, et la page dit "depuis" la première date du compteur, lue en base.
+
+La base : une table `series_views` (`chronique_id`, `day`, `views`), clé sur la chronique et le jour, effacée avec sa chronique. Une consultation comptée y ajoute 1 (`INSERT … ON CONFLICT DO UPDATE`). Sa migration, écrite à la main avec son retour arrière, et sa raison dans `dev/differences.md`. Ses entrées ne changent rien d'autre : la comparaison la tient pour une table du nouveau seul.
+
+Ce qu'on montre :
+- **En public, sur la page d'une chronique**, une ligne sous ses métadonnées : "1 234 consultations depuis le 15 décembre 2026, 56 téléchargements depuis 2013". Le chiffre se lit en base à chaque page, sans cache : une requête sur l'index de `historique.chronique_id`, une sur la clé de `series_views`.
+- **Pour les gestionnaires, une page "Statistiques"** de l'observatoire (`/{observatoire}/statistics`, dans le menu de l'administration sous l'historique, pour qui voit l'historique), en deux tableaux, chacun téléchargeable en CSV pour le reprendre dans R ou un tableur :
+  - par année, de 2013 à l'année en cours : comptes créés, stations créées, chroniques créées, imports de mesures (nombre et mesures importées), imports de points de contrôle, calculs et conversions, chroniques exportées, valeurs exportées, comptes distincts qui ont exporté, exports sans compte, consultations ;
+  - par chronique et par année : mesures ajoutées, téléchargements, consultations.
+- **Pour les administrateurs techniques, la même page pour tout BDOH** (`/statistics`, hors observatoire) : c'est elle qui sert à rendre compte du service.
+
+Le classement de l'historique, relevé sur la base complète anonymisée : la sorte (`dtype`) ne change jamais ; l'action, écrite en clair avant le 20 novembre 2018, se lit dans les deux écritures (une création : "Création", "Create" ou `historique.actions.…Create` ; un import de points de contrôle : "import" ou `historique.actions.PointControleImport`). Les descriptions ne servent pas : l'anonymisation en brouille les lettres, et le script R de Lou les lisait. Avant 2019, un export pouvait porter plusieurs chroniques (une ligne par chronique, comme aujourd'hui) : compter par chronique reste juste dans les deux écritures. Depuis l'ouverture, un export sans compte n'a pas d'auteur : les comptes distincts ne disent plus le nombre de personnes, d'où la colonne des exports sans compte à côté.
+
+Vérification : un cas de `compare.py` (nouveau seul) pour chaque règle du compteur (première consultation, la même dans l'heure, un robot, `curl`, une chronique réservée refusée), les tableaux comparés à des comptes faits en SQL à part sur la base complète, et `make browser-check` pour la page.
+
 ### 7. La relecture du contenu et les photographies
 
 En cours depuis le 19 novembre, élargie par Lou aux textes de l'interface, dans une session à part : [2026-11-19_review.md](2026-11-19_review.md), avec son registre.
@@ -130,6 +163,12 @@ Revu par Lou le 19 novembre, sur les captures de `../bdoh_reference/browser/reop
 - Le mot de passe d'accès retiré, `MAILER_DIVERT_TO` et `MAILER_ALLOWED_RECIPIENTS` vidés (`dev/deploy/README.md`, « À l'ouverture au public »).
 - La validation, autant que le temps le permet : invariants, pannes provoquées, relecture, puis le code gelé et toutes les passes ([2026-11-04_validation.md](2026-11-04_validation.md)).
 - Pas le juridique (Lou, 16 novembre) : l'accord des producteurs extérieurs est l'affaire des gestionnaires, qui savent y répondre ; la mise en conformité (durées de conservation des comptes, registre des traitements) attend la remise en route de BDOH (`ROADMAP.md`, « Plus tard »).
+
+## Questions pour Lou
+
+Celles qui s'accumulent pendant que Claude avance seul (Lou, 19 novembre au soir : on les regarde ensemble à la fin, ou pendant une passe). Rien n'y attend : chaque point avance sur le choix proposé.
+
+1. Statistiques (point 6) : les chiffres de l'observatoire (par année) restent aux gestionnaires, comme décidé. Faut-il aussi un total public sur son accueil, pour les financeurs et les partenaires ? Proposé : non pour l'instant, les gestionnaires montrent ce qu'ils veulent depuis leur page et son CSV.
 
 ## Pour reprendre
 
