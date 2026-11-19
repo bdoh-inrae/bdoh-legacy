@@ -35,24 +35,24 @@ TO_FILL = '[à compléter]'
 SPECIAL = {
     'OTHU': (
         "OTHU rejoint BDOH : ce n'est plus un serveur à part, mais un observatoire de BDOH, au même site que les autres "
-        "(data.othu.org y renverra). Vos données et vos droits sont repris tels quels ; un compte qui existait déjà dans "
+        "(data.othu.org y renverra). Vos données et vos droits sont repris tels quels. Un compte qui existait déjà dans "
         "BDOH sous la même adresse ne fait plus qu'un avec lui. Quelques libellés "
-        "suivent désormais les listes communes de BDOH : « m3/s » au lieu de « m³/s », « m3 » au lieu de « m³ », "
-        "« mm/j » au lieu de « mm/jour », « m3.m-3 » au lieu de « cm3/cm3 », et « Ensoleillement » devient « Puissance de "
-        "rayonnement solaire ». Vos comptes d'administration deviennent gestionnaires d'OTHU ; les listes communes "
+        "suivent désormais les listes communes de BDOH : \"m3/s\" au lieu de \"m³/s\", \"m3\" au lieu de \"m³\", "
+        "\"mm/j\" au lieu de \"mm/jour\", \"m3.m-3\" au lieu de \"cm3/cm3\", et \"Ensoleillement\" devient \"Puissance de "
+        "rayonnement solaire\". Vos comptes d'administration deviennent gestionnaires d'OTHU. Les listes communes "
         "(unités, types de paramètres) passent alors par un administrateur de BDOH. Et vos exports instantanés, qui "
         "sortaient vides (un défaut de votre ancienne base), donnent désormais leurs valeurs.\n\n"
         "Trois questions : qui a besoin d'administrer OTHU ? À quelle fréquence ajoutez-vous des paramètres ou des "
         "unités ? Envoyez-vous vos fiches à Theia/OZCAR ? Et vos chroniques ouvertes viennent de l'INSA et de l'UCBL : "
-        "votre « OK » vaut leur accord pour une diffusion sous Licence Ouverte."),
+        "votre \"OK\" vaut leur accord pour une diffusion sous Licence Ouverte."),
     'ORACLE': (
-        "Vos conditions d'utilisation : le lien « Conditions d'utilisation » de votre accueil servait un PDF propre à "
+        "Vos conditions d'utilisation : le lien \"Conditions d'utilisation\" de votre accueil servait un PDF propre à "
         "ORACLE, en fait une copie des conditions de BDOH de 2014 (compte obligatoire, usage non commercial). Elles ne "
         "peuvent plus valoir pour des données ouvertes, et vos DOI déclarent déjà la Licence Ouverte : elles laissent "
-        "la place aux conditions communes à tout BDOH, au lien « Conditions d'utilisation » en bas de chaque page. Si ORACLE a des conditions vraiment à lui, dites-le-moi."),
+        "la place aux conditions communes à tout BDOH, au lien \"Conditions d'utilisation\" en bas de chaque page. Si ORACLE a des conditions vraiment à lui, dites-le-moi."),
     'ARC-ISERE': (
         "Certaines de vos chroniques ouvertes viennent d'EDF, une entreprise : ouvertes, elles passent sous Licence "
-        "Ouverte. EDF l'accepte-t-il ? Sinon, on les cache, comme celles qui le sont déjà."),
+        "Ouverte. EDF l'accepte-t-il ? Sinon, on les ferme, comme celles qui le sont déjà."),
 }
 
 KINDS = {'continue': 'Continue', 'discontinue': 'Discontinue', 'calculee': 'Calculée', 'convertie': 'Convertie'}
@@ -131,9 +131,9 @@ def workbook(name, rows, notes, no_coordinates, path):
     sheet.title = 'Chroniques'
     sheet['A1'] = f'BDOH, {name} : chroniques ouvertes et fermées à la réouverture'
     sheet['A1'].font = TITLE
-    sheet['A2'] = ('Ouverte : téléchargeable sans compte, sous Licence Ouverte Etalab. Fermée : sur demande d’accès, comme avant. '
+    sheet['A2'] = ("Ouverte : téléchargeable sans compte, sous Licence Ouverte Etalab. Fermée : réservée aux membres de l'observatoire, comme avant. "
                    'À remplir : seulement la colonne jaune, et seulement pour ce qui doit changer, '
-                   'par exemple « à fermer, accord avec le producteur ».')
+                   "par exemple \"à fermer, accord avec le producteur\".")
     sheet['A2'].font = BASE_FONT
     top = 4
     headers = ['Station', 'Nom de la station', 'Chronique', 'Libellé', 'Paramètre', 'Unité', 'Producteur', 'Jeu de données',
@@ -165,7 +165,7 @@ def workbook(name, rows, notes, no_coordinates, path):
         other = book.create_sheet('À regarder')
         other['A1'] = 'À corriger dans les données, quand vous aurez le temps'
         other['A1'].font = TITLE
-        other['A2'] = 'Rien ici ne bloque la réouverture. Dans BDOH, le champ « latitude » porte le X et « longitude » le Y, en Lambert-93.'
+        other['A2'] = "Rien ici ne bloque la réouverture. Dans BDOH, le champ \"latitude\" porte le X et \"longitude\" le Y, en Lambert-93."
         other['A2'].font = BASE_FONT
         table(other, 4, ['Station', 'Chronique', 'Constat', 'Que faire'], [18, 12, 80, 44])
         for offset, item in enumerate(items, start=5):
@@ -182,11 +182,10 @@ def workbook(name, rows, notes, no_coordinates, path):
 
 def counts_sentence(name, opened, closed):
     if not opened:
-        return f'Toutes les chroniques de {name} sont cachées ({closed}), donc rien ne s’ouvre. Si c’est bien ce que vous voulez, un « OK » suffit.'
+        return f"Toutes les chroniques de {name} sont fermées ({closed}), donc rien ne s'ouvre. Si c'est bien ce que vous voulez, un \"OK\" suffit."
     fermees = f'{closed} fermée{"s" if closed > 1 else ""}' if closed else 'aucune fermée'
     return (f'{name} : {opened} chroniques ouvertes, {fermees}. La seule question : une chronique ouverte est-elle sous accord avec '
-            'un producteur ? Si oui, on la ferme. Un « OK » de l’un d’entre vous suffit, sinon dites-moi lesquelles changer. '
-            'Sans réponse après une relance, elles s’ouvrent telles quelles.')
+            "un producteur ? Si oui, on la ferme. Un \"OK\" de l'un d'entre vous suffit, sinon dites-moi lesquelles changer.")
 
 
 def fill(template, **values):
@@ -205,7 +204,7 @@ NOT_ON_THEIA = {'OTHU'}
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__.split('\n')[0])
-    parser.add_argument('--site', default=TO_FILL, help='adresse du site d’essai de la production')
+    parser.add_argument('--site', default=TO_FILL, help="adresse du site d'essai de la production")
     parser.add_argument('--deadline', default=TO_FILL, help='date limite des réponses, en toutes lettres')
     args = parser.parse_args()
 
@@ -225,7 +224,7 @@ def main():
             values = dict(
                 observatoire=name, comptes=counts_sentence(name, opened, closed), date=args.deadline,
                 site=args.site, special=SPECIAL.get(slug, ''),
-                theia='Theia : vos fiches publiées ont des coordonnées décalées de 300 à 700 m, un bogue de l’ancien. C’est corrigé au prochain envoi, à la réouverture. Avant cet envoi, ressaisissez le mot de passe Theia/OZCAR de votre observatoire dans sa fiche (Administration > Observatoires) : BDOH le garde chiffré, et le nouveau ne peut pas relire celui de l’ancien.' if theia == 't' and slug not in NOT_ON_THEIA else '')
+                theia="Theia : vos fiches publiées ont des coordonnées décalées de 300 à 700 m, un bogue de l'ancien. C'est corrigé au prochain envoi, à la réouverture. Avant cet envoi, ressaisissez le mot de passe Theia/OZCAR de votre observatoire dans sa fiche (Administration > Observatoires) : BDOH le garde chiffré, et le nouveau ne peut pas relire celui de l'ancien." if theia == "t" and slug not in NOT_ON_THEIA else "")
             # Les deux messages d'avant le 15 novembre, s'il en reste : un seul part désormais
             for old in ('message-inrae.txt', 'message-hors-inrae.txt'):
                 (folder / old).unlink(missing_ok=True)
@@ -247,7 +246,7 @@ def main():
             f"{'Observatoire':<{widest}}  Ouvertes  Fermées  Envoyé  Validé  Essais  Données  À suivre",
             f"{'-' * widest}  --------  -------  ------  ------  ------  -------  --------"]
         lines += [f'{slug:<{widest}}  {opened:>8}  {closed:>7}  -       -       -       -        -' for slug, opened, closed, _ in summary]
-        lines += ['', '## Retours', '', 'Le plus récent en haut : date, observatoire, ce qui est dit, ce qu’on en fait.', '']
+        lines += ['', '## Retours', '', "Le plus récent en haut : date, observatoire, ce qui est dit, ce qu'on en fait.", '']
         TRACKING.write_text('\n'.join(lines))
         print(f'Suivi créé : {TRACKING}')
 
