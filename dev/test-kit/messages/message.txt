@@ -8,23 +8,22 @@ Six changements :
 - plus de mot de passe : à votre prochaine visite, saisissez votre adresse, vous recevrez un lien par mail ;
 - les données s'ouvrent, en accord avec la politique de science ouverte d'INRAE, et pour simplifier les choses, pour ceux qui téléchargent comme pour vous qui gériez les accès : une chronique visible se télécharge sans compte, sous Licence Ouverte. Une chronique cachée reste fermée, réservée aux membres de l'observatoire, et c'est toujours vous qui décidez, par sa case "visible", de ce qui est ouvert ;
 - une carte des stations, sur l'accueil du site et sur celui de chaque observatoire, et une apparence rafraîchie ;
-- les conditions d'utilisation sont les mêmes pour tous les observatoires : une seule page, en bas de chaque page, avec l'aide et les mentions légales ; l'aide est aussi au "?" de la barre, et les gestionnaires de votre observatoire sont dans un onglet de son accueil ;
+- les conditions d'utilisation sont les mêmes pour tous les observatoires : une seule page, en bas de chaque page, avec l'aide et les mentions légales ;
 - chaque observatoire et chaque jeu de données porte, en haut de sa page, la citation à reprendre (celle de son DOI s'il en a un) : regardez celle des vôtres ;
-- l'export propose, par défaut, un CSV standard (virgule, point décimal, dates ISO), à côté des formats BDOH et QTVAR, qui ne changent pas ; chaque archive porte un nom qui dit ce qu'elle contient, et un README qui décrit ses fichiers, sa licence et comment citer.
+- l'export propose, par défaut, un CSV standard (virgule, point décimal, dates ISO), à côté des formats BDOH et QTVAR, qui ne changent pas, et chaque archive porte un nom qui dit ce qu'elle contient, et un README qui décrit ses fichiers, sa licence et comment citer.
 
 Les photos de l'accueil de votre observatoire montrent aussi sa vie : elles sont ouvertes comme les données, sous Licence Ouverte. Dites-moi si ça vous va pour les vôtres.
 
-Si vous avez des questions, sur l'ouverture ou sur le reste, n'hésitez pas : on en parle.
+Si vous avez des questions, n'hésitez pas.
 
 Il me faut deux choses de votre part avant le {date} :
 
 1. Le tableau joint. {comptes}
 
 2. Le site d'essai : {site}
-   Pour l'instant, il n'est accessible que depuis le réseau d'INRAE : sous le VPN, ou depuis votre bureau, en filaire. Si vous n'y avez pas accès, faites seulement le tableau : je vous écris dès qu'il s'ouvre au-delà.
    identifiant : test
    mot de passe : [à compléter]
-   C'est l'accès au site d'essai ; ensuite, on se connecte à BDOH comme d'habitude, avec son adresse.
+   C'est l'accès au site d'essai. Ensuite, on se connecte à BDOH comme d'habitude, avec son adresse.
    Votre navigateur vous avertira d'abord d'un risque de sécurité : le site d'essai n'a pas encore son vrai certificat. Passez outre ("Paramètres avancés" ou "Avancé", puis "Continuer" ou "Accepter le risque").
    Faites ce que vous faites d'habitude, un import, un export, et regardez la carte de votre observatoire : une station mal placée s'y voit. C'est la vraie base de données : ce que vous y écrivez reste, ce site deviendra le vrai BDOH. Si vous faites une modification destructrice (une suppression, un import qui écrase des mesures), dites-le-moi : je la réparerai depuis la sauvegarde faite avant les essais. Pour le reste, ne me dites que ce qui cloche.
 
