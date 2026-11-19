@@ -14,15 +14,12 @@ La réouverture de BDOH, mi-décembre, après un pré-essai par deux gestionnair
 
 Les numéros renvoient aux points du plan de la réouverture.
 
-Les décisions du 19 novembre sont codées (`CHANGELOG.md`, "Non publié"), sauf la date de mise à jour, qui vient avec l'export (2).
+Codés depuis la 0.8.0 (`CHANGELOG.md`, "Non publié") : les décisions du 19 novembre, les trois défauts du JavaScript, l'export (deux README, la colonne `parameter`, la date de mise à jour) et les statistiques d'usage, à revoir avec Lou sur les captures (plan de la réouverture, point 6, et "Questions pour Lou").
 
-1. Les trois défauts du JavaScript, avant que le site s'ouvre à Internet (`dev/local/security.md`, "À corriger").
-2. L'export : deux README par archive, la colonne `parameter`, la date de mise à jour de chaque chronique (2c, 2d, 4).
-3. La migration de la relecture du contenu, sur la branche `content-review`, à fusionner sur l'accord de Lou ; puis les logos des partenaires ([dev/plans/2026-11-19_review.md](dev/plans/2026-11-19_review.md)).
-4. Les statistiques d'usage (6), la contrepartie de l'ouverture des données (`dev/decisions.md`, "Ouverture des données") : le compteur des consultations et des téléchargements de chaque chronique, en public, et la vie de l'observatoire pour ses gestionnaires. Pour les essais du 1er décembre. Sa conception est écrite au point 6 du plan, à revoir avec Lou sur les captures.
-5. Les listes de diffusion (5), une fois connu ce que permet `listes.inrae.fr`.
-6. Les retours du pré-essai, puis ceux des essais.
-7. La validation, pendant les essais : les versions correctives de Doctrine, une passe de couverture, les invariants, les pannes provoquées, une relecture du code que la comparaison n'exécute pas, puis le code gelé et tous les modes sur la base complète et sur OTHU ([dev/plans/2026-11-04_validation.md](dev/plans/2026-11-04_validation.md)).
+1. La migration de la relecture du contenu, sur la branche `content-review`, à fusionner sur l'accord de Lou ; puis les logos des partenaires ([dev/plans/2026-11-19_review.md](dev/plans/2026-11-19_review.md)).
+2. Les listes de diffusion (5), une fois connu ce que permet `listes.inrae.fr`.
+3. Les retours du pré-essai, puis ceux des essais.
+4. La validation, pendant les essais : les versions correctives de Doctrine, une passe de couverture, les invariants, les pannes provoquées, une relecture du code que la comparaison n'exécute pas, puis le code gelé et tous les modes sur la base complète et sur OTHU ([dev/plans/2026-11-04_validation.md](dev/plans/2026-11-04_validation.md)).
 
 ### Ce que fait Lou
 
