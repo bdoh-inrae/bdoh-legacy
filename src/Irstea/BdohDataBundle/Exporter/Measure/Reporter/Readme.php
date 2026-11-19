@@ -105,13 +105,12 @@ class Readme implements ReporterInterface
             $this->paragraph($this->t(
                 ($hidden ? sprintf('Les %d chroniques ouvertes sont', $visible) : ($visible > 1 ? 'Les chroniques sont' : 'La chronique est'))
                 . ' sous Licence Ouverte 2.0 (etalab-2.0), dont le texte est joint en français et en anglais ('
-                . implode(', ', $this->parameters['openFiles'] ?? []) . '). La réutilisation est libre, commerciale '
-                . 'comprise, en mentionnant la source et la date de dernière mise à jour, à défaut celle du '
-                . 'téléchargement.',
+                . implode(', ', $this->parameters['openFiles'] ?? []) . '). La réutilisation est libre, en mentionnant la source et la date de dernière mise à jour, '
+                . 'à défaut celle du téléchargement.',
                 ($hidden ? sprintf('The %d open time series are', $visible) : ($visible > 1 ? 'The time series are' : 'The time series is'))
                 . ' under the Open Licence 2.0 (etalab-2.0), whose text is attached in French and in English ('
-                . implode(', ', $this->parameters['openFiles'] ?? []) . '). Reuse is free, commercial use included, '
-                . 'mentioning the source and the date of last update, or else that of the download.'
+                . implode(', ', $this->parameters['openFiles'] ?? []) . '). Reuse is free, mentioning the source and the date of last update, or else that of the '
+                . 'download.'
             ), 2);
         }
         if ($hidden) {

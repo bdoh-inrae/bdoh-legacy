@@ -80,7 +80,7 @@ class Utilisateur implements UserInterface, EquatableInterface, Serializable
     /**
      * @var string
      */
-    #[Assert\Length(min: 10, minMessage: 'Utilisateur.telephone.minLength({{ limit }})')]
+    // Sans contrainte : le compte ne le demande plus, et un numéro court déjà enregistré bloquerait son formulaire
     protected $telephone;
 
     /**

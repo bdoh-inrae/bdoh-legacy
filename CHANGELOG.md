@@ -9,6 +9,8 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/). Numéros de v
 - La page d'une chronique réservée dit, à qui n'y a pas droit, ce qu'est la chronique : réservée aux membres de l'observatoire pour son travail interne, diffusée par les partenaires qui la portent, avec son producteur, sa station et le lien des gestionnaires. Un membre y est invité à se connecter, puis à demander l'accès.
 - Dans la liste des chroniques d'une station ou d'un jeu de données, une chronique réservée le dit en clair, à côté du cadenas.
 - Le lien "Demander un accès aux données" devient "Accès des membres de l'observatoire". Au menu du compte comme dans le courriel de bienvenue, il ne paraît plus que dans un observatoire qui a des chroniques réservées.
+- Sans compte, la fenêtre d'export dit en deux lignes ce qu'un compte apporte, et la licence en deux phrases, pour que le bouton "Exporter" reste à l'écran d'un portable. Le README d'un export ne parle plus d'usage commercial.
+- L'inscription et la page du compte ne demandent plus ni téléphone ni adresse. Le texte sur les données personnelles dit à quoi servent les informations d'un compte, et les mentions légales que le nom des gestionnaires se voit sur l'accueil de leur observatoire, leur adresse une fois connecté.
 - Les seuils de volume d'un export se règlent dans l'environnement de la machine, sans nouvelle version. Le second seuil des valeurs calculées passe de 1 million à 1 200 000 : un export que l'ancien BDOH acceptait n'est jamais refusé, au plus il demande un compte.
 
 ### Corrigé

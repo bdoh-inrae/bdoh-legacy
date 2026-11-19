@@ -68,10 +68,13 @@ $export = [
 HELP
         ,
         'underway'     => "L'export de chronique est en cours. Vous recevrez prochainement un lien par e-mail.",
-        'licence'      => 'Ces données sont sous <a href="https://www.data.gouv.fr/datasets/licence-ouverte-2-0" target="_blank" rel="noopener">Licence Ouverte Etalab 2.0</a> : leur réutilisation est libre, y compris commerciale, en mentionnant leur source (INRAE, BDOH) et la date de leur dernière mise à jour, à défaut celle du téléchargement. Pour les citer dans une publication : <a href="%url%">conditions d\'utilisation</a>.',
-        // Ce qu'un compte apporte, dit à qui exporte sans compte : dans la fenêtre d'export et sur la page de suivi
-        // (Lou, 2026-11-16 ; dev/plans/2026-11-16_reopening.md, point 4)
-        'account'      => 'Avec un compte, le lien de l\'export arrive par e-mail, et vos chroniques se gardent en favoris, rangées par étiquettes, pour les exporter d\'un coup : <a href="%register%">créer un compte</a> ou <a href="%login%">se connecter</a>.',
+        // La licence, dans la fenêtre d'export, en deux phrases ; la page des conditions la détaille (Lou, 2026-11-19)
+        'licence'      => 'Ces données sont sous <a href="https://www.data.gouv.fr/datasets/licence-ouverte-2-0" target="_blank" rel="noopener">Licence Ouverte Etalab 2.0</a> : vous pouvez les réutiliser librement, en mentionnant leur source. Les <a href="%url%">conditions d\'utilisation</a> expliquent comment, et comment les citer dans une publication.',
+        // Ce qu'un compte apporte, dit à qui exporte sans compte : dans la fenêtre d'export, en deux lignes, pour que
+        // « Exporter » reste à l'écran d'un portable ; sur la page de suivi, avec les étiquettes (Lou, 2026-11-16 et 19 ;
+        // dev/plans/2026-11-16_reopening.md, point 4)
+        'account'      => 'Avec un compte, le lien de l\'export arrive par e-mail, et vos favoris s\'exportent d\'un coup : <a href="%register%">créer un compte</a> ou <a href="%login%">se connecter</a>.',
+        'accountFull'  => 'Avec un compte, le lien de l\'export arrive par e-mail, et vos chroniques se gardent en favoris, rangées par étiquettes, pour les exporter d\'un coup : <a href="%register%">créer un compte</a> ou <a href="%login%">se connecter</a>.',
         // Le volume d'une demande et ses deux seuils (ExportController, réglés dans l'environnement ; Lou, 2026-11-16)
         'tooHeavy'     => "Cet export compte %volume% %what% : sans compte, la limite est de %max%. Connectez-vous (le lien de l'export arrive alors par e-mail), ou réduisez la période, le nombre de chroniques, ou augmentez le pas de temps.",
         'tooLarge'     => "Cet export compte %volume% %what% : la limite est de %max% par demande, pour que la file des exports reste disponible à tous. Réduisez la période, le nombre de chroniques, ou augmentez le pas de temps, quitte à exporter en plusieurs fois.",

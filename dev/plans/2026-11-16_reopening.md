@@ -170,6 +170,8 @@ Celles qui s'accumulent pendant que Claude avance seul (Lou, 19 novembre au soir
 
 1. Statistiques (point 6) : les chiffres de l'observatoire (par année) restent aux gestionnaires, comme décidé. Faut-il aussi un total public sur son accueil, pour les financeurs et les partenaires ? Proposé : non pour l'instant, les gestionnaires montrent ce qu'ils veulent depuis leur page et son CSV.
 
+2. Inscription (point 4) : le téléphone et l'adresse quittent l'inscription et la page du compte, comme décidé. Le formulaire d'un compte dans l'administration (Sonata) les garde : les retirer aussi ? Proposé : oui, rien ne s'en sert, et un gestionnaire pourrait encore en saisir. Les valeurs déjà en base restent, en attendant la déléguée à la protection des données.
+
 ## Pour reprendre
 
 Méthode : celle de [2026-11-16_before-kit.md](2026-11-16_before-kit.md), « Méthode » (les passes de `compare.py` à la fin, une fois les changements faits ; entre-temps, les tests de l'outil, `lint:twig`, `lint:container`, des captures ). Chaque écart avec l'ancien s'inscrit dans `dev/differences.md` et, s'il est admis, dans `dev/compare/expected.py`. Le poste a dans `public/uploads/` les images de la production, pour les captures des accueils : les mettre de côté le temps de chaque passe d'`admin`, puis les remettre (copies dans `../bdoh_reference/uploads/`).

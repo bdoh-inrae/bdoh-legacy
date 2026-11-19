@@ -23,6 +23,6 @@
     {% endif %}
     {#- Et ce qu'un compte apporte (point 4 du même plan) #}
     {% if not app.user %}
-        <p class="export-account">{{ 'measure.export.account'|trans({'%register%': path(accountRoute('new')), '%login%': path(accountRoute('login'))})|raw }}</p>
+        <p class="export-account">{{ 'measure.export.accountFull'|trans({'%register%': path(accountRoute('new')), '%login%': path(accountRoute('login'))})|raw }}</p>
     {% endif %}
 {% endblock %}

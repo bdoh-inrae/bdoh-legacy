@@ -7,7 +7,6 @@ namespace Irstea\BdohSecurityBundle\Form;
 use Irstea\BdohSecurityBundle\Entity\Utilisateur;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\EmailType;
-use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
@@ -46,8 +45,8 @@ abstract class UtilisateurType extends AbstractType
             ->add('nom', TextType::class, ['required' => true, 'label' => 'nom'])
             ->add('organisme', TextType::class, ['required' => true, 'attr' => ['class' => 'col-md-8'], 'label' => 'organisme'])
             ->add('email', EmailType::class, ['required' => true, 'attr' => ['class' => 'col-md-8'], 'label' => 'email'])
-            ->add('telephone', TextType::class, ['required' => false, 'label' => 'telephone'])
-            ->add('adresse', TextareaType::class, ['required' => false, 'attr' => ['class' => 'col-md-10', 'style' => 'height: 80px;'], 'label' => 'adresse'])
+            // Ni téléphone ni adresse : rien ne s'en sert (Lou, 2026-11-19 : "on n'est pas là pour ficher les gens").
+            // L'organisme et la catégorie restent, pour les statistiques des comptes.
             ->add(
                 'categorie',
                 null,
