@@ -28,6 +28,8 @@ final class Version20261120000000 extends AbstractMigration
                            views INTEGER NOT NULL DEFAULT 0,
                            PRIMARY KEY (chronique_id, day)
                        )');
+        // Pour la première date du compteur, que la page d'une chronique dit
+        $this->addSql('CREATE INDEX series_views_day ON series_views (day)');
         $this->addSql("COMMENT ON TABLE series_views IS 'Consultations de la page de chaque chronique, par jour : un visiteur compté une fois par heure, robots écartés (règles de COUNTER)'");
     }
 

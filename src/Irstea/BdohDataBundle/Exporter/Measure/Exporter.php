@@ -4,6 +4,7 @@
 
 namespace Irstea\BdohDataBundle\Exporter\Measure;
 
+use Symfony\Component\Translation\LocaleSwitcher;
 use Irstea\BdohDataBundle\Entity\Chronique;
 use Irstea\BdohDataBundle\Entity\Observatoire;
 use Irstea\BdohDataBundle\Exporter\Measure\Csv\Metadata;
@@ -75,6 +76,16 @@ class Exporter implements ExporterInterface
     public function setFormat(string $format): self
     {
         $this->format = strtolower($format);
+
+        return $this;
+    }
+
+    /** @var LocaleSwitcher|null la langue de chaque README, pour ce qu'il traduit (le calcul d'une chronique calculée) */
+    private $localeSwitcher;
+
+    public function setLocaleSwitcher(?LocaleSwitcher $localeSwitcher): self
+    {
+        $this->localeSwitcher = $localeSwitcher;
 
         return $this;
     }
@@ -343,11 +354,14 @@ class Exporter implements ExporterInterface
         $written = true;
         foreach (self::READMES as $lang => $name) {
             $this->reporter->addParameters(['lang' => $lang]);
-            $written = $this->generateFile($name, function ($output) {
+            // Le README d'une langue traduit aussi ce que le traducteur écrit (le calcul d'une chronique calculée, ses
+            // dates), et non dans la langue de l'export
+            $write = fn () => $this->generateFile($name, function ($output) {
                 $this->reporter->writeTo($output);
 
                 return true;
-            }) && $written;
+            });
+            $written = ($this->localeSwitcher ? $this->localeSwitcher->runWithLocale($lang, $write) : $write()) && $written;
         }
 
         return $written;

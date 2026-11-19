@@ -120,7 +120,8 @@ statistics:
     notes: >-
         Avant l'ouverture des données, chaque export demandait un compte : les comptes qui ont téléchargé disent combien
         de personnes s'en sont servies. Depuis, un export se fait aussi sans compte, et la colonne des exports sans
-        compte les compte. Une chronique supprimée compte dans ce tableau, plus dans le suivant.
+        compte les compte. Une chronique supprimée compte dans ce tableau, plus dans le suivant, et ses consultations
+        partent avec elle ; un export d'un compte supprimé depuis se lit comme sans compte.
     columns:
         year: Année
         accounts_created: Comptes créés

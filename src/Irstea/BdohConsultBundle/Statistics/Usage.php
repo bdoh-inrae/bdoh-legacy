@@ -7,6 +7,8 @@ namespace Irstea\BdohConsultBundle\Statistics;
 use Doctrine\DBAL\Connection;
 use Irstea\BdohDataBundle\Entity\Chronique;
 use Irstea\BdohDataBundle\Entity\Observatoire;
+use Symfony\Contracts\Cache\CacheInterface;
+use Symfony\Contracts\Cache\ItemInterface;
 
 /**
  * Les chiffres de l'usage de BDOH (Lou, 2026-11-12 et 16 ; dev/plans/2026-11-16_reopening.md, point 6), la contrepartie
@@ -40,7 +42,7 @@ final class Usage
         'anonymous_requests'   => "count(DISTINCT date) FILTER (WHERE dtype = 'donneesExport' AND auteur_id IS NULL)",
     ];
 
-    public function __construct(private Connection $connection)
+    public function __construct(private Connection $connection, private CacheInterface $cache)
     {
     }
 
@@ -54,17 +56,24 @@ final class Usage
     {
         $row = $this->connection->fetchAssociative(
             "SELECT (SELECT coalesce(sum(views), 0) FROM series_views WHERE chronique_id = :id) AS views,
-                    (SELECT min(day) FROM series_views) AS views_since,
-                    (SELECT count(*) FROM historique WHERE dtype = 'donneesExport' AND chronique_id = :id) AS downloads,
-                    (SELECT to_char(min(date), 'YYYY') FROM historique) AS downloads_since",
+                    (SELECT count(*) FROM historique WHERE dtype = 'donneesExport' AND chronique_id = :id) AS downloads",
             ['id' => $chronique->getId()]
         );
+        // Les débuts du compteur et de l'historique, les mêmes pour toutes les chroniques : une heure en cache, plutôt
+        // qu'un parcours de tout l'historique à chaque page
+        [$viewsSince, $downloadsSince] = $this->cache->get('usage-since', function (ItemInterface $item) {
+            $item->expiresAfter(3600);
+
+            return array_values($this->connection->fetchNumeric(
+                "SELECT (SELECT min(day) FROM series_views), (SELECT to_char(min(date), 'YYYY') FROM historique)"
+            ));
+        });
 
         return [
             'views'          => (int) $row['views'],
-            'viewsSince'     => $row['views_since'],
+            'viewsSince'     => $viewsSince,
             'downloads'      => (int) $row['downloads'],
-            'downloadsSince' => $row['downloads_since'],
+            'downloadsSince' => $downloadsSince,
         ];
     }
 
@@ -76,7 +85,7 @@ final class Usage
      */
     public function byYear(?Observatoire $observatoire): array
     {
-        $where = $observatoire ? 'WHERE observatoire_id = :obs' : '';
+        $where = 'WHERE date IS NOT NULL' . ($observatoire ? ' AND observatoire_id = :obs' : '');
         $columns = implode(', ', array_map(fn ($sql, $name) => "$sql AS $name", self::YEAR_COLUMNS, array_keys(self::YEAR_COLUMNS)));
         $rows = $this->connection->fetchAllAssociativeIndexed(
             "SELECT extract(year FROM date)::int AS year, $columns FROM historique $where GROUP BY 1 ORDER BY 1",
@@ -113,7 +122,7 @@ final class Usage
                  SELECT chronique_id, extract(year FROM date)::int AS year,
                         coalesce(sum(nombremesures) FILTER (WHERE dtype = 'donneesImport'), 0) AS imported_values,
                         count(*) FILTER (WHERE dtype = 'donneesExport') AS downloads
-                   FROM historique WHERE chronique_id IS NOT NULL AND dtype IN ('donneesImport', 'donneesExport')
+                   FROM historique WHERE chronique_id IS NOT NULL AND date IS NOT NULL AND dtype IN ('donneesImport', 'donneesExport')
                   GROUP BY 1, 2
              ), v AS (
                  SELECT chronique_id, extract(year FROM day)::int AS year, sum(views) AS views FROM series_views GROUP BY 1, 2

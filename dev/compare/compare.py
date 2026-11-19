@@ -1904,7 +1904,8 @@ def csv_checks(base, side, report):
                     problems.append(f'{readme_name} ne décrit pas la colonne {wanted}')
             if missing not in readme:
                 problems.append(f'{readme_name} ne dit pas NA')
-            if sum(line.startswith(update) for line in readme) != len(chroniques):
+            # (une valeur trop longue passe sous son libellé, que field() écrit seul, sans l'espace final)
+            if sum(line.startswith(update) or line == update.rstrip() for line in readme) != len(chroniques):
                 problems.append(f'{readme_name} : la date de mise à jour manque à une chronique')
             if any(len(line) > 80 for line in readme if not re.search(r'https?://\S{50,}', line)):
                 problems.append(f'{readme_name} : ligne de plus de 80 caractères')
@@ -2296,7 +2297,7 @@ def escaped_children_check(side, base):
     return {name: ['conforme'] if ok else [f'non conforme : {shown[:2] or "bulle absente"}']}
 
 
-def usage_checks(side, base):
+def usage_checks(side, console, base):
     """Les statistiques d'usage (Lou, 2026-11-12 et 16 ; dev/plans/2026-11-16_reopening.md, point 6), que seul le nouveau
     a. Le compteur des consultations, selon les règles de COUNTER : la page d'une chronique ouverte compte une fois par
     visiteur et par heure (la même deux fois : une seule), un robot ne compte pas, un outil de chercheur (curl) compte,
@@ -2304,6 +2305,9 @@ def usage_checks(side, base):
     tirés de l'historique. La page des statistiques : refusée sans droit, pour un gestionnaire le tableau par année et ses
     CSV, dont les chiffres de l'année se comparent à des comptes faits à part."""
     name = 'nouveau seul : statistiques'
+    # Les sessions du compteur survivent d'une passe à l'autre, sur la même chronique : vidées, pour qu'une passe rejouée
+    # dans la même heure compte de nouveau
+    subprocess.run([*console, 'cache:pool:clear', 'cache.series_views', '--env=prod'], check=True, capture_output=True)
     visible = query(base, f"""SELECT c.id, c.slug, c.station, c.code FROM ({CHRONIQUES}) c WHERE c.estvisible AND c.dtype = 'continue'
                               ORDER BY c.id LIMIT 1""", NEW_SERVER)
     hidden = query(base, f"""SELECT c.slug, c.station, c.code FROM ({CHRONIQUES}) c WHERE NOT c.estvisible ORDER BY c.id LIMIT 1""", NEW_SERVER)
@@ -2753,7 +2757,7 @@ def run_state(args):
                     checks['nouveau seul : calcul en échec'] = [NO_CASE]
                 checks.update(emptied_with_milliseconds_check(SIDES['new'], base, cid, f'/{slug}/{station}/{code}', manager, slug))
                 checks.update(escaped_children_check(SIDES['new'], base))
-                checks.update(usage_checks(SIDES['new'], base))
+                checks.update(usage_checks(SIDES['new'], console, base))
             # Sur une copie à elle : elle ajoute des tâches et des millions de mesures, que les pages de suivi comparées
             # plus bas ne doivent pas voir
             exports = HERE.parent.parent / 'var' / 'exports'

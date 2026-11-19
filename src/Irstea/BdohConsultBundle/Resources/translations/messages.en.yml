@@ -121,7 +121,8 @@ statistics:
     notes: >-
         Before the data were opened, every export required an account: the accounts that downloaded tell how many people
         used them. Since then, an export can also be done without an account, and the column of exports without an
-        account counts them. A deleted time series counts in this table, no longer in the next one.
+        account counts them. A deleted time series counts in this table, no longer in the next one, and its views
+        go with it; an export by an account deleted since reads as without an account.
     columns:
         year: Year
         accounts_created: Accounts created

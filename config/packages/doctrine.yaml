@@ -1,8 +1,9 @@
 doctrine:
     dbal:
         url: '%env(resolve:DATABASE_URL)%'
-        # Comme l'ancien : n'accède qu'aux tables du schéma bdoh, sans la table interp_qualite.
-        schema_filter: '/^(?:bdoh\.)?(?!interp_qualite)[^.]+$/i'
+        # Comme l'ancien : n'accède qu'aux tables du schéma bdoh, sans la table interp_qualite ; ni le compteur des
+        # consultations, sans entité, que son SQL tient seul (Statistics\ViewCounter) : un diff de Doctrine le supprimerait
+        schema_filter: '/^(?:bdoh\.)?(?!interp_qualite|series_views)[^.]+$/i'
         types:
             # Dates à millisecondes, passées en texte
             datetimems: Irstea\BdohDataBundle\Doctrine\DBAL\Types\DateTimeMsType
