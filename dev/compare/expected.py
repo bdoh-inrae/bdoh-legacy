@@ -24,6 +24,8 @@ import re
 import urllib.parse
 from dataclasses import dataclass
 
+import reviewed_texts
+
 RX = re.compile
 ROLE = r'\S+(?: technique)?'
 OBS = r'/[A-Z][A-Z0-9-]*'
@@ -176,6 +178,54 @@ STATUS_LINE = ('-T Pour revenir au niveau de zoom initial, double-cliquez sur le
 # L'avertissement de la limite de 5 ans, retiré avec elle (2026-11-12)
 FIVE_YEARS = ("-T Attention : pour des raisons de performance vous ne pouvez sélectionner qu'un intervalle de dates de 5 ans maximum.",
               '-T Warning: due to performance limitations please select a maximum time span of 5 years')
+
+# La relecture des textes (2026-11-19, dev/plans/2026-11-19_review.md) : chaque texte français corrigé, découpé en
+# segments comme une page le montre (les marques %…% et les balises de bloc coupent le texte, les formes d'un pluriel
+# sont séparées par « | »), l'ancien segment devenant le nouveau. Un segment long se remplace où qu'il soit dans une
+# ligne ; un court, seulement s'il est tout le texte d'une ligne, et s'il ne devient pas deux textes différents selon
+# la clé : sinon il réécrirait aussi un texte resté le même ailleurs. Un remplacement de trop se voit : la page de
+# l'ancien réécrite ne ressemble plus à celle du nouveau.
+REVIEW = 'Relecture des textes'
+
+
+def review_segments(text):
+    """Les segments d'un texte de catalogue, tels que les lignes d'une page les montrent."""
+    text = re.sub(r'%[\w.]+%|\{\{[^}]*\}\}', '\0', text)
+    text = re.sub(r'<(?:br|li|ul|ol|p|div|h\d)\b[^>]*>|</(?:li|ul|ol|p|div|h\d)>', '\0', text, flags=re.I)
+    text = re.sub(r'<[^>]+>', '', text)
+    parts = re.split(r'\0|\|', text)
+    return [' '.join(re.sub(r'^(?:\{[^}]*\}|[\[\]][^\[\]]*[\[\]])', '', part).split()) for part in parts]
+
+
+def review_pairs():
+    """Les segments changés : (longs, courts), chacun une liste de (avant, après)."""
+    targets = {}
+    for _, _, before, after in reviewed_texts.CHANGED:
+        old, new = review_segments(before), review_segments(after)
+        if len(old) != len(new):
+            continue
+        for a, b in zip(old, new):
+            if a and a != b:
+                targets.setdefault(a, set()).add(b)
+    pairs = sorted(((a, next(iter(b))) for a, b in targets.items() if len(b) == 1), key=lambda p: -len(p[0]))
+    return [p for p in pairs if len(p[0]) >= 20], {a: b for a, b in pairs if len(a) < 20 and a not in reviewed_texts.KEEP}
+
+
+REVIEW_LONG, REVIEW_SHORT = review_pairs()
+
+
+def reviewed(lines):
+    """L'ancien texte corrigé par la relecture, réécrit en le nouveau."""
+    out = []
+    for line in lines:
+        if line.startswith('T ') and line[2:] in REVIEW_SHORT:
+            line = 'T ' + REVIEW_SHORT[line[2:]]
+        for a, b in REVIEW_LONG:
+            if a in line:
+                line = line.replace(a, b)
+        out.append(line)
+    return out
+
 
 def translation(sign, keys):
     """La ligne d'une de ces clés dans /translations/messages.js, quel qu'en soit le texte."""
@@ -517,6 +567,11 @@ RULES = [
     # (theia aussi, pour la page du contrôle des fiches, qu'il n'avait pas rejouée depuis le 11 novembre)
     *(Rule(mode, r'.*', HEADER, rewrite=header) for mode in ('pages', 'admin', 'imports', 'accounts', 'theia')),
     *(Rule(mode, r'.*', HEADER, rewrite=footer) for mode in ('pages', 'admin', 'imports', 'accounts', 'theia')),
+    # Les textes corrigés par la relecture, sur toute page et tout courriel de ces modes (2026-11-19)
+    *(Rule(mode, r'.*', REVIEW, rewrite=reviewed) for mode in ('pages', 'admin', 'imports', 'accounts', 'theia', 'state')),
+    Rule('pages', rf'{ROLE} /translations/messages\.js', REVIEW, lines=(
+        translation('[-+]', ' | '.join(k for d, k, _, _ in reviewed_texts.CHANGED if d == 'messages')),
+        translation(r'\+', ' | '.join(k for d, k, _ in reviewed_texts.ADDED if d == 'messages')))),
     # (les pages des autres modes ne nomment pas la recherche : « Règle sans écart » le 13 et le 15 novembre)
     Rule('pages', r'.*', SEARCH_NAME, rewrite=search_renamed),
     Rule('pages', r'.*', TITLES, rewrite=titles),
