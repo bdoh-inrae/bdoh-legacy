@@ -113,10 +113,9 @@
  # sites et les jeux de données d'un côté, les paramètres, deux fois plus larges, de l'autre (homes.css), les longues
  # descriptions repliées (read-more.js). Les blocs restent où ils sont : seul le contenu des onglets change.
  # Depuis le 15 novembre (Lou) : les photos dans un cadre fixe, et le logo, passé le 16 au soir de la gauche du nom
- # à celle du bloc de citation. Depuis le 16 (Lou) : les
- # onglets sur la ligne du nom, à droite, comme avant, le filet sous toute la ligne, et un troisième onglet, les
- # gestionnaires, où mènent l'aide et l'ancienne page de contact (/contact). L'adresse porte l'onglet (#managers),
- # que home-tabs.js ouvre.
+ # à celle du bloc de citation. Depuis le 16 (Lou) : un troisième onglet, les gestionnaires, où mènent l'aide et
+ # l'ancienne page de contact (/contact). L'adresse porte l'onglet (#managers), que home-tabs.js ouvre. Depuis le 19
+ # (Lou) : les onglets juste au-dessus de la zone qu'ils changent, alignés à gauche, en pastilles (homes.css). 
  #}
 {% block main %}
 <div id="consult-observatoire">
@@ -124,8 +123,8 @@
     {% set partenaireTab = ((not observatoire.partenaires is empty)) %}
     {% set photos = observatoire.pathPhotoPrincipale or observatoire.pathPhotoSecondaire %}
 
-    <!-- La ligne du nom : le logo et le nom à gauche, les onglets et la boîte à outils à droite, le filet dessous
-         (homes.css place les blocs ; l'ordre de la page est celui de l'ancien) -->
+    <!-- Les onglets, la boîte à outils et le nom : homes.css les place, les onglets au-dessus de la zone qu'ils
+         changent (l'ordre de la page est celui de l'ancien) -->
     <div class="observatory-headline">
 
     <!-- Menu for variable part -->

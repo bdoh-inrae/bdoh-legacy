@@ -41,19 +41,27 @@
 .observatory-card-text { flex: 1; color: #555; }
 .observatory-card-count { color: #777; font-size: 11px; }
 
-/* Un observatoire : la ligne du nom, comme dans la 0.7.0 (Lou, 2026-11-16) : le nom à gauche, sur le filet, qui
-   s'arrête avant les onglets ; les onglets à droite, au niveau du nom, qui ne passent jamais à la ligne (le nom se
-   replie s'il est trop long), puis la boîte à outils d'un gestionnaire. Le logo, à gauche du nom le 15 novembre, est
-   passé le 16 au soir à gauche du bloc de citation.
-   L'ordre de la page est celui de l'ancien (les onglets d'abord) : seul le style place les blocs. */
-.observatory-headline { display: flex; align-items: flex-end; column-gap: 16px; }
-.observatory-headline > .observatory-head { order: 1; flex: 1 1 auto; }
-.observatory-headline > .nav-pills { order: 2; flex: none; margin-bottom: 2px; }
-.observatory-headline > .toolbox-btns { order: 3; flex: none; margin-bottom: 2px; }
+/* Un observatoire : le nom sur son filet, avec la boîte à outils d'un gestionnaire à droite ; le bloc de citation ; la
+   carte ; puis les onglets, juste au-dessus de la zone qu'ils changent, alignés à gauche (Lou, 2026-11-19 : sur la
+   ligne du nom, loin de cette zone, il fallait aller les chercher) ; puis les listes. Le logo, à gauche du nom le
+   15 novembre, est passé le 16 au soir à gauche du bloc de citation.
+   L'ordre de la page est celui de l'ancien (les onglets d'abord) : la grille place les blocs, la ligne du nom ne
+   faisant pas de boîte (display: contents). */
+#consult-observatoire {
+    display: grid; grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: "head tools" "citation citation" "map map" "tabs tabs" "content content" "lists lists";
+}
+.observatory-headline { display: contents; }
+.observatory-headline > .observatory-head { grid-area: head; }
+.observatory-headline > .toolbox-btns { grid-area: tools; align-self: end; margin: 0 0 2px 16px; }
 .observatory-headline > .toolbox-btns:empty { display: none; }
+.observatory-headline > .nav-pills { grid-area: tabs; justify-self: start; }
+#consult-observatoire > .observatory-citation { grid-area: citation; }
+#consult-observatoire > .observatory-map { grid-area: map; }
+#consult-observatoire > .tab-content { grid-area: content; }
+#consult-observatoire > .observatory-lists { grid-area: lists; }
 .observatory-head { display: flex; align-items: flex-end; gap: 16px; min-width: 0; padding: 4px 0 6px; }
 .observatory-head h1 { margin: 12px 0 0; }
-@media (max-width: 767px) { .observatory-headline { flex-wrap: wrap; } }
 /* Le logo d'un observatoire, à gauche de son bloc de citation, centré sur lui (Lou, 2026-11-16 au soir) */
 .observatory-citation { display: flex; align-items: center; gap: 16px; margin: 0 0 16px; }
 .observatory-citation > .citation-block { flex: 1 1 auto; min-width: 0; margin: 0; }

@@ -242,13 +242,14 @@ h1 a.external-link {
     > .lang-current { font-weight: bold; color: @navbar-default-link-color; }
     > :last-child { padding-right: 15px; }
 }
-// Les onglets d'un observatoire, Présentation, Partenaires et Gestionnaires : sur la ligne de son nom, à droite, en
-// pastilles comme avant (Lou, 2026-11-16) ; la pastille ouverte prend la couleur du thème (.nav-pills, plus haut)
+// Les onglets d'un observatoire, Présentation, Partenaires et Gestionnaires : juste au-dessus de la zone qu'ils
+// changent, alignés à gauche, en pastilles (Lou, 2026-11-19, comme le 16 au matin) ; la pastille ouverte prend la
+// couleur du thème (.nav-pills, plus haut). homes.css les place.
 #consult-observatoire .observatory-headline > .nav-pills {
     display: flex;
     flex-wrap: wrap;
     gap: 4px;
-    margin: 0;
+    margin: 0 0 12px;
     padding: 0;
     > li { float: none; margin: 0; }
 }

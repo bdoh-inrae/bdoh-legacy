@@ -243,7 +243,7 @@ def public_steps(s, station, chronique):
         assert page.url.endswith(f'/{SLUG}/#managers'), f'adresse : {page.url}'
         visible(page, '#managers .manager-name')
         assert page.locator('#description').is_hidden(), 'la présentation reste ouverte'
-        assert page.locator('.observatory-headline').bounding_box()['y'] < 200, 'la vue ne revient pas au nom'
+        assert page.locator('.observatory-head').bounding_box()['y'] < 200, 'la vue ne revient pas au nom'
         page.locator('a[href="#description"]').click()
         visible(page, '#description')
         assert page.url.endswith(f'/{SLUG}/'), f'adresse après « Présentation » : {page.url}'
