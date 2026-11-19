@@ -18,7 +18,7 @@ Les numéros renvoient aux points du plan de la réouverture.
 2. Les trois défauts du JavaScript, avant que le site s'ouvre à Internet (`dev/local/security.md`, "À corriger").
 3. L'export : deux README par archive, la colonne `parameter`, la date de mise à jour de chaque chronique (2c, 2d, 4).
 4. La migration de la relecture du contenu, sur la branche `content-review`, à fusionner sur l'accord de Lou ; puis les logos des partenaires ([dev/plans/2026-11-19_review.md](dev/plans/2026-11-19_review.md)).
-5. Les statistiques d'usage (6), pour les essais du 1er décembre.
+5. Les statistiques d'usage (6), la contrepartie de l'ouverture des données (`dev/decisions.md`, "Ouverture des données") : le compteur des consultations et des téléchargements de chaque chronique, en public, et la vie de l'observatoire pour ses gestionnaires. Pour les essais du 1er décembre. Sa conception détaillée est à écrire, puis à revoir avec Lou comme les points 1 à 4.
 6. Les listes de diffusion (5), une fois connu ce que permet `listes.inrae.fr`.
 7. Les retours du pré-essai, puis ceux des essais.
 8. La validation, pendant les essais : les versions correctives de Doctrine, une passe de couverture, les invariants, les pannes provoquées, une relecture du code que la comparaison n'exécute pas, puis le code gelé et tous les modes sur la base complète et sur OTHU ([dev/plans/2026-11-04_validation.md](dev/plans/2026-11-04_validation.md)).
