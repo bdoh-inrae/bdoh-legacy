@@ -641,8 +641,9 @@ RULES = [
     # (theia aussi, pour la page du contrôle des fiches, qu'il n'avait pas rejouée depuis le 11 novembre)
     *(Rule(mode, r'.*', HEADER, rewrite=header) for mode in ('pages', 'admin', 'imports', 'accounts', 'theia')),
     *(Rule(mode, r'.*', HEADER, rewrite=footer) for mode in ('pages', 'admin', 'imports', 'accounts', 'theia')),
-    # Les textes corrigés par la relecture, sur toute page et tout courriel de ces modes (2026-11-19)
-    *(Rule(mode, r'.*', REVIEW, rewrite=reviewed) for mode in ('pages', 'admin', 'imports', 'accounts', 'theia', 'state')),
+    # Les textes corrigés par la relecture, sur toute page et tout courriel de ces modes (2026-11-19 ; pas theia, dont les
+    # pages ne montrent aucun texte relu : « Règle sans écart » le 19 novembre, sur bdoh)
+    *(Rule(mode, r'.*', REVIEW, rewrite=reviewed) for mode in ('pages', 'admin', 'imports', 'accounts', 'state')),
     Rule('pages', rf'{ROLE} /translations/messages\.js', REVIEW, lines=(
         translation('[-+]', ' | '.join(k for d, k, _, _ in reviewed_texts.CHANGED if d == 'messages')),
         translation(r'\+', ' | '.join(k for d, k, _ in reviewed_texts.ADDED if d == 'messages')))),
