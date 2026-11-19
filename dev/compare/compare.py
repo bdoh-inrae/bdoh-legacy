@@ -2244,7 +2244,9 @@ def escaped_children_check(side, base):
                   WHERE r.valeur = 'gestionnaire' AND r.dtype = 'observatoire' AND o.slug = c.slug
                     AND (u.finacces IS NULL OR u.finacces > now()) ORDER BY u.id LIMIT 1)
           FROM ({CHRONIQUES}) c JOIN transformation t ON t.entree_id = c.id JOIN chronique fille ON fille.id = t.sortie_id
-         WHERE c.dtype = 'continue' ORDER BY c.id LIMIT 1""", NEW_SERVER)
+          JOIN chronique mere ON mere.id = c.id
+         WHERE c.dtype = 'continue' AND mere.nbmesures > 0 ORDER BY c.id LIMIT 1""", NEW_SERVER)
+    # (une mère sans mesure n'a pas la fenêtre « Vider une période » : Modal/cut.html.twig)
     if not found or not found[0][5]:
         return {name: [NO_CASE]}
     slug, station, code, child, child_code, manager = found[0]
@@ -2256,6 +2258,46 @@ def escaped_children_check(side, base):
     shown = [html.unescape(value) for value in re.findall(r'data-content="([^"]*)"', body) if child_code in html.unescape(value)]
     ok = shown and all(f'{child_code}&lt;b&gt;X&lt;/b&gt;' in value and '<b>X' not in value for value in shown)
     return {name: ['conforme'] if ok else [f'non conforme : {shown[:2] or "bulle absente"}']}
+
+
+def escaped_transformation_check(side, base):
+    """Le nom de la chronique calculée, que la page de la transformation insère en HTML après l'enregistrement
+    (transformation/index.js) : échappé par le serveur (dev/local/security.md). Le code de la chronique reçoit une balise
+    le temps du cas ; la transformation est enregistrée telle que la page la lit. Après la capture de l'état, qu'il ne
+    touche donc pas (la tâche du calcul reste en file)."""
+    name = 'nouveau seul : transformation enregistrée, nom échappé'
+    found = query(base, f"""SELECT c.id, c.slug, c.code, (
+                 SELECT u.email FROM utilisateur u JOIN role r ON r.utilisateur_id = u.id JOIN observatoire o ON o.id = r.observatoire_id
+                  WHERE r.valeur = 'gestionnaire' AND r.dtype = 'observatoire' AND o.slug = c.slug AND u.roleadmin IS NULL
+                    AND (u.finacces IS NULL OR u.finacces > now()) ORDER BY u.id LIMIT 1)
+          FROM ({CHRONIQUES}) c WHERE c.dtype = 'calculee' AND EXISTS (SELECT 1 FROM transformation t WHERE t.sortie_id = c.id)
+         ORDER BY c.id LIMIT 1""", NEW_SERVER)
+    if not found or not found[0][3]:
+        return {name: [NO_CASE]}
+    cid, slug, code, manager = found[0]
+    client = Client(side, manager, slug)
+    ajax = {'X-Requested-With': 'XMLHttpRequest'}
+    current = json.loads(client.get(f'/{slug}/admin/get-chronique-calculee?id={cid}', None, ajax)[2])
+    iso = lambda d: d.replace(' ', 'T') + '.000Z' if d else ''
+    fields = {'chroniqueCalculee': cid, 'coefficient': current.get('coefficient') or '1',
+              'genealogie': current.get('genealogie') or '', 'genealogieEn': current.get('genealogieEn') or ''}
+    for block in ('Principale', 'Secondaire'):
+        fields[f'selectChroniqueMere{block}'] = current.get(f'chroniqueMere{block}', '-1')
+        fields[f'jeuBareme{block}'] = '|'.join(f"{b['id']}_{iso(b['begin'])}_{iso(b['end'])}" for b in current.get(f'baremes{block}', []))
+        fields[f'delaiPropagation{block}'] = current.get(f'delaiPropagation{block}') or 0
+        fields[f'valueLimits{block}'] = current.get(f'valueLimitPolicy{block}') or ''
+        fields[f'limitPlaceholder{block}'] = current.get(f'valueLimitPlaceholder{block}') or ''
+    query(base, f"UPDATE chronique SET code = code || '<b>X</b>' WHERE id = {cid} RETURNING id", NEW_SERVER)
+    try:
+        status, _, body = client.get(f'/{slug}/admin/transformation/save', urllib.parse.urlencode(fields).encode(), ajax)
+    finally:
+        query(base, f"UPDATE chronique SET code = '{code}' WHERE id = {cid} RETURNING id", NEW_SERVER)
+    try:
+        submitted = json.loads(body).get('submitted', {})
+    except ValueError:
+        submitted = {}
+    ok = status == 200 and f'{code}&lt;b&gt;X&lt;/b&gt;' in submitted.get('chroniqueName', '') and '<b>X' not in json.dumps(submitted)
+    return {name: ['conforme'] if ok else [f'non conforme : statut {status}, {submitted or body[:200]}']}
 
 
 def open_data_checks(side, console, runner, base, checks):
@@ -2631,6 +2673,7 @@ def run_state(args):
                     checks['nouveau seul : calcul en échec'] = [NO_CASE]
                 checks.update(emptied_with_milliseconds_check(SIDES['new'], base, cid, f'/{slug}/{station}/{code}', manager, slug))
                 checks.update(escaped_children_check(SIDES['new'], base))
+                checks.update(escaped_transformation_check(SIDES['new'], base))
             # Sur une copie à elle : elle ajoute des tâches et des millions de mesures, que les pages de suivi comparées
             # plus bas ne doivent pas voir
             exports = HERE.parent.parent / 'var' / 'exports'
@@ -3717,17 +3760,6 @@ def run_imports(args):
                        AND EXISTS (SELECT 1 FROM mere WHERE mere.slug = c.slug AND mere.unite_id = ch.unite_id)
                      ORDER BY c.id LIMIT 1""", NEW_SERVER):
                 report.add('transformation créée', play_created('ancien', *created), play_created('nouveau', *created))
-            # Le nom de la chronique calculée, que la page insère en HTML après l'enregistrement (transformation/index.js) :
-            # échappé (dev/local/security.md). Le nouveau seul, en dernier, le code changé le temps du cas.
-            kept_code, = query(bases['nouveau'], f'SELECT code FROM chronique WHERE id = {cid}', NEW_SERVER)[0]
-            query(bases['nouveau'], f"UPDATE chronique SET code = code || '<b>X</b>' WHERE id = {cid} RETURNING id", NEW_SERVER)
-            try:
-                saved = '\n'.join(play_transformation('nouveau', cid, slug))
-            finally:
-                query(bases['nouveau'], f"UPDATE chronique SET code = '{kept_code}' WHERE id = {cid} RETURNING id", NEW_SERVER)
-            ok = f'{kept_code}&lt;b&gt;X&lt;/b&gt;' in saved and '<b>X' not in saved
-            report.add('nouveau seul : transformation enregistrée, nom échappé', ['conforme'],
-                       ['conforme'] if ok else [line for line in saved.split('\n') if 'submitted' in line][:3] or ['non conforme'])
 
         if args.only in 'shapefile':
             for title, target, filename, content in shape_cases(template, slug):
@@ -4286,11 +4318,11 @@ def run_accounts(args):
 
         new = f'/{slug}/user/new'
         good = {'[email]': NEW_EMAIL, '[password][main]': 'essai-2026', '[password][repeat]': 'essai-2026',
-                '[prenom]': 'Camille', '[nom]': 'Essai', '[organisme]': 'INRAE', '[telephone]': '0102030405',
-                '[adresse]': '1 rue de l’Essai\n69000 Lyon', '[captcha]': CAPTCHA_BYPASS}
+                '[prenom]': 'Camille', '[nom]': 'Essai', '[organisme]': 'INRAE', '[captcha]': CAPTCHA_BYPASS}
+        # Ni téléphone ni adresse : le nouveau ne les demande plus (Lou, 2026-11-19 ; dev/differences.md, « Données
+        # personnelles des comptes »), et l'ancien, qui les garde, ne doit pas en enregistrer que le nouveau n'aurait pas
         anonymous = Client(side, None, slug)
         for name, changes in [
-            ('téléphone trop court', {'[telephone]': '0102'}),
             ('adresse sans MX', {'[email]': 'compte-essai@pas-de-courrier.example'}),
             ('adresse mal formée', {'[email]': 'pas-une-adresse'}),
             ('adresse déjà prise', {'[email]': taken}),
@@ -4318,8 +4350,7 @@ def run_accounts(args):
         else:
             user = login('connexion du nouveau compte', NEW_EMAIL, 'essai-2026')
         edit = f'/{slug}/user/edit'
-        for name, changes in [('téléphone trop court', {'[telephone]': '01'}),
-                              ('valide', {'[organisme]': 'INRAE, unité RiverLy', '[telephone]': '0607080910'})]:
+        for name, changes in [('valide', {'[organisme]': 'INRAE, unité RiverLy'})]:
             post(f'modification du compte, {name}', user, edit, form_of(user, edit).filled(changes))
         login('connexion après la modification', NEW_EMAIL, 'essai-2026')  # l'ancien : mot de passe inchangé
 
@@ -4423,8 +4454,7 @@ def run_accounts(args):
         form = form_of(signup, f'/{slug}/user/new')
         signup.get(f'/{slug}/user/new', form.filled({
             '[email]': 'compte-html@example.invalid', '[prenom]': '<b>Camille</b>', '[nom]': 'Essai',
-            '[organisme]': 'INRAE', '[telephone]': '0102030405', '[adresse]': 'Lyon',
-            '[categorie]': form.choices('[categorie]')[:1]}))
+            '[organisme]': 'INRAE', '[categorie]': form.choices('[categorie]')[:1]}))
         html_mail = last_mail('compte-html@example.invalid')['HTML']
         check("noms échappés dans le courriel de bienvenue",
               '&lt;b&gt;Camille' in html_mail and '<b>Camille' not in html_mail, html_mail[:200])
@@ -4435,8 +4465,7 @@ def run_accounts(args):
         form = form_of(down, f'/{slug}/user/new')
         status = down.get(f'/{slug}/user/new', form.filled({
             '[email]': 'compte-panne@example.invalid', '[prenom]': 'Camille', '[nom]': 'Panne',
-            '[organisme]': 'INRAE', '[telephone]': '0102030405', '[adresse]': 'Lyon',
-            '[categorie]': form.choices('[categorie]')[:1]}))[0]
+            '[organisme]': 'INRAE', '[categorie]': form.choices('[categorie]')[:1]}))[0]
         created = query(base, "SELECT count(*) FROM utilisateur WHERE email = 'compte-panne@example.invalid'",
                         NEW_SERVER)[0][0]
         link_status = ask_link(down, manager)[0]
@@ -4495,7 +4524,7 @@ def run_accounts(args):
         form = form_of(guest, '/user/new')
         status = guest.get('/user/new', form.filled({
             '[email]': email, '[prenom]': 'Camille', '[nom]': 'Portail', '[organisme]': 'INRAE',
-            '[telephone]': '0102030405', '[adresse]': 'Lyon', '[categorie]': form.choices('[categorie]')[:1]}))[0]
+            '[categorie]': form.choices('[categorie]')[:1]}))[0]
         logged = query(base, f"""SELECT count(*) FILTER (WHERE observatoire_id IS NULL), count(*) FROM historique
                                  WHERE id > {last}""", NEW_SERVER)[0]
         try:

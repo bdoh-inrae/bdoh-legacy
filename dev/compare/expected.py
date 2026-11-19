@@ -82,7 +82,7 @@ PRIVACY_NOTICE = ("INRAE (147 rue de l'Université, 75338 Paris Cedex 07) traite
 PRIVACY_FORM = (f"+T Données personnelles : {PRIVACY_NOTICE}",)
 # Le téléphone et l'adresse quittent l'inscription et la page du compte (Lou, 2026-11-19)
 CONTACT_FIELDS = ('-T N° de téléphone', '-T Adresse',
-                  RX(r'-I (?:textarea|input text) irstea_bdohsecuritybundle_\w+\[(?:adresse|telephone)\]'))
+                  RX(r'-I (?:textarea|input text) irstea_bdohsecuritybundle_\w+\[(?:adresse|telephone)\](?: .*)?'))
 
 # La page de la demande d'accès : son titre, et à qui la demande est réservée (Lou, 2026-11-16). Seul un compte sans
 # droit la voit : celui que crée accounts ; les comptes de pages y sont renvoyés à la recherche.
@@ -746,6 +746,8 @@ RULES = [
     Rule('pages', rf'{ROLE} {OBS}/user/new', OPEN, lines=NEW_ACCOUNT),
     Rule('pages', rf'{ROLE} {OBS}/user/new', PRIVACY, lines=PRIVACY_FORM, must=PRIVACY_FORM),
     Rule('pages', rf'{ROLE} {OBS}/user/(?:new|edit)', PRIVACY, lines=CONTACT_FIELDS),
+    # Le formulaire réaffiché après une inscription refusée
+    Rule('accounts', r'inscription, .*', PRIVACY, lines=CONTACT_FIELDS),
     # L'adresse des conditions d'un observatoire, où l'ancien servait un PDF, renvoie à la page commune à tout BDOH
     # (Lou, 2026-11-15), que « nouveau seul : conditions d'utilisation » lit ; compare.py n'en compare que les deux
     # premières lignes, le statut et le type ou la redirection
@@ -771,8 +773,15 @@ RULES = [
     Rule('pages', rf'{ROLE} {OBS}/(?:station|dataset)/[^/ ]+', RESERVED,
          lines=('-D i data-placement=top data-toggle=tooltip', "+T Réservée aux membres de l'observatoire")),
     # Le lien du menu du compte, renommé ; il quitte le menu d'un observatoire sans chronique réservée
-    Rule('pages', r'.*', RESERVED,
-         lines=('-T Demander un accès aux données', "+T Accès des membres de l'observatoire", RX(rf'-A {OBS}/besoin/new'))),
+    *(Rule(mode, r'.*', RESERVED,
+           lines=('-T Demander un accès aux données', "+T Accès des membres de l'observatoire", RX(rf'-A {OBS}/besoin/new')))
+      for mode in ('pages', 'accounts')),
+    # Le courriel de bienvenue d'un observatoire sans chronique réservée ne dit que ceci, sans la demande d'accès ni le
+    # contact des gestionnaires
+    Rule('accounts', 'courriels', RESERVED, lines=(
+        RX(rf'-(?:T )?Demander un accès aux données : <site>{OBS}/besoin/new'), RX(rf'-(?:T )?Contacter un gestionnaire : <site>{OBS}/contact'),
+        RX(rf'-A <site>{OBS}/(?:besoin/new|contact)'),
+        '+Les données ouvertes se téléchargent sans compte.', '+T Les données ouvertes se téléchargent sans compte.')),
     # La page d'une chronique réservée, pour qui n'y a pas droit : toujours refusée, elle dit ce qu'est la chronique
     # (sans ligne obligatoire : une telle règle s'imposerait à toutes les pages de chroniques)
     Rule('pages', rf'{ROLE} {OBS}/[A-Z0-9_-]+/[A-Z0-9_-]+', RESERVED, lines=(
