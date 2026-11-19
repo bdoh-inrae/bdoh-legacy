@@ -34,10 +34,11 @@ final class Metadata
     /**
      * Une ligne par chronique.
      *
-     * @param Chronique[]         $chroniques
-     * @param array<string, array> $reports    ce qu'a dit l'extraction de chacune, par identifiant
+     * @param Chronique[]               $chroniques
+     * @param array<string, array>      $reports    ce qu'a dit l'extraction de chacune, par identifiant
+     * @param array<int, string|null>   $updates    la date de dernière mise à jour de chacune (Exporter\Measure\Updates)
      */
-    public function writeSeries(array $chroniques, array $reports, $output): void
+    public function writeSeries(array $chroniques, array $reports, array $updates, $output): void
     {
         $this->writeRow($output, Tables::names(Tables::SERIES_FILE));
         foreach ($chroniques as $chronique) {
@@ -54,8 +55,8 @@ final class Metadata
                 $station->getCode(),
                 $chronique->getCode(),
                 $this->label($chronique->getLibelle(), $chronique->getLibelleEn()),
-                $chronique->getParametre() ? $this->label($chronique->getParametre()->getNom(), $chronique->getParametre()->getNomEn()) : null,
                 $chronique->getParametre()?->getCode(),
+                $chronique->getParametre() ? $this->label($chronique->getParametre()->getNom(), $chronique->getParametre()->getNomEn()) : null,
                 $unite ? $this->label($unite->getLibelle(), $unite->getLibelleEn()) : null,
                 $this->kind($chronique),
                 $continue?->getEchantillonnage()?->getCode(),
@@ -67,6 +68,7 @@ final class Metadata
                 $doi ? 'https://doi.org/' . preg_replace('#^(?:https?://(?:dx\.)?doi\.org/|doi:)#i', '', $doi) : null,
                 $chronique->getEstVisible() ? 'open' : 'restricted',
                 $chronique->getEstVisible() ? 'etalab-2.0' : $this->termsFile,
+                $updates[$chronique->getId()] ?? null,
                 $this->router->generate('bdoh_consult_chronique', [
                     '_observatoire' => $observatoire->getSlug(), 'station' => $station->getCode(), 'chronique' => $chronique->getCode(),
                 ], UrlGeneratorInterface::ABSOLUTE_URL),
@@ -150,27 +152,27 @@ final class Metadata
      * métadonnées, les conditions générales pour celles d'une chronique cachée ; le groupe, seulement si elle est la même
      * pour toutes.
      *
+     * En français et en anglais, quelle que soit la langue de l'export (Lou, 2026-11-19) : une archive circule entre
+     * collègues. Chaque colonne a deux titres, l'anglais étant son nom, celui de l'en-tête, comme le veut CSVW pour les
+     * relier ; chaque description, deux valeurs marquées de leur langue.
+     *
      * @param array<string, bool> $measureFiles les fichiers de mesures de l'archive, et si leur chronique est ouverte
      */
     public function csvw(array $measureFiles, string $title, string $openUrl): string
     {
-        $lang = $this->lang === 'en' ? 'en' : 'fr';
-        $schema = function (string $table) use ($lang) {
+        $both = fn (string $fr, string $en) => [['@value' => $fr, '@language' => 'fr'], ['@value' => $en, '@language' => 'en']];
+        $schema = function (string $table) use ($both) {
             $definition = Tables::all()[$table];
             $columns = [];
-            foreach ($definition['columns'] as [$name, $datatype, $unit, $fr, $en]) {
-                $column = [
-                    'name'      => $name,
-                    'titles'    => $name,
-                    'dc:description' => $lang === 'en' ? $en : $fr,
+            foreach ($definition['columns'] as [$name, $datatype, $unit, $fr, $en, $titleFr]) {
+                $columns[] = [
+                    'name'           => $name,
+                    'titles'         => ['en' => $name, 'fr' => $titleFr],
+                    'dc:description' => $unit === null ? $both($fr, $en) : $both("$fr (unité : $unit)", "$en (unit: $unit)"),
                     // Une date ISO 8601 avec son décalage est la forme lexicale de xsd:dateTime : pas de motif à donner
-                    'datatype'  => $datatype,
-                    'null'      => Tables::MISSING,
+                    'datatype'       => $datatype,
+                    'null'           => Tables::MISSING,
                 ];
-                if ($unit !== null) {
-                    $column['dc:description'] .= ' (' . ($lang === 'en' ? 'unit: ' : 'unité : ') . $unit . ')';
-                }
-                $columns[] = $column;
             }
 
             return array_filter(['columns' => $columns, 'primaryKey' => $definition['key'] ?: null]);
@@ -190,7 +192,7 @@ final class Metadata
         foreach ($measureFiles as $file => $open) {
             $tables[] = [
                 'url'            => $file,
-                'dc:description' => Tables::all()['{station}_{series}.csv']['title'][$lang],
+                'dc:description' => $both(...array_values(Tables::all()['{station}_{series}.csv']['title'])),
                 'dc:license'     => ['@id' => $open ? $openUrl : $this->termsFile],
                 'tableSchema'    => $measureSchema,
             ];
@@ -198,7 +200,7 @@ final class Metadata
         foreach ([Tables::SERIES_FILE => $seriesSchema, Tables::STATION_FILE => $schema(Tables::STATION_FILE), Tables::QUALITY_FILE => $schema(Tables::QUALITY_FILE)] as $file => $tableSchema) {
             $tables[] = [
                 'url'            => $file,
-                'dc:description' => Tables::all()[$file]['title'][$lang],
+                'dc:description' => $both(...array_values(Tables::all()[$file]['title'])),
                 'dc:license'     => ['@id' => $openUrl],
                 'tableSchema'    => $tableSchema,
             ];
@@ -206,7 +208,7 @@ final class Metadata
         $licences = array_unique(array_map(fn (array $table) => $table['dc:license']['@id'], $tables));
 
         return json_encode(array_filter([
-            '@context'     => ['http://www.w3.org/ns/csvw', ['@language' => $lang]],
+            '@context'     => 'http://www.w3.org/ns/csvw',
             'dc:title'     => $title,
             'dc:license'   => count($licences) === 1 ? ['@id' => reset($licences)] : null,
             'dc:publisher' => 'INRAE, BDOH',

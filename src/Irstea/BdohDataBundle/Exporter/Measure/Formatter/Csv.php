@@ -101,6 +101,7 @@ class Csv extends AbstractFormatter
         $this->writeRow([
             $this->chronique->getStation()->getCode(),
             $this->chronique->getCode(),
+            $this->chronique->getParametre()?->getCode() ?? Tables::MISSING,
             $time,
             $fin === null ? Tables::MISSING : $this->isoDate($fin),
             $valeur ?? Tables::MISSING,

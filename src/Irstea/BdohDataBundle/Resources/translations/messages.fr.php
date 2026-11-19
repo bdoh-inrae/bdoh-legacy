@@ -63,7 +63,7 @@ $export = [
     <li>Le volume d'un export se compte en valeurs écrites, toutes chroniques réunies. Au-delà d'un premier seuil, un compte est demandé\u{a0}; au-delà d'un second, dix fois plus haut, la demande est refusée, et le message donne le volume demandé et la limite\u{a0}: il faut alors réduire la période, le nombre de chroniques, ou augmenter le pas de temps, quitte à exporter en plusieurs fois. Les moyennes et les cumuls, bien plus longs à calculer, ont des seuils plus bas.</li>
     <li>Pour l'export de chroniques continues à l'identique ou à pas de temps fixe avec interpolation linéaire, trois formats de fichier sont possibles : BDOH standard, Hydro2 QTVAR ou CSV.</li>
     <li>Pour l'export de moyennes, cumuls ou chroniques discontinues, deux formats sont possibles : BDOH discontinu ou CSV.</li>
-    <li>Le format CSV est un CSV standard (UTF-8, virgule entre les colonnes, point décimal, dates ISO 8601), qui se lit dans R ou Python, et dans un tableur par son import de CSV (encodage UTF-8, séparateur virgule) ; ses fichiers ont tous les mêmes colonnes, et des tables de métadonnées les accompagnent. Le fichier README.txt de l'archive les décrit.</li>
+    <li>Le format CSV est un CSV standard (UTF-8, virgule entre les colonnes, point décimal, dates ISO 8601), qui se lit dans R ou Python, et dans un tableur par son import de CSV (encodage UTF-8, séparateur virgule) ; ses fichiers ont tous les mêmes colonnes, et des tables de métadonnées les accompagnent. Les fichiers README de l'archive, en français et en anglais, les décrivent.</li>
 </ul>
 HELP
         ,

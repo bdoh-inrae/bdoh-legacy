@@ -102,7 +102,8 @@ class ExporterBuilder
         $extractor = $this->createExtractor($parameters['extractor'], $formatter, $parameters);
         $reporter = $this->createReporter($parameters);
 
-        $exporter = $this->createExporter($extractor, $reporter, $archiver)->setFormat($parameters['format']);
+        $exporter = $this->createExporter($extractor, $reporter, $archiver)->setFormat($parameters['format'])
+            ->setUpdates(new Updates($this->doctrine->getConnection()));
         if (strtolower($parameters['format']) === 'csv') {
             $jeuToJeu = $this->createJeuToJeu($parameters['observatoire'], $this->formatterFactory->create($parameters['format']));
             $exporter->setMetadata(new Metadata(
