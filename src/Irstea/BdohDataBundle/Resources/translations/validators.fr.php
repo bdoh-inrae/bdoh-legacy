@@ -14,5 +14,5 @@ return [
     'FamilleParametres.nom.alreadyExists'                                                    => 'Cette famille de paramètres existe déjà.',
     'This file is not a valid image'                                                         => "Le fichier envoyé n'était pas une image valide.",
     'The file is too large. Allowed maximum size is {{ limit }}'                             => 'Le fichier envoyé était trop volumineux (taille supérieure à {{ limit }})',
-    'The mime type of the file is invalid ({{ type }}). Allowed mime types are {{ types }}'  => 'Le fichier envoyé est de type incorect ({{ type }}). Les fichiers autorisés sont : {{ types }}',
+    'The mime type of the file is invalid ({{ type }}). Allowed mime types are {{ types }}'  => 'Le fichier envoyé est de type incorrect ({{ type }}). Les fichiers autorisés sont : {{ types }}',
 ];

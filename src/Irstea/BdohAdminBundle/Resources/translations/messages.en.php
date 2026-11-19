@@ -112,7 +112,7 @@ $measureImport = [
         'step'                                   => [
             '1' => 'Step 1: data file and format',
             '2' => 'Step 2: station, time zone and time series',
-            '3' => 'Step 3: file and format validation',
+            '3' => 'Step 3: upload validation',
             '4' => 'Step 4: end of the upload',
         ],
         'question'                               => [
@@ -129,7 +129,7 @@ $measureImport = [
         'help'                                   => [
             'quitWarning'         => 'While uploading <b>please use the dedicated button to cancel</b>.',
             'file.onlyOneStation' => 'Only one station per file.',
-            'file.bigInZip'       => '<u>Large data files</u> must be compressed <i>(one <b>zipped</b> file per station)</i>.',
+            'file.bigInZip'       => '<u>Large data files</u> can be sent as <b>zip</b> files <i>(one file per zip)</i>.',
             'file.sizeLimit'      => 'The upload file size must not exceed 2 MB.',
             'chroniquesBox'       => '<b>Instructions:</b> Make each column match with a time series by sliding it to the left.',
             'timezoneToUTC'       => 'after conversion to UTC',
@@ -137,7 +137,7 @@ $measureImport = [
                 'new'         => "Time series' first upload.",
                 'before'      => 'All the data to be uploaded are prior to the existing data.',
                 'after'       => 'All the data to be uploaded are posterior to the existing data.',
-                'boundsEqual' => 'Bounds of the existing data match those of the data to bo uploaded.',
+                'boundsEqual' => 'Bounds of the existing data match those of the data to be uploaded.',
                 'newInOld'    => 'All the data to be uploaded lie within the existing data bounds.',
                 'oldInNew'    => 'All the existing data lie within the bounds of the data to be uploaded.',
                 'firstIn'     => 'The beginning of the data to be uploaded overlaps the end of the existing data.',
@@ -314,7 +314,7 @@ $controleImport = [
         'title'                       => 'Checkpoints upload',
         'step'                        => [
             '1' => 'Step 1: checkpoints file',
-            '2' => 'Step 2: file validation',
+            '2' => 'Step 2: upload validation',
             '3' => 'Step 3: end of the upload',
         ],
         'question'                    => [
@@ -341,7 +341,7 @@ $controleImport = [
             ],
         ],
         'info'                        => [
-            'wasCanceled'        => 'The checkpoint upload has been canceled',
+            'wasCanceled'        => 'The checkpoint upload has been canceled.',
             'noControleImported' => 'No checkpoints have been uploaded.',
             'timeSeries'         => 'Time series',
             'controlesInsert'    => 'Checkpoint(s) added',
@@ -384,9 +384,9 @@ FORMAT
     'controle.export'     => [
         'title' => 'Checkpoints download',
         'error' => [
-            'noChronique' => 'No time seires selected.',
-            'cantFinish'  => 'An error prevented the download to succeed.',
-            'noRight'     => "You don't have enough right to download those checkpoints.",
+            'noChronique' => 'No time series selected.',
+            'cantFinish'  => 'An error prevented the checkpoint download from succeeding.',
+            'noRight'     => "You do not have sufficient rights to download these checkpoints.",
         ],
     ],
 ];
@@ -401,7 +401,7 @@ $transformation = [
         'help'       => [
             'selectionner-chronique-mere' => 'Choose a parent time series',
             'meaning-coefficient'         => 'Multiplying coefficient used to create calculated values in the physical ' .
-                'unit of the one of the calculated time series. This unit will be the product of this coefficient with ' .
+                'unit of the calculated time series. This unit will be the product of this coefficient with ' .
                 'the output units of both of the scales of the parent time series.',
         ],
         'bareme'     => [
@@ -410,7 +410,7 @@ $transformation = [
                 'title'                => 'Scale upload',
                 'step'                 => [
                     '1' => 'Step 1: scale file and format',
-                    '2' => 'Step 2: file and format validation',
+                    '2' => 'Step 2: upload validation',
                     '3' => 'Step 3: end of the upload',
                 ],
                 'help'                 => [
@@ -473,8 +473,8 @@ $transformation = [
             'finAvantDebut'                  => 'Line %numLigne%: end date of scale application (%dateFin%) earlier or equal to the beginning date (%dateDebut%)',
             'conflitDebutFinPrecedent'       => 'Line %numLigne%: beginning date of scale application (%dateDebut%) different from the end date of the previous scale (%dateFin%)',
             'uniteEntreeBaremeIncorrecte'    => "Line %numLigne%: input unit of scale (“\u{a0}%uniteEntreeBareme%\u{a0}”) different from unit of parent time series (“\u{a0}%uniteChroniqueMere%\u{a0}”)",
-            'uniteSortieBaremeIncorrecte'    => "Line %numLigne%: output unit of scale (“\u{a0}%uniteSortieBareme\u{a0}”) different from unit of calculated time series (“\u{a0}%uniteChroniqueFille%\u{a0}”)",
-            'unitesSortieBaremesDifferentes' => 'Scales have different output units, listed below in the order:',
+            'uniteSortieBaremeIncorrecte'    => "Line %numLigne%: output unit of scale (“\u{a0}%uniteSortieBareme%\u{a0}”) different from unit of calculated time series (“\u{a0}%uniteChroniqueFille%\u{a0}”)",
+            'unitesSortieBaremesDifferentes' => 'Scales have different output units, listed below in order:',
             'jeuBaremeIntrouvable'           => 'Scale set not found',
         ],
         'submitted'              => [
@@ -495,7 +495,7 @@ $shapeImport = [
         'title'                       => 'Geographic data upload',
         'step'                        => [
             '1' => 'Step 1: geographic data file',
-            '2' => 'Step 2: file validation',
+            '2' => 'Step 2: upload validation',
             '3' => 'Step 3: end of the upload',
         ],
         'question'                    => [
@@ -551,7 +551,7 @@ $shapeImport = [
         <li><b>Expected attribute columns, without specific order:</b></li>
         <ul>
             <li><b>nom</b>, for the name of the basin;</li>
-            <li><b>code_exu</b>, for the code of the outlet station of the basin, can be empty, the code must be a string.</b></li>
+            <li><b>code_exu</b>, for the code of the outlet station of the basin, can be empty, the code must be a string.</li>
         </ul>
 FORMAT
             ,
@@ -570,7 +570,7 @@ FORMAT
         <li><b>One zipped file with the same name as all the files inside, without folders.</b></li>
         <li><b>Expected attribute column:</b></li>
         <ul>
-            <li>code</b>, for the code of the station, the code must be a string.</li>
+            <li><b>code</b>, for the code of the station, the code must be a string.</li>
         </ul>
 FORMAT
             ,
@@ -587,7 +587,7 @@ $conversion = [
         'chroniqueMere'                  => 'Parent time series',
         'paramConversion'                => 'Gap threshold',
         'paramConversionHelp'            => 'Time interval <b><u>in minutes</u></b> between two successive data ranges that, if exceeded, results in the insertion of gaps.<br>' .
-            'Gaps are inserted at + and − 1 seconde from the surrounding data ranges.',
+            'Gaps are inserted at + and − 1 second from the surrounding data ranges.',
         'paramConversionTitle'           => 'Number of minutes, minimum 1 minute.',
         'paramConversionError'           => 'minimum 1 minute.',
         'saveAndConvert'                 => 'Save and convert',
@@ -607,7 +607,7 @@ $conversion = [
 $colors = [
     'colors' => [
         'titles'=> [
-            'qualite'       => 'Qualities styles',
+            'qualite'       => 'Quality styles',
             'discontinuous' => 'Discontinuous time series markers',
             'checkpoint'    => 'Checkpoints',
         ],
@@ -662,26 +662,27 @@ $various = [
             'save'              => 'Save',
             'saveMessage'       => 'Check this to enable automatic updates',
             'send'              => 'Send your JSON',
+            'download'          => 'Download your JSON',
             'result'            => 'Result',
-            'resultMessage'     => 'Your JSON valided',
-            'resultMessageFail' => 'Your JSON failed!',
+            'resultMessage'     => 'Your JSON is valid',
+            'resultMessageFail' => 'Your JSON is not valid!',
             'schema'            => 'Validation schema',
             'missingCredentials' => 'To send the record, first fill in the Theia code and password of the observatory.',
         ],
         'shapeImport'    => 'Geographic data upload',
         'help'           => [
-            'astuce'                              => '<strong style="color:#0e90d2; font-size: 10px">Tip: Click on the line to display the existing drop-down list. Write the first letters of the search word to filter.</strong>',
+            'astuce'                              => '<strong style="color:#0e90d2; font-size: 10px">Tip: Click on the line to display the existing drop-down list. Type the first letters of the word you are looking for to filter.</strong>',
             'from_the_observatory'                => 'from the observatory',
             'inspireTheme'                        => [
-                'nom' => "Offcial list of INSPIRE theme<strong> in english</strong> at this link : <a href='https://inspire.ec.europa.eu/theme' target='_blank>Here</a> ",
+                'nom' => "Official list of INSPIRE themes<strong> in English</strong>: <a href='https://inspire.ec.europa.eu/theme' target='_blank'>here</a> ",
             ],
             'topicCategory' => [
-                'nom' => "Official list of INSPIRE topicCategory<strong> in english</strong> at this link : <a href='https://inspire.ec.europa.eu/metadata-codelist/TopicCategory' target='_blank>Here</a> ",
+                'nom' => "Official list of INSPIRE topic categories<strong> in English</strong>: <a href='https://inspire.ec.europa.eu/metadata-codelist/TopicCategory' target='_blank'>here</a> ",
             ],
             'theia'                => [
                 'theia-message'        => '<strong style="color:red; font-size: 10px">[Theia/Ozcar fields]</strong><br> ',
-                'warning-update-theia' => '<strong>Attention :</strong> Veuillez compléter les nouveaux champs pour Theia/Ozcar',
-                'uriOzcarTheia'        => "This field is the corresponding variable category (or variables categories) on the Theia / Ozcar Thesaurus (you must write the letters of the research word) of the fields <strong> Environment </strong> and of the <strong> Parameter Categories </strong> BDOH. Link to Skomos. You can find your variable category : <a href='https://in-situ.theia-land.fr/skosmos/theia_ozcar_thesaurus/en/page/c_341ce66a' target='_blank'>Here</a>",
+                'warning-update-theia' => '<strong>Warning:</strong> please fill in the new fields for Theia/OZCAR',
+                'uriOzcarTheia'        => "This field is the corresponding variable category (or variables categories) on the Theia / Ozcar Thesaurus (you can type the letters of the word you are looking for) of the fields <strong> Environment </strong> and of the <strong> Parameter Categories </strong> BDOH. Link to Skomos. You can find your variable category : <a href='https://in-situ.theia-land.fr/skosmos/theia_ozcar_thesaurus/en/page/c_341ce66a' target='_blank'>Here</a>",
             ],
             'observatoire'         => [
                 'theiaCode-message'                        => "<strong style=\"color:red; font-size: 10px\">[Theia/Ozcar fields]</strong><br>Corresponds to the first 4 capital letters of the Observatory. <br> The identifiers refer to the Theia / Ozcar pivot data model (Annex 1 page 15) : <a href='https://theia-ozcar.gricad-pages.univ-grenoble-alpes.fr/doc-producer/producer-documentation.html#modele-de-donnees-pivot-description-et-implementation-en-json' target='_blank'>Here</a> ",
@@ -691,23 +692,25 @@ $various = [
                 'warning-observatory-has-scales'           => 'This observatory has the following scale:|This observatory has the following scales:',
                 'warning-observatory-has-dois'             => 'This observatory has the following DOI:|This observatory has the following DOIs:',
                 'warning-observatory-has-basins'           => 'This observatory has the following basin:|This observatory has the following basins:',
-                'warning-observatory-has-rivers'           => 'This observatory has the following river:|This observatory has the folowing rivers:',
+                'warning-observatory-has-rivers'           => 'This observatory has the following river:|This observatory has the following rivers:',
                 'confirm-delete-observatory(%name%)'       => "Are you sure you want to delete the observatory “\u{a0}%name%\u{a0}”?",
-                'email-info'                               => 'Email of generic conatct of this producer.',
+                'email-info'                               => 'Generic contact e-mail of this observatory.',
+                'titre-info'                               => 'Example: “AMMA-CATCH: a hydrological, meteorological and ecological observatory on West Africa”',
+                'doi-principal-message'                    => 'Theia/OZCAR requires a single DOI for its online resources. Add the main DOI of the observatory here.',
                 'confirm-delete-observatory-info'          => '<strong style="color:red">The listed scales, basins, rivers and/or DOIs will be deleted as well.</strong>',
                 'warning-delete-observatory-info-redirect' => 'This is the current observatory, if you delete it you will be redirected to the home page of all the observatories.',
                 'photo'                                    => "The photo is published under the Etalab Open Licence 2.0, like the data. Upload it only if you are its author, or with the author's consent.",
             ],
             'dataset' => [
-                'contact'                        => "<strong style=\"color:red; font-size: 10px\">[Champ pour Theia/Ozcar]</strong><br>Theia/Ozcar demande la présence obligatoire d'au moins un Project Leader",
-                'description'                    => 'The absract must describe the resource.',
-                'genealogy'                      => 'Describes the genealogy of a dataset, i.e. the history of the dataset and, if known, its life cycle, from the acquisition and entry of information to its compilation with other games and variants of its current form.  ',
+                'contact'                        => '<strong style="color:red; font-size: 10px">[Field for Theia/OZCAR]</strong><br>Theia/OZCAR requires at least one Project Leader',
+                'description'                    => 'The abstract must describe the resource.',
+                'genealogy'                      => 'Describes the genealogy of a dataset, i.e. the history of the dataset and, if known, its life cycle, from the acquisition and entry of information to its compilation with other datasets and variants of its current form.  ',
             ],
             'site'                 => [
                 'warning-site-has-stations' => 'To delete this experimental site you must first dissociate the following station from it:|To delete this experimental site you must first dissociate the following stations from it:',
             ],
             'station'              => [
-                'code'                             => 'Characters with accents and special of this code will be automatically replaced.',
+                'code'                             => 'Accented and special characters in this code will be replaced automatically.',
                 'codeAlternatif'                   => "Station codes separated by “\u{a0};\u{a0}” in the form of “\u{a0}Format=CODE\u{a0}”, used to download time series in a non-BDOH format. Example: Hydro2 = MY_HYDRO2_CODE",
                 'latlong'                          => 'Lambert93 - EPSG:2154 (meters)',
                 'warning-station-has-time-series'  => 'This station cannot be deleted because it contains the following time series:|This station cannot be deleted because it contains the following time series:',
@@ -730,7 +733,7 @@ $various = [
                 'confirm-delete-time-series(%name%)'     => "Are you sure you want to delete the time series “\u{a0}%name%\u{a0}”?",
                 'confirm-delete-time-series-info'        => '<u>The data points, data ranges and/or checkpoints of this time series will be deleted as well.</u>',
                 'update-unite-cumul'                     => 'If you allow this time series to be downloaded as accumulations please check or update the unit for accumulations below.',
-                'warning-no-milieu-defined'              => '<strong>Warning:</strong> This time series does not have an environment (the first one is selected by default). You must select an environment for this type and save the modification.',
+                'warning-no-milieu-defined'              => '<strong>Warning:</strong> This time series does not have an environment (the first one is selected by default). You must select an environment for this time series and save the modification.',
             ],
             'commune'              => [
                 'warning-commune-has-stations'   => 'This town is used by the following station:|This town is used by the following stations:',
@@ -748,12 +751,13 @@ $various = [
                 'partenaire-has-observatories'         => 'This partner is used by the following observatory:|This partner is used by the following observatories:',
                 'confirm-delete-partenaire(%name%)'    => "Are you sure you want to delete the partner “\u{a0}%name%\u{a0}”?",
                 'confirm-delete-partenaire-info'       => "The listed time series and/or observatories won't be deleted, they will just lose their partner or producer.",
-                'help-scanR'                           => 'Scan Id on the website <a href="https://scanr.enseignementsup-recherche.gouv.fr/" target="_blank">https://scanr.enseignementsup-recherche.gouv.fr/</a> Example : Unité PIAF, ID: 200017466P</strong>',
+                'help-scanR'                           => 'ScanR identifier (ID) on the website <a href="https://scanr.enseignementsup-recherche.gouv.fr/" target="_blank">https://scanr.enseignementsup-recherche.gouv.fr/</a>. Example: PIAF unit, ID: 200017466P',
+                'help-boolean'                         => '<strong style="color:red; font-size: 10px">[Field for Theia/OZCAR]</strong> <br/>Note: Theia/OZCAR requires at least one funder per observatory',
             ],
             'familleParametres'    => [
                 'warning-familleParametres-has-children' => 'This parameter category cannot be deleted because it is used by the following parameter category (as its parent category):|This parameter category cannot be deleted because it is used by the following parameter categories (as their parent category):',
                 'warning-familleParametres-has-types'    => 'This parameter category cannot be deleted because it is used by the following parameter type:|This parameter category cannot be deleted because it is used by the following parameter types:',
-                'help-prefix'                            => 'The prefix is used for ordering the categories of the same hierarchic level (for exemple: 001, 002, 003, ...), it is not displayed.',
+                'help-prefix'                            => 'The prefix is used for ordering the categories of the same hierarchic level (for example: 001, 002, 003, ...), it is not displayed.',
                 'help-familleParente'                    => 'Child and descendant categories have been removed from this selection list. You may also remove the parent category with the little cross on the right side.',
             ],
             'typeParametre'        => [
@@ -778,18 +782,18 @@ An account has been created for you on BDOH.
 Your login is the e-mail address at which you received this message. BDOH has no password: to sign in, enter this address on the sign-in page, and BDOH will send you a sign-in link.
 
 You can ask for specific data access form the following link: ',
-            'footer' => 'This e-mail is automatically generated, thank you for not replying.',
+            'footer' => 'This e-mail is generated automatically, please do not reply.',
             'title'  => 'Account opened on BDOH',
         ],
     ],
     'export'      => [
         'exportMail' => [
             'body(%link%, %days%)' => "Your time series download is ready: %link%\nThis link remains valid for %days% days.",
-            'footer'             => 'This e-mail is automatically generated, thank you for not replying.',
+            'footer'             => 'This e-mail is generated automatically, please do not reply.',
             'title(%chronique%)' => "BDOH: Downloaded time series “\u{a0}%chronique%\u{a0}”",
         ],
     ],
-    'backToBdoh'             => 'Get back to BDOH',
+    'backToBdoh'             => 'Back to BDOH',
     'forAllTheObservatories' => 'For all the observatories',
     'title_edit_defined'     => "%entity% “\u{a0}%name%\u{a0}”",
     'title_create_undefined' => '%entity%',

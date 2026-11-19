@@ -58,7 +58,7 @@ $user = [
 
 
 Vous recevez cet e-mail car de nouveaux droits vous ont été attribués sur BDOH.',
-                'part2'    => "Vous pouvez accédez à l'application depuis l'adresse suivante :",
+                'part2'    => "Vous pouvez accéder à l'application depuis l'adresse suivante :",
                 'youAre1'  => 'Vous êtes désormais : ',
                 'youAre2'  => ', vous êtes désormais : ',
             ],
@@ -80,7 +80,7 @@ Vous recevez cet e-mail car de nouveaux droits vous ont été attribués sur BDO
         'newNeedMail'                  => [
             'body'  => "a exprimé une nouvelle demande d'accès aux données de votre observatoire sur BDOH.
 
-Vous pouvez lui attribuer un rôle sur votre observatoire deppuis la page suivante :",
+Vous pouvez lui attribuer un rôle sur votre observatoire depuis la page suivante :",
             'title' => 'BDOH : nouveau besoin',
         ],
         'mailFooter'                   => 'Vous recevez cet e-mail parce que vous possédez le droit de valider les utilisateurs pour votre observatoire.

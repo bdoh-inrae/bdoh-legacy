@@ -29,7 +29,7 @@ return [
     Errors::BAD_LINE_SIZE                      => 'Ligne %numLine% : %expected% colonne(s) attendue(s) ; %found% colonne(s) trouvée(s)',
     Errors::BAD_MIN_LINE_SIZE                  => 'Ligne %numLine% : au moins %expected% colonne(s) attendue(s) ; %found% colonne(s) trouvée(s)',
     Errors::BAD_CHAR_NUMBER                    => 'Ligne %numLine% : %expected% caractère(s) attendu(s) ; %found% caractère(s) lu(s)',
-    Errors::BAD_LINE_BEGIN                     => "La ligne %numLine% doit commencée par «\u{a0}%expected%\u{a0}»",
+    Errors::BAD_LINE_BEGIN                     => "La ligne %numLine% doit commencer par «\u{a0}%expected%\u{a0}»",
     Errors::BAD_HEADER_NO_CHRONIQUE            => "L'entête ne contient aucun code chronique",
     Errors::BAD_HEADER_FIRST_TWO_LINES         => "Les 2 premières lignes d'entête n'ont pas le même nombre de colonnes",
     Errors::BAD_HEADER_SYNTAX                  => "L'entête du fichier ne respecte pas la syntaxe attendue",
@@ -63,10 +63,10 @@ return [
             <li>Le zip contient au moins les fichiers <b>shx</b>, <b>shp</b> et <b>dbf</b>;</li>
             <li>Les valeurs dans les colonnes correspondent au format : «\u{a0}%format%\u{a0}»;</li>
         </ul>",
-    Errors::PHP_UPLOAD_ERROR                   => "Une erreur système (%errorCode%) a empeché l'envoi du fichier.<br/><u>Veuillez vérifier que le fichier envoyé fait moins de 2Mo.</u>",
+    Errors::PHP_UPLOAD_ERROR                   => "Une erreur système (%errorCode%) a empêché l'envoi du fichier.<br/><u>Veuillez vérifier que le fichier envoyé fait moins de 2Mo.</u>",
     Errors::NO_IMPORT_ON_CONVERTED             => "L'import de mesures est interdit sur une chronique convertie («\u{a0}%chronique%\u{a0}»).",
     Errors::NO_CHECKPOINT_ON_CONVERTED         => "L'import de points de contrôle est interdit sur une chronique convertie («\u{a0}%chronique%\u{a0}»).",
     Errors::UNDEFINED_PARAM_CONVERSION         => "L'intervalle pour les lacunes n'est pas renseigné.",
-    Errors::BAD_PARAM_CONVERSION               => "L'intervalle pour les lacunes («\u{a0}%param%\u{a0}») doit être un entier supérieur ou égale à 1.",
+    Errors::BAD_PARAM_CONVERSION               => "L'intervalle pour les lacunes («\u{a0}%param%\u{a0}») doit être un entier supérieur ou égal à 1.",
     Errors::BAD_PARENT_TIME_SERIES             => "La chronique mère n'est pas définie ou ne correspond pas à une chronique discontinue de la même station et ayant la même unité.",
 ];

@@ -8,7 +8,7 @@ return [
     /* Besoin */
     'besoin'              => [
         'details'         => 'Additional information',
-        'duree'           => 'Desired access duration (in mounths)',
+        'duree'           => 'Desired access duration (in months)',
         'objectif'        => 'Theme',
         'parametres'      => 'Parameters',
         'stations'        => 'Stations',
@@ -41,7 +41,7 @@ return [
     'categorie'         => 'Category',
     'finAcces'          => 'End of access',
     'login'             => 'Login',
-    'organisme'         => 'Organism',
+    'organisme'         => 'Organisation',
     'passwordRepeat'    => 'Repeat the password',
     'prenom'            => 'First name',
     'telephone'         => 'Phone number',

@@ -17,6 +17,6 @@ http:
         icon: search
     500:
         title: Kaboom !
-        body: Le serveur a eu un gros souci ! Merci de réessayer utlérieurement !
+        body: Le serveur a eu un gros souci ! Merci de réessayer ultérieurement !
         alert: danger
         icon: fire

@@ -1,0 +1,22 @@
+
+http:
+    fallback:
+        title: Oops!
+        body: An error occurred.
+        alert: warning
+        icon: alert
+    403:
+        title: Access denied
+        body: You do not have permission to access this information or to perform this action.
+        alert: warning
+        icon: minus-sign
+    404:
+        title: Not found!
+        body: The page or the information you are looking for is not here.
+        alert: warning
+        icon: search
+    500:
+        title: Kaboom!
+        body: The server ran into a problem! Please try again later.
+        alert: danger
+        icon: fire

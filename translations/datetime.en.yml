@@ -3,8 +3,8 @@ status:
     ok: ''
     required: 'Please enter a date.'
     invalid: "'%input%' is not a valid date."
-    beforeMinDate: 'Please select a date after or equal to %minDate%.'
-    afterMaxDate: 'Please select a date before or equal to %maxDate%.'
+    beforeMinDate: 'Please select a date before or equal to %minDate%.'
+    afterMaxDate: 'Please select a date after or equal to %maxDate%.'
 
 start.status:
     ok: ''
@@ -15,10 +15,10 @@ start.status:
 
 end.status:
     ok: ''
-    required: 'Please enter a ending date.'
+    required: 'Please enter an end date.'
     invalid: "'%input%' is not a valid ending date."
-    beforeMinDate: 'Please select a ending date before or equal to %minDate%.'
-    afterMaxDate: 'Please select a ending date after or equal to %maxDate%.'
+    beforeMinDate: 'Please select an end date before or equal to %minDate%.'
+    afterMaxDate: 'Please select an end date after or equal to %maxDate%.'
 
 placeholder: 'DD/MM/YYYY HH:MM:SS'
 

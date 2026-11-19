@@ -37,7 +37,7 @@ return [
     /* Utilisateur */
     'adresse'           => 'Adresse',
     'besoins'           => 'Besoins',
-    'email'             => 'Adresse e-mail professionelle',
+    'email'             => 'Adresse e-mail professionnelle',
     'categorie'         => 'Catégorie',
     'finAcces'          => "Fin d'accès",
     'login'             => 'Identifiant',

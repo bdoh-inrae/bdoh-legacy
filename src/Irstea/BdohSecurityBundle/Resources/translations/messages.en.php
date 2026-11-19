@@ -22,7 +22,7 @@ $user = [
             ],
         ],
         'edit'                         => [
-            'title'                 => 'Modifiy my BDOH account',
+            'title'                 => 'Modify my BDOH account',
             'submit'                => 'Save the changes',
             'isCompleted'           => 'Your BDOH account has been updated.',
             'emailChanged(%email%)' => "Your address has changed: confirm it with the sign-in link just sent to “\u{a0}%email%\u{a0}”.",
@@ -38,7 +38,7 @@ $user = [
         ],
         'all'                          => [
             'title'                        => 'Rights management: user selection',
-            'action'                       => 'Change his roles',
+            'action'                       => 'Change their roles',
             'besoin'                       => 'Need',
             'gestionnaireObservatoires'    => 'Manager of ALL the observatories',
             'gestionnaireObservatoire'     => 'Manager of the observatory',
@@ -59,7 +59,7 @@ $user = [
 
 You receive this e-mail because new rights have been assigned to you on BDOH.',
                 'part2'    => 'You can access the application with the following link:',
-                'youAre1'  => 'Your are now: ',
+                'youAre1'  => 'You are now: ',
                 'youAre2'  => ', you are now: ',
             ],
             'title' => ' BDOH: New rights',
@@ -80,12 +80,12 @@ You receive this e-mail because new rights have been assigned to you on BDOH.',
         'newNeedMail'                  => [
             'body'  => 'created a new data access request on your observatory on BDOH.
 
-You can assign him/her a role in your observatory from the following page:',
+You can assign them a role in your observatory from the following page:',
             'title' => 'BDOH: new need',
         ],
         'mailFooter'                   => 'You receive this e-mail because you have the right to validate users for your observatory.
 
-This e-mail is automatically generated, thank you for not replying.',
+This e-mail is generated automatically, please do not reply.',
         'gestionnaireDesObservatoires' => 'Manager of ALL the observatories',
         'gestionnaireObservatoire'     => 'Manager of the observatory',
         'utilisateurObservatoire'      => 'Trusted user for the observatory',
@@ -95,7 +95,7 @@ This e-mail is automatically generated, thank you for not replying.',
         'gestion'                      => 'Rights management',
         'creation'                     => 'New user',
         'aboutTheObservatory'          => 'For the observatory',
-        'validityDate'                 => 'These rights are valid until the (D-M-Y):',
+        'validityDate'                 => 'These rights are valid until (D-M-Y):',
         'noValidityDate'               => 'no date of end of validity',
     ],
 ];
@@ -160,7 +160,7 @@ $various = [
         'exportModal' => [
             'notAllowed'   => 'Reserved for the members of their observatory, these time series cannot be exported without a right:',
             'askAccess'    => 'A member of the observatory? Request access',
-            'withoutMeasures' => 'These time series have no measures:',
+            'withoutMeasures' => 'These time series have no data:',
             'nothing'      => 'None of the ticked time series can be exported.',
         ],
     ],

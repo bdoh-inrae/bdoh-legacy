@@ -159,7 +159,7 @@ $measureImport = [
         'thereAreErrors.cantContinue'            => "L'import ne peut se poursuivre car il y a des erreurs.",
         'valeurTooLarge(%first%,%last%,%count%)' => '{0}|' .
             '{1}Une mesure est supérieure au maximum, le <i>%first%</i>|' .
-            ']1,Inf]Du <i>%first%</i> au <i>%last%</i> inclus : ily a <b>%count%</b> mesures supérieures au maximum',
+            ']1,Inf]Du <i>%first%</i> au <i>%last%</i> inclus : il y a <b>%count%</b> mesures supérieures au maximum',
         'valeurTooSmall(%first%,%last%,%count%)' => '{0}|' .
             '{1}Une mesure est inférieure au minimum, le <i>%first%</i>|' .
             ']1,Inf]Du <i>%first%</i> au <i>%last%</i> inclus : il y a <b>%count%</b> mesures inférieures au minimum',
@@ -323,7 +323,7 @@ $controleImport = [
         'action'                      => [
             'newImport'         => 'Nouvel import',
             'doNotImport'       => 'Ne pas les importer',
-            'overwriteExisting' => "Importer les nouvelles donnnées : cela supprimera l'intégralité des points existants.",
+            'overwriteExisting' => "Importer les nouvelles données : cela supprimera l'intégralité des points existants.",
         ],
         'help'                        => [
             'quitWarning'            => "En cours d'import <b>merci de n'annuler que par le bouton prévu à cet effet</b>.",
@@ -331,17 +331,17 @@ $controleImport = [
             'timezoneToUTC'          => 'après passage en UTC',
             'overlap'                => [
                 'new'         => 'Premier import de points de contrôle pour cette chronique.',
-                'before'      => 'Touts les points de contrôle à importer sont antérieures aux points de contrôle existants.',
-                'after'       => 'Touts les points de contrôle à importer sont postérieures aux points de contrôle existants.',
+                'before'      => 'Tous les points de contrôle à importer sont antérieurs aux points de contrôle existants.',
+                'after'       => 'Tous les points de contrôle à importer sont postérieurs aux points de contrôle existants.',
                 'boundsEqual' => 'Les bornes des points de contrôle existants et des points de contrôle à importer sont égales.',
-                'newInOld'    => 'Les points de contrôle à importer sont entièrement incluses dans les bornes des points de contrôle existants.',
-                'oldInNew'    => 'Les points de contrôle existants sont entièrement incluses dans les bornes des points de contrôle à importer.',
-                'firstIn'     => 'Le début des points de contrôle à importer chevauchent la fin des points de contrôle existants.',
-                'lastIn'      => 'La fin des points de contrôle à importer chevauchent le début des points de contrôle existants.',
+                'newInOld'    => 'Les points de contrôle à importer sont entièrement inclus dans les bornes des points de contrôle existants.',
+                'oldInNew'    => 'Les points de contrôle existants sont entièrement inclus dans les bornes des points de contrôle à importer.',
+                'firstIn'     => 'Le début des points de contrôle à importer chevauche la fin des points de contrôle existants.',
+                'lastIn'      => 'La fin des points de contrôle à importer chevauche le début des points de contrôle existants.',
             ],
         ],
         'info'                        => [
-            'wasCanceled'        => "L'import de points de contrôles a été annulé.",
+            'wasCanceled'        => "L'import de points de contrôle a été annulé.",
             'noControleImported' => "Aucun point de contrôle n'a été importé.",
             'timeSeries'         => 'Chronique',
             'controlesInsert'    => 'Point(s) de contrôle inséré(s)',
@@ -384,7 +384,7 @@ FORMAT
     'controle.export'     => [
         'title' => 'Export de points de contrôle',
         'error' => [
-            'noChronique' => 'Pas de chronique sélectionné.',
+            'noChronique' => 'Pas de chronique sélectionnée.',
             'cantFinish'  => "Une erreur a bloqué l'export des points de contrôle.",
             'noRight'     => "Vous n'avez pas les droits suffisants pour exporter ces points de contrôle.",
         ],
@@ -533,7 +533,7 @@ $shapeImport = [
         'info'                   => [
             'title'               => 'Import de données géographiques de type',
             'wasCanceled'         => "L'import de données géographiques a été annulé.",
-            'noShapeImported'     => "Aucune donnée géographique n'a été importé.",
+            'noShapeImported'     => "Aucune donnée géographique n'a été importée.",
             'noPossibleImport'    => 'Aucune donnée ne peut être importée.',
             'shapeInsert'         => 'Donnée géographique ajoutée|Données géographiques ajoutées',
             'shapeUpdate'         => 'Donnée géographique mise à jour|Données géographiques mises à jour',
@@ -551,7 +551,7 @@ $shapeImport = [
         <li><b>Colonnes attributaires attendues (l'orthographe est importante) - ordre indifférent :</b></li>
         <ul>
             <li><b>nom</b>, pour le nom du bassin ;</li>
-            <li><b>code_exu</b>, pour le code de la station exutoire du bassin, peut être vide, le code est une chaîne de caractère</b></li>
+            <li><b>code_exu</b>, pour le code de la station exutoire du bassin, peut être vide, le code est une chaîne de caractères</li>
         </ul>
 FORMAT
             ,
@@ -560,7 +560,7 @@ FORMAT
         <li><b>Colonnes attributaires attendues (l'orthographe est importante) - ordre indifférent (sur la base du format Carthage) :</b></li>
         <ul>
             <li><b>toponyme</b>, pour le nom du cours d'eau ;</li>
-            <li><b>code_hydro</b>, pour le code hydro du cours d'eau, peut être vide, le code est une chaîne de caractère</b> ;</li>
+            <li><b>code_hydro</b>, pour le code hydro du cours d'eau, peut être vide, le code est une chaîne de caractères ;</li>
             <li><b>classifica</b>, pour l'ordre de Strahler du cours d'eau, peut être vide, le classifica est un nombre.</li>
         </ul>
 
@@ -570,7 +570,7 @@ FORMAT
         <li><b>Un zip portant le même nom que tous les fichiers contenus, sans dossier.</b></li>
         <li><b>Colonne attributaire attendue (l'orthographe est importante) :</b></li>
         <ul>
-            <li><b>code</b>, pour le code de la station, le code est une chaîne de caractère.</li>
+            <li><b>code</b>, pour le code de la station, le code est une chaîne de caractères.</li>
         </ul>
 FORMAT
             ,
@@ -586,7 +586,7 @@ $conversion = [
     'conversion' => [
         'chroniqueMere'                  => 'Chronique mère',
         'paramConversion'                => 'Seuil de lacune',
-        'paramConversionHelp'            => "Intervalle de temps <b><u>en minutes</u></b> entre deux plages de mesures successives qui, si il est dépassé, donne lieu à l'insertion de lacunes.<br>" .
+        'paramConversionHelp'            => "Intervalle de temps <b><u>en minutes</u></b> entre deux plages de mesures successives qui, s'il est dépassé, donne lieu à l'insertion de lacunes.<br>" .
             'Les lacunes sont insérées à + et − 1 seconde des plages qui les entourent.',
         'paramConversionTitle'           => 'Nombre de minutes, 1 minute minimum.',
         'paramConversionError'           => '1 minute minimum.',
@@ -629,7 +629,7 @@ $colors = [
         ],
         'title'          => 'Styles de visualisation',
         'longTitle'      => 'Styles pour la visualisation simple',
-        'success(%jeu%)' => "Les couleurs des qualitées du jeu «\u{a0}%jeu%\u{a0}» ont été enregistrées.",
+        'success(%jeu%)' => "Les couleurs des qualités du jeu «\u{a0}%jeu%\u{a0}» ont été enregistrées.",
         'color'          => 'Couleur',
         'thickness'      => 'Épaisseur des lignes',
         'gap'            => 'Cette qualité est traitée en lacune.',
@@ -682,21 +682,21 @@ $various = [
             'theia' => [
                 'theia-message'        => '<strong style="color:red; font-size: 10px">[Champ pour Theia/Ozcar]</strong><br> ',
                 'warning-update-theia' => '<strong>Attention :</strong> Veuillez compléter les nouveaux champs pour Theia/Ozcar',
-                'uriOzcarTheia'        => "Ce champs est la (ou les) variable correspondante sur le Thesaurus de Theia/Ozcar (vous pouvez  taper les lettres du mot recherché) des champs <strong>Milieu</strong> et de la <strong>Famille de Paramètre</strong> BDOH. Lien vers le Skosmos pour définir les variables : <a href='https://in-situ.theia-land.fr/skosmos/theia_ozcar_thesaurus/en/page/c_341ce66a' target='_blank'>Ici</a>",
+                'uriOzcarTheia'        => "Ce champ est la (ou les) variable correspondante sur le Thesaurus de Theia/Ozcar (vous pouvez  taper les lettres du mot recherché) des champs <strong>Milieu</strong> et de la <strong>Famille de Paramètre</strong> BDOH. Lien vers le Skosmos pour définir les variables : <a href='https://in-situ.theia-land.fr/skosmos/theia_ozcar_thesaurus/en/page/c_341ce66a' target='_blank'>Ici</a>",
             ],
             'observatoire'         => [
                 'jeu'                                      => 'Le changement de jeu de codes qualité doit être réservé aux observatoires vides, sans aucune mesure importée.',
                 'warning-observatory-has-sites'            => 'Cet observatoire ne peut pas être supprimé car il contient le site expérimental suivant :|Cet observatoire ne peut pas être supprimé car il contient les sites expérimentaux suivants :',
-                'warning-observatory-has-scales'           => 'Cet observatoire possède le bareme suivant :|Cet observatoire possède les baremes suivants :',
+                'warning-observatory-has-scales'           => 'Cet observatoire possède le barème suivant :|Cet observatoire possède les barèmes suivants :',
                 'warning-observatory-has-dois'             => 'Cet observatoire possède le DOI suivant :|Cet observatoire possède les DOI suivants :',
                 'warning-observatory-has-basins'           => 'Cet observatoire possède le bassin suivant :|Cet observatoire possède les bassins suivants :',
                 'warning-observatory-has-rivers'           => "Cet observatoire possède le cours d'eau suivant :|Cet observatoire possède les cours d'eau suivants :",
                 'confirm-delete-observatory(%name%)'       => "Etes-vous sûr de vouloir supprimer l'observatoire «\u{a0}%name%\u{a0}» ?",
                 'confirm-delete-observatory-info'          => "<strong style=\"color:red\">Les barèmes, bassins, cours d'eau et/ou DOI concernés seront également supprimés.</strong>",
-                'warning-delete-observatory-info-redirect' => "Ceci est l'observatoire courant, si vous le supprimer vous serez redirigé sur la page d'accueil de tous les observatoires.",
+                'warning-delete-observatory-info-redirect' => "Ceci est l'observatoire courant, si vous le supprimez, vous serez redirigé sur la page d'accueil de tous les observatoires.",
                 'titre-info'                               => 'Exemple: «AMMA-CATCH: a hydrological, meteorological and ecological observatory on West Africa»',
                 'email-info'                               => 'Email de contact générique de cet observatoire.',
-                'theiaCode-message'                        => "<strong style=\"color:red; font-size: 10px\">[Champ pour Theia/Ozcar]</strong><br>Correspond aux 4 premières lettres en majuscule de l'Observatoire. <br>Les identifiants font références au modèle de données pivot Theia/Ozcar (Annexe 1 page 15) : <a href='https://theia-ozcar.gricad-pages.univ-grenoble-alpes.fr/doc-producer/producer-documentation.html#modele-de-donnees-pivot-description-et-implementation-en-json' target='_blank'>Ici</a> ",
+                'theiaCode-message'                        => "<strong style=\"color:red; font-size: 10px\">[Champ pour Theia/Ozcar]</strong><br>Correspond aux 4 premières lettres en majuscule de l'Observatoire. <br>Les identifiants font référence au modèle de données pivot Theia/Ozcar (Annexe 1 page 15) : <a href='https://theia-ozcar.gricad-pages.univ-grenoble-alpes.fr/doc-producer/producer-documentation.html#modele-de-donnees-pivot-description-et-implementation-en-json' target='_blank'>Ici</a> ",
                 'theiaPassword-message'                        => "Le mot de passe ne s'affiche pas dans ce champ pour des raisons de confidentialité. Le laisser en état pour le conserver.",
                 'doi-principal-message'                    => " Theia/Ozcar demande un seul DOI pour ses ressources en ligne. Ajouter ici le DOI principal de l'observatoire. ",
                 'photo'                                    => "La photo est diffusée sous Licence Ouverte 2.0, comme les données. Ne la déposez que si vous en êtes l'auteur, ou avec son accord.",
@@ -729,11 +729,11 @@ $various = [
                 'warning-no-export-options-were-defined' => "<strong>Attention :</strong> les options d'export à pas de temps fixe n'ont pas encore été définies pour cette chronique. Des valeurs par défaut ont été automatiquement assignées. Merci de les vérifier/éditer puis d'enregistrer les modifications.",
                 'contains-n-mesures(%nb%)'               => 'Cette chronique contient une mesure.|Cette chronique contient %nb% mesures.',
                 'contains-n-plages(%nb%)'                => 'Cette chronique contient une plage de mesure.|Cette chronique contient %nb% plages de mesure.',
-                'contains-n-controles(%nb%)'             => 'Cette chronique contient un point de controle.|Cette chronique contient %nb% points de controle.',
+                'contains-n-controles(%nb%)'             => 'Cette chronique contient un point de contrôle.|Cette chronique contient %nb% points de contrôle.',
                 'confirm-delete-time-series(%name%)'     => "Etes-vous sûr de vouloir supprimer la chronique «\u{a0}%name%\u{a0}» ?",
                 'confirm-delete-time-series-info'        => '<u>Les mesures, plages de mesures et/ou points de contrôle de cette chronique seront également supprimés.</u>',
                 'update-unite-cumul'                     => "Si vous autorisez l'export de cumuls pour cette chronique pensez à vérifier ou mettre à jour l'unité des cumuls ci-dessous.",
-                'warning-no-milieu-defined'              => "<strong>Attention :</strong> Cette chronique n'a pas de milieu (la premier milieu est sélectionné par défaut). Vous devez sélectionner un milieu pour cette chronique et enregistrer la modification.",
+                'warning-no-milieu-defined'              => "<strong>Attention :</strong> Cette chronique n'a pas de milieu (le premier milieu est sélectionné par défaut). Vous devez sélectionner un milieu pour cette chronique et enregistrer la modification.",
             ],
             'commune'              => [
                 'warning-commune-has-stations'   => 'Cette commune est utilisée par la station suivante :|Cette commune est utilisée par les stations suivantes :',
@@ -751,12 +751,12 @@ $various = [
                 'partenaire-has-observatories'         => "Ce partenaire est utilisé par l'observatoire suivant :|Ce partenaire est utilisé par les observatoires suivants :",
                 'confirm-delete-partenaire(%name%)'    => "Etes-vous sûr de vouloir supprimer le partenaire «\u{a0}%name%\u{a0}» ?",
                 'confirm-delete-partenaire-info'       => 'Les chroniques et/ou observatoires concernés ne seront pas supprimés, ils perdront simplement leur partenaire ou producteur.',
-                'help-scanR'                           => 'Identifiant ScanR (ID) sur le site <a href="https://scanr.enseignementsup-recherche.gouv.fr/" target="_blank">https://scanr.enseignementsup-recherche.gouv.fr/</a> Ex : Unité PIAF, ID: 200017466P</strong>',
+                'help-scanR'                           => 'Identifiant ScanR (ID) sur le site <a href="https://scanr.enseignementsup-recherche.gouv.fr/" target="_blank">https://scanr.enseignementsup-recherche.gouv.fr/</a> Ex : Unité PIAF, ID: 200017466P',
                 'help-boolean'                         => '<strong style="color:red; font-size: 10px">[Champ pour Theia/Ozcar]</strong> <br/>NB : Theia/Ozcar nécessite au moins un financeur par Observatoire',
             ],
             'familleParametres'    => [
                 'warning-familleParametres-has-children' => 'Cette famille de paramètres ne peut pas être supprimée car elle est utilisée par la famille suivante (en tant que famille mère) :|Cette famille de paramètres ne peut pas être supprimée car elle est utilisée par les familles suivantes (en tant que famille mère) :',
-                'warning-familleParametres-has-types'    => 'Cette famille de paramètres ne peut pas être supprimée car elle est utilisée par le type de paramètre suivante :|Cette famille de paramètres ne peut pas être supprimée car elle est utilisée par les types de paramètres suivants :',
+                'warning-familleParametres-has-types'    => 'Cette famille de paramètres ne peut pas être supprimée car elle est utilisée par le type de paramètre suivant :|Cette famille de paramètres ne peut pas être supprimée car elle est utilisée par les types de paramètres suivants :',
                 'help-prefix'                            => "Le préfixe est utilisé pour ordonner les familles de même niveau (par exemple : 001, 002, 003, ...), il n'est pas affiché.",
                 'help-familleParente'                    => 'Les familles filles et descendantes ne sont pas présentes dans cette liste de sélection. Vous pouvez aussi supprimer la famille mère en utilisant la petite croix à droite.',
             ],
