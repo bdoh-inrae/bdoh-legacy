@@ -8,7 +8,7 @@ Fait sur `main` dans la nuit du 16 au 17 novembre, sans version : les points 1 �
 
 - **16 novembre** : Lou invite la liste large des utilisateurs et utilisatrices de BDOH à une visio de présentation de la nouvelle plateforme, sur un sondage des deux semaines qui viennent.
 - **Avant les essais**, pas forcément avant la visio (Lou, 18 novembre) : un pré-essai par deux gestionnaires d'observatoire bien plus présents que les autres (noms dans `dev/local/test-tracking.md`). Les remarques des points 1 à 4 viennent de l'une des deux personnes du pré-essai : il vient une fois ce lot corrigé, avec le kit de leur observatoire, pour qu'ils voient aussi ce qui partira aux autres gestionnaires et les corrections qu'on leur propose. Leurs retours viennent avant ceux des autres, et couvrent déjà beaucoup de cas.
-- **30 novembre** : les essais pour tous et toutes, deux semaines, avec le kit (message et tableur par observatoire).
+- **1er décembre** (Lou, 19 novembre ; d'abord le 30 novembre) : les essais pour tous et toutes, deux semaines, avec le kit (message et tableur par observatoire).
 - **Mi-décembre** : la réouverture à tous et toutes.
 - **En parallèle** (Lou) : contacter OTHU et OHGE (une autre instance de BDOH, pas encore fondue) pour discuter de tout réunir dans l'instance actuelle : la preuve que BDOH porte toutes ces données, une gestion du service plus simple, une seule base pour une future migration du modèle de données. OTHU est déjà fondu sur la VM (0.6.0) ; reste à en parler avec ses gestionnaires.
 
@@ -16,7 +16,7 @@ Fait sur `main` dans la nuit du 16 au 17 novembre, sans version : les points 1 �
 
 Comme d'habitude (`~/.claude/rules/project.md`, « Les versions ») : une version se publie quand « Non publié » forme un ensemble utilisable, sans numéro fixé d'avance (Lou, 16 novembre : on ne sait pas encore à quelle vitesse on avancera). Deux repères seulement :
 - le pré-essai demande une version installée sur la VM avec au moins les points 1 à 4, 7 et 8 ;
-- les essais du 30 novembre, tout ce qu'on peut du reste, avec les retours du pré-essai. Seules les listes de diffusion par observatoire (5) peuvent attendre, si elles dépendent d'échanges avec l'administration d'INRAE.
+- les essais du 1er décembre, tout ce qu'on peut du reste, avec les retours du pré-essai. Seules les listes de diffusion par observatoire (5) peuvent attendre, si elles dépendent d'échanges avec l'administration d'INRAE.
 
 ## Les points
 
@@ -114,7 +114,8 @@ Ajouté par Lou le 16 novembre au soir, pour la migration globale : retirer le l
 ### 8. Les messages
 
 - Le pré-essai : le kit de leur observatoire (message et tableur, avec les corrections qu'on leur propose), précédé de quelques lignes qui disent ce qu'est le pré-essai. `make test-kit` écrit les kits de tous les observatoires ; Lou n'envoie que les leurs.
-- Le kit des essais (`dev/test-kit/messages/message.txt`) : la visio, deux semaines à partir du 30 novembre, et un court paragraphe sur l'ouverture (la loi, ce qui ne change pas, la case « visible » qui reste aux gestionnaires, les chroniques réservées à l'observatoire) ; les photographies à vérifier ; la date limite. À relire par Lou. Avant l'envoi du 30 novembre : le point zéro de la base et la restauration éprouvée à part ([2026-11-16_before-kit.md](2026-11-16_before-kit.md), « Les données après les essais »), puis `make test-kit` avec `--site https://bdoh.inrae.fr` et la date limite.
+- Le kit des essais (`dev/test-kit/messages/message.txt`) : la visio, deux semaines à partir du 1er décembre, et un court paragraphe sur l'ouverture (la loi, ce qui ne change pas, la case « visible » qui reste aux gestionnaires, les chroniques réservées à l'observatoire) ; les photographies à vérifier ; la date limite. À relire par Lou. Avant l'envoi du 1er décembre : le point zéro de la base et la restauration éprouvée à part ([2026-11-16_before-kit.md](2026-11-16_before-kit.md), « Les données après les essais »), puis `make test-kit` avec `--site https://bdoh.inrae.fr` et la date limite.
+- **Écrits avec Lou le 19 novembre** : le message des essais et le mot du pré-essai (`dev/test-kit/messages/pre-test.txt`), avec la façon d'écrire aux gestionnaires (`dev/test-kit/README.md`, « Le message » et « Le pré-essai »). Pas de texte de loi ni de renvoi à la visio, qui a lieu avant les essais : l'ouverture en une phrase (politique de science ouverte d'INRAE et du gouvernement, des choses plus simples pour tous), une porte ouverte aux questions ; les photographies se demandent (« dites-moi si ça vous va »). Le pré-essai part au plus tard le lundi 24 novembre ; les essais, le 1er décembre (Lou). Reste pour la session de code : dans `kit.py`, « Si oui, on la ferme » devient « Si oui, on la cache » (`counts_sentence`), le mot de la case.
 
 ### 9. Ce que demande la réouverture, mi-décembre
 
@@ -141,7 +142,7 @@ Ordre de travail proposé ; les étapes 1 à 4 sont faites (Suivi, nuit du 16 au
 4. Point 2d, l'unité dans les fichiers de données ; 2c et le reste de 2d après en avoir vu le détail avec Lou.
 5. Point 7 : les captures des accueils pour Lou, puis la migration globale et le second onglet des tableurs ; les photographies.
 6. Point 8, les messages ; puis toutes les passes, `make browser-check`, `CHANGELOG.md`, une version ; Lou l'installe (`sudo make vm-update V=…`), puis envoie le pré-essai.
-7. Points 6 et 5 (après en avoir parlé avec Lou), les retours du pré-essai, une version pour les essais du 30 novembre ; point 9 pour la réouverture.
+7. Points 6 et 5 (après en avoir parlé avec Lou), les retours du pré-essai, une version pour les essais du 1er décembre ; point 9 pour la réouverture.
 
 Les sujets des sessions suivantes, relevés le 19 novembre, chacun dans sa session :
 - **Point 8, les messages** : le pré-essai et le kit des essais (la visio, dont la date sort du sondage de Lou ; deux semaines ; l'ouverture expliquée ; une ligne pour que les gestionnaires vérifient les photographies de leur accueil, désormais sous Licence Ouverte ; leur second onglet, complété par la relecture). Puis les passes, une version, et Lou envoie le pré-essai.
