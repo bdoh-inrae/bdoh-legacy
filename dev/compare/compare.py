@@ -748,8 +748,15 @@ def classify(old, new, exact=False):
 def admitted(rules, old, new, exact=False):
     """Les règles du registre qui expliquent l'écart entre deux suites de lignes, si elles l'expliquent tout : celles
     qui y servent, sans celles dont seul le motif couvre le nom du cas (une règle de toute page connectée n'explique
-    pas un courriel) ; une liste vide sinon. Les réécritures de l'ancien (`rewrite`) passent d'abord, puis les masques,
-    puis les lignes admises."""
+    pas un courriel) ; une liste vide sinon."""
+    used, left, missing = explained(rules, old, new, exact)
+    return [] if left or missing else [rule for rule in rules if rule in used]  # dans l'ordre du registre, sans doublon
+
+
+def explained(rules, old, new, exact=False):
+    """Ce que les règles font d'un écart : (règles qui y servent, lignes de diff qu'aucune n'admet, lignes `must`
+    absentes). Les réécritures de l'ancien (`rewrite`) passent d'abord, puis les masques, puis les lignes admises.
+    Le rapport d'un cas différent écrit les deux dernières en tête : c'est ce qu'il reste à comprendre."""
     used = []
     for rule in rules:
         if rule.rewrite:
@@ -789,11 +796,10 @@ def admitted(rules, old, new, exact=False):
     # Chaque ligne restante, et les règles qui l'admettent : toutes servent, pour qu'une règle que couvre une plus large
     # (l'accueil du portail admet toute ligne retirée) ne passe pas pour inutile
     explaining = [[rule for rule in rules if any(found(wanted, line) for wanted in rule.lines)] for line in unexplained]
-    if not all(explaining) or not all(any(found(wanted, line) for line in changed)
-                                      for rule in rules for wanted in rule.must):
-        return []
+    left = [line for line, line_rules in zip(unexplained, explaining) if not line_rules]
+    missing = [wanted for rule in rules for wanted in rule.must if not any(found(wanted, line) for line in changed)]
     used += [rule for line_rules in explaining for rule in line_rules] + [rule for rule in rules if rule.must]
-    return [rule for rule in rules if rule in used]  # dans l'ordre du registre, sans doublon
+    return used, left, missing
 
 
 def changed_values(rounding):
@@ -912,7 +918,15 @@ class Report:
                     rewritten = rule.rewrite(rewritten)
             if key == 'différents' and rewritten != old:
                 shown += ['', "Après la réécriture de l'ancien (expected.py, rewrite) :", *compare(rewritten, new, exact)[0][2:]]
-            (self.dir / f'{slug}.{unique}.diff').write_text('\n'.join([name, *diff, *shown, '']))
+            # En tête, ce qu'aucune règle du cas n'admet (`explained`) : c'est ce qu'il reste à comprendre, que le diff
+            # brut mêle aux écarts admis
+            head = []
+            if key == 'différents':
+                _, left, missing = explained([rule for rule in self.rules if re.fullmatch(rule.case, name)], old, new, exact)
+                head = ["Lignes qu'aucune règle n'admet :", *left,
+                        *(["Lignes qu'une règle attend et qui manquent (must) :",
+                           *(w if isinstance(w, str) else w.pattern for w in missing)] if missing else []), '']
+            (self.dir / f'{slug}.{unique}.diff').write_text('\n'.join([name, *head, *diff, *shown, '']))
             self.summary.append(f"{key:<26} {name}" + (f'  ({len(rounding)} arrondis)' if rounding else '')
                                 + (f"  [{rules[0].why}]" if rules else ''))
         print('X' if key == 'différents' else '.', end='', flush=True)
@@ -937,6 +951,8 @@ def run_pages(args):
     report.rules += expected.portal_rules({profile: ' '.join(query(args.base, f"""SELECT prenom, nom FROM utilisateur
                                                                           WHERE email = '{email}'""")[0])
                                            for profile, email in profiles(args.base).items() if email})
+    # Les descriptions mises en forme, rendues comme l'ancien et comme le nouveau (expected.description_rules)
+    report.rules += expected.description_rules(described(args.base))
     with concurrent.futures.ThreadPoolExecutor(args.jobs) as pool:
         for profile, email in profiles(args.base).items():
             if args.profile and profile != args.profile:
@@ -967,6 +983,23 @@ def run_pages(args):
         overview_checks(args.base, new, report)
         thinned_checks(args.base, new, report)
     report.close()
+
+
+def described(base):
+    """Les descriptions des observatoires et des sites (français et anglais), chacune en lignes de page comme
+    l'ancien la rendait (chaque retour à la ligne écrit en <br>) puis comme le nouveau (telle quelle), toutes deux
+    sous `spaceless`, comme le gabarit (`i18nEntityLabel`, templates/macros.html.twig). Lues en hexadécimal : une
+    description a des retours à la ligne et des tabulations, que `query` prendrait pour des séparateurs."""
+    texts = [bytes.fromhex(row[0]).decode() for row in query(base, """
+        SELECT encode(convert_to(t, 'UTF8'), 'hex') FROM (
+            SELECT description AS t FROM observatoire UNION ALL SELECT descriptionen FROM observatoire
+            UNION ALL SELECT description FROM siteexperimental UNION ALL SELECT descriptionen FROM siteexperimental) d
+         WHERE t <> ''""")]
+
+    def render(text):
+        return page_lines('http://description.invalid', 200, {'Content-Type': 'text/html'},
+                          re.sub(r'>\s+<', '><', text).strip().encode())[2:]
+    return [(render(text.replace('\n', '<br>')), render(text)) for text in texts]
 
 
 def map_checks(base, side, slug, report):
@@ -1990,11 +2023,19 @@ def keep_sql_coverage(base):
 
 
 def copy_base(template, base):
-    """Une copie fraîche d'une base, sur le nouveau serveur."""
+    """Une copie fraîche d'une base, sur le nouveau serveur.
+
+    Les connexions du dernier jour y sont reculées d'un jour : `pages` connecte ses comptes sur sa base même
+    (bdoh_small), et « connexion récente » (`ACCOUNT_QUERIES`, moins d'une heure) ne doit dire que celles de la passe.
+    Sans quoi une passe lancée moins d'une heure après `pages` voit ce champ basculer entre la photo de l'ancien et
+    celle du nouveau (`accounts`, 19 novembre). L'ancien écrit cette date à l'heure de Paris, le nouveau en UTC : un
+    jour couvre les deux."""
     keep_sql_coverage(base)
     for sql in [f'DROP DATABASE IF EXISTS {base} WITH (FORCE)', f'CREATE DATABASE {base} TEMPLATE {template} OWNER bdoh']:
         subprocess.run(['docker', 'exec', NEW_SERVER, 'psql', '-U', 'postgres', '-v', 'ON_ERROR_STOP=1',
                         '-qc', sql], check=True)
+    query(base, """UPDATE utilisateur SET derniereconnection = derniereconnection - interval '1 day'
+                    WHERE derniereconnection > now() - interval '1 day'""", NEW_SERVER)
 
 
 def configure_old_17(text):

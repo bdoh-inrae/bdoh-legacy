@@ -44,6 +44,12 @@ CHANGED = [
     ('fields', 'parametre.familleParametres',
      'Famille Paramètre',
      'Famille de paramètres'),
+    ('fields', 'portailSearchCriteriaClimat',
+     'Critères Climatiques',
+     'Critères climatiques'),
+    ('fields', 'portailSearchCriteriaGeology',
+     'Critères Géologiques',
+     'Critères géologiques'),
     ('fields', 'rolePersonneTheia',
      'Rôle de la Personne Theia',
      'Rôle de la personne Theia'),
@@ -302,6 +308,12 @@ CHANGED = [
     ('messages', 'parametre.familleParametres',
      'Famille Paramètre',
      'Famille de paramètres'),
+    ('messages', 'portailSearchCriteriaClimat',
+     'Critères Climatiques',
+     'Critères climatiques'),
+    ('messages', 'portailSearchCriteriaGeology',
+     'Critères Géologiques',
+     'Critères géologiques'),
     ('messages', 'rolePersonneTheia',
      'Rôle de la Personne Theia',
      'Rôle de la personne Theia'),
@@ -342,6 +354,9 @@ ADDED = [
     ('messages', 'admin.help.observatoire.photo', "La photo est diffusée sous Licence Ouverte 2.0, comme les données. Ne la déposez que si vous en êtes l'auteur, ou avec son accord."),
 ]
 
-# Les segments courts qu'une autre clé garde tels quels en français : la réécriture les laisse, pour ne pas changer
-# aussi un texte resté le même (« Milieu » est aussi l'en-tête d'une colonne de l'historique)
-KEEP = ['Jeu de données', 'Milieu', 'Type de financeurs']
+# Les segments corrigés qu'un texte resté le même contient aussi : la réécriture les laisse, pour ne pas changer ce
+# texte-là (« Milieu » est aussi l'en-tête d'une colonne de l'historique). Tous viennent des menus de l'historique, mis
+# au pluriel, que `expected.history_menu` réécrit par leur ancre. Relevé dans le catalogue français du nouveau BDOH
+# (traducteur de Symfony, `getCatalogue('fr')`) le 19 novembre : un segment de CHANGED contenu dans un texte d'une clé
+# qui n'est ni dans CHANGED ni dans ADDED. À refaire si une correction s'ajoute à CHANGED.
+KEEP = ['Correspondance des TheiaCategories', 'Jeu de données', 'Milieu', 'Personne pour Theia/OZCAR', 'Type de financeurs']

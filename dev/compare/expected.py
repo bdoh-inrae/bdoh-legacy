@@ -20,6 +20,7 @@ de la passe, si bien que les règles valent sur bdoh_small comme sur OTHU (dev/d
 dit à part »).
 """
 
+import json
 import re
 import urllib.parse
 from dataclasses import dataclass
@@ -180,25 +181,27 @@ FIVE_YEARS = ("-T Attention : pour des raisons de performance vous ne pouvez sé
               '-T Warning: due to performance limitations please select a maximum time span of 5 years')
 
 # La relecture des textes (2026-11-19, dev/plans/2026-11-19_review.md) : chaque texte français corrigé, découpé en
-# segments comme une page le montre (les marques %…% et les balises de bloc coupent le texte, les formes d'un pluriel
-# sont séparées par « | »), l'ancien segment devenant le nouveau. Un segment long se remplace où qu'il soit dans une
-# ligne ; un court, seulement s'il est tout le texte d'une ligne, et s'il ne devient pas deux textes différents selon
-# la clé : sinon il réécrirait aussi un texte resté le même ailleurs. Un remplacement de trop se voit : la page de
-# l'ancien réécrite ne ressemble plus à celle du nouveau.
+# segments comme une page ou un courriel le montre (les marques %…%, les balises de bloc et les retours à la ligne
+# coupent le texte, les formes d'un pluriel sont séparées par « | »), l'ancien segment devenant le nouveau où qu'il
+# soit dans une ligne, en mots entiers. Un segment ne se réécrit pas partout s'il devient deux textes selon la clé, ou
+# si un texte resté le même le contient aussi (`reviewed_texts.KEEP`) : il réécrirait ce texte-là. Les menus de
+# l'historique, dont trois libellés sont dans ce cas, se réécrivent par leur ancre (`history_menu`). Un remplacement
+# de trop se voit : la page de l'ancien réécrite ne ressemble plus à celle du nouveau.
 REVIEW = 'Relecture des textes'
 
 
 def review_segments(text):
-    """Les segments d'un texte de catalogue, tels que les lignes d'une page les montrent."""
+    """Les segments d'un texte de catalogue, tels que les lignes d'une page ou d'un courriel les montrent."""
     text = re.sub(r'%[\w.]+%|\{\{[^}]*\}\}', '\0', text)
     text = re.sub(r'<(?:br|li|ul|ol|p|div|h\d)\b[^>]*>|</(?:li|ul|ol|p|div|h\d)>', '\0', text, flags=re.I)
     text = re.sub(r'<[^>]+>', '', text)
-    parts = re.split(r'\0|\|', text)
+    parts = re.split(r'\0|\||\n', text)
     return [' '.join(re.sub(r'^(?:\{[^}]*\}|[\[\]][^\[\]]*[\[\]])', '', part).split()) for part in parts]
 
 
 def review_pairs():
-    """Les segments changés : (longs, courts), chacun une liste de (avant, après)."""
+    """Les segments changés, du plus long au plus court : (avant, après). Un segment de moins de 4 caractères ne se
+    réécrit pas : il se retrouverait partout."""
     targets = {}
     for _, _, before, after in reviewed_texts.CHANGED:
         old, new = review_segments(before), review_segments(after)
@@ -207,24 +210,65 @@ def review_pairs():
         for a, b in zip(old, new):
             if a and a != b:
                 targets.setdefault(a, set()).add(b)
-    pairs = sorted(((a, next(iter(b))) for a, b in targets.items() if len(b) == 1), key=lambda p: -len(p[0]))
-    return [p for p in pairs if len(p[0]) >= 20], {a: b for a, b in pairs if len(a) < 20 and a not in reviewed_texts.KEEP}
+    return sorted(((a, next(iter(b))) for a, b in targets.items()
+                   if len(b) == 1 and len(a) >= 4 and a not in reviewed_texts.KEEP), key=lambda p: -len(p[0]))
 
 
-REVIEW_LONG, REVIEW_SHORT = review_pairs()
+REVIEW_PAIRS = review_pairs()
+REVIEW_NEW = dict(REVIEW_PAIRS)
+# Tous les segments en une seule expression, les plus longs d'abord : une page a des milliers de lignes
+REVIEW_ANY = re.compile('|'.join(re.escape(a) for a, _ in REVIEW_PAIRS))
+JSON_STRING = re.compile(r'"(?:[^"\\]|\\.)*"')
+# Les menus de l'historique : l'ancre d'une entrée (« A #adminMilieu »), puis son libellé
+HISTORY_MENU = {key.rsplit('.', 1)[1]: (before, after) for domain, key, before, after in reviewed_texts.CHANGED
+                if domain == 'messages' and key.startswith('historique.menu.')}
+
+
+def review_text(text):
+    """Un texte où chaque ancien segment, en mots entiers, devient le nouveau. Un retour à la ligne écrit en JSON
+    (« \\n », dans l'état de la base) sépare deux mots."""
+    def word(k):
+        return 0 <= k < len(text) and (text[k].isalnum() or text[k] == '_')
+
+    def replace(m):
+        a, start, end = m.group(0), m.start(), m.end()
+        glued = a[0].isalnum() and word(start - 1) and text[start - 2:start] != '\\n'
+        return a if glued or (a[-1].isalnum() and word(end)) else REVIEW_NEW[a]
+    return REVIEW_ANY.sub(replace, text)
+
+
+def review_json(line):
+    """Une ligne où le texte est écrit en JSON, caractères codés (« qualit\\u00e9es », dans les messages d'une page,
+    data-notices) : chaque chaîne décodée, réécrite, puis recodée comme PHP l'écrit si elle a changé."""
+    def replace(m):
+        try:
+            text = json.loads(m.group(0))
+        except ValueError:
+            return m.group(0)
+        done = review_text(text) if isinstance(text, str) else text
+        return m.group(0) if done == text else json.dumps(done).replace('/', '\\/')
+    return JSON_STRING.sub(replace, line)
+
+
+def history_menu(lines):
+    """Le libellé d'une entrée du menu de l'historique, juste après son ancre (une ligne de bouton peut les séparer)."""
+    out = list(lines)
+    for k, line in enumerate(out):
+        if line.startswith('A #') and line[3:] in HISTORY_MENU:
+            before, after = HISTORY_MENU[line[3:]]
+            for j in (k + 1, k + 2):
+                if j < len(out) and out[j] == f'T {before}':
+                    out[j] = f'T {after}'
+                    break
+    return out
 
 
 def reviewed(lines):
-    """L'ancien texte corrigé par la relecture, réécrit en le nouveau."""
-    out = []
-    for line in lines:
-        if line.startswith('T ') and line[2:] in REVIEW_SHORT:
-            line = 'T ' + REVIEW_SHORT[line[2:]]
-        for a, b in REVIEW_LONG:
-            if a in line:
-                line = line.replace(a, b)
-        out.append(line)
-    return out
+    """L'ancien texte corrigé par la relecture, réécrit en le nouveau. Les lignes des traductions du JavaScript
+    (`t.add(`) restent : la règle de leurs clés les admet, et un segment partagé y réécrirait une clé restée la même."""
+    out = [line if line.startswith('t.add(') else review_json(line) if '\\u' in line else review_text(line)
+           for line in lines]
+    return history_menu(out)
 
 
 def translation(sign, keys):
@@ -504,6 +548,36 @@ def admin_rules(created, technical, stations_on_first_page):
 
 
 
+DESCRIPTIONS = 'Descriptions mises en forme'
+
+
+def description_rules(rendered):
+    """Les descriptions mises en forme d'un observatoire et d'un site, sur les accueils (relecture du 19 novembre) :
+    l'ancien écrivait chaque retour à la ligne de leur code en saut de ligne, le nouveau les écrit telles quelles.
+    `run_pages` les ajoute d'après la base de la passe, chaque description rendue des deux façons par `page_lines`
+    (ancien, nouveau) ; la réécriture remplace, dans l'ancien, la suite de lignes de l'une par celle de l'autre. Une
+    description que l'ancien montrait déjà comme le nouveau (sans retour à la ligne) ne donne rien."""
+    pairs = sorted(((tuple(old), tuple(new)) for old, new in rendered if old and old != new), key=lambda p: -len(p[0]))
+    if not pairs:
+        return []
+    starting = {}
+    for old, new in pairs:
+        starting.setdefault(old[0], []).append((old, new))
+
+    def rewrite(lines):
+        out, k = [], 0
+        while k < len(lines):
+            found = next(((old, new) for old, new in starting.get(lines[k], ()) if tuple(lines[k:k + len(old)]) == old), None)
+            if found:
+                out += found[1]
+                k += len(found[0])
+            else:
+                out.append(lines[k])
+                k += 1
+        return out
+    return [Rule('pages', rf'{ROLE} (?!/INCONNU/){OBS}/(?:home)?', DESCRIPTIONS, rewrite=rewrite)]
+
+
 MERGE = "Fusion d'OTHU dans BDOH"
 
 
@@ -724,6 +798,9 @@ RULES = [
 
     # --- exports -----------------------------------------------------------------------------------
     # Une chronique visible porte la licence ouverte, à la place des conditions. Une cachée, identique, n'a pas d'écart.
+    # « crée le » devenu « créé le », dans la ligne du calcul d'une chronique calculée (rapport, puis README)
+    Rule('exports', r'bdoh:export:.*', REVIEW,
+         rewrite=lambda lines: [review_text(line) if line.startswith('calcul ') else line for line in lines]),
     Rule('exports', r'bdoh:export:.*', OPEN, lines=(
         RX(r'-# Ignoring (?:ORACLE-)?ConditionsGeneralesUtilisation\.pdf'),
         '+# Ignoring Licence-Ouverte-2.0-fr.pdf', '+# Ignoring Open-Licence-2.0-en.pdf', '+'),
@@ -790,7 +867,9 @@ RULES = [
     # L'astuce de saisie des dates passe dans la bulle des champs, sur la page des barèmes aussi
     Rule('admin', rf'{ROLE} {OBS}/admin/transformation', GRAPH, lines=DATE_TIP),
     # Sous chacun des deux champs des photos, le formulaire d'un observatoire dit leur licence
-    Rule('admin', rf'{ROLE} {OBS}/admin/observatoire/(?:create|\d+/edit)', PHOTOS, lines=(PHOTO_HELP,)),
+    # (les étapes qui renvoient ce formulaire aussi : modification, couleurs, fichiers joints d'un observatoire)
+    Rule('admin', rf'{ROLE} {OBS}/admin/observatoire/(?:create|\d+/edit)|observatoire : .*|fichiers joints : .*observatoire.*',
+         PHOTOS, lines=(PHOTO_HELP,)),
     Rule('admin', rf'{ROLE} {OBS}/admin/utilisateur/export\?format=csv', "Export des listes de l'administration",
          lines=(RX(r'-statut (?:403|500)'), '+statut 404'), must=('+statut 404',)),
     Rule('admin', rf'gestionnaire {OBS}/admin/personnetheia/list', "Modifier le compte d'un autre, réservé aux administrateurs",

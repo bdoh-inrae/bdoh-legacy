@@ -317,6 +317,18 @@ class Register(unittest.TestCase):
             self.assertTrue(compare.Report.failed)
             compare.Report.failed = False
 
+    def test_a_report_says_what_no_rule_admits(self):
+        # En tête du fichier d'un cas différent : la ligne qu'aucune règle n'admet, pas celles que la règle admet
+        with tempfile.TemporaryDirectory() as out:
+            compare.OUT = Path(out)
+            report = compare.Report('essai')
+            report.rules = [self.RULE]
+            with redirect_stdout(io.StringIO()):
+                report.add('page a', ['T ancien', 'T x'], ['T nouveau', 'T y'])
+            text = next(report.dir.glob('*.diff')).read_text().split('\n')
+            self.assertEqual(text[1:4], ["Lignes qu'aucune règle n'admet :", '-T x', '+T y'])
+            compare.Report.failed = False
+
     def test_a_report_names_the_rules_that_served_nothing(self):
         with tempfile.TemporaryDirectory() as out:
             compare.OUT = Path(out)
@@ -329,13 +341,15 @@ class Register(unittest.TestCase):
     def test_each_rule_says_why_in_the_differences(self):
         text = (Path(__file__).resolve().parent.parent / 'differences.md').read_text()
         for rule in [*compare.expected.RULES, *compare.expected.qjo_rules(['9', '936']), *compare.expected.account_rules(['800', '801', '802']),
-                     *compare.expected.admin_rules('800', ['1'], True), *compare.expected.portal_rules({'utilisateur': 'Camille Essai'})]:
+                     *compare.expected.admin_rules('800', ['1'], True), *compare.expected.portal_rules({'utilisateur': 'Camille Essai'}),
+                     *compare.expected.description_rules([(['T a', 'T b'], ['T a b'])])]:
             with self.subTest(rule.case):
                 self.assertIn(f'**{rule.why}', text)
 
     def test_each_rule_reads(self):
         for rule in [*compare.expected.RULES, *compare.expected.qjo_rules(['9', '936']), *compare.expected.account_rules(['800', '801', '802']),
-                     *compare.expected.admin_rules('800', ['1'], True), *compare.expected.portal_rules({'utilisateur': 'Camille Essai'})]:
+                     *compare.expected.admin_rules('800', ['1'], True), *compare.expected.portal_rules({'utilisateur': 'Camille Essai'}),
+                     *compare.expected.description_rules([(['T a', 'T b'], ['T a b'])])]:
             with self.subTest(rule.case):
                 re.compile(rule.case)
                 for pattern, _ in rule.masks:
@@ -629,6 +643,46 @@ class Register(unittest.TestCase):
         self.assertEqual(self.verdict([self.RULE], 'page a', old, new), 'différents')
         self.assertEqual(self.verdict([self.RULE, self.rule(order=True)], 'page a', old, new), 'écarts admis')
         self.assertEqual(self.verdict([self.RULE, self.rule(order=True)], 'page a', old, ['T nouveau', 'T b', 'T c']), 'différents')
+
+
+class Review(unittest.TestCase):
+    """La réécriture de la relecture (expected.reviewed) : l'ancien texte devient le nouveau, en mots entiers, et
+    rien d'autre ne change."""
+
+    reviewed = staticmethod(compare.expected.reviewed)
+
+    def test_a_segment_anywhere_in_a_line(self):
+        self.assertEqual(self.reviewed(['T Historiques récents des baremes']), ['T Historiques récents des barèmes'])
+        self.assertEqual(self.reviewed(['T Critères Géologiques :']), ['T Critères géologiques :'])
+
+    def test_whole_words_only(self):
+        self.assertEqual(self.reviewed(['T Critères Géologiquesx']), ['T Critères Géologiquesx'])
+
+    def test_a_text_cut_by_its_line_breaks(self):
+        # Un courriel montre ligne à ligne un texte de catalogue qui en a plusieurs
+        self.assertEqual(self.reviewed(['Vous pouvez lui attribuer un rôle sur votre observatoire deppuis la page suivante :']),
+                         ['Vous pouvez lui attribuer un rôle sur votre observatoire depuis la page suivante :'])
+
+    def test_a_line_break_written_in_json_separates_words(self):
+        self.assertEqual(self.reviewed(['{"name": "Type de paramètre\\nType de Paramètre"}']),
+                         ['{"name": "Type de paramètre\\nType de paramètre"}'])
+
+    def test_a_text_written_in_json_with_coded_characters(self):
+        old = 'D div data-notices={"success":["Les couleurs des qualit\\u00e9es du jeu \\u00ab\\u00a0V\\u00a0\\u00bb ont \\u00e9t\\u00e9 enregistr\\u00e9es."]}'
+        self.assertEqual(self.reviewed([old]), [old.replace('qualit\\u00e9es', 'qualit\\u00e9s')])
+
+    def test_a_shared_segment_stays_but_the_history_menu_changes(self):
+        # « Milieu » est aussi l'en-tête d'une colonne de l'historique : seul le menu, après son ancre, passe au pluriel
+        self.assertEqual(self.reviewed(['T Milieu', 'A #adminMilieu', 'D a data-toggle=tab', 'T Milieu']),
+                         ['T Milieu', 'A #adminMilieu', 'D a data-toggle=tab', 'T Milieux'])
+
+    def test_the_lines_of_the_javascript_translations_stay(self):
+        line = 't.add("historique.theiaCategories", "Correspondance des TheiaCategories", "messages", "fr");'
+        self.assertEqual(self.reviewed([line]), [line])
+
+    def test_a_formatted_description(self):
+        rule, = compare.expected.description_rules([(['T a', 'T b'], ['T a b']), (['T c'], ['T c'])])
+        self.assertEqual(rule.rewrite(['T x', 'T a', 'T b', 'T y', 'T a']), ['T x', 'T a b', 'T y', 'T a'])
 
 
 class ReportFacts(unittest.TestCase):
