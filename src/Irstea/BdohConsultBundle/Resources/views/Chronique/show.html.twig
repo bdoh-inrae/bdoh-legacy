@@ -72,6 +72,18 @@
          # l'accueil d'un observatoire (Lou, 2026-11-16) #}
         <h1>{{ chronique }} <small>{{ 'Chronique'|trans({}, 'entitiesSingulars') }}</small></h1>
 
+        {#- Ses consultations et ses téléchargements, en public (Lou, 2026-11-12 et 16 ; Statistics\Usage) : entre deux marques,
+         # que la comparaison des pages retire, ses chiffres changeant à chaque visite #}
+        <!-- Usage -->
+        <p class="series-usage text-muted">
+            {%- set en = app.request.locale starts with 'en' -%}
+            {{ 'usage.views(%views%)'|trans({'%views%': usage.views|number_format(0, en ? '.' : ',', en ? ',' : ' ')}) }}
+            {%- if usage.viewsSince %} {{ 'usage.since(%date%)'|trans({'%date%': usage.viewsSince|date(en ? 'Y-m-d' : 'd/m/Y')}) }}{% endif %}.
+            {{ 'usage.downloads(%downloads%)'|trans({'%downloads%': usage.downloads|number_format(0, en ? '.' : ',', en ? ',' : ' ')}) }}
+            {%- if usage.downloadsSince %} {{ 'usage.sinceYear(%year%)'|trans({'%year%': usage.downloadsSince}) }}{% endif %}.
+        </p>
+        <!-- END_Usage -->
+
         {% if hasActiveJobs and is_granted('JOB_LIST', currentObservatoire()) %}
             <div class="col-md-24 alert alert-info">
                 {{ 'activeJobsInfo(%jobPageLink%)'|trans({'%jobPageLink%':jobPage})|raw }}

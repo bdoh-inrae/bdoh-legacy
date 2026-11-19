@@ -18,6 +18,7 @@ use Irstea\BdohLoggerBundle\Logger\BdohLogger;
 use Doctrine\Persistence\ManagerRegistry;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
+use Symfony\Component\Translation\LocaleSwitcher;
 use Twig\Environment;
 
 /**
@@ -76,7 +77,8 @@ class ExporterBuilder
         #[Autowire('%irstea_bdoh_data.measure_export.default_termofuses_file%')] string $defaultTosPath,
         #[Autowire('%irstea_bdoh_data.measure_export.open_licence_files%')] private array $openLicenceFiles,
         private UrlGeneratorInterface $router,
-        private Citations $citations
+        private Citations $citations,
+        private LocaleSwitcher $localeSwitcher
     ) {
         $this->formatterFactory = $formatterFactory;
         $this->extractorFactory = $extractorFactory;
@@ -102,7 +104,9 @@ class ExporterBuilder
         $extractor = $this->createExtractor($parameters['extractor'], $formatter, $parameters);
         $reporter = $this->createReporter($parameters);
 
-        $exporter = $this->createExporter($extractor, $reporter, $archiver)->setFormat($parameters['format']);
+        $exporter = $this->createExporter($extractor, $reporter, $archiver)->setFormat($parameters['format'])
+            ->setUpdates(new Updates($this->doctrine->getConnection()))
+            ->setLocaleSwitcher($this->localeSwitcher);
         if (strtolower($parameters['format']) === 'csv') {
             $jeuToJeu = $this->createJeuToJeu($parameters['observatoire'], $this->formatterFactory->create($parameters['format']));
             $exporter->setMetadata(new Metadata(

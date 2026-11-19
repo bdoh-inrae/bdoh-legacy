@@ -483,6 +483,10 @@ def titles(lines):
 
 
 FAVORITES = 'Favoris et étiquettes'
+# Les statistiques d'usage (Lou, 2026-11-16) : l'entrée du menu de l'administration, sous l'historique, pour qui le voit ;
+# le reste se vérifie à part (« nouveau seul : statistiques » dans state)
+STATISTICS = "Statistiques d'usage"
+STATISTICS_MENU = (RX(rf'\+A {OBS}/statistics'), '+T Statistiques', '+T Statistics')
 # L'entrée du menu du compte, sur toute page d'un compte connecté, et l'étoile d'une chronique, dans les pages de
 # consultation (dev/plans/2026-11-12_favorites.md) ; le reste se vérifie à part (« nouveau seul : favoris » dans accounts)
 FAVORITE_MENU = ('+A /favorites', '+T Mes favoris', '+T My favourites')
@@ -663,6 +667,8 @@ RULES = [
     Rule('pages', r'.*', TERMS, rewrite=doi_links),
     *(Rule(mode, r'(?!anonyme ).*', FAVORITES, lines=FAVORITE_MENU) for mode in ('pages', 'admin', 'accounts')),
     Rule('theia', r'contrôle .*', FAVORITES, lines=FAVORITE_MENU),
+    *(Rule(mode, r'(?!anonyme ).*', STATISTICS, lines=STATISTICS_MENU) for mode in ('pages', 'admin', 'accounts', 'imports', 'state')),
+    Rule('theia', r'contrôle .*', STATISTICS, lines=STATISTICS_MENU),
     Rule('pages', r'(?!anonyme ).*', FAVORITES, lines=FAVORITE_STAR),
     # Les mêmes, dans les étapes de state, qui montrent les pages d'une chronique après qu'on l'a vidée sur une période
     Rule('state', 'étapes', HEADER, rewrite=per_page(header)),

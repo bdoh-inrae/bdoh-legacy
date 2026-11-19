@@ -4,6 +4,7 @@
 
 namespace Irstea\BdohDataBundle\Exporter\Measure;
 
+use Symfony\Component\Translation\LocaleSwitcher;
 use Irstea\BdohDataBundle\Entity\Chronique;
 use Irstea\BdohDataBundle\Entity\Observatoire;
 use Irstea\BdohDataBundle\Exporter\Measure\Csv\Metadata;
@@ -63,9 +64,35 @@ class Exporter implements ExporterInterface
     /** @var array<int, array> ce qu'a dit l'extraction de chaque chronique, par identifiant */
     private $reports = [];
 
+    /** @var Updates|null la date de dernière mise à jour des chroniques, pour le README et meta_series.csv */
+    private $updates;
+
+    /** @var array<int, string|null> ces dates, par identifiant de chronique */
+    private $updateDates = [];
+
+    /** Les deux README de chaque archive, quelle que soit la langue de l'export (Lou, 2026-11-19) */
+    public const READMES = ['fr' => 'README_fr.txt', 'en' => 'README_en.txt'];
+
     public function setFormat(string $format): self
     {
         $this->format = strtolower($format);
+
+        return $this;
+    }
+
+    /** @var LocaleSwitcher|null la langue de chaque README, pour ce qu'il traduit (le calcul d'une chronique calculée) */
+    private $localeSwitcher;
+
+    public function setLocaleSwitcher(?LocaleSwitcher $localeSwitcher): self
+    {
+        $this->localeSwitcher = $localeSwitcher;
+
+        return $this;
+    }
+
+    public function setUpdates(?Updates $updates): self
+    {
+        $this->updates = $updates;
 
         return $this;
     }
@@ -175,6 +202,7 @@ class Exporter implements ExporterInterface
     {
         /** @var Observatoire $observatoire */
         $observatoire = $chroniques[0]->getObservatoire();
+        $this->updateDates = $this->updates?->dates($chroniques) ?? [];
 
         $this->addLicences($chroniques, $observatoire);
 
@@ -204,7 +232,7 @@ class Exporter implements ExporterInterface
     private function addMetadata(array $chroniques, Observatoire $observatoire)
     {
         $this->generateFile(Tables::SERIES_FILE, function ($output) use ($chroniques) {
-            $this->metadata->writeSeries($chroniques, $this->reports, $output);
+            $this->metadata->writeSeries($chroniques, $this->reports, $this->updateDates, $output);
 
             return true;
         });
@@ -298,7 +326,9 @@ class Exporter implements ExporterInterface
 
     /**
      * Le README, qui remplace l'ancien Report.txt (dev/plans/2026-11-13_fair-exports.md) : ce que disait le rapport,
-     * et ce qu'il faut pour réutiliser les données sans rien d'autre (licence, citation, fichiers, colonnes).
+     * et ce qu'il faut pour réutiliser les données sans rien d'autre (licence, citation, fichiers, colonnes). Deux,
+     * en français et en anglais, quelle que soit la langue de l'export : une archive circule entre collègues (Lou,
+     * 2026-11-19 ; 12 Ko de plus).
      *
      * @param Chronique[] $chroniques
      *
@@ -307,7 +337,7 @@ class Exporter implements ExporterInterface
     private function addReadme(array $chroniques)
     {
         $visible = array_values(array_filter($chroniques, fn (Chronique $chronique) => $chronique->getEstVisible()));
-        $files = [...$this->names, 'README.txt'];
+        $files = [...$this->names, ...array_values(self::READMES)];
         sort($files, SORT_STRING | SORT_FLAG_CASE);
         $this->reporter->addParameters([
             'files'          => $files,
@@ -318,16 +348,23 @@ class Exporter implements ExporterInterface
             'hiddenCount'    => count($chroniques) - count($visible),
             'tables'         => $this->format === 'csv' ? Tables::all() : [],
             'missing'        => Tables::MISSING,
+            'updates'        => $this->updateDates,
         ]);
 
-        return $this->generateFile(
-            'README.txt',
-            function ($output) {
+        $written = true;
+        foreach (self::READMES as $lang => $name) {
+            $this->reporter->addParameters(['lang' => $lang]);
+            // Le README d'une langue traduit aussi ce que le traducteur écrit (le calcul d'une chronique calculée, ses
+            // dates), et non dans la langue de l'export
+            $write = fn () => $this->generateFile($name, function ($output) {
                 $this->reporter->writeTo($output);
 
                 return true;
-            }
-        );
+            });
+            $written = ($this->localeSwitcher ? $this->localeSwitcher->runWithLocale($lang, $write) : $write()) && $written;
+        }
+
+        return $written;
     }
 
     /**

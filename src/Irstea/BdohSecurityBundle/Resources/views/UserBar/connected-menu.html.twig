@@ -92,6 +92,8 @@
                 {% if userIsAllManager or userIsManager or userIsSiteManager or userIsContributor %}
                     <li><a href="{{ path('irstea_bdoh_logger_advancedSearch') }}">{{ 'historique.advancedSearch'|trans }}</a></li>
                     <li><a href="{{ path('irstea_bdoh_logger_advancedSearch_recent') }}">{{ 'historique.advancedSearchRecent'|trans }}</a></li>
+                    {#- Les statistiques d'usage, tirées de l'historique et du compteur des consultations (Lou, 2026-11-16) #}
+                    <li><a href="{{ path('bdoh_consult_statistics') }}">{{ 'statistics.menu'|trans }}</a></li>
                 {% endif %}
 
             {% endblock entity_admin_links %}

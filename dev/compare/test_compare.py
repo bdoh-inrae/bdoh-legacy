@@ -715,14 +715,14 @@ class ReportFacts(unittest.TestCase):
         'Période demandée : du 2024-01-01 00:00:00 UTC au 2025-01-01 00:00:00 UTC', 'Fuseau horaire des dates : UTC+01:00',
         'Valeurs : rééchantillonnées à pas de temps fixe', 'Rééchantillonnage : moyenne', 'Pas de temps : 1 mois',
         'Chroniques : 3', '', '# INFORMATIONS MÉTHODOLOGIQUES ____', '', '## V3019111 / DEB ____', 'Nom : Débit',
-        'Page : http://x/YZERON/V3019111/DEB', 'Mesures présentes : 8784, du 2024-01-01 01:00:00 au 2025-01-01 00:00:00',
+        'Page : http://x/YZERON/V3019111/DEB', 'Dernière mise à jour : 2024-05-03', 'Mesures présentes : 8784, du 2024-01-01 01:00:00 au 2025-01-01 00:00:00',
         'Valeurs exportées : 12, dont 0 lacunes', 'Fichier : V3019111_DEB.txt', 'Généalogie :', '  Mesures à la minute',
         '  par une sonde.', 'Calcul :', '  Chronique mère unique : «\u00a0V3019111 / HT\u00a0»',
         '    Barème «\u00a0B1\u00a0», crée le 06/03/2014 00:00:00 UTC, appliqué à partir du',
         '    15/11/2000 00:00:00 UTC', '', '## LAVAL / PRCP ____', 'Nom : Pluie', 'Page : http://x/DRAIX/LAVAL/PRCP',
         'Mesures présentes : 1, le 2024-03-01 00:00:00', 'Valeurs exportées : 1, dont 0 lacunes', 'Fichier : LAVAL_PRCP.txt',
         '', '## X / Y ____', 'Nom : Z', 'Page : http://x/DRAIX/X/Y', 'Erreur :', '  Oups', '', '# APERÇU DES FICHIERS ____',
-        '  - README.txt : ce fichier.',
+        '  - README_fr.txt : ce fichier ; README_en.txt : le même, en anglais.',
     ]
 
     def test_the_old_report_and_the_readme_say_the_same(self):
@@ -762,7 +762,10 @@ class ReportFacts(unittest.TestCase):
         # Le marqueur de la console dit lequel des deux on lit
         console = lambda name, lines: [f'# Printing {name} from /tmp/x', '', *lines]
         self.assertEqual(compare.with_report_facts(console('Report.txt', old))[1:],
-                         compare.with_report_facts(console('README.txt', new))[1:])
+                         compare.with_report_facts(console('README_fr.txt', new))[1:])
+        # Le README anglais, le même en anglais, ne compte pas dans la comparaison à l'ancien
+        self.assertEqual(compare.with_report_facts(console('Report.txt', old))[1:],
+                         compare.with_report_facts([*console('README_fr.txt', new), *console('README_en.txt', ['Last update: x'])])[1:-1])
 
     def test_nothing_exported(self):
         old = ['Chronique « A / B » :', '    Aucune mesure présente', '    Export réalisé à pas de temps fixe',

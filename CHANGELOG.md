@@ -4,6 +4,10 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/). Numéros de v
 
 ## Non publié
 
+### Ajouté
+
+- Les statistiques d'usage, la contrepartie de l'ouverture des données. La page de chaque chronique dit combien de fois elle a été consultée et téléchargée. Un compteur des consultations suit les règles de COUNTER (un visiteur une fois par heure, sans les robots), sans garder de donnée personnelle ni poser de cookie. Une page "Statistiques", pour qui voit l'historique, donne la vie de l'observatoire par année et par chronique, en tableaux téléchargeables en CSV ; pour qui gère tous les observatoires, celle de tout BDOH.
+
 ### Modifié
 
 - La page d'une chronique réservée dit, à qui n'y a pas droit, ce qu'est la chronique : réservée aux membres de l'observatoire pour son travail interne, diffusée par les partenaires qui la portent, avec son producteur, sa station et le lien des gestionnaires. Un membre y est invité à se connecter, puis à demander l'accès.
@@ -11,6 +15,8 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/). Numéros de v
 - Le lien "Demander un accès aux données" devient "Accès des membres de l'observatoire". Au menu du compte comme dans le courriel de bienvenue, il ne paraît plus que dans un observatoire qui a des chroniques réservées.
 - Sans compte, la fenêtre d'export dit en deux lignes ce qu'un compte apporte, et la licence en deux phrases, pour que le bouton "Exporter" reste à l'écran d'un portable. Le README d'un export ne parle plus d'usage commercial.
 - L'inscription et la page du compte ne demandent plus ni téléphone ni adresse. Le texte sur les données personnelles dit à quoi servent les informations d'un compte, et les mentions légales que le nom des gestionnaires se voit sur l'accueil de leur observatoire, leur adresse une fois connecté.
+- L'archive d'un export porte deux README, en français et en anglais, quelle que soit la langue de l'export, et chacun donne la date de dernière mise à jour de chaque chronique, que la Licence Ouverte demande de mentionner.
+- Le format CSV : une colonne `parameter`, le code du paramètre, dans les fichiers de valeurs, pour prendre tous les débits ou toutes les températures de la table longue ; dans `meta_series.csv`, `parameter` porte désormais le code (le nom passe dans `parameter_name`), et `updated` la date de dernière mise à jour. La description CSVW est en français et en anglais.
 - Les seuils de volume d'un export se règlent dans l'environnement de la machine, sans nouvelle version. Le second seuil des valeurs calculées passe de 1 million à 1 200 000 : un export que l'ancien BDOH acceptait n'est jamais refusé, au plus il demande un compte.
 
 ### Corrigé

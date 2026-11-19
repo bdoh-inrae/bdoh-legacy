@@ -1,0 +1,90 @@
+{#-
+ # La page « Statistiques » d'un observatoire, ou de tout BDOH (StatisticsController) : sa vie par année, puis par
+ # chronique, chaque tableau téléchargeable en CSV (le détail par chronique et par année n'est que dans le CSV).
+ #}
+{% extends '@IrsteaBdohConsult/layout.html.twig' %}
+{% from 'macros.html.twig' import pageTitle %}
+
+{% set en = app.request.locale starts with 'en' %}
+{% set scope = all ? {'all': 1} : {} %}
+
+{% block title %}
+    {{ pageTitle('statistics.title'|trans) }}
+{% endblock %}
+
+{% block breadcrumb %}
+    <ul class="breadcrumb">
+        {% from 'macros.html.twig' import breadcrumbRoot %}{{ breadcrumbRoot() }}
+        <li class="active">{{ 'statistics.title'|trans }}</li>
+    </ul>
+{% endblock %}
+
+{% block main %}
+    <h1>{{ 'statistics.title'|trans }} <small>{{ all ? 'statistics.allBdoh'|trans : currentObservatoire().nom }}</small></h1>
+
+    <p>{{ 'statistics.intro'|trans }}</p>
+    {% if canSeeAll %}
+        <p>
+            {% if all %}
+                <a href="{{ path('bdoh_consult_statistics') }}">{{ 'statistics.seeObservatory(%name%)'|trans({'%name%': currentObservatoire().nom}) }}</a>
+            {% else %}
+                <a href="{{ path('bdoh_consult_statistics', {'all': 1}) }}">{{ 'statistics.seeAll'|trans }}</a>
+            {% endif %}
+        </p>
+    {% endif %}
+
+    <h2>{{ 'statistics.byYear'|trans }}</h2>
+    <p><a href="{{ path('bdoh_consult_statistics', scope|merge({'csv': 'years'})) }}">{{ 'statistics.csv'|trans }}</a></p>
+    <div class="table-responsive">
+        <table class="table table-condensed table-striped statistics-years">
+            <thead>
+                <tr>
+                    <th>{{ 'statistics.columns.year'|trans }}</th>
+                    {% for column in columns|merge(['views']) %}
+                        <th class="text-right">{{ ('statistics.columns.' ~ column)|trans }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in years|reverse %}
+                    <tr>
+                        <td>{{ row.year }}</td>
+                        {% for column in columns|merge(['views']) %}
+                            <td class="text-right">{{ row[column]|number_format(0, en ? '.' : ',', en ? ',' : ' ') }}</td>
+                        {% endfor %}
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <p class="text-muted">{{ 'statistics.notes'|trans }}</p>
+
+    <h2>{{ 'statistics.bySeries'|trans }}</h2>
+    <p><a href="{{ path('bdoh_consult_statistics', scope|merge({'csv': 'series'})) }}">{{ 'statistics.csvBySeries'|trans }}</a></p>
+    <div class="table-responsive">
+        <table class="table table-condensed table-striped statistics-series">
+            <thead>
+                <tr>
+                    {% if all %}<th>{{ 'statistics.columns.observatory'|trans }}</th>{% endif %}
+                    <th>{{ 'statistics.columns.station'|trans }}</th>
+                    <th>{{ 'statistics.columns.series'|trans }}</th>
+                    <th class="text-right">{{ 'statistics.columns.imported_values'|trans }}</th>
+                    <th class="text-right">{{ 'statistics.columns.downloads'|trans }}</th>
+                    <th class="text-right">{{ 'statistics.columns.views'|trans }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in series %}
+                    <tr>
+                        {% if all %}<td>{{ row.observatory }}</td>{% endif %}
+                        <td>{{ row.station }}</td>
+                        <td>{{ row.series }}</td>
+                        <td class="text-right">{{ row.imported_values|number_format(0, en ? '.' : ',', en ? ',' : ' ') }}</td>
+                        <td class="text-right">{{ row.downloads|number_format(0, en ? '.' : ',', en ? ',' : ' ') }}</td>
+                        <td class="text-right">{{ row.views|number_format(0, en ? '.' : ',', en ? ',' : ' ') }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endblock %}

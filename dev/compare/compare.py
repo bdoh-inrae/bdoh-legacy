@@ -583,6 +583,9 @@ MANAGERS_TAB = re.compile(r'<!-- Managers tab -->.*?<!-- END_Managers tab -->', 
 # Les blocs de citation d'un observatoire et d'un jeu de données (Lou, 2026-11-16), que seul le nouveau a : ils sortent
 # de la comparaison des pages, et « nouveau seul : citations » les lit
 CITATION_BLOCK = re.compile(r'<!-- Citation block -->.*?<!-- END_Citation block -->', re.S)
+# Les consultations et les téléchargements d'une chronique, sur sa page (Lou, 2026-11-16) : leurs chiffres changent à
+# chaque visite ; ils sortent de la comparaison des pages, et « nouveau seul : statistiques » les lit
+USAGE_BLOCK = re.compile(r'<!-- Usage -->.*?<!-- END_Usage -->', re.S)
 
 
 def page_lines(site, status, headers, body, strip_export=False, strip_managers=True):
@@ -598,6 +601,7 @@ def page_lines(site, status, headers, body, strip_export=False, strip_managers=T
         text = LEGAL_NOTICE.sub('', body.decode('utf-8', 'replace'))
         text = MANAGERS_TAB.sub('', text) if strip_managers else text
         text = CITATION_BLOCK.sub('', text)
+        text = USAGE_BLOCK.sub('', text)
         text = EXPORT_WIDGETS.sub('', text) if strip_export else text
         parser.feed(EXPORT_ARCHIVE.sub('', EXPORT_HELP.sub('', EXPORT_TERMS.sub('', text))))
         parser.flush()
@@ -1084,9 +1088,9 @@ def terms_checks(side, slug, report):
     observatoire. L'ancienne adresse de chaque observatoire y renvoie (expected.py, règle des conditions)."""
     problems = []
     wanted = {'fr': ["Licence Ouverte d'Etalab", 'documents/Licence-Ouverte-2.0-fr.pdf', 'documents/Open-Licence-2.0-en.pdf',
-                     'documents/ConditionsGeneralesUtilisation.pdf', 'README.txt',
+                     'documents/ConditionsGeneralesUtilisation.pdf', 'README_fr.txt',
                      'et les photographies des observatoires sont sous la même licence, sauf les logos et les coordonnées'],
-              'en': ['Etalab Open Licence', 'documents/ConditionsGeneralesUtilisation.pdf', 'README.txt',
+              'en': ['Etalab Open Licence', 'documents/ConditionsGeneralesUtilisation.pdf', 'README_en.txt',
                      'and the photographs of the observatories are under the same licence, except logos and contact details']}
     for language, words in wanted.items():
         guest = Client(side, None, slug)
@@ -1544,23 +1548,27 @@ def run_exports(args):
 
 # Le rapport de l'ancien (Report.txt) et le README du nouveau, qui le remplace (dev/differences.md, « Le README des
 # exports ») : ce qu'ils disent tous deux, sous une même forme. Le reste du README se vérifie à part (csv_checks).
-REPORT_FILE = re.compile(r'# Printing (?:Report|README)\.txt from ')
+REPORT_FILE = re.compile(r'# Printing (?:Report\.txt|README_fr\.txt) from ')
+# Le README anglais, le même en anglais (Lou, 2026-11-19) : la comparaison à l'ancien, en français, prend le français ;
+# csv_checks lit les deux
+OTHER_README = re.compile(r'# Printing README_en\.txt from ')
 
 
 def with_report_facts(lines):
     """La sortie d'un export en console, où chaque fichier commence par « # Printing NOM from … » : le rapport ou le
     README réduit à report_facts, les autres fichiers tels quels."""
-    out, section, old = [], None, False
+    out, section, old, skip = [], None, False, False
     for line in [*lines, '# Printing <fin> from ']:
         if line.startswith('# Printing '):
             if section is not None:
                 out += ['== rapport', *report_facts(section, old)]
             section = [] if REPORT_FILE.match(line) else None
+            skip = bool(OTHER_README.match(line))
             old = line.startswith('# Printing Report.txt ')
             out.append(line)
         elif section is not None:
             section.append(line)
-        else:
+        elif not skip:
             out.append(line)
     return out[:-1]
 
@@ -1724,10 +1732,10 @@ CSV_CASES = [
     ('cachée et ouverte', ["c.dtype = 'continue' AND NOT c.estvisible", "c.dtype = 'continue' AND c.estvisible"], 'identical', [], '+01:00', 'fr'),
 ]
 CSV_COLUMNS = {
-    'measures': ['station', 'series', 'time', 'time_end', 'value', 'unit', 'quality', 'value_min', 'value_max'],
-    'meta_series.csv': ['station', 'series', 'name', 'parameter', 'parameter_code', 'unit', 'kind', 'sampling',
+    'measures': ['station', 'series', 'parameter', 'time', 'time_end', 'value', 'unit', 'quality', 'value_min', 'value_max'],
+    'meta_series.csv': ['station', 'series', 'name', 'parameter', 'parameter_name', 'unit', 'kind', 'sampling',
                         'direction', 'valid_min', 'valid_max', 'producer', 'dataset', 'dataset_doi', 'access',
-                        'licence', 'page', 'file', 'n_values', 'n_gaps', 'time_first', 'time_last'],
+                        'licence', 'updated', 'page', 'file', 'n_values', 'n_gaps', 'time_first', 'time_last'],
     'meta_station.csv': ['station', 'name', 'latitude', 'longitude', 'altitude', 'municipality', 'insee_code',
                          'sites', 'page'],
     'meta_quality.csv': ['quality', 'label', 'gap'],
@@ -1790,16 +1798,19 @@ def csv_checks(base, side, report):
         qualities = {row[0]: row[2] for row in tables['meta_quality.csv'][1:]}
         series = {(row[0], row[1]): dict(zip(CSV_COLUMNS['meta_series.csv'], row)) for row in tables['meta_series.csv'][1:]}
         for (cid, code, _, station, visible, _), measure_file in zip(chroniques, measure_files):
-            # L'unité de chaque ligne (Lou, 2026-11-16) : retirée ici après avoir été comparée à celle de meta_series.csv,
-            # pour que la suite lise station, chronique, dates, valeur, qualité, minimum, maximum
+            # Le paramètre et l'unité de chaque ligne (Lou, 2026-11-16 et 19) : retirés ici après avoir été comparés à ceux
+            # de meta_series.csv, pour que la suite lise station, chronique, dates, valeur, qualité, minimum, maximum
             rows = tables[measure_file][1:]
             wanted_unit = series.get((station, code), {}).get('unit')
-            if any(len(row) != 9 for row in rows):
-                problems.append(f'{measure_file} : une ligne n’a pas 9 colonnes')
+            wanted_parameter = series.get((station, code), {}).get('parameter')
+            if any(len(row) != 10 for row in rows):
+                problems.append(f'{measure_file} : une ligne n’a pas 10 colonnes')
                 continue
-            if {row[5] for row in rows} - {wanted_unit}:
-                problems.append(f'{measure_file} : unité {sorted({row[5] for row in rows})}, {wanted_unit} dans meta_series.csv')
-            values = [row[:5] + row[6:] for row in rows]
+            if {row[6] for row in rows} - {wanted_unit}:
+                problems.append(f'{measure_file} : unité {sorted({row[6] for row in rows})}, {wanted_unit} dans meta_series.csv')
+            if {row[2] for row in rows} - {wanted_parameter}:
+                problems.append(f'{measure_file} : paramètre {sorted({row[2] for row in rows})}, {wanted_parameter} dans meta_series.csv')
+            values = [row[:2] + row[3:6] + row[7:] for row in rows]
             for row in values:
                 if len(row) != 8 or row[:2] != [station, code] or not iso.fullmatch(row[2]) or not row[2].endswith(tz) \
                         or not (row[3] == 'NA' or iso.fullmatch(row[3])) or row[5] not in qualities \
@@ -1842,6 +1853,14 @@ def csv_checks(base, side, report):
                                 f"{s['time_first']} à {s['time_last']} ; dans le fichier {n}, {len(values) - n}")
             if not s['page'].endswith(f'/{station}/{code}'):
                 problems.append(f"page {s['page']}")
+            # Le code du paramètre et la date de dernière mise à jour, contre la base : le calcul d'une chronique calculée
+            # ou convertie, sinon son dernier import ou sa dernière suppression de valeurs (Lou, 2026-11-19)
+            known = query(base, f"""SELECT coalesce(p.code, 'NA'), coalesce(to_char(coalesce(c.miseajour, (
+                                         SELECT max(h.date) FROM historique h WHERE h.chronique_id = c.id
+                                            AND h.dtype IN ('donneesImport', 'donneesSuppression'))), 'YYYY-MM-DD'), 'NA')
+                                    FROM chronique c LEFT JOIN typeparametre p ON p.id = c.parametre_id WHERE c.id = {cid}""", NEW_SERVER)[0]
+            if (s['parameter'], s['updated']) != tuple(known):
+                problems.append(f"meta_series.csv : paramètre {s['parameter']}, mise à jour {s['updated']} ; dans la base {known}")
         if len(series) != len(chroniques):
             problems.append(f'meta_series.csv : {len(series)} lignes pour {len(chroniques)} chroniques')
         stations = tables['meta_station.csv'][1:]
@@ -1871,18 +1890,35 @@ def csv_checks(base, side, report):
                 problems.append('csv-metadata.json : licence du groupe')
         except (ValueError, KeyError, TypeError, AttributeError) as e:
             problems.append(f'csv-metadata.json illisible : {e!r}')
-        # Le README nomme chaque fichier, décrit chaque colonne, ligne entière, et tient en 80 colonnes
-        readme = files.get('README.txt', [])
-        for file in files:
-            if f'├── {file}' not in readme and f'└── {file}' not in readme:
-                problems.append(f'README.txt ne nomme pas {file}')
-        for wanted in {c for cs in CSV_COLUMNS.values() for c in cs}:
-            if f'- displayed_name: {wanted}' not in readme:
-                problems.append(f'README.txt ne décrit pas la colonne {wanted}')
-        if 'Code des valeurs manquantes : NA' not in readme and 'Missing data code: NA' not in readme:
-            problems.append('README.txt ne dit pas NA')
-        if any(len(line) > 80 for line in readme if not re.search(r'https?://\S{50,}', line)):
-            problems.append('README.txt : ligne de plus de 80 caractères')
+        # Les deux README, en français et en anglais quelle que soit la langue de l'export (Lou, 2026-11-19) : chacun nomme
+        # chaque fichier, décrit chaque colonne, ligne entière, dit la date de mise à jour de chaque chronique, et tient
+        # en 80 colonnes
+        for readme_name, missing, update in (('README_fr.txt', 'Code des valeurs manquantes : NA', 'Dernière mise à jour : '),
+                                             ('README_en.txt', 'Missing data code: NA', 'Last update: ')):
+            readme = files.get(readme_name, [])
+            for file in files:
+                if f'├── {file}' not in readme and f'└── {file}' not in readme:
+                    problems.append(f'{readme_name} ne nomme pas {file}')
+            for wanted in {c for cs in CSV_COLUMNS.values() for c in cs}:
+                if f'- displayed_name: {wanted}' not in readme:
+                    problems.append(f'{readme_name} ne décrit pas la colonne {wanted}')
+            if missing not in readme:
+                problems.append(f'{readme_name} ne dit pas NA')
+            # (une valeur trop longue passe sous son libellé, que field() écrit seul, sans l'espace final)
+            if sum(line.startswith(update) or line == update.rstrip() for line in readme) != len(chroniques):
+                problems.append(f'{readme_name} : la date de mise à jour manque à une chronique')
+            if any(len(line) > 80 for line in readme if not re.search(r'https?://\S{50,}', line)):
+                problems.append(f'{readme_name} : ligne de plus de 80 caractères')
+        # La description CSVW, dans les deux langues : le titre anglais d'une colonne est son nom, celui de l'en-tête
+        try:
+            for table in described['tables']:
+                for column in table['tableSchema']['columns']:
+                    if column['titles'].get('en') != column['name'] or not column['titles'].get('fr') \
+                            or {d['@language'] for d in column['dc:description']} != {'fr', 'en'}:
+                        problems.append(f"csv-metadata.json : titres ou descriptions de {table['url']} / {column['name']}")
+                        break
+        except (NameError, KeyError, TypeError, AttributeError) as e:
+            problems.append(f'csv-metadata.json : langues illisibles ({e!r})')
         report.add(f'nouveau seul : export CSV, {name}', ['conforme'], problems or ['conforme'])
 
 
@@ -1973,9 +2009,10 @@ def other_tables_lines(base, known):
     de lignes et son empreinte ; et le nombre de tables du schéma temp, que les imports remplissent. Une
     écriture dans une table qu'on n'attendait pas se voit ainsi. L'empreinte est une somme, sans tri ni texte
     assemblé : assembler celle de 257 millions de mesures dépasse la mémoire de PostgreSQL."""
+    # Le compteur des consultations, que seul le nouveau remplit, à chaque page de chronique : usage_checks le lit
     tables = [row[0] for row in query(base, """SELECT table_name FROM information_schema.tables
                                                 WHERE table_schema = 'bdoh' AND table_type = 'BASE TABLE'
-                                                ORDER BY 1""", NEW_SERVER) if row[0] not in known]
+                                                ORDER BY 1""", NEW_SERVER) if row[0] not in known and row[0] != 'series_views']
     keys = ''.join(f" - '{column}'" for column in MOMENT_COLUMNS)
     lines = []
     for table in tables:
@@ -2011,8 +2048,10 @@ def archive_lines(name, kind, body):
             if inner.endswith('.pdf') and LICENCE_FILE.search(inner):
                 continue
             content = z.read(inner)
-            if inner in ('Report.txt', 'README.txt'):
+            if inner in ('Report.txt', 'README_fr.txt'):
                 lines += ['== rapport', *report_facts(content.decode('utf-8', 'replace').splitlines(), old=inner == 'Report.txt')]
+            elif inner == 'README_en.txt':  # le même en anglais : csv_checks le lit
+                continue
             elif inner.endswith('.txt'):
                 lines += [f'== {inner}', *map(export_line, content.decode('utf-8', 'replace').splitlines())]
             else:
@@ -2298,6 +2337,93 @@ def escaped_transformation_check(side, base):
         submitted = {}
     ok = status == 200 and f'{code}&lt;b&gt;X&lt;/b&gt;' in submitted.get('chroniqueName', '') and '<b>X' not in json.dumps(submitted)
     return {name: ['conforme'] if ok else [f'non conforme : statut {status}, {submitted or body[:200]}']}
+
+
+def usage_checks(side, console, base):
+    """Les statistiques d'usage (Lou, 2026-11-12 et 16 ; dev/plans/2026-11-16_reopening.md, point 6), que seul le nouveau
+    a. Le compteur des consultations, selon les règles de COUNTER : la page d'une chronique ouverte compte une fois par
+    visiteur et par heure (la même deux fois : une seule), un robot ne compte pas, un outil de chercheur (curl) compte,
+    un refus (chronique réservée) ne compte pas. La page d'une chronique dit ses consultations, et ses téléchargements
+    tirés de l'historique. La page des statistiques : refusée sans droit, pour un gestionnaire le tableau par année et ses
+    CSV, dont les chiffres de l'année se comparent à des comptes faits à part."""
+    name = 'nouveau seul : statistiques'
+    # Les sessions du compteur survivent d'une passe à l'autre, sur la même chronique : vidées, pour qu'une passe rejouée
+    # dans la même heure compte de nouveau
+    subprocess.run([*console, 'cache:pool:clear', 'cache.series_views', '--env=prod'], check=True, capture_output=True)
+    visible = query(base, f"""SELECT c.id, c.slug, c.station, c.code FROM ({CHRONIQUES}) c WHERE c.estvisible AND c.dtype = 'continue'
+                              ORDER BY c.id LIMIT 1""", NEW_SERVER)
+    hidden = query(base, f"""SELECT c.slug, c.station, c.code FROM ({CHRONIQUES}) c WHERE NOT c.estvisible ORDER BY c.id LIMIT 1""", NEW_SERVER)
+    if not visible:
+        return {name: [NO_CASE]}
+    cid, slug, station, code = visible[0]
+    page = f'/{slug}/{station}/{code}'
+    views = lambda: int(query(base, f'SELECT coalesce(sum(views), 0) FROM series_views WHERE chronique_id = {cid}', NEW_SERVER)[0][0])
+    browser = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0'}
+    problems = []
+    guest = Client(side, None, slug)
+    before = views()
+    status, _, body = guest.get(page, None, browser)
+    counted = views()
+    guest.get(page, None, browser)
+    again = views()
+    guest.get(page, None, {'User-Agent': 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)'})
+    robot = views()
+    guest.get(page, None, {'User-Agent': 'curl/8.5.0'})
+    tool = views()
+    if (status, counted - before, again - counted, robot - again, tool - robot) != (200, 1, 0, 0, 1):
+        problems.append(f'compteur : statut {status}, +{counted - before} puis +{again - counted} (la même heure), '
+                        f'+{robot - again} (robot), +{tool - robot} (curl) ; attendu 200, +1, +0, +0, +1')
+    if hidden:
+        hslug, hstation, hcode = hidden[0]
+        refused = query(base, 'SELECT coalesce(sum(views), 0) FROM series_views', NEW_SERVER)[0][0]
+        guest.get(f'/{hslug}/{hstation}/{hcode}', None, browser)
+        if query(base, 'SELECT coalesce(sum(views), 0) FROM series_views', NEW_SERVER)[0][0] != refused:
+            problems.append('compteur : une chronique réservée refusée a compté')
+    # La page dit ses chiffres : ceux de la base
+    downloads = query(base, f"SELECT count(*) FROM historique WHERE dtype = 'donneesExport' AND chronique_id = {cid}", NEW_SERVER)[0][0]
+    shown = ' '.join(html.unescape(re.sub(r'<[^>]+>', ' ', guest.get(page, None, browser)[2].decode('utf-8', 'replace'))).split())
+    for wanted in (f'Consultations : {tool}', f"Téléchargements : {format(int(downloads), ',').replace(',', ' ')} depuis "):
+        if wanted not in shown:
+            problems.append(f'page de la chronique : "{wanted}" absent')
+    # La page des statistiques
+    if Client(side, None, slug).get(f'/{slug}/statistics')[0] not in (302, 401, 403):
+        problems.append('statistiques : ouvertes sans compte')
+    stranger = query(base, """SELECT u.email FROM utilisateur u WHERE u.roleadmin IS NULL AND (u.finacces IS NULL OR u.finacces > now())
+                                AND NOT EXISTS (SELECT 1 FROM role r WHERE r.utilisateur_id = u.id) ORDER BY u.id LIMIT 1""", NEW_SERVER)
+    if stranger and Client(side, stranger[0][0], slug).get(f'/{slug}/statistics')[0] != 403:
+        problems.append('statistiques : ouvertes à un compte sans droit')
+    manager = query(base, f"""SELECT u.email FROM utilisateur u JOIN role r ON r.utilisateur_id = u.id JOIN observatoire o ON o.id = r.observatoire_id
+                               WHERE r.valeur = 'gestionnaire' AND r.dtype = 'observatoire' AND o.slug = '{slug}' AND u.roleadmin IS NULL
+                                 AND (u.finacces IS NULL OR u.finacces > now()) ORDER BY u.id LIMIT 1""", NEW_SERVER)
+    if not manager:
+        problems.append(f'statistiques : aucun gestionnaire de {slug}')
+    else:
+        client = Client(side, manager[0][0], slug)
+        status, _, body = client.get(f'/{slug}/statistics')
+        if status != 200 or b'statistics-years' not in body:
+            problems.append(f'statistiques : statut {status} pour un gestionnaire')
+        status, headers, body = client.get(f'/{slug}/statistics?csv=years')
+        rows = [line.split(',') for line in body.decode('utf-8', 'replace').splitlines()]
+        wanted_header = ['year', 'accounts_created', 'stations_created', 'series_created', 'imports', 'imported_values',
+                         'checkpoint_imports', 'computations', 'downloads', 'downloaded_values', 'downloading_accounts',
+                         'anonymous_requests', 'views']
+        if status != 200 or not rows or rows[0] != wanted_header:
+            problems.append(f'statistiques, CSV par année : statut {status}, en-tête {rows[:1]}')
+        else:
+            by_year = {row[0]: dict(zip(wanted_header, row)) for row in rows[1:]}
+            # Des comptes faits à part, pour 2024 : les téléchargements et les valeurs importées de l'observatoire
+            expected = query(base, f"""SELECT count(*) FILTER (WHERE dtype = 'donneesExport'),
+                                              coalesce(sum(nombremesures) FILTER (WHERE dtype = 'donneesImport'), 0)
+                                         FROM historique WHERE observatoire_id = (SELECT id FROM observatoire WHERE slug = '{slug}')
+                                          AND date >= '2024-01-01' AND date < '2025-01-01'""", NEW_SERVER)[0]
+            got = (by_year.get('2024', {}).get('downloads'), by_year.get('2024', {}).get('imported_values'))
+            if got != tuple(expected):
+                problems.append(f'statistiques, 2024 : {got}, dans la base {tuple(expected)}')
+        status, _, body = client.get(f'/{slug}/statistics?csv=series')
+        header = body.decode('utf-8', 'replace').splitlines()[:1]
+        if status != 200 or header != ['observatory,station,series,year,imported_values,downloads,views']:
+            problems.append(f'statistiques, CSV par chronique : statut {status}, en-tête {header}')
+    return {name: problems or ['conforme']}
 
 
 def open_data_checks(side, console, runner, base, checks):
@@ -2674,6 +2800,7 @@ def run_state(args):
                 checks.update(emptied_with_milliseconds_check(SIDES['new'], base, cid, f'/{slug}/{station}/{code}', manager, slug))
                 checks.update(escaped_children_check(SIDES['new'], base))
                 checks.update(escaped_transformation_check(SIDES['new'], base))
+                checks.update(usage_checks(SIDES['new'], console, base))
             # Sur une copie à elle : elle ajoute des tâches et des millions de mesures, que les pages de suivi comparées
             # plus bas ne doivent pas voir
             exports = HERE.parent.parent / 'var' / 'exports'

@@ -63,7 +63,7 @@ $export = [
     <li>The volume of a download is counted in written values, all time series together. Above a first threshold, an account is required; above a second one, ten times higher, the request is refused, and the message gives the requested volume and the limit: reduce the period, the number of time series, or increase the time step, splitting the download if needed. Means and sums, much longer to compute, have lower thresholds.</li>
     <li>For downloads of continuous time series with identical time step or linear interpolation, three file formats are available: BDOH standard, Hydro2 QTVAR or CSV.</li>
     <li>For fixed time steps with mean/sum calculation options, and for discontinuous time series, two formats are available: "BDOH discontinu" or CSV.</li>
-    <li>The CSV format is a standard CSV (UTF-8, comma between columns, decimal point, ISO 8601 dates), readable in R or Python, and in a spreadsheet through its CSV import (UTF-8 encoding, comma separator); its files all have the same columns, and metadata tables come with them. The README.txt file of the archive describes them.</li>
+    <li>The CSV format is a standard CSV (UTF-8, comma between columns, decimal point, ISO 8601 dates), readable in R or Python, and in a spreadsheet through its CSV import (UTF-8 encoding, comma separator); its files all have the same columns, and metadata tables come with them. The README files of the archive, in French and in English, describe them.</li>
 </ul>
 HELP
         ,

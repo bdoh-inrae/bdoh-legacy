@@ -16,8 +16,9 @@ use Twig\Environment;
  * Le README d'un export, qui remplace l'ancien Report.txt (dev/plans/2026-11-13_fair-exports.md). Sa forme suit
  * celle que Lou fait passer dans ses curations et dans MEANDRE (texte brut de 80 colonnes, sections en capitales
  * soulignées, colonnes décrites une à une) : informations générales, licence et citation, paramètres de l'export,
- * méthode (ce que disait le rapport, chronique par chronique), fichiers, puis colonnes. En français ou en anglais,
- * selon la langue de l'export ; écrit en PHP plutôt qu'en Twig, pour tenir la mise en page au caractère près.
+ * méthode (ce que disait le rapport, chronique par chronique), fichiers, puis colonnes. Écrit deux fois, en
+ * français et en anglais (le paramètre lang, que l'Exporter change entre les deux) ; en PHP plutôt qu'en Twig, pour
+ * tenir la mise en page au caractère près.
  */
 class Readme implements ReporterInterface
 {
@@ -105,12 +106,12 @@ class Readme implements ReporterInterface
             $this->paragraph($this->t(
                 ($hidden ? sprintf('Les %d chroniques ouvertes sont', $visible) : ($visible > 1 ? 'Les chroniques sont' : 'La chronique est'))
                 . ' sous Licence Ouverte 2.0 (etalab-2.0), dont le texte est joint en français et en anglais ('
-                . implode(', ', $this->parameters['openFiles'] ?? []) . '). La réutilisation est libre, en mentionnant la source et la date de dernière mise à jour, '
-                . 'à défaut celle du téléchargement.',
+                . implode(', ', $this->parameters['openFiles'] ?? []) . '). La réutilisation est libre, en mentionnant la source et la date de dernière mise à jour, que '
+                . 'donne plus bas chaque chronique, à défaut celle du téléchargement.',
                 ($hidden ? sprintf('The %d open time series are', $visible) : ($visible > 1 ? 'The time series are' : 'The time series is'))
                 . ' under the Open Licence 2.0 (etalab-2.0), whose text is attached in French and in English ('
-                . implode(', ', $this->parameters['openFiles'] ?? []) . '). Reuse is free, mentioning the source and the date of last update, or else that of the '
-                . 'download.'
+                . implode(', ', $this->parameters['openFiles'] ?? []) . '). Reuse is free, mentioning the source and the date of last update, given below for each '
+                . 'time series, or else that of the download.'
             ), 2);
         }
         if ($hidden) {
@@ -189,6 +190,12 @@ class Readme implements ReporterInterface
                 'station'       => $station->getCode(),
                 'chronique'     => $chronique->getCode(),
             ]));
+            // La date que la Licence Ouverte demande de mentionner (Exporter\Measure\Updates), jamais inventée
+            $updated = $this->parameters['updates'][$chronique->getId()] ?? null;
+            $this->field($this->t('Dernière mise à jour', 'Last update'), $updated ?? $this->t(
+                "inconnue, BDOH n'en garde pas trace (son historique commence en février 2013)",
+                'unknown, BDOH keeps no record of it (its history starts in February 2013)'
+            ));
             if (isset($report['error'])) {
                 $this->lines[] = $this->t('Erreur :', 'Error:');
                 $this->paragraph(trim(strip_tags($report['error'])), 2);
@@ -255,7 +262,8 @@ class Readme implements ReporterInterface
         ));
 
         $this->title($this->t('Les fichiers', 'The files'), 2);
-        $this->item($this->t('README.txt : ce fichier.', 'README.txt: this file.'));
+        $this->item($this->t('README_fr.txt : ce fichier ; README_en.txt : le même, en anglais.',
+            'README_en.txt: this file; README_fr.txt: the same, in French.'));
         $this->item($this->t(
             "{station}_{chronique}.$extension : les valeurs d'une chronique" . ($csv ? ', une ligne par valeur.' : ', au format ' . (strtolower($this->parameters['format']) === 'qtvar' ? 'Hydro2 - QTVAR.' : 'BDOH.')),
             "{station}_{series}.$extension: the values of one time series" . ($csv ? ', one row per value.' : ', in the ' . (strtolower($this->parameters['format']) === 'qtvar' ? 'Hydro2 - QTVAR' : 'BDOH') . ' format.')
@@ -342,11 +350,22 @@ class Readme implements ReporterInterface
         // Les dates portent leur décalage (« +01:00 », ISO 8601), que as.POSIXct de R ne lit pas (essai du 15 novembre)
         $this->lines[] = '  values$time <- lubridate::ymd_hms(values$time)'
             . $this->t('  # lit le décalage +01:00', '  # reads the +01:00 offset');
+        // La position des stations reste dans meta_station.csv : une jointure la donne à chaque valeur (Lou, 2026-11-19)
+        $this->lines[] = '  pos <- read.csv("meta_station.csv")[c("station", "latitude", "longitude")]';
+        $this->lines[] = '  values <- merge(values, pos, by = "station")';
         $this->lines[] = $this->t('En Python :', 'In Python:');
         $this->lines[] = '  import glob, pandas';
         $this->lines[] = '  files = [f for f in glob.glob("*.csv") if not f.startswith("meta_")]';
         $this->lines[] = '  values = pandas.concat(pandas.read_csv(f) for f in files)';
         $this->lines[] = '  values["time"] = pandas.to_datetime(values["time"])';
+        $this->lines[] = '  pos = pandas.read_csv("meta_station.csv")';
+        $this->lines[] = '  values = values.merge(pos[["station", "latitude", "longitude"]], on="station")';
+        $this->paragraph($this->t(
+            'La colonne parameter, le code du paramètre, sépare les grandeurs de la table longue : tous les débits, '
+            . 'toutes les températures, quel que soit le code de leur chronique (leur nom : meta_series.csv).',
+            'The parameter column, the code of the parameter, sets the quantities of the long table apart: all the '
+            . 'discharges, all the temperatures, whatever the code of their series (their names: meta_series.csv).'
+        ));
 
         foreach ($this->tables() as $file => $table) {
             $this->title($file === '{station}_{series}.csv' ? $this->t('{station}_{chronique}.csv', $file) : $file, 2);

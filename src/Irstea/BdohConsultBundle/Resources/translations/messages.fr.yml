@@ -96,3 +96,46 @@ reserved:
     member:
         login(%link%): Membre de l'observatoire ? <a href="%link%">Connectez-vous</a>, puis demandez-en l'accès depuis le menu de votre compte.
         connected: Membre de l'observatoire ? Demandez-en l'accès depuis le menu de votre compte.
+# Les statistiques d'usage (Statistics\Usage, StatisticsController ; Lou, 2026-11-12 et 16)
+usage:
+    views(%views%): "Consultations : %views%"
+    since(%date%): depuis le %date%
+    downloads(%downloads%): "Téléchargements : %downloads%"
+    sinceYear(%year%): depuis %year%
+statistics:
+    title: Statistiques d'usage
+    menu: Statistiques
+    allBdoh: Tout BDOH
+    intro: >-
+        Ce que l'historique de BDOH dit de la vie de l'observatoire, depuis février 2013, et ce que compte le compteur
+        des consultations, depuis sa mise en service. Un téléchargement est l'export d'une chronique : un export de
+        plusieurs chroniques compte pour chacune. Une consultation est l'ouverture de la page d'une chronique, comptée
+        une fois par heure et par visiteur, sans les robots, selon les règles de COUNTER.
+    seeAll: Voir tout BDOH
+    seeObservatory(%name%): Voir %name% seul
+    byYear: Par année
+    bySeries: Par chronique, toutes années réunies
+    csv: Télécharger ce tableau (CSV)
+    csvBySeries: Télécharger le détail par chronique et par année (CSV)
+    notes: >-
+        Avant l'ouverture des données, chaque export demandait un compte : les comptes qui ont téléchargé disent combien
+        de personnes s'en sont servies. Depuis, un export se fait aussi sans compte, et la colonne des exports sans
+        compte les compte. Une chronique supprimée compte dans ce tableau, plus dans le suivant, et ses consultations
+        partent avec elle ; un export d'un compte supprimé depuis se lit comme sans compte.
+    columns:
+        year: Année
+        accounts_created: Comptes créés
+        stations_created: Stations créées
+        series_created: Chroniques créées
+        imports: Imports de mesures
+        imported_values: Mesures importées
+        checkpoint_imports: Imports de points de contrôle
+        computations: Calculs et conversions
+        downloads: Chroniques téléchargées
+        downloaded_values: Valeurs téléchargées
+        downloading_accounts: Comptes qui ont téléchargé
+        anonymous_requests: Exports sans compte
+        views: Consultations
+        observatory: Observatoire
+        station: Station
+        series: Chronique

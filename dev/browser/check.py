@@ -444,14 +444,15 @@ def open_data_steps(s, station, chronique, console, hidden):
         archive = zipfile.ZipFile(saved)
         names = archive.namelist()
         assert any('Licence-Ouverte' in name for name in names), f'pas de licence dans le zip : {names}'
-        assert 'README.txt' in names and 'Report.txt' not in names, f'pas de README : {names}'
+        # Deux README, en français et en anglais, quelle que soit la langue de l'export (Lou, 2026-11-19)
+        assert {'README_fr.txt', 'README_en.txt'} <= set(names) and 'Report.txt' not in names, f'pas de README : {names}'
         if fmt == 'Csv':
             wanted = {f'{station}_{chronique}.csv', 'meta_series.csv', 'meta_station.csv', 'meta_quality.csv', 'csv-metadata.json'}
             assert wanted <= set(names), f'il manque {wanted - set(names)}'
             header = archive.read(f'{station}_{chronique}.csv').decode().splitlines()[0]
-            assert header == 'station,series,time,time_end,value,unit,quality,value_min,value_max', f'en-tête {header}'
+            assert header == 'station,series,parameter,time,time_end,value,unit,quality,value_min,value_max', f'en-tête {header}'
         else:
-            assert any(name.endswith('.txt') and name != 'README.txt' for name in names), f'pas de données dans le zip : {names}'
+            assert any(name.endswith('.txt') and not name.startswith('README_') for name in names), f'pas de données dans le zip : {names}'
 
     s.step('export sans compte, jusqu’au fichier', chronique_page, export_to_file)
     s.step('export CSV sans compte, jusqu’au fichier', chronique_page, lambda page: export_to_file(page, 'Csv'))

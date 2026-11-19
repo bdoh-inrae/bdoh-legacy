@@ -97,3 +97,46 @@ reserved:
     member:
         login(%link%): A member of the observatory? <a href="%link%">Sign in</a>, then request access from your account menu.
         connected: A member of the observatory? Request access from your account menu.
+# Usage statistics (Statistics\Usage, StatisticsController; Lou, 2026-11-12 and 16)
+usage:
+    views(%views%): "Views: %views%"
+    since(%date%): since %date%
+    downloads(%downloads%): "Downloads: %downloads%"
+    sinceYear(%year%): since %year%
+statistics:
+    title: Usage statistics
+    menu: Statistics
+    allBdoh: All of BDOH
+    intro: >-
+        What the history of BDOH tells of the life of the observatory, since February 2013, and what the view counter
+        counts, since it was put in service. A download is the export of one time series: an export of several time
+        series counts for each. A view is the opening of the page of a time series, counted once an hour per visitor,
+        without robots, following the rules of COUNTER.
+    seeAll: See all of BDOH
+    seeObservatory(%name%): See %name% only
+    byYear: By year
+    bySeries: By time series, all years together
+    csv: Download this table (CSV)
+    csvBySeries: Download the detail by time series and by year (CSV)
+    notes: >-
+        Before the data were opened, every export required an account: the accounts that downloaded tell how many people
+        used them. Since then, an export can also be done without an account, and the column of exports without an
+        account counts them. A deleted time series counts in this table, no longer in the next one, and its views
+        go with it; an export by an account deleted since reads as without an account.
+    columns:
+        year: Year
+        accounts_created: Accounts created
+        stations_created: Stations created
+        series_created: Time series created
+        imports: Imports of values
+        imported_values: Values imported
+        checkpoint_imports: Imports of checkpoints
+        computations: Computations and conversions
+        downloads: Time series downloaded
+        downloaded_values: Values downloaded
+        downloading_accounts: Accounts that downloaded
+        anonymous_requests: Exports without an account
+        views: Views
+        observatory: Observatory
+        station: Station
+        series: Time series
