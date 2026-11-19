@@ -19,3 +19,8 @@ framework:
             # Les citations officielles des DOI, tirées de doi.org (Irstea\BdohBundle\Doi\Citations) : à part, pour
             # qu'on les vide seules (bin/console cache:pool:clear cache.doi)
             cache.doi: null
+            # Les sessions du compteur des consultations (Statistics\ViewCounter) : une empreinte par visiteur, chronique et
+            # heure, sans adresse IP en clair, et le sel du jour ; rien n'y reste au-delà d'une heure, et d'un jour pour le sel
+            cache.series_views:
+                adapter: cache.adapter.filesystem
+                default_lifetime: 3600

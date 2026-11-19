@@ -22,6 +22,8 @@ use Irstea\BdohDataBundle\Events;
 use Irstea\BdohLoggerBundle\Logger\BdohLogger;
 use Doctrine\ORM\NoResultException;
 use Irstea\BdohBundle\Exception\NotFoundEntityException;
+use Irstea\BdohConsultBundle\Statistics\Usage;
+use Irstea\BdohConsultBundle\Statistics\ViewCounter;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\HttpFoundation\ParameterBag;
 use Symfony\Component\HttpFoundation\Request;
@@ -46,8 +48,11 @@ class ChroniqueController extends Controller
      */
     private $jobManager;
 
-    public function __construct(#[Autowire(service: 'irstea_bdoh.job_manager')] JobManagerInterface $jobManager)
-    {
+    public function __construct(
+        #[Autowire(service: 'irstea_bdoh.job_manager')] JobManagerInterface $jobManager,
+        private ViewCounter $viewCounter,
+        private Usage $usage
+    ) {
         $this->jobManager = $jobManager;
     }
 
@@ -67,6 +72,9 @@ class ChroniqueController extends Controller
         if (!$authChecker->isGranted('CONSULT_TIMESERIES', $chronique)) {
             return $this->render('@IrsteaBdohConsult/Chronique/reserved.html.twig', ['chronique' => $chronique], new Response('', Response::HTTP_FORBIDDEN));
         }
+
+        // Une consultation de plus, selon les règles de COUNTER (Statistics\ViewCounter) : la page est montrée
+        $this->viewCounter->count($request, $chronique);
 
         /** @var ChroniqueRepository $chronRepo */
         $chronRepo = $this->getClassRepo($chronique);
@@ -176,6 +184,7 @@ class ChroniqueController extends Controller
             'hasActiveJobs'           => $hasActiveJobs,
             'jobPage'                 => $this->generateUrl('bdoh_job_list'),
             'conversions'             => $conversions,
+            'usage'                   => $this->usage->forChronique($chronique),
         ];
     }
 

@@ -13,3 +13,7 @@ services:
 
     Irstea\BdohConsultBundle\Controller\:
         resource: '../../Controller/'
+
+    # Les statistiques d'usage : le compteur des consultations, et les chiffres tirés de l'historique
+    Irstea\BdohConsultBundle\Statistics\:
+        resource: '../../Statistics/'

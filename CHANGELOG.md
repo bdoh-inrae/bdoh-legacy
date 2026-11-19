@@ -4,6 +4,10 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/). Numéros de v
 
 ## Non publié
 
+### Ajouté
+
+- Les statistiques d'usage, la contrepartie de l'ouverture des données. La page de chaque chronique dit combien de fois elle a été consultée et téléchargée. Un compteur des consultations suit les règles de COUNTER (un visiteur une fois par heure, sans les robots), sans garder de donnée personnelle ni poser de cookie. Une page "Statistiques", pour qui voit l'historique, donne la vie de l'observatoire par année et par chronique, en tableaux téléchargeables en CSV ; pour qui gère tous les observatoires, celle de tout BDOH.
+
 ### Modifié
 
 - La page d'une chronique réservée dit, à qui n'y a pas droit, ce qu'est la chronique : réservée aux membres de l'observatoire pour son travail interne, diffusée par les partenaires qui la portent, avec son producteur, sa station et le lien des gestionnaires. Un membre y est invité à se connecter, puis à demander l'accès.

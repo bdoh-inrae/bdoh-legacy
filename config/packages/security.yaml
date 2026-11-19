@@ -83,3 +83,4 @@ security:
         - { path: /admin/jobs, roles: ROLE_SUPER_ADMIN }
         - { path: /admin, roles: [ROLE_ADMIN, ROLE_SUPER_ADMIN] }
         - { path: /historique, roles: ROLE_ADMIN }
+        - { path: /statistics, roles: ROLE_ADMIN }

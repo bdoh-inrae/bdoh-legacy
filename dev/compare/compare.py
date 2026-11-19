@@ -583,6 +583,9 @@ MANAGERS_TAB = re.compile(r'<!-- Managers tab -->.*?<!-- END_Managers tab -->', 
 # Les blocs de citation d'un observatoire et d'un jeu de données (Lou, 2026-11-16), que seul le nouveau a : ils sortent
 # de la comparaison des pages, et « nouveau seul : citations » les lit
 CITATION_BLOCK = re.compile(r'<!-- Citation block -->.*?<!-- END_Citation block -->', re.S)
+# Les consultations et les téléchargements d'une chronique, sur sa page (Lou, 2026-11-16) : leurs chiffres changent à
+# chaque visite ; ils sortent de la comparaison des pages, et « nouveau seul : statistiques » les lit
+USAGE_BLOCK = re.compile(r'<!-- Usage -->.*?<!-- END_Usage -->', re.S)
 
 
 def page_lines(site, status, headers, body, strip_export=False, strip_managers=True):
@@ -598,6 +601,7 @@ def page_lines(site, status, headers, body, strip_export=False, strip_managers=T
         text = LEGAL_NOTICE.sub('', body.decode('utf-8', 'replace'))
         text = MANAGERS_TAB.sub('', text) if strip_managers else text
         text = CITATION_BLOCK.sub('', text)
+        text = USAGE_BLOCK.sub('', text)
         text = EXPORT_WIDGETS.sub('', text) if strip_export else text
         parser.feed(EXPORT_ARCHIVE.sub('', EXPORT_HELP.sub('', EXPORT_TERMS.sub('', text))))
         parser.flush()
@@ -2004,9 +2008,10 @@ def other_tables_lines(base, known):
     de lignes et son empreinte ; et le nombre de tables du schéma temp, que les imports remplissent. Une
     écriture dans une table qu'on n'attendait pas se voit ainsi. L'empreinte est une somme, sans tri ni texte
     assemblé : assembler celle de 257 millions de mesures dépasse la mémoire de PostgreSQL."""
+    # Le compteur des consultations, que seul le nouveau remplit, à chaque page de chronique : usage_checks le lit
     tables = [row[0] for row in query(base, """SELECT table_name FROM information_schema.tables
                                                 WHERE table_schema = 'bdoh' AND table_type = 'BASE TABLE'
-                                                ORDER BY 1""", NEW_SERVER) if row[0] not in known]
+                                                ORDER BY 1""", NEW_SERVER) if row[0] not in known and row[0] != 'series_views']
     keys = ''.join(f" - '{column}'" for column in MOMENT_COLUMNS)
     lines = []
     for table in tables:
@@ -2289,6 +2294,90 @@ def escaped_children_check(side, base):
     shown = [html.unescape(value) for value in re.findall(r'data-content="([^"]*)"', body) if child_code in html.unescape(value)]
     ok = shown and all(f'{child_code}&lt;b&gt;X&lt;/b&gt;' in value and '<b>X' not in value for value in shown)
     return {name: ['conforme'] if ok else [f'non conforme : {shown[:2] or "bulle absente"}']}
+
+
+def usage_checks(side, base):
+    """Les statistiques d'usage (Lou, 2026-11-12 et 16 ; dev/plans/2026-11-16_reopening.md, point 6), que seul le nouveau
+    a. Le compteur des consultations, selon les règles de COUNTER : la page d'une chronique ouverte compte une fois par
+    visiteur et par heure (la même deux fois : une seule), un robot ne compte pas, un outil de chercheur (curl) compte,
+    un refus (chronique réservée) ne compte pas. La page d'une chronique dit ses consultations, et ses téléchargements
+    tirés de l'historique. La page des statistiques : refusée sans droit, pour un gestionnaire le tableau par année et ses
+    CSV, dont les chiffres de l'année se comparent à des comptes faits à part."""
+    name = 'nouveau seul : statistiques'
+    visible = query(base, f"""SELECT c.id, c.slug, c.station, c.code FROM ({CHRONIQUES}) c WHERE c.estvisible AND c.dtype = 'continue'
+                              ORDER BY c.id LIMIT 1""", NEW_SERVER)
+    hidden = query(base, f"""SELECT c.slug, c.station, c.code FROM ({CHRONIQUES}) c WHERE NOT c.estvisible ORDER BY c.id LIMIT 1""", NEW_SERVER)
+    if not visible:
+        return {name: [NO_CASE]}
+    cid, slug, station, code = visible[0]
+    page = f'/{slug}/{station}/{code}'
+    views = lambda: int(query(base, f'SELECT coalesce(sum(views), 0) FROM series_views WHERE chronique_id = {cid}', NEW_SERVER)[0][0])
+    browser = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0'}
+    problems = []
+    guest = Client(side, None, slug)
+    before = views()
+    status, _, body = guest.get(page, None, browser)
+    counted = views()
+    guest.get(page, None, browser)
+    again = views()
+    guest.get(page, None, {'User-Agent': 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)'})
+    robot = views()
+    guest.get(page, None, {'User-Agent': 'curl/8.5.0'})
+    tool = views()
+    if (status, counted - before, again - counted, robot - again, tool - robot) != (200, 1, 0, 0, 1):
+        problems.append(f'compteur : statut {status}, +{counted - before} puis +{again - counted} (la même heure), '
+                        f'+{robot - again} (robot), +{tool - robot} (curl) ; attendu 200, +1, +0, +0, +1')
+    if hidden:
+        hslug, hstation, hcode = hidden[0]
+        refused = query(base, 'SELECT coalesce(sum(views), 0) FROM series_views', NEW_SERVER)[0][0]
+        guest.get(f'/{hslug}/{hstation}/{hcode}', None, browser)
+        if query(base, 'SELECT coalesce(sum(views), 0) FROM series_views', NEW_SERVER)[0][0] != refused:
+            problems.append('compteur : une chronique réservée refusée a compté')
+    # La page dit ses chiffres : ceux de la base
+    downloads = query(base, f"SELECT count(*) FROM historique WHERE dtype = 'donneesExport' AND chronique_id = {cid}", NEW_SERVER)[0][0]
+    shown = ' '.join(html.unescape(re.sub(r'<[^>]+>', ' ', guest.get(page, None, browser)[2].decode('utf-8', 'replace'))).split())
+    for wanted in (f'Consultations : {tool}', f"Téléchargements : {format(int(downloads), ',').replace(',', ' ')} depuis "):
+        if wanted not in shown:
+            problems.append(f'page de la chronique : "{wanted}" absent')
+    # La page des statistiques
+    if Client(side, None, slug).get(f'/{slug}/statistics')[0] not in (302, 401, 403):
+        problems.append('statistiques : ouvertes sans compte')
+    stranger = query(base, """SELECT u.email FROM utilisateur u WHERE u.roleadmin IS NULL AND (u.finacces IS NULL OR u.finacces > now())
+                                AND NOT EXISTS (SELECT 1 FROM role r WHERE r.utilisateur_id = u.id) ORDER BY u.id LIMIT 1""", NEW_SERVER)
+    if stranger and Client(side, stranger[0][0], slug).get(f'/{slug}/statistics')[0] != 403:
+        problems.append('statistiques : ouvertes à un compte sans droit')
+    manager = query(base, f"""SELECT u.email FROM utilisateur u JOIN role r ON r.utilisateur_id = u.id JOIN observatoire o ON o.id = r.observatoire_id
+                               WHERE r.valeur = 'gestionnaire' AND r.dtype = 'observatoire' AND o.slug = '{slug}' AND u.roleadmin IS NULL
+                                 AND (u.finacces IS NULL OR u.finacces > now()) ORDER BY u.id LIMIT 1""", NEW_SERVER)
+    if not manager:
+        problems.append(f'statistiques : aucun gestionnaire de {slug}')
+    else:
+        client = Client(side, manager[0][0], slug)
+        status, _, body = client.get(f'/{slug}/statistics')
+        if status != 200 or b'statistics-years' not in body:
+            problems.append(f'statistiques : statut {status} pour un gestionnaire')
+        status, headers, body = client.get(f'/{slug}/statistics?csv=years')
+        rows = [line.split(',') for line in body.decode('utf-8', 'replace').splitlines()]
+        wanted_header = ['year', 'accounts_created', 'stations_created', 'series_created', 'imports', 'imported_values',
+                         'checkpoint_imports', 'computations', 'downloads', 'downloaded_values', 'downloading_accounts',
+                         'anonymous_requests', 'views']
+        if status != 200 or not rows or rows[0] != wanted_header:
+            problems.append(f'statistiques, CSV par année : statut {status}, en-tête {rows[:1]}')
+        else:
+            by_year = {row[0]: dict(zip(wanted_header, row)) for row in rows[1:]}
+            # Des comptes faits à part, pour 2024 : les téléchargements et les valeurs importées de l'observatoire
+            expected = query(base, f"""SELECT count(*) FILTER (WHERE dtype = 'donneesExport'),
+                                              coalesce(sum(nombremesures) FILTER (WHERE dtype = 'donneesImport'), 0)
+                                         FROM historique WHERE observatoire_id = (SELECT id FROM observatoire WHERE slug = '{slug}')
+                                          AND date >= '2024-01-01' AND date < '2025-01-01'""", NEW_SERVER)[0]
+            got = (by_year.get('2024', {}).get('downloads'), by_year.get('2024', {}).get('imported_values'))
+            if got != tuple(expected):
+                problems.append(f'statistiques, 2024 : {got}, dans la base {tuple(expected)}')
+        status, _, body = client.get(f'/{slug}/statistics?csv=series')
+        header = body.decode('utf-8', 'replace').splitlines()[:1]
+        if status != 200 or header != ['observatory,station,series,year,imported_values,downloads,views']:
+            problems.append(f'statistiques, CSV par chronique : statut {status}, en-tête {header}')
+    return {name: problems or ['conforme']}
 
 
 def open_data_checks(side, console, runner, base, checks):
@@ -2664,6 +2753,7 @@ def run_state(args):
                     checks['nouveau seul : calcul en échec'] = [NO_CASE]
                 checks.update(emptied_with_milliseconds_check(SIDES['new'], base, cid, f'/{slug}/{station}/{code}', manager, slug))
                 checks.update(escaped_children_check(SIDES['new'], base))
+                checks.update(usage_checks(SIDES['new'], base))
             # Sur une copie à elle : elle ajoute des tâches et des millions de mesures, que les pages de suivi comparées
             # plus bas ne doivent pas voir
             exports = HERE.parent.parent / 'var' / 'exports'
