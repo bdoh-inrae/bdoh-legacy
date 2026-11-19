@@ -383,9 +383,10 @@ class TransformationController extends Controller
         return new JsonResponse(
             [
                 'submitted' => [
-                    'chroniqueName' => $chroniqueCalculee->__toString(),
-                    'chroniqueCode' => $chroniqueCalculee->getCode(),
-                    'stationCode'   => $chroniqueCalculee->getStation()->getCode(),
+                    // Insérés en HTML par la page (transformation/index.js) : échappés
+                    'chroniqueName' => htmlspecialchars($chroniqueCalculee->__toString()),
+                    'chroniqueCode' => htmlspecialchars($chroniqueCalculee->getCode()),
+                    'stationCode'   => htmlspecialchars($chroniqueCalculee->getStation()->getCode()),
                     'jobId'         => $job->getId(),
                     'jobPage'       => $this->generateUrl('bdoh_job_list'),
                 ],

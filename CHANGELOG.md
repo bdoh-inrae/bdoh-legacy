@@ -15,6 +15,7 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/). Numéros de v
 
 ### Corrigé
 
+- Trois textes saisis dans l'administration (nom d'une station, nom d'une chronique) sont échappés là où une bulle ou une page les affiche en HTML.
 - L'adresse d'une chronique inconnue, ou sous une station inconnue, répond "page introuvable" (404) au lieu d'une erreur interne.
 
 ## 0.8.0 - 2026-11-19

@@ -152,7 +152,8 @@ class ChroniqueController extends Controller
         }
 
         $children = $chronRepo->findAllChildren($chronique);
-        $childrenList = join('<br>', $children);
+        // Affichée en HTML dans la bulle de « Vider une période » (cut-modal.js) : échappée, comme dans l'administration
+        $childrenList = join('<br>', array_map(fn ($child) => htmlspecialchars((string) $child), $children));
         $childrenCount = count($children);
 
         $hasActiveJobs = $this->jobManager->hasActiveJobs($chronique);

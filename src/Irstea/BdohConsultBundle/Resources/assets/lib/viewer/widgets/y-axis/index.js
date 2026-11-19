@@ -118,10 +118,12 @@ define([
                     .tooltip({html:true})
                     .tooltip('fixTitle')
                     .toggle(!item.series || item.series.length === 0);
+                // La bulle est en HTML, pour le saut de ligne de la traduction : le nom de la station, le type de
+                // paramètre et l'unité, écrits dans l'administration, s'y échappent
                 row.find('.title')
                     .text(item)
                     .attr('title', Translator.trans('chroniqueTitle(%station%, %typeParam%)',
-                        {'station':item.stationName, 'typeParam':`${item.dataType} [${item.unit}]`}, 'viewer'))
+                        {'station': _.escape(item.stationName), 'typeParam': _.escape(`${item.dataType} [${item.unit}]`)}, 'viewer'))
                     .tooltip({html:true})
                     .tooltip('fixTitle');
                 row.find('.title').text(`${item} [${item.unit.replace('unite constructeur', 'u.c.')}]`);

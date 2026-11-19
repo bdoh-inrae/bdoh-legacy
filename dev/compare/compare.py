@@ -2232,6 +2232,32 @@ def emptied_with_milliseconds_check(side, base, cid, page, manager, slug):
             ['conforme'] if ok else [f'statut {status}, {before} mesures avant, {count()} après, {gaps} lacunes']}
 
 
+def escaped_children_check(side, base):
+    """Les filles d'une chronique, dans la bulle de "Vider une période", qui est en HTML (cut-modal.js) : leur nom,
+    "station / chronique", s'y échappe, comme dans les trois fenêtres de l'administration (dev/local/security.md). Le
+    code d'une fille reçoit une balise le temps du cas ; la bulle lit l'attribut data-content, que le gabarit échappe
+    une première fois."""
+    name = 'nouveau seul : vider une période, filles échappées dans la bulle'
+    found = query(base, f"""
+        SELECT c.slug, c.station, c.code, fille.id, fille.code, (
+                 SELECT u.email FROM utilisateur u JOIN role r ON r.utilisateur_id = u.id JOIN observatoire o ON o.id = r.observatoire_id
+                  WHERE r.valeur = 'gestionnaire' AND r.dtype = 'observatoire' AND o.slug = c.slug
+                    AND (u.finacces IS NULL OR u.finacces > now()) ORDER BY u.id LIMIT 1)
+          FROM ({CHRONIQUES}) c JOIN transformation t ON t.entree_id = c.id JOIN chronique fille ON fille.id = t.sortie_id
+         WHERE c.dtype = 'continue' ORDER BY c.id LIMIT 1""", NEW_SERVER)
+    if not found or not found[0][5]:
+        return {name: [NO_CASE]}
+    slug, station, code, child, child_code, manager = found[0]
+    query(base, f"UPDATE chronique SET code = code || '<b>X</b>' WHERE id = {child} RETURNING id", NEW_SERVER)
+    try:
+        body = Client(side, manager, slug).get(f'/{slug}/{station}/{code}')[2].decode('utf-8', 'replace')
+    finally:
+        query(base, f"UPDATE chronique SET code = '{child_code}' WHERE id = {child} RETURNING id", NEW_SERVER)
+    shown = [html.unescape(value) for value in re.findall(r'data-content="([^"]*)"', body) if child_code in html.unescape(value)]
+    ok = shown and all(f'{child_code}&lt;b&gt;X&lt;/b&gt;' in value and '<b>X' not in value for value in shown)
+    return {name: ['conforme'] if ok else [f'non conforme : {shown[:2] or "bulle absente"}']}
+
+
 def open_data_checks(side, console, runner, base, checks):
     """L'ouverture des données (dev/decisions.md, « Ouverture des données ») : ce qui s'ouvre et ce qui reste fermé.
     Sur une copie à elle, avec Mailpit ; rien ne se lit des valeurs d'une chronique cachée, seulement des statuts.
@@ -2604,6 +2630,7 @@ def run_state(args):
                 else:
                     checks['nouveau seul : calcul en échec'] = [NO_CASE]
                 checks.update(emptied_with_milliseconds_check(SIDES['new'], base, cid, f'/{slug}/{station}/{code}', manager, slug))
+                checks.update(escaped_children_check(SIDES['new'], base))
             # Sur une copie à elle : elle ajoute des tâches et des millions de mesures, que les pages de suivi comparées
             # plus bas ne doivent pas voir
             exports = HERE.parent.parent / 'var' / 'exports'
@@ -3690,6 +3717,17 @@ def run_imports(args):
                        AND EXISTS (SELECT 1 FROM mere WHERE mere.slug = c.slug AND mere.unite_id = ch.unite_id)
                      ORDER BY c.id LIMIT 1""", NEW_SERVER):
                 report.add('transformation créée', play_created('ancien', *created), play_created('nouveau', *created))
+            # Le nom de la chronique calculée, que la page insère en HTML après l'enregistrement (transformation/index.js) :
+            # échappé (dev/local/security.md). Le nouveau seul, en dernier, le code changé le temps du cas.
+            kept_code, = query(bases['nouveau'], f'SELECT code FROM chronique WHERE id = {cid}', NEW_SERVER)[0]
+            query(bases['nouveau'], f"UPDATE chronique SET code = code || '<b>X</b>' WHERE id = {cid} RETURNING id", NEW_SERVER)
+            try:
+                saved = '\n'.join(play_transformation('nouveau', cid, slug))
+            finally:
+                query(bases['nouveau'], f"UPDATE chronique SET code = '{kept_code}' WHERE id = {cid} RETURNING id", NEW_SERVER)
+            ok = f'{kept_code}&lt;b&gt;X&lt;/b&gt;' in saved and '<b>X' not in saved
+            report.add('nouveau seul : transformation enregistrée, nom échappé', ['conforme'],
+                       ['conforme'] if ok else [line for line in saved.split('\n') if 'submitted' in line][:3] or ['non conforme'])
 
         if args.only in 'shapefile':
             for title, target, filename, content in shape_cases(template, slug):

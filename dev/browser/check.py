@@ -675,6 +675,22 @@ def main():
         j.crawl(managing, SITE, f'/{SLUG}/', 'gestionnaire', 250)
         j.every_admin_form(managing, SLUG)
         j.every_admin_form(admin_session, SLUG)
+
+        # La bulle du titre d'une chronique, dans le visualiseur, est en HTML (pour le saut de ligne de sa traduction) :
+        # le nom de la station s'y échappe (y-axis/index.js ; dev/local/security.md). En dernier, la base étant changée.
+        one(f"UPDATE station SET nom = nom || ' <i>essai</i>' WHERE code = '{station_code}' RETURNING id")
+
+        def escaped_title(page):
+            visible(page, '.chronique .title', timeout=60000)
+            page.wait_for_load_state('networkidle')
+            titles = page.locator('.chronique .title').evaluate_all(
+                'els => els.map(e => e.getAttribute("data-original-title") || e.getAttribute("title") || "")')
+            assert any('&lt;i&gt;essai&lt;/i&gt;' in title for title in titles), f'bulle : {titles}'
+            assert not any('<i>essai' in title for title in titles), f'bulle en HTML : {titles}'
+            assert page.locator('.tooltip i:text-is("essai")').count() == 0, 'le nom rendu en HTML'
+
+        anonymous.step('visualiseur, nom de station échappé dans la bulle du titre',
+                       f'/{SLUG}/viewer#2024010100000020250101000000/{chronique_id}|', escaped_title)
         browser.close()
 
     failed = [r for r in results if r[1]]
