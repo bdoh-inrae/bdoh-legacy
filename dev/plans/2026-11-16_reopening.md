@@ -73,6 +73,12 @@ Décidé : un export sans compte s'écrit sans auteur, et `historique/base.html.
 
 Décidé (Lou, 16 novembre) : dans la fenêtre d'export sans compte, et sur sa page de suivi, dire ce qu'un compte apporte : les favoris et leurs étiquettes, le lien de l'export par courriel, les nouvelles des observatoires (point 5, quand leurs listes existent).
 
+Revu avec Lou le 19 novembre, sur la capture `../bdoh_reference/browser/reopening/points-2-4/01-fenetre-export-sans-compte-fr.png` (la fenêtre fait 720 pixels de haut : sur un portable, « Exporter » passerait sous le bas de l'écran) :
+- L'invitation de la fenêtre tient en deux lignes : « Avec un compte, le lien de l'export arrive par e-mail, et vos favoris s'exportent d'un coup : [créer un compte] ou [se connecter]. » Les étiquettes restent sur la page de suivi.
+- La licence, dans la fenêtre, sans « y compris commerciale » (Lou : on n'est pas là pour pousser à vendre les données) : « Ces données sont sous [Licence Ouverte Etalab 2.0] : leur réutilisation est libre, en mentionnant leur source ; comment la mentionner et les citer : [conditions d'utilisation]. » La page des conditions détaille la mention (source et date). Le README d'un export perd de même « commerciale comprise » (`Reporter/Readme.php`) et garde le reste de sa phrase.
+- Rien sur les listes de diffusion tant qu'elles n'existent pas (Lou : on ne va pas mentir) ; elles s'ajouteront avec le point 5, sans allonger la fenêtre.
+- Relevé en chemin, pour 2d : la Licence Ouverte demande de mentionner la date de dernière mise à jour, mais un export ne la donne nulle part (ni README, ni `meta_series.csv`), d'où le « à défaut celle du téléchargement ». La colonne `chronique.miseajour` existe : à voir si elle dit bien la dernière mise à jour des mesures, et l'écrire dans `meta_series.csv` et le README.
+
 ### 5. Des listes de diffusion
 
 Voulu par Lou (16 novembre), pour la confiance après l'ouverture : une liste technique des utilisateurs et utilisatrices du service, et une par observatoire, où ses gestionnaires envoient à la main les nouvelles de sa vie scientifique ; une page pour s'y inscrire (au pied de page), et la proposition à la création d'un compte et dans la fenêtre d'export. **À voir avec Lou avant tout code** (« on voit ensemble après »). La piste de Claude, à lui expliquer :
