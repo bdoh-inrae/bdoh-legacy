@@ -216,6 +216,15 @@
  #}
 
 {# Info : 'chronique' is visible ? #}
+{#- Dans la liste des chroniques d'une station ou d'un jeu de données, une chronique réservée le dit en clair, en gris
+ # à côté du cadenas, sans lien : une bulle ne se voit ni sur un téléphone ni au clavier (Lou, 2026-11-19 ;
+ # dev/plans/2026-11-16_reopening.md, point 1) #}
+{% macro chronique_reservedLabel(chronique) %}
+    {%- if not chronique.estVisible -%}
+        <i class="fam-lock" aria-hidden="true"></i> <span class="text-muted">{{ 'consult.help.chronique.reserved'|trans }}</span>
+    {%- endif -%}
+{% endmacro %}
+
 {% macro chronique_isVisible(chronique, divider_left, divider_right, tooltip_placement) %}
     {% apply spaceless %}
         {% if not chronique.estVisible %}

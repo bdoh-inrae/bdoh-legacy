@@ -20,11 +20,12 @@ use Irstea\BdohDataBundle\Entity\Repository\StationRepository;
 use Irstea\BdohDataBundle\EventListener\MeasuresUpdateEvent;
 use Irstea\BdohDataBundle\Events;
 use Irstea\BdohLoggerBundle\Logger\BdohLogger;
-use Irstea\BdohSecurityBundle\Exception\ForbiddenException;
+use Doctrine\ORM\NoResultException;
 use Irstea\BdohBundle\Exception\NotFoundEntityException;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\HttpFoundation\ParameterBag;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\Session\Session;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
@@ -61,8 +62,10 @@ class ChroniqueController extends Controller
 
         $authChecker = $this->get('security.authorization_checker');
 
+        // Une chronique réservée aux membres de son observatoire : le refus dit ce qu'elle est (Lou, 2026-11-19 ;
+        // dev/plans/2026-11-16_reopening.md, point 1). Seule une chronique cachée est refusée (canConsultTimeseries).
         if (!$authChecker->isGranted('CONSULT_TIMESERIES', $chronique)) {
-            throw new ForbiddenException();
+            return $this->render('@IrsteaBdohConsult/Chronique/reserved.html.twig', ['chronique' => $chronique], new Response('', Response::HTTP_FORBIDDEN));
         }
 
         /** @var ChroniqueRepository $chronRepo */
@@ -275,8 +278,13 @@ class ChroniqueController extends Controller
         /** @var ChroniqueRepository $chroniqueRepo */
         $chroniqueRepo = $this->getBdohRepo('Chronique');
 
-        $station = $stationRepo->findOneByCode($parameters->get('station'));
-        $chronique = $station ? $chroniqueRepo->findOneByStationAndCode($station, $parameters->get('chronique')) : null;
+        // Une station ou une chronique inconnue : les deux recherches lèvent NoResultException, d'où un 404
+        try {
+            $station = $stationRepo->findOneByCode($parameters->get('station'));
+            $chronique = $chroniqueRepo->findOneByStationAndCode($station, $parameters->get('chronique'));
+        } catch (NoResultException) {
+            $chronique = null;
+        }
 
         // L'ancien poursuivait sans chronique et finissait sur une erreur interne (dev/differences.md).
         if (!$chronique) {

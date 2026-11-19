@@ -6,7 +6,14 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/). Numéros de v
 
 ### Modifié
 
+- La page d'une chronique réservée dit, à qui n'y a pas droit, ce qu'est la chronique : réservée aux membres de l'observatoire pour son travail interne, diffusée par les partenaires qui la portent, avec son producteur, sa station et le lien des gestionnaires. Un membre y est invité à se connecter, puis à demander l'accès.
+- Dans la liste des chroniques d'une station ou d'un jeu de données, une chronique réservée le dit en clair, à côté du cadenas.
+- Le lien "Demander un accès aux données" devient "Accès des membres de l'observatoire". Au menu du compte comme dans le courriel de bienvenue, il ne paraît plus que dans un observatoire qui a des chroniques réservées.
 - Les seuils de volume d'un export se règlent dans l'environnement de la machine, sans nouvelle version. Le second seuil des valeurs calculées passe de 1 million à 1 200 000 : un export que l'ancien BDOH acceptait n'est jamais refusé, au plus il demande un compte.
+
+### Corrigé
+
+- L'adresse d'une chronique inconnue, ou sous une station inconnue, répond "page introuvable" (404) au lieu d'une erreur interne.
 
 ## 0.8.0 - 2026-11-19
 

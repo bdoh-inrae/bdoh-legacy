@@ -1,0 +1,38 @@
+{#-
+ # La page d'une chronique réservée aux membres de son observatoire, pour qui n'y a pas droit, servie avec le refus (403)
+ # par ChroniqueController (Lou, 2026-11-19 ; dev/plans/2026-11-16_reopening.md, point 1). L'interface n'y mène pas qui
+ # n'y a pas droit : on y arrive par un lien venu d'ailleurs, le plus souvent un membre pas encore connecté. Elle dit ce
+ # qu'est la chronique, sans pousser à la demande d'accès, que seuls les membres font.
+ #}
+{% extends '@IrsteaBdohConsult/layout.html.twig' %}
+
+{%- from 'macros.html.twig' import pageTitle -%}
+
+{% block title %}
+    {{ pageTitle(chronique ~ ' ' ~ 'reserved.subtitle'|trans) }}
+{% endblock %}
+
+{% block breadcrumb %}
+    <ul class="breadcrumb">
+        {% from 'macros.html.twig' import breadcrumbRoot %}{{ breadcrumbRoot() }}
+    </ul>
+{% endblock %}
+
+{% block main %}
+    <h1>{{ chronique }} <small>{{ 'reserved.subtitle'|trans }}</small></h1>
+
+    <div class="alert alert-info reserved-chronique">
+        <p><i class="fam-lock" aria-hidden="true"></i> {{ 'reserved.what'|trans }}</p>
+        <p>
+            {{- 'reserved.distribution'|trans -}}
+            {%- if chronique.producteur.nom is defined %} {{ 'reserved.producer(%producer%)'|trans({'%producer%': '<strong>' ~ chronique.producteur.nom|e ~ '</strong>'})|raw }}{% endif -%}
+        </p>
+        <p>{{ 'reserved.station(%station%)'|trans({'%station%': '<a href="' ~ path('bdoh_consult_station', {'station': chronique.station.code})|e ~ '">' ~ chronique.station.code|e ~ '</a>'})|raw }}</p>
+        <p>{{ 'reserved.managers(%link%)'|trans({'%link%': path('bdoh_consult_observatoire', {'_observatoire': chronique.observatoire.slug}) ~ '#managers'})|raw }}</p>
+        {% if app.user %}
+            <p>{{ 'reserved.member.connected'|trans }}</p>
+        {% else %}
+            <p>{{ 'reserved.member.login(%link%)'|trans({'%link%': path(accountRoute('login'))})|raw }}</p>
+        {% endif %}
+    </div>
+{% endblock %}

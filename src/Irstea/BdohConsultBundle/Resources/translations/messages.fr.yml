@@ -34,6 +34,7 @@ consult:
         chronique:
             noGenealogie: Aucune généalogie
             notVisible: Chronique réservée aux membres de l'observatoire
+            reserved: Réservée aux membres de l'observatoire
             display-checkpoints: Afficher les points de contrôle
             time-step-depends-on-span: Le pas des cumuls suit la durée de la période.
             no-data-to-plot: Pas de mesure à afficher dans cet intervalle de dates
@@ -84,3 +85,14 @@ advancedSearch:
     bassins: Bassins
     courseau: Cours d'eau
     dataset: Jeux de données
+# La page d'une chronique réservée, pour qui n'y a pas droit (Chronique/reserved.html.twig ; Lou, 2026-11-19)
+reserved:
+    subtitle: Chronique réservée à l'observatoire
+    what: Cette chronique est réservée aux membres de l'observatoire, pour son travail interne.
+    distribution: "BDOH n'en assure pas la diffusion : pour l'obtenir, adressez-vous aux partenaires qui la portent."
+    producer(%producer%): "Son producteur : %producer%."
+    station(%station%): Ses métadonnées restent visibles sur la page de sa station, %station%.
+    managers(%link%): Pour en savoir plus sur cette chronique, vous pouvez écrire aux <a href="%link%">gestionnaires</a> de l'observatoire.
+    member:
+        login(%link%): Membre de l'observatoire ? <a href="%link%">Connectez-vous</a>, puis demandez-en l'accès depuis le menu de votre compte.
+        connected: Membre de l'observatoire ? Demandez-en l'accès depuis le menu de votre compte.

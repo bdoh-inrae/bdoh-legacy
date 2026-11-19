@@ -164,6 +164,8 @@ def page_cases(base):
           JOIN observatoire o ON o.id = s.observatoire_id
          WHERE s.n <= 2 ORDER BY o.id, s.id""")
     paths += [f'/{slug}/station/{code}' for slug, code in stations]
+    # Une chronique inconnue sous une station connue : 404, comme sous une station inconnue (dev/differences.md)
+    paths += [f'/{slug}/{code}/INCONNUE' for slug, code in stations[:1]]
     # Par observatoire, de chaque sorte, la première chronique visible et la première non visible.
     chroniques = query(base, f"""
         SELECT slug, station, code, id FROM (
@@ -1105,7 +1107,26 @@ def terms_checks(side, slug, report):
 
 # Ce qu'aucun texte ne dit plus d'une chronique en accès restreint : qu'elle se demande (Lou, 2026-11-16)
 RESERVED_GONE = {'fr': ('données fermées', 'sur demande'), 'en': ('closed data', 'on request', 'on access request', 'on accepted request')}
-RESERVED_TIP = {'fr': "Chronique réservée aux membres de l'observatoire", 'en': 'Time series reserved for the members of the observatory'}
+# Dans la liste des chroniques d'une station, la mention en clair à côté du cadenas (Lou, 2026-11-19)
+RESERVED_LABEL = {'fr': "Réservée aux membres de l'observatoire", 'en': 'Reserved for the members of the observatory'}
+# La page d'une chronique réservée, pour qui n'y a pas droit (Lou, 2026-11-19 ; Chronique/reserved.html.twig)
+RESERVED_REFUSAL = {
+    'fr': ["Chronique réservée à l'observatoire", "Cette chronique est réservée aux membres de l'observatoire, pour son travail interne.",
+           "BDOH n'en assure pas la diffusion : pour l'obtenir, adressez-vous aux partenaires qui la portent.",
+           'Ses métadonnées restent visibles sur la page de sa station,',
+           "Pour en savoir plus sur cette chronique, vous pouvez écrire aux gestionnaires de l'observatoire."],
+    'en': ['Time series reserved for the observatory', 'This time series is reserved for the members of the observatory, for its internal work.',
+           'BDOH does not distribute it: to obtain it, please contact the partners who do.',
+           'Its metadata stay visible on the page of its station,',
+           'To learn more about this time series, you can write to the managers of the observatory.'],
+}
+RESERVED_MEMBER = {'fr': ("Membre de l'observatoire ? Connectez-vous, puis demandez-en l'accès depuis le menu de votre compte.",
+                          "Membre de l'observatoire ? Demandez-en l'accès depuis le menu de votre compte."),
+                   'en': ('A member of the observatory? Sign in, then request access from your account menu.',
+                          'A member of the observatory? Request access from your account menu.')}
+RESERVED_PRODUCER = {'fr': 'Son producteur : {}.', 'en': 'Its producer: {}.'}
+# Le lien du menu du compte, qui ne paraît que dans un observatoire qui a des chroniques réservées
+MEMBER_ACCESS = {'fr': "Accès des membres de l'observatoire", 'en': 'Observatory member access'}
 
 
 def reserved_problems(language, path, text, words):
@@ -1116,11 +1137,15 @@ def reserved_problems(language, path, text, words):
 
 def reserved_checks(base, side, slug, report):
     """Les chroniques en accès restreint sont réservées aux membres de leur observatoire, et BDOH n'en assure pas la
-    diffusion (Lou, 2026-11-16 ; dev/differences.md, « Ouverture des données ») : aucun texte ne propose plus au public
+    diffusion (Lou, 2026-11-16 ; dev/differences.md, "Ouverture des données") : aucun texte ne propose plus au public
     d'en demander l'accès. En français et en anglais, sans compte : les conditions, l'accueil de BDOH, l'aide et
-    l'inscription le disent, et ne parlent plus de « données fermées » fournies « sur demande » ; la bulle du cadenas,
-    dans la liste des chroniques d'une station qui en a une, dit à qui elle est réservée (un attribut `title`, que la
-    comparaison des pages ne lit pas). La page de la demande d'accès se compare dans le mode (expected.py)."""
+    l'inscription le disent, et ne parlent plus de "données fermées" fournies "sur demande". Dans la liste des
+    chroniques d'une station qui en a une, la mention en clair à côté du cadenas (Lou, 2026-11-19). La page d'une
+    chronique réservée, pour qui n'y a pas droit : refusée (403), elle dit ce qu'est la chronique, son producteur s'il est
+    renseigné, sa station et les gestionnaires, et propose à un membre de se connecter, ou, connecté, de demander
+    l'accès ; un membre la voit (200). Le lien "Accès des membres de l'observatoire" du menu du compte ne paraît que
+    dans un observatoire qui a des chroniques réservées. La page de la demande d'accès se compare dans le mode
+    (expected.py)."""
     wanted = {
         'fr': {'/terms_of_use': ['réservées aux membres de leur observatoire', "réservée aux membres de l'observatoire",
                                  'adressez-vous aux partenaires qui la portent', "Un membre de l'observatoire en demande l'accès"],
@@ -1131,8 +1156,10 @@ def reserved_checks(base, side, slug, report):
                '/': ['are reserved for its members'], '/help': ['reserved for its members'],
                f'/{slug}/user/new': ['reserved for the members of their observatory', 'if you are a member']},
     }
-    hidden = query(base, f"""SELECT c.slug, c.station FROM ({CHRONIQUES}) c WHERE NOT c.estvisible ORDER BY c.id LIMIT 1""")
-    problems, tips = [], []
+    hidden = query(base, f"""SELECT c.slug, c.station, c.code, coalesce(p.nom, '') FROM ({CHRONIQUES}) c
+                               JOIN chronique ch ON ch.id = c.id LEFT JOIN partenaire p ON p.id = ch.producteur_id
+                              WHERE NOT c.estvisible ORDER BY (p.nom IS NULL), c.id LIMIT 1""")
+    problems, tips, refusals = [], [], []
     for language, pages in wanted.items():
         guest = Client(side, None, slug)
         if language == 'en':
@@ -1144,12 +1171,50 @@ def reserved_checks(base, side, slug, report):
                 continue
             text = ' '.join(html.unescape(re.sub(r'<[^>]+>', '', body.decode('utf-8', 'replace'))).split())
             problems += reserved_problems(language, path, text, words)
-        for hidden_slug, station in hidden:
+        for hidden_slug, station, code, producer in hidden:
             status, _, body = guest.get(f'/{hidden_slug}/station/{station}')
-            if status != 200 or f'title="{RESERVED_TIP[language]}"' not in html.unescape(body.decode('utf-8', 'replace')):
-                tips.append(f'{language} /{hidden_slug}/station/{station} : la bulle ne dit pas à qui la chronique est réservée')
+            if status != 200 or RESERVED_LABEL[language] not in html.unescape(body.decode('utf-8', 'replace')):
+                tips.append(f'{language} /{hidden_slug}/station/{station} : la liste ne dit pas à qui la chronique est réservée')
+            path = f'/{hidden_slug}/{station}/{code}'
+            status, _, body = guest.get(path)
+            page = html.unescape(body.decode('utf-8', 'replace'))
+            text = ' '.join(re.sub(r'<[^>]+>', '', page).split())
+            words = RESERVED_REFUSAL[language] + [RESERVED_MEMBER[language][0]] + ([RESERVED_PRODUCER[language].format(producer)] if producer else [])
+            refusals += [f'{language} {path} : statut {status}'] if status != 403 else []
+            refusals += [f'{language} {path} : "{w}" absent' for w in words if w not in text]
+            refusals += [f'{language} {path} : lien "{link}" absent' for link in
+                         (f'href="/{hidden_slug}/station/{station}"', f'href="/{hidden_slug}/#managers"', f'href="/{hidden_slug}/login"')
+                         if link not in page]
+    if hidden:
+        # Connecté sans droit : refusé, sans "Connectez-vous" ; le lien du menu, dans cet observatoire seulement, et pas
+        # dans un observatoire sans chronique réservée. Un membre (gestionnaire de l'observatoire) voit la page.
+        hidden_slug, station, code, _ = hidden[0]
+        path = f'/{hidden_slug}/{station}/{code}'
+        stranger = query(base, """SELECT u.email FROM utilisateur u WHERE u.roleadmin IS NULL AND (u.finacces IS NULL OR u.finacces > now())
+                                    AND NOT EXISTS (SELECT 1 FROM role r WHERE r.utilisateur_id = u.id) ORDER BY u.id LIMIT 1""")
+        member = query(base, f"""SELECT u.email FROM utilisateur u JOIN role r ON r.utilisateur_id = u.id JOIN observatoire o ON o.id = r.observatoire_id
+                                  WHERE r.valeur = 'gestionnaire' AND r.dtype = 'observatoire' AND o.slug = '{hidden_slug}'
+                                    AND (u.finacces IS NULL OR u.finacces > now()) ORDER BY u.id LIMIT 1""")
+        open_only = query(base, f"""SELECT o.slug FROM observatoire o WHERE NOT EXISTS (
+                                     SELECT 1 FROM ({CHRONIQUES}) c WHERE c.slug = o.slug AND NOT c.estvisible) ORDER BY o.id LIMIT 1""")
+        if stranger:
+            client = Client(side, stranger[0][0], hidden_slug)
+            status, _, body = client.get(path)
+            text = ' '.join(re.sub(r'<[^>]+>', '', html.unescape(body.decode('utf-8', 'replace'))).split())
+            refusals += [f'connecté sans droit {path} : statut {status}'] if status != 403 else []
+            refusals += [f'connecté sans droit {path} : "{w}" absent' for w in RESERVED_MEMBER['fr'][1:] if w not in text]
+            refusals += [f'connecté sans droit {path} : "Connectez-vous" encore écrit'] if 'Connectez-vous' in text else []
+            refusals += [] if MEMBER_ACCESS['fr'] in text else [f"connecté sans droit {path} : le menu n'a pas \"{MEMBER_ACCESS['fr']}\""]
+            for slug_open, in open_only:
+                body = Client(side, stranger[0][0], slug_open).get(f'/{slug_open}/')[2]
+                if MEMBER_ACCESS['fr'] in html.unescape(body.decode('utf-8', 'replace')):
+                    refusals.append(f"connecté sans droit /{slug_open}/ : le menu a \"{MEMBER_ACCESS['fr']}\" sans chronique réservée")
+        if member:
+            status = Client(side, member[0][0], hidden_slug).get(path)[0]
+            refusals += [f'membre {path} : statut {status}'] if status != 200 else []
     report.add('nouveau seul : chroniques réservées, textes', ['conforme'], problems or ['conforme'])
-    report.add('nouveau seul : chroniques réservées, bulle du cadenas', ['conforme'], (tips or ['conforme']) if hidden else [NO_CASE])
+    report.add('nouveau seul : chroniques réservées, liste d’une station', ['conforme'], (tips or ['conforme']) if hidden else [NO_CASE])
+    report.add('nouveau seul : chroniques réservées, page de refus et menu', ['conforme'], (refusals or ['conforme']) if hidden else [NO_CASE])
 
 
 def help_legal_checks(base, side, slug, report):
@@ -2391,7 +2456,7 @@ def open_data_checks(side, console, runner, base, checks):
     asked('moyenne, au-delà du premier seuil, acceptée avec un compte', owner, visible, True, exportType='mean', meanCumulStep='6')
     asked('cumul, au-delà du second seuil des valeurs calculées, refusé avec un compte', owner, visible, False,
           ('valeurs calculées', 'la limite est de 1 200 000 par demande'), exportType='cumulative', meanCumulStep='5')
-    # La limite de l'ancien, qui doit passer avec un compte (dev/decisions.md, « Ouverture des données ») : au pas de
+    # La limite de l'ancien, qui doit passer avec un compte (dev/decisions.md, "Ouverture des données") : au pas de
     # 5 minutes (pasechantillonnage 1), un peu moins de 11 ans, moment tronquant l'écart à l'année entière
     old_limit = dict(exportType='mean', meanCumulStep='1', beginDate='2013-01-01T00:00:00Z', endDate='2023-12-31T23:55:00Z')
     asked('moyenne au pas de 5 minutes sur 11 ans moins 5 minutes, la limite de l’ancien, acceptée avec un compte', owner, visible, True,

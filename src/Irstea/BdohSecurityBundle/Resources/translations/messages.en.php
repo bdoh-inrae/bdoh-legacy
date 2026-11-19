@@ -16,7 +16,7 @@ $user = [
             'submit'      => 'Register',
             'isCompleted' => 'Your BDOH account has been created. An e-mail has just been sent to you: follow its link to confirm your address and sign in.',
             'info'        => [
-                'isTheFirstStep' => 'The account you are creating will be valid for the whole BDOH application. Open data can be downloaded without an account. Restricted-access time series are reserved for the members of their observatory: if you are a member, you will request access, once signed in, with the <b>access request form</b> of the observatory, or from one of its managers.',
+                'isTheFirstStep' => 'The account you are creating will be valid for the whole BDOH application. Open data can be downloaded without an account. Restricted-access time series are reserved for the members of their observatory: if you are a member, you will request access, once signed in, with the access request form of the observatory, or from one of its managers.',
                 'yourIdentifier' => 'The <b>e-mail address</b> will be your <u>login</u>: you will sign in with a link sent to this address, without a password.',
                 'personalData'   => "Personal data: INRAE (147 rue de l'Université, 75338 Paris Cedex 07, France) processes the information of your account to give you access to BDOH and to the data you request; the managers of the observatory concerned receive your access requests. You may access this information, have it corrected or erased, and object to its processing, as provided by Regulation (EU) 2016/679 and the French law “Informatique et Libertés”. Write to bdoh.support@listes.inrae.fr, or to the data protection officer of INRAE, cil-dpo@inrae.fr; you may also lodge a complaint with the CNIL (www.cnil.fr). Phone and address are optional.",
             ],
@@ -71,6 +71,8 @@ You receive this e-mail because new rights have been assigned to you on BDOH.',
                 'confirm'      => 'To confirm your address and sign in, follow this link, valid for 15 minutes and once only:',
                 'confirmLater' => 'After that, ask for a new link from the BDOH sign-in page.',
                 'portal'       => "Choose your observatory on the BDOH home page: you will find its access request and its managers there",
+                // Without reserved time series in the observatory, the email only says this (Lou, 2026-11-19)
+                'openOnly'     => 'Open data can be downloaded without an account.',
                 'step2'        => 'Open data can be downloaded without an account. Restricted-access time series are reserved for the members of their observatory: if you are a member, you will request access, once signed in, with the access request form of the observatory, or from one of its managers:',
                 'step3'        => "INRAE (147 rue de l'Université, 75338 Paris Cedex 07, France) processes the information of your account to give you access to BDOH and to the data you request; the managers of the observatory concerned receive your access requests. You may access this information, have it corrected or erased, and object to its processing, as provided by Regulation (EU) 2016/679 and the French law “Informatique et Libertés”.",
                 'step4'        => "Write to bdoh.support@listes.inrae.fr, or to the data protection officer of INRAE, cil-dpo@inrae.fr; you may also lodge a complaint with the CNIL (www.cnil.fr).",

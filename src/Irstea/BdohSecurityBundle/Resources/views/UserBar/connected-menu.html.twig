@@ -140,7 +140,8 @@
 
 {# Simple user only #}
 {% if entity_admin_links is empty and data_admin_links is empty and not userIsTrusted %}
-    {% if currentObservatoire().hasChronique() %}
+    {#- La demande d'accès ne sert qu'aux chroniques réservées à l'observatoire (Lou, 2026-11-19) #}
+    {% if hasReservedChroniques(currentObservatoire()) %}
         <li><a href="{{ path('bdoh_security_besoin_new') }}">{{ 'askDataAccess'|trans }}</a></li>
         <li class="divider"></li>
     {% endif %}

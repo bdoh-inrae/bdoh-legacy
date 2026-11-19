@@ -757,6 +757,10 @@ RULES = [
     Rule('pages', rf'{ROLE} {OBS}/besoin/new', OPEN, lines=RESERVED_REQUEST),
     replaced('pages', rf'{ROLE} /select_lang/(?:en|fr)', 'Erreurs 500 sur des pages publiques', 302,
              '+redirection /', '+T Redirecting to /', '+T Redirecting to /.', '+A /'),
+    # L'adresse d'une chronique inconnue, sous une station inconnue ou connue : 404 au lieu de l'erreur interne
+    Rule('pages', rf'{ROLE} {OBS}/(?:INCONNUE|_STATION_CODE_|[A-Z0-9_-]+)/(?:INCONNUE|_CHRONIQUE_CODE_)', 'Erreurs 500 sur des pages publiques',
+         lines=('-statut 500', '+statut 404', '-T Kaboom !', '+T Pas trouvé !', RX(r'-T Le serveur a eu un gros souci ! Merci de réessayer .*'),
+                "+T La page ou l'information que vous cherchez n'est pas à cet endroit."), must=('+statut 404',)),
     Rule('pages', rf'{ROLE} /', OPEN, lines=(
         RX(r"-T Ces données sont utilisées à des fins scientifiques .* Les données sont accessibles à tous gratuitement moyennant une inscription sur le site et le respect des conditions d'utilisation\."),
         RX(r"\+T Ces données sont utilisées à des fins scientifiques .*\.Les données ouvertes sont accessibles à tous, gratuitement et sans inscription, sous Licence Ouverte Etalab 2\.0 ; quelques chroniques, données intermédiaires d'un observatoire, sont réservées à ses membres\."))),

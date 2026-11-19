@@ -678,24 +678,6 @@ class Observatoire implements ObservatoireRelatedInterface, DocumentedEntityInte
     }
 
     /**
-     * @return bool
-     */
-    public function hasChronique(): bool
-    {
-        /** @var SiteExperimental $site */
-        foreach ($this->sites as $site) {
-            /** @var Station $station */
-            foreach ($site->getStations() as $station) {
-                if (!$station->getChroniques()->isEmpty()) {
-                    return true;
-                }
-            }
-        }
-
-        return false;
-    }
-
-    /**
      * {@inheritdoc}
      */
     public function getObservatoire(): Observatoire

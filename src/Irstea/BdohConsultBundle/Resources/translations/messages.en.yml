@@ -34,6 +34,7 @@ consult:
         chronique:
             noGenealogie: No genealogy
             notVisible: Time series reserved for the members of the observatory
+            reserved: Reserved for the members of the observatory
             display-checkpoints: Display checkpoints
             time-step-depends-on-span: The accumulation step follows the length of the period.
             no-data-to-plot: No data on this time span
@@ -85,3 +86,14 @@ advancedSearch:
     courseau: Rivers
     dataset: Datasets
 
+# The page of a reserved time series, for those without the right (Chronique/reserved.html.twig; Lou, 2026-11-19)
+reserved:
+    subtitle: Time series reserved for the observatory
+    what: This time series is reserved for the members of the observatory, for its internal work.
+    distribution: "BDOH does not distribute it: to obtain it, please contact the partners who do."
+    producer(%producer%): "Its producer: %producer%."
+    station(%station%): Its metadata stay visible on the page of its station, %station%.
+    managers(%link%): To learn more about this time series, you can write to the <a href="%link%">managers</a> of the observatory.
+    member:
+        login(%link%): A member of the observatory? <a href="%link%">Sign in</a>, then request access from your account menu.
+        connected: A member of the observatory? Request access from your account menu.

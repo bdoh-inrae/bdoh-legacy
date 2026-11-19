@@ -153,7 +153,7 @@ mesure bdoh:export:mean 1 $AN ID
 mesure bdoh:export:cumulative 1 $AN ID
 ```
 
-Sur le poste, le 16 novembre : 1,3 s (128 000 lignes), 6,1 s (526 000), 15 s (9 500), 164 s (106 000) et 163 s. Le second seuil des valeurs lues (50 millions) vaut la place de `/tmp` : 56 octets par valeur en CSV, que l'export écrit sans compression avant l'archive, à côté des imports. Celui des valeurs calculées (1 200 000) vaut une durée de file : la dernière commande, multipliée par onze, donne celle d'un export au seuil (une demi-heure sur le poste). Il reste au-dessus de 1 157 112, ce que l'ancien acceptait ; si la mesure le montre déraisonnable sur la VM, on en reparle avec Lou (`dev/decisions.md`, « Ouverture des données »).
+Sur le poste, le 16 novembre : 1,3 s (128 000 lignes), 6,1 s (526 000), 15 s (9 500), 164 s (106 000) et 163 s. Le second seuil des valeurs lues (50 millions) vaut la place de `/tmp` : 56 octets par valeur en CSV, que l'export écrit sans compression avant l'archive, à côté des imports. Celui des valeurs calculées (1 200 000) vaut une durée de file : la dernière commande, multipliée par onze, donne celle d'un export au seuil (une demi-heure sur le poste). Il reste au-dessus de 1 157 112, ce que l'ancien acceptait ; si la mesure le montre déraisonnable sur la VM, on en reparle avec Lou (`dev/decisions.md`, "Ouverture des données").
 
 ## À l'ouverture au public
 

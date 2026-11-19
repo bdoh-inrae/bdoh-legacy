@@ -78,7 +78,7 @@ class ExportController extends Controller
          * l'identique, valeurs interpolées) s'écrivent à 90 000 par seconde sur le poste, et pèsent 56 octets en CSV ;
          * les valeurs calculées (moyenne, cumul) à 640 par seconde, d'où un second jeu de seuils. Ils se règlent dans
          * l'environnement de la machine (.env.example), par défaut ceux de services.yml ; le second des valeurs
-         * calculées reste au-dessus de ce que l'ancien acceptait, 1 157 112 (dev/decisions.md, « Ouverture des données »).
+         * calculées reste au-dessus de ce que l'ancien acceptait, 1 157 112 (dev/decisions.md, "Ouverture des données").
          */
         #[Autowire('%env(int:EXPORT_READ_WITHOUT_ACCOUNT)%')] private int $readWithoutAccount,
         #[Autowire('%env(int:EXPORT_READ_MAX)%')] private int $readMax,

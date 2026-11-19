@@ -78,7 +78,30 @@ class BdohExtension extends AbstractExtension
             'accountRoute'        => new TwigFunction('accountRoute', fn (string $page) => AccountRoutes::name($page, $this->manager->getCurrent())),
             'currentObservatoire' => new TwigFunction('currentObservatoire', [$this->manager, 'getCurrent']),
             'allObservatoires'    => new TwigFunction('allObservatoires', [$this, 'getAllObservatoires']),
+            'hasReservedChroniques' => new TwigFunction('hasReservedChroniques', [$this, 'hasReservedChroniques']),
         ];
+    }
+
+    /**
+     * @var array<int, bool> par identifiant d'observatoire, le temps d'une requête
+     */
+    private array $reserved = [];
+
+    /**
+     * Si un observatoire a des chroniques réservées à ses membres (estvisible = false) : la demande d'accès, au menu du
+     * compte et dans le courriel de bienvenue, ne sert qu'à elles (Lou, 2026-11-19 ; dev/plans/2026-11-16_reopening.md,
+     * point 1). Une requête plutôt que les collections, que le menu chargerait sinon sur chaque page.
+     */
+    public function hasReservedChroniques(?Observatoire $observatoire): bool
+    {
+        if ($observatoire === null) {
+            return false;
+        }
+
+        return $this->reserved[$observatoire->getId()] ??= $this->em->createQuery(
+            'SELECT c.id FROM Irstea\BdohDataBundle\Entity\Chronique c JOIN c.station st JOIN st.sites si
+             WHERE si.observatoire = :observatoire AND c.estVisible = false'
+        )->setParameter('observatoire', $observatoire)->setMaxResults(1)->getOneOrNullResult() !== null;
     }
 
     /**

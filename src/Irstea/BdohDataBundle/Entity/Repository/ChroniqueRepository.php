@@ -471,9 +471,13 @@ SQL;
      */
     public function findOneByStationAndCode(Station $station, $code)
     {
+        // Le code vient d'une adresse ou d'un fichier d'import : en paramètre, jamais écrit dans la requête (l'ancien
+        // l'y collait). Introuvable, la requête lève toujours NoResultException, que les imports attendent.
         return $this->createQueryBuilder('ch')
-            ->andWhere('ch.station = ' . $station->getId())
-            ->andWhere("ch.code = '$code'")
+            ->andWhere('ch.station = :station')
+            ->andWhere('ch.code = :code')
+            ->setParameter('station', $station)
+            ->setParameter('code', (string) $code)
             ->getQuery()
             ->getSingleResult();
     }
