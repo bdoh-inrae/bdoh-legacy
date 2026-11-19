@@ -65,6 +65,8 @@ Décidé (Lou, 16 novembre) : en public, les consultations et les téléchargeme
 
 ### 7. La relecture du contenu et les photographies
 
+En cours depuis le 19 novembre, élargie par Lou aux textes de l'interface, dans une session à part : [2026-11-19_review.md](2026-11-19_review.md), avec son registre.
+
 Décidés dans [2026-11-16_before-kit.md](2026-11-16_before-kit.md) :
 - point 10 : une passe de relecture du contenu de la base ; ses erreurs de forme (descriptions d'observatoire copiées de Word, paragraphes vides, DOI principaux évidents) dans une migration globale, écrite à la main, avec son retour arrière, essayée sur la base complète anonymisée ; **les captures des cinq accueils, avant et après, montrées à Lou avant d'écrire la migration** ; ses erreurs plus importantes au second onglet des tableurs du kit (`dev/local/test-kit-notes.csv`) ;
 - point 12 : les photographies sous Licence Ouverte (aide des deux champs du formulaire d'un observatoire, page des conditions, mentions légales, une ligne du kit).
