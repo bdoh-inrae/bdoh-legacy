@@ -27,7 +27,7 @@ La base de la VM deviendra la production : un essai qui écrit se fait sur une c
 ## Les vrais courriels
 
 - [x] Se connecter par le lien reçu dans la messagerie INRAE. Ces messageries ouvrent les liens pour les analyser ; le lien ne sert qu'une fois, mais il ne se consomme que par le bouton de la page qu'il ouvre (`dev/decisions.md`, « Connexion par lien ») : il doit encore marcher quand on clique. Fait par Lou sur la VM (10 novembre, puis avec la 0.7.0) : ça marche.
-- [ ] La même chose depuis une adresse hors INRAE, **une fois le site ouvert sans VPN** (`ROADMAP.md`, « Le site d'essai sans VPN ») : d'ici là, la messagerie d'un partenaire ne peut pas atteindre le site pour analyser le lien, et le partenaire non plus ; rien à éprouver.
+- [ ] La même chose depuis une adresse hors INRAE, **une fois le site ouvert sans VPN** (`dev/plans/2026-11-16_reopening.md`, point 9) : d'ici là, la messagerie d'un partenaire ne peut pas atteindre le site pour analyser le lien, et le partenaire non plus ; rien à éprouver.
 - [ ] Une demande d'accès à une chronique cachée : le courriel aux gestionnaires, puis le droit donné, puis l'export.
 - [ ] Un export lourd, avec un compte : le lien arrive par courriel.
 - [ ] L'export de plusieurs favoris d'un coup, depuis « Mes favoris » : le lien arrive par courriel, l'archive a un fichier par chronique.

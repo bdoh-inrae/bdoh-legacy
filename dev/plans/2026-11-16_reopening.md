@@ -2,7 +2,7 @@
 
 État : en cours, ouvert le 2026-11-16. Le plan que Lou a rapporté de son point du 16 novembre avec sa responsable : plus de temps pour les gestionnaires, plus d'accompagnement de l'ouverture des données, une réouverture mi-décembre. Il prend la suite de [2026-11-16_before-kit.md](2026-11-16_before-kit.md), terminé avec la 0.7.1 (publiée et installée sur la VM, au nom `bdoh.inrae.fr`) ; les décisions de ses points 10 (relecture du contenu) et 12 (photographies) y restent, leur réalisation se suit ici (point 7).
 
-Fait sur `main` dans la nuit du 16 au 17 novembre, sans version : les points 1 à 4, l'unité du point 2d et le point 7 bis, toutes les passes comprises (Suivi). Ce qui y attend Lou est dans `dev/local/notes-for-lou.md`. « Pour reprendre », en bas, donne l'ordre de travail.
+Fait sur `main`, sans version encore : les points 1 à 4, l'unité du point 2d, le point 7 bis et la relecture des textes (point 7), toutes les passes comprises (Suivi). Ce qui attendait Lou est tranché le 19 novembre, chaque décision à son point. L'ordre de la suite : `ROADMAP.md`, « À faire ».
 
 ## Le calendrier (Lou, 16 novembre)
 
@@ -14,9 +14,9 @@ Fait sur `main` dans la nuit du 16 au 17 novembre, sans version : les points 1 �
 
 ## Les versions
 
-Comme d'habitude (`~/.claude/rules/project.md`, « Les versions ») : une version se publie quand « Non publié » forme un ensemble utilisable, sans numéro fixé d'avance (Lou, 16 novembre : on ne sait pas encore à quelle vitesse on avancera). Deux repères seulement :
-- le pré-essai demande une version installée sur la VM avec au moins les points 1 à 4, 7 et 8 ;
-- les essais du 1er décembre, tout ce qu'on peut du reste, avec les retours du pré-essai. Seules les listes de diffusion par observatoire (5) peuvent attendre, si elles dépendent d'échanges avec l'administration d'INRAE.
+Comme d'habitude : une version dès que « Non publié » forme un ensemble utilisable, sans numéro fixé d'avance (Lou, 16 novembre), que Lou installe sur la VM. Ce que chaque étape demande au moins :
+- le pré-essai : les points 1 à 4, 7 et 8 ;
+- les essais du 1er décembre : tout le reste, statistiques (6) comprises, avec les retours du pré-essai. Seules les listes de diffusion (5) peuvent attendre, si elles dépendent d'échanges avec l'administration d'INRAE.
 
 ## Les points
 
@@ -93,7 +93,9 @@ Voulu par Lou (16 novembre), pour la confiance après l'ouverture : une liste te
 
 ### 6. Les statistiques d'usage
 
-Décidé (Lou, 16 novembre) : en public, les consultations et les téléchargements de chaque chronique ; pour les gestionnaires, la vie de l'observatoire. Un comptage à nous, Make Data Count laissé de côté pour cette version. Le détail, les mesures de l'historique et ses pièges (nomenclature changée le 20 novembre 2018) : `ROADMAP.md`, « Suivi de l'usage ». La présentation se montre à Lou en captures avant d'être finie.
+Décidé (Lou, 12 et 16 novembre) : sans compte devant les données, il reste à montrer qu'elles servent, aux observatoires et à leurs financeurs. En public, les consultations et les téléchargements de chaque chronique ; pour les gestionnaires, la vie de l'observatoire. Les téléchargements et la vie de l'observatoire se tirent de l'historique ; les consultations demandent un compteur, donc une table et sa migration, à part. La présentation se montre à Lou en captures avant d'être finie.
+- Pour les gestionnaires, la vie de l'observatoire, par année : comptes, chroniques et stations créés, imports de mesures et de points de contrôle, exports ; par chronique, les mesures ajoutées chaque année. Le but (Lou, 16 novembre) : des chiffres utiles, clairs et cohérents, que les chercheurs et chercheuses montrent pour construire des projets autour de BDOH ; le script R de Lou (`analyse.R`, hors dépôt) est un point de départ, pas un modèle à copier. L'historique remonte au 6 février 2013, mais change de nomenclature le 20 novembre 2018 : avant, l'action est écrite en clair, en français ou en anglais (« Création », « Create »), et la date sans heure ; après, une clé de traduction (`historique.actions.UtilisateurCreate`). La sorte de l'entrée (`dtype`) ne change pas. Dans la base complète anonymisée : 44 à 79 comptes créés par an de 2014 à 2025, 1 100 à 2 900 chroniques exportées par an de 2015 à 2025 ; 593 lignes d'export n'ont plus leur chronique, supprimée depuis.
+- En public, les consultations et les téléchargements de chaque chronique, comme dans Dataverse. Make Data Count n'est pas un service prêt à brancher : c'est une norme (le Code of Practice for Research Data de COUNTER), un outil qui lit les journaux du site (Counter Processor) et l'envoi de rapports à DataCite, par DOI ([guide de Dataverse](https://guides.dataverse.org/en/6.6/admin/make-data-count.html), [DataCite](https://support.datacite.org/docs/counter-code-of-practice)). La plupart des chroniques n'ont pas de DOI, et ceux des observatoires sont enregistrés hors de BDOH : un comptage à nous, selon les règles de COUNTER (robots écartés, doubles clics), sans donnée personnelle ; les téléchargements tirés de l'historique, les consultations d'un compteur par chronique et par jour. Make Data Count est laissé de côté pour cette version de BDOH (Lou, 16 novembre).
 
 ### 7. La relecture du contenu et les photographies
 
@@ -121,7 +123,7 @@ Revu par Lou le 19 novembre, sur les captures de `../bdoh_reference/browser/reop
 
 - Le pré-essai : le kit de leur observatoire (message et tableur, avec les corrections qu'on leur propose), précédé de quelques lignes qui disent ce qu'est le pré-essai. `make test-kit` écrit les kits de tous les observatoires ; Lou n'envoie que les leurs.
 - Le kit des essais (`dev/test-kit/messages/message.txt`) : la visio, deux semaines à partir du 1er décembre, et un court paragraphe sur l'ouverture (la loi, ce qui ne change pas, la case « visible » qui reste aux gestionnaires, les chroniques réservées à l'observatoire) ; les photographies à vérifier ; la date limite. À relire par Lou. Avant l'envoi du 1er décembre : le point zéro de la base et la restauration éprouvée à part ([2026-11-16_before-kit.md](2026-11-16_before-kit.md), « Les données après les essais »), puis `make test-kit` avec `--site https://bdoh.inrae.fr` et la date limite.
-- **Écrits avec Lou le 19 novembre** : le message des essais et le mot du pré-essai (`dev/test-kit/messages/pre-test.txt`), avec la façon d'écrire aux gestionnaires (`dev/test-kit/README.md`, « Le message » et « Le pré-essai »). Pas de texte de loi ni de renvoi à la visio, qui a lieu avant les essais : l'ouverture en une phrase (politique de science ouverte d'INRAE, des choses plus simples pour tous), une porte ouverte aux questions ; les photographies se demandent (« dites-moi si ça vous va »). Le pré-essai part au plus tard le lundi 24 novembre ; les essais, le 1er décembre (Lou). Revu encore avec Lou : sans détail qu'ils verront d'eux-mêmes (l'aide au "?", l'onglet des gestionnaires), sans point-virgule au milieu d'une phrase, sans formule qui insiste ("on en parle") ; plus de VPN, le site sera ouvert à Internet pour l'envoi, derrière le mot de passe d'accès, ce qui demande avant le 1er décembre le port ouvert et les trois défauts du JavaScript corrigés (point 9). Reste pour la session de code : dans `kit.py`, "Si oui, on la ferme" devient "Si oui, on la cache", et "2 fermées", "2 cachées" (`counts_sentence`), le mot de la case ; la phrase "Sans réponse après une relance, elles s'ouvrent telles quelles." part (Lou : trop violent ; la relance se fait sans l'annoncer) ; et ses textes (`SPECIAL`, `counts_sentence`) passent aux guillemets droits, comme le message (Lou, 19 novembre : son clavier tape des guillemets droits).
+- **Écrits avec Lou le 19 novembre** : le message des essais et le mot du pré-essai (`dev/test-kit/messages/pre-test.txt`), avec la façon d'écrire aux gestionnaires (`dev/test-kit/README.md`, « Le message » et « Le pré-essai »). Pas de texte de loi ni de renvoi à la visio, qui a lieu avant les essais : l'ouverture en une phrase (politique de science ouverte d'INRAE, des choses plus simples pour tous), une porte ouverte aux questions ; les photographies se demandent (« dites-moi si ça vous va »). Revu encore avec Lou : sans détail qu'ils verront d'eux-mêmes (l'aide au "?", l'onglet des gestionnaires), sans point-virgule au milieu d'une phrase, sans formule qui insiste ("on en parle") ; plus de VPN, le site sera ouvert à Internet pour l'envoi, derrière le mot de passe d'accès, ce qui demande avant le 1er décembre le port ouvert et les trois défauts du JavaScript corrigés (point 9). Reste pour la session de code : dans `kit.py`, "Si oui, on la ferme" devient "Si oui, on la cache", et "2 fermées", "2 cachées" (`counts_sentence`), le mot de la case ; la phrase "Sans réponse après une relance, elles s'ouvrent telles quelles." part (Lou : trop violent ; la relance se fait sans l'annoncer) ; et ses textes (`SPECIAL`, `counts_sentence`) passent aux guillemets droits, comme le message (Lou, 19 novembre : son clavier tape des guillemets droits).
 
 ### 9. Ce que demande la réouverture, mi-décembre
 
@@ -131,37 +133,13 @@ Revu par Lou le 19 novembre, sur les captures de `../bdoh_reference/browser/reop
 - La validation, autant que le temps le permet : invariants, pannes provoquées, relecture, puis le code gelé et toutes les passes ([2026-11-04_validation.md](2026-11-04_validation.md)).
 - Pas le juridique (Lou, 16 novembre) : l'accord des producteurs extérieurs est l'affaire des gestionnaires, qui savent y répondre ; la mise en conformité (durées de conservation des comptes, registre des traitements) attend la remise en route de BDOH (`ROADMAP.md`, « Plus tard »).
 
-## Ce que fait Lou
-
-Hors du code, et sans attendre Claude : l'invitation à la visio ; OTHU et OHGE ; l'infra (port, adresse, certificat) ; les listes d'INRAE (point 5) ; la restauration d'une sauvegarde éprouvée sur la VM (`dev/local/notes-for-lou.md`). Avec Claude : les points « à voir avec Lou » (2c, 2d, 5), les captures (1, 6, 7), la mesure des exports sur la VM (2b), la relecture des messages (8).
-
 ## Pour reprendre
 
 Méthode : celle de [2026-11-16_before-kit.md](2026-11-16_before-kit.md), « Méthode » (les passes de `compare.py` à la fin, une fois les changements faits ; entre-temps, les tests de l'outil, `lint:twig`, `lint:container`, des captures ; ce qui se voit se montre à Lou avant d'aller plus loin). Chaque écart avec l'ancien s'inscrit dans `dev/differences.md` et, s'il est admis, dans `dev/compare/expected.py`. Le poste a dans `public/uploads/` les images de la production, pour les captures des accueils : les mettre de côté le temps de chaque passe d'`admin`, puis les remettre (copies dans `../bdoh_reference/uploads/`).
 
 Les huit modes, l'un après l'autre (une heure et demie sur le poste, 19 novembre) : `dev/compare/compare.py pages --old reference-17 --new new --base bdoh_small --server bdoh-db` (7 min) ; `exports --old reference --new new --base bdoh_small` (16 min) ; `state`, `queue`, `imports`, `accounts`, `admin`, chacun avec `--base bdoh_small` (7, 7, 19, 2 et 6 min) ; `theia --base bdoh` (17 min, ses envois ne vont au bout que sur la base complète). Puis `make assets` et `make browser-check`. Pour mettre une règle au point, `--only TEXTE` rejoue les seuls cas dont le nom contient ce texte ; le fichier d'un cas différent commence par les lignes qu'aucune règle n'admet.
 
-Ordre de travail proposé ; les étapes 1 à 4 sont faites (Suivi, nuit du 16 au 17 novembre), sauf ce qu'elles laissent à Lou (le refus d'une chronique réservée, les seuils, 2c et le reste de 2d). L'étape 5 est faite le 19 novembre dans une session à part, élargie aux textes de l'interface ([2026-11-19_review.md](2026-11-19_review.md)), toutes les passes et `make browser-check` passant sur son code : reste l'accord de Lou sur les captures pour fusionner la migration, et les logos des partenaires. La suite reprend à l'étape 6 ; une session par sujet, dans cet ordre (Lou, 19 novembre : chacune dans un contexte propre).
-1. Point 1, les textes des chroniques réservées ; puis les captures de la proposition sur le refus.
-2. Point 2a et 2b : la limite retirée, la règle de volume et ses deux seuils, les messages, la page de suivi ; la marche à suivre de la mesure sur la VM, pour Lou.
-3. Point 3, l'historique ; point 4, l'invitation à créer un compte.
-4. Point 2d, l'unité dans les fichiers de données ; 2c et le reste de 2d après en avoir vu le détail avec Lou.
-5. Point 7 : les captures des accueils pour Lou, puis la migration globale et le second onglet des tableurs ; les photographies.
-6. Point 8, les messages ; puis toutes les passes, `make browser-check`, `CHANGELOG.md`, une version ; Lou l'installe (`sudo make vm-update V=…`), puis envoie le pré-essai.
-7. Points 6 et 5 (après en avoir parlé avec Lou), les retours du pré-essai, une version pour les essais du 1er décembre ; point 9 pour la réouverture.
-
-Le 19 novembre au soir, une session de conception avec Lou, sans code, a tranché tout ce qui l'attendait dans ce plan et écrit les messages de l'étape 6 (Suivi). Ce qui reste à coder, dans cet ordre, sûr et logique (Lou : pas de version au rabais, tout se fait) :
-1. **Les décisions du 19 novembre**, chacune à son point : le refus d'une chronique réservée, la mention à côté du cadenas, le lien "Accès des membres de l'observatoire" et ce qui le suit (point 1) ; le second seuil des valeurs calculées à 1 200 000 et les quatre seuils dans le `.env` (2b) ; la licence et l'invitation de la fenêtre d'export, le README sans "commerciale comprise" (point 4) ; l'inscription sans téléphone ni adresse, le texte sur les données personnelles, les gestionnaires dans les mentions légales (point 4, "L'inscription et les données personnelles") ; les logos hors des fiches de l'accueil de BDOH et les onglets d'un observatoire au-dessus de sa zone de texte, en captures pour Lou (point 7 bis) ; `kit.py` (point 8). Chaque écart dans `dev/differences.md`, chaque cas dans `compare.py`.
-2. **Les trois défauts du JavaScript** (`dev/local/security.md`, "À corriger") : avant le 1er décembre, le site s'ouvrant alors à Internet.
-3. **2c, 2d et la date de mise à jour** : deux README par archive, la colonne `parameter`, la date de dernière mise à jour de chaque chronique (point 2 et point 4).
-4. Les passes, `make browser-check`, `CHANGELOG.md`, une version ; Lou l'installe (`sudo make vm-update V=…`) et envoie le pré-essai (`dev/test-kit/messages/pre-test.txt` au-dessus du kit), au plus tard le lundi 24 novembre. Les retours du pré-essai, puis les essais le 1er décembre.
-
-La fusion de la migration de la relecture (`content-review`) attend toujours l'accord de Lou sur ses captures : étape 1 de "Pour reprendre" dans [2026-11-19_review.md](2026-11-19_review.md).
-
-Ensuite, chacun dans sa session :
-- **Point 6, les statistiques** (priorité de Lou, 19 novembre) : les téléchargements par chronique tirés de l'historique, la vie de l'observatoire pour les gestionnaires, puis le compteur des consultations (une table, donc une migration à part), selon les règles de COUNTER ; captures avant de finir.
-- **Point 5, les listes** : le code est court (un champ par observatoire, une page, la proposition à l'inscription et dans la fenêtre d'export) ; il attend ce que Lou apprend de `listes.inrae.fr`, et la liste des gestionnaires tenue à jour (point 5, plus haut).
-- **Les versions correctives** de Doctrine (DBAL 4.5.1, ORM 3.7.7, DoctrineBundle 3.3.4 au 15 novembre), puis la suite de la validation (invariants, pannes provoquées : `2026-11-04_validation.md`).
+L'ordre de la suite, et ce que fait Lou : `ROADMAP.md`, « À faire ». Une session par sujet (Lou, 19 novembre : chacune dans un contexte propre).
 
 ## Suivi
 

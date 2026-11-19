@@ -1,6 +1,6 @@
 # Le plan de validation, étape par étape
 
-État : en cours, ouvert le 2026-11-04. Point « Preuves de solidité » de `ROADMAP.md` ; raisons et mesures dans [dev/audits/2026-11-03_validation-plan.md](../audits/2026-11-03_validation-plan.md), qui ne change plus. Ce fichier suit l'avancée, pour reprendre sans perdre le fil.
+État : en cours, ouvert le 2026-11-04. Point « La validation » de `ROADMAP.md` ; raisons et mesures dans [dev/audits/2026-11-03_validation-plan.md](../audits/2026-11-03_validation-plan.md), qui ne change plus. Ce fichier suit l'avancée, pour reprendre sans perdre le fil.
 
 ## Décisions de Lou (2026-11-04)
 
@@ -46,13 +46,13 @@ L'ordre de l'audit, resserré autour de la barrière : ce qui demande de lire de
 
 ## Pour reprendre
 
-État au 16 novembre : C1 à C3 sont finis (Suivi), la 0.7.0 est sur la VM et OTHU y est fondu. Vient d'abord la 0.7.1, avant le kit des essais (`dev/plans/2026-11-16_before-kit.md`). Puis, pendant la semaine des essais, dans cet ordre (décision 3 : C3 à C5 en parallèle des essais, C6 après leurs retours) :
+État au 19 novembre : C1 à C3 sont finis (Suivi), la VM est à la 0.7.1, OTHU y est fondu. Vient d'abord le code de la réouverture (`ROADMAP.md`, « À faire »). Puis, pendant les essais, dans cet ordre (décision 3 : C3 à C5 en parallèle des essais, C6 après leurs retours) :
 
 1. une nouvelle passe de couverture (`dev/coverage/README.md`), OTHU compris ;
 2. C4, les invariants ;
 3. C5, les pannes provoquées ; relevés par la passe de couverture du 6 novembre : la reprise des tâches laissées en cours, la durée maximale dépassée, le second exécuteur refusé et l'arrêt demandé (`RunJobsCommand`) ;
 4. une relecture, en lecture seule, du code qui écrit et que la comparaison n'exécute toujours pas, et de ce qui a changé depuis la 0.3.0 ;
-5. C6 : code gelé, tous les modes sur la base complète et sur la base fusionnée, que `make merge-othu` construit sur le poste.
+5. C6 : code gelé, tous les modes sur la base complète et sur la base fusionnée, que `make merge-othu` construit sur le poste. Avant de geler : les versions correctives parues des paquets PHP (au 15 novembre, Doctrine DBAL 4.5.1, ORM 3.7.7 et DoctrineBundle 3.3.4, sans avis de sécurité ; `composer audit` n'en relève aucun, et Symfony est à jour).
 
 Ne sont pas à jouer, faute de chemin qui y mène, dans l'ancien comme dans le nouveau : les branches `existing-measure` des fonctions d'export (`ChroniqueContinueRepository` passe toujours `round-time`, et `displayStartField`, calculé par `ChroniqueController`, n'est employé par aucun gabarit) ; `bdoh_interp_instant_to_instant`, `bdoh_interp_instant_to_mean_or_cumul` et `trunc_timestamp`, qu'aucun code ni aucune fonction n'appelle ; la garde de `bdoh_interp_for_bareme` pour une limite changée en lacune, que `bdoh_transformed_mesures` traite avant elle ; la route de la mise à jour automatique vers Theia, dont la case est en commentaire.
 
