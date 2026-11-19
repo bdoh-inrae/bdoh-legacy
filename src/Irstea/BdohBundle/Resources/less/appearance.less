@@ -243,15 +243,33 @@ h1 a.external-link {
     > :last-child { padding-right: 15px; }
 }
 // Les onglets d'un observatoire, Présentation, Partenaires et Gestionnaires : juste au-dessus de la zone qu'ils
-// changent, alignés à gauche, en pastilles (Lou, 2026-11-19, comme le 16 au matin) ; la pastille ouverte prend la
-// couleur du thème (.nav-pills, plus haut). homes.css les place.
+// changent, en texte simple, un trait de la couleur du thème sous celui qui est ouvert, plus gras, sur un filet léger ;
+// pas de pastilles, trop lourdes à cette place (Lou, 2026-11-19, comme le 15 au soir), et un peu d'air sous la carte.
+// homes.css les place.
 #consult-observatoire .observatory-headline > .nav-pills {
     display: flex;
     flex-wrap: wrap;
     gap: 4px;
-    margin: 0 0 12px;
+    margin: 12px 0 14px;
     padding: 0;
+    background: none;
+    border-bottom: 1px solid @lineColor;
     > li { float: none; margin: 0; }
+    > li > a {
+        padding: 6px 12px;
+        margin-bottom: -1px;
+        border-radius: 0;
+        border-bottom: 2px solid transparent;
+        color: @text-color;
+        background: none;
+    }
+    > li > a:hover, > li > a:focus { color: @inkColor; background: none; border-bottom-color: @lineColor; }
+    > li.active > a, > li.active > a:hover, > li.active > a:focus {
+        color: @inkColor;
+        background: none;
+        border-bottom-color: @inkColor;
+        font-weight: 600;
+    }
 }
 
 // Une ligne de liste qui mène à sa fiche, une chronique ou une station (bdoh/row-links.js) : toute la ligne se clique.

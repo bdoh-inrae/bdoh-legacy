@@ -678,6 +678,24 @@ class Observatoire implements ObservatoireRelatedInterface, DocumentedEntityInte
     }
 
     /**
+     * Si l'observatoire a des chroniques : la barre du haut ne propose la recherche qu'alors (Core/navigation-bar).
+     */
+    public function hasChronique(): bool
+    {
+        /** @var SiteExperimental $site */
+        foreach ($this->sites as $site) {
+            /** @var Station $station */
+            foreach ($site->getStations() as $station) {
+                if (!$station->getChroniques()->isEmpty()) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * {@inheritdoc}
      */
     public function getObservatoire(): Observatoire

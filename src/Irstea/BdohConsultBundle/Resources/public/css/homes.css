@@ -43,7 +43,7 @@
 
 /* Un observatoire : le nom sur son filet, avec la boîte à outils d'un gestionnaire à droite ; le bloc de citation ; la
    carte ; puis les onglets, juste au-dessus de la zone qu'ils changent, alignés à gauche (Lou, 2026-11-19 : sur la
-   ligne du nom, loin de cette zone, il fallait aller les chercher) ; puis les listes. Le logo, à gauche du nom le
+   ligne du nom, loin de cette zone, il fallait aller les chercher), soulignés plutôt qu'en pastilles ; puis les listes. Le logo, à gauche du nom le
    15 novembre, est passé le 16 au soir à gauche du bloc de citation.
    L'ordre de la page est celui de l'ancien (les onglets d'abord) : la grille place les blocs, la ligne du nom ne
    faisant pas de boîte (display: contents). */
@@ -55,7 +55,7 @@
 .observatory-headline > .observatory-head { grid-area: head; }
 .observatory-headline > .toolbox-btns { grid-area: tools; align-self: end; margin: 0 0 2px 16px; }
 .observatory-headline > .toolbox-btns:empty { display: none; }
-.observatory-headline > .nav-pills { grid-area: tabs; justify-self: start; }
+.observatory-headline > .nav-pills { grid-area: tabs; }
 #consult-observatoire > .observatory-citation { grid-area: citation; }
 #consult-observatoire > .observatory-map { grid-area: map; }
 #consult-observatoire > .tab-content { grid-area: content; }

@@ -14,14 +14,15 @@ La réouverture de BDOH, mi-décembre, après un pré-essai par deux gestionnair
 
 Les numéros renvoient aux points du plan de la réouverture.
 
-1. Les décisions du 19 novembre : le refus d'une chronique réservée et ce qui l'accompagne (1), les seuils d'export dans le `.env` (2b), la fenêtre d'export et l'inscription (4), les onglets d'un observatoire au-dessus de sa zone de texte (7 bis), `kit.py` (8).
-2. Les trois défauts du JavaScript, avant que le site s'ouvre à Internet (`dev/local/security.md`, "À corriger").
-3. L'export : deux README par archive, la colonne `parameter`, la date de mise à jour de chaque chronique (2c, 2d, 4).
-4. La migration de la relecture du contenu, sur la branche `content-review`, à fusionner sur l'accord de Lou ; puis les logos des partenaires ([dev/plans/2026-11-19_review.md](dev/plans/2026-11-19_review.md)).
-5. Les statistiques d'usage (6), la contrepartie de l'ouverture des données (`dev/decisions.md`, "Ouverture des données") : le compteur des consultations et des téléchargements de chaque chronique, en public, et la vie de l'observatoire pour ses gestionnaires. Pour les essais du 1er décembre. Sa conception détaillée est à écrire, puis à revoir avec Lou comme les points 1 à 4.
-6. Les listes de diffusion (5), une fois connu ce que permet `listes.inrae.fr`.
-7. Les retours du pré-essai, puis ceux des essais.
-8. La validation, pendant les essais : les versions correctives de Doctrine, une passe de couverture, les invariants, les pannes provoquées, une relecture du code que la comparaison n'exécute pas, puis le code gelé et tous les modes sur la base complète et sur OTHU ([dev/plans/2026-11-04_validation.md](dev/plans/2026-11-04_validation.md)).
+Les décisions du 19 novembre sont codées (`CHANGELOG.md`, "Non publié"), sauf la date de mise à jour, qui vient avec l'export (2).
+
+1. Les trois défauts du JavaScript, avant que le site s'ouvre à Internet (`dev/local/security.md`, "À corriger").
+2. L'export : deux README par archive, la colonne `parameter`, la date de mise à jour de chaque chronique (2c, 2d, 4).
+3. La migration de la relecture du contenu, sur la branche `content-review`, à fusionner sur l'accord de Lou ; puis les logos des partenaires ([dev/plans/2026-11-19_review.md](dev/plans/2026-11-19_review.md)).
+4. Les statistiques d'usage (6), la contrepartie de l'ouverture des données (`dev/decisions.md`, "Ouverture des données") : le compteur des consultations et des téléchargements de chaque chronique, en public, et la vie de l'observatoire pour ses gestionnaires. Pour les essais du 1er décembre. Sa conception est écrite au point 6 du plan, à revoir avec Lou sur les captures.
+5. Les listes de diffusion (5), une fois connu ce que permet `listes.inrae.fr`.
+6. Les retours du pré-essai, puis ceux des essais.
+7. La validation, pendant les essais : les versions correctives de Doctrine, une passe de couverture, les invariants, les pannes provoquées, une relecture du code que la comparaison n'exécute pas, puis le code gelé et tous les modes sur la base complète et sur OTHU ([dev/plans/2026-11-04_validation.md](dev/plans/2026-11-04_validation.md)).
 
 ### Ce que fait Lou
 

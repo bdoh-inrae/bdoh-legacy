@@ -62,6 +62,8 @@ RIGHTS_NOTICE = "Conformément aux articles 39 et 40 de la loi Informatique et L
 
 # L'information sur les données personnelles, à l'inscription et dans le courriel de bienvenue (RGPD, article 13)
 PRIVACY = 'Données personnelles des comptes'
+# Les chroniques réservées, dites pour ce qu'elles sont (dev/differences.md, « Ouverture des données », 19 novembre)
+RESERVED = 'Ouverture des données'
 TERMS = "Conditions d'utilisation communes"
 # L'aide des deux champs des photos d'un observatoire (Lou, 2026-11-16)
 PHOTOS = 'Photographies sous Licence Ouverte'
@@ -69,13 +71,18 @@ PHOTO_HELP = ("+T La photo est diffusée sous Licence Ouverte 2.0, comme les don
               "l'auteur, ou avec son accord.")
 # L'adresse des conditions d'un observatoire dans une ligne (« <site>\/DRAIX\/terms_of_use »), devenue celle de tout BDOH
 TERMS_PAGE = re.compile(r'(<site>(\\?/))[A-Z0-9_-]+\2terms_of_use')
-PRIVACY_NOTICE = ("INRAE (147 rue de l'Université, 75338 Paris Cedex 07) traite les informations de votre compte pour vous donner "
-                  "accès à BDOH et aux données que vous demandez ; les gestionnaires de l'observatoire concerné reçoivent vos "
-                  "demandes d'accès. Vous pouvez accéder à ces informations, les faire rectifier ou effacer, et vous opposer à "
-                  "leur traitement, comme le prévoient le règlement (UE) 2016/679 et la loi Informatique et Libertés. Écrivez à "
-                  "bdoh.support@listes.inrae.fr, ou à la déléguée à la protection des données d'INRAE, cil-dpo@inrae.fr ; vous "
-                  "pouvez aussi saisir la CNIL (www.cnil.fr).")
-PRIVACY_FORM = (f"+T Données personnelles : {PRIVACY_NOTICE} Le téléphone et l'adresse sont facultatifs.",)
+# Depuis le 19 novembre (Lou) : à quoi servent les informations d'un compte, sans point-virgule, et ni téléphone ni
+# adresse à l'inscription
+PRIVACY_NOTICE = ("INRAE (147 rue de l'Université, 75338 Paris Cedex 07) traite les informations de votre compte pour le faire "
+                  "fonctionner : la connexion, vos favoris, le lien de vos exports, et vos demandes d'accès, que reçoivent les "
+                  "gestionnaires de l'observatoire concerné. Vous pouvez accéder à ces informations, les faire rectifier ou "
+                  "effacer, et vous opposer à leur traitement, comme le prévoient le règlement (UE) 2016/679 et la loi "
+                  "Informatique et Libertés. Écrivez à bdoh.support@listes.inrae.fr, ou à la déléguée à la protection des "
+                  "données d'INRAE, cil-dpo@inrae.fr. Vous pouvez aussi saisir la CNIL (www.cnil.fr).")
+PRIVACY_FORM = (f"+T Données personnelles : {PRIVACY_NOTICE}",)
+# Le téléphone et l'adresse quittent l'inscription et la page du compte (Lou, 2026-11-19)
+CONTACT_FIELDS = ('-T N° de téléphone', '-T Adresse',
+                  RX(r'-I (?:textarea|input text) irstea_bdohsecuritybundle_\w+\[(?:adresse|telephone)\]'))
 
 # La page de la demande d'accès : son titre, et à qui la demande est réservée (Lou, 2026-11-16). Seul un compte sans
 # droit la voit : celui que crée accounts ; les comptes de pages y sont renvoyés à la recherche.
@@ -132,7 +139,10 @@ NEW_KEYS = """Error.file.cantWrite(%file%) | dateMonthShort | oneMonth | admin.s
     measure.export.status.expired | measure.export.status.failed | measure.export.status.finished(%days%)
     measure.export.status.running | measure.export.status.title | measure.export.status.waiting | measure.export.tooHeavy
     measure.export.status.keep(%days%) | measure.export.tooLarge | measure.export.values.read | measure.export.values.computed
-    historique.withoutAccount | measure.export.account
+    historique.withoutAccount | measure.export.account | measure.export.accountFull | consult.help.chronique.reserved
+    reserved.subtitle | reserved.what | reserved.distribution | reserved.producer(%producer%) | reserved.station(%station%)
+    reserved.managers(%link%) | reserved.member.login(%link%) | reserved.member.connected
+    security.utilisateur.newMailUtilisateur.body.openOnly
     measure.export.tooMany | security.besoin.members | security.besoin.open | security.login_check.info(%email%) | security.login_check.submit
     security.login_form.createAccount | security.login_form.info | security.login_form.noAccount
     security.login_link.invalidForm | security.login_link.mail.body | security.login_link.mail.footer
@@ -147,7 +157,7 @@ NEW_KEYS = """Error.file.cantWrite(%file%) | dateMonthShort | oneMonth | admin.s
     favorite.error.nothingChecked | favorite.error.noLabel | favorite.error.invalidForm
     favorite.exportModal.notAllowed | favorite.exportModal.askAccess | favorite.exportModal.withoutMeasures
     favorite.exportModal.nothing"""
-CHANGED_KEYS = """accueilMessage | consult.help.chronique.notVisible | measure.export.help-content | measure.export.job_queued(%job_id%) | measure.export.underway
+CHANGED_KEYS = """accueilMessage | askDataAccess | consult.help.chronique.notVisible | measure.export.help-content | measure.export.job_queued(%job_id%) | measure.export.underway
     security.besoin.create.title | security.login_form.connectTo | security.utilisateur.create.info.isTheFirstStep
     security.utilisateur.create.info.yourIdentifier | security.utilisateur.create.isCompleted
     security.utilisateur.newMailUtilisateur.body.step2 | security.utilisateur.newMailUtilisateur.body.step4
@@ -735,6 +745,7 @@ RULES = [
     Rule('pages', rf'{ROLE} {OBS}/login', LINK, lines=LOGIN_PAGE),
     Rule('pages', rf'{ROLE} {OBS}/user/new', OPEN, lines=NEW_ACCOUNT),
     Rule('pages', rf'{ROLE} {OBS}/user/new', PRIVACY, lines=PRIVACY_FORM, must=PRIVACY_FORM),
+    Rule('pages', rf'{ROLE} {OBS}/user/(?:new|edit)', PRIVACY, lines=CONTACT_FIELDS),
     # L'adresse des conditions d'un observatoire, où l'ancien servait un PDF, renvoie à la page commune à tout BDOH
     # (Lou, 2026-11-15), que « nouveau seul : conditions d'utilisation » lit ; compare.py n'en compare que les deux
     # premières lignes, le statut et le type ou la redirection
@@ -755,6 +766,24 @@ RULES = [
     replaced('pages', rf'{ROLE} {OBS}/resetting/(?:request|check-email)', LINK, 301,
              RX(rf'\+redirection {OBS}/login'), RX(rf'\+T Redirecting to {OBS}/login\.?'), RX(rf'\+A {OBS}/login')),
     Rule('pages', rf'{ROLE} {OBS}/besoin/new', OPEN, lines=RESERVED_REQUEST),
+    # Ce qui accompagne les chroniques réservées (Lou, 2026-11-19 ; reserved_checks vérifie chaque cas) : dans la liste
+    # des chroniques d'une station ou d'un jeu de données, la mention en clair à la place de la bulle du cadenas
+    Rule('pages', rf'{ROLE} {OBS}/(?:station|dataset)/[^/ ]+', RESERVED,
+         lines=('-D i data-placement=top data-toggle=tooltip', "+T Réservée aux membres de l'observatoire")),
+    # Le lien du menu du compte, renommé ; il quitte le menu d'un observatoire sans chronique réservée
+    Rule('pages', r'.*', RESERVED,
+         lines=('-T Demander un accès aux données', "+T Accès des membres de l'observatoire", RX(rf'-A {OBS}/besoin/new'))),
+    # La page d'une chronique réservée, pour qui n'y a pas droit : toujours refusée, elle dit ce qu'est la chronique
+    # (sans ligne obligatoire : une telle règle s'imposerait à toutes les pages de chroniques)
+    Rule('pages', rf'{ROLE} {OBS}/[A-Z0-9_-]+/[A-Z0-9_-]+', RESERVED, lines=(
+        '-T Accès refusé', RX(r"-T Vous n'avez pas la permission d'accéder à cette information ou d'effectuer cette action\."),
+        RX(r"\+T (?:BDOH - .* - )?\S+ / \S+ Chronique réservée à l'observatoire"),
+        "+T Cette chronique est réservée aux membres de l'observatoire, pour son travail interne.",
+        RX(r"\+T BDOH n'en assure pas la diffusion : pour l'obtenir, adressez-vous aux partenaires qui la portent\.(?: Son producteur : .+\.)?"),
+        RX(r'\+T Ses métadonnées restent visibles sur la page de sa station, \S+\.'), RX(rf'\+A {OBS}/station/\S+'),
+        "+T Pour en savoir plus sur cette chronique, vous pouvez écrire aux gestionnaires de l'observatoire.", RX(rf'\+A {OBS}/#managers'),
+        "+T Membre de l'observatoire ? Connectez-vous, puis demandez-en l'accès depuis le menu de votre compte.", RX(rf'\+A {OBS}/login'),
+        "+T Membre de l'observatoire ? Demandez-en l'accès depuis le menu de votre compte.")),
     replaced('pages', rf'{ROLE} /select_lang/(?:en|fr)', 'Erreurs 500 sur des pages publiques', 302,
              '+redirection /', '+T Redirecting to /', '+T Redirecting to /.', '+A /'),
     # L'adresse d'une chronique inconnue, sous une station inconnue ou connue : 404 au lieu de l'erreur interne
