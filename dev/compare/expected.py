@@ -60,6 +60,10 @@ RIGHTS_NOTICE = "Conformément aux articles 39 et 40 de la loi Informatique et L
 # L'information sur les données personnelles, à l'inscription et dans le courriel de bienvenue (RGPD, article 13)
 PRIVACY = 'Données personnelles des comptes'
 TERMS = "Conditions d'utilisation communes"
+# L'aide des deux champs des photos d'un observatoire (Lou, 2026-11-16)
+PHOTOS = 'Photographies sous Licence Ouverte'
+PHOTO_HELP = ("+T La photo est diffusée sous Licence Ouverte 2.0, comme les données. Ne la déposez que si vous en êtes "
+              "l'auteur, ou avec son accord.")
 # L'adresse des conditions d'un observatoire dans une ligne (« <site>\/DRAIX\/terms_of_use »), devenue celle de tout BDOH
 TERMS_PAGE = re.compile(r'(<site>(\\?/))[A-Z0-9_-]+\2terms_of_use')
 PRIVACY_NOTICE = ("INRAE (147 rue de l'Université, 75338 Paris Cedex 07) traite les informations de votre compte pour vous donner "
@@ -730,6 +734,8 @@ RULES = [
          lines=('-T Data Constraint', "+T Conditions d'accès et d'utilisation")),
     # L'astuce de saisie des dates passe dans la bulle des champs, sur la page des barèmes aussi
     Rule('admin', rf'{ROLE} {OBS}/admin/transformation', GRAPH, lines=DATE_TIP),
+    # Sous chacun des deux champs des photos, le formulaire d'un observatoire dit leur licence
+    Rule('admin', rf'{ROLE} {OBS}/admin/observatoire/(?:create|\d+/edit)', PHOTOS, lines=(PHOTO_HELP,)),
     Rule('admin', rf'{ROLE} {OBS}/admin/utilisateur/export\?format=csv', "Export des listes de l'administration",
          lines=(RX(r'-statut (?:403|500)'), '+statut 404'), must=('+statut 404',)),
     Rule('admin', rf'gestionnaire {OBS}/admin/personnetheia/list', "Modifier le compte d'un autre, réservé aux administrateurs",

@@ -448,13 +448,23 @@ class Observatoire extends Admin
             ->add(
                 'pathPhotoPrincipale',
                 FileType::class,
-                ['required' => false, 'accept' => ['image/*', '.png', '.jpg', '.gif'], 'label' => 'filePhotoPrincipale']
+                [
+                    'required' => false,
+                    'accept'   => ['image/*', '.png', '.jpg', '.gif'],
+                    'label'    => 'filePhotoPrincipale',
+                    'help'     => $translator->trans('admin.help.observatoire.photo'),
+                ]
             )
             // image widget
             ->add(
                 'pathPhotoSecondaire',
                 FileType::class,
-                ['required' => false, 'accept' => ['image/*', '.png', '.jpg', '.gif'], 'label' => 'filePhotoSecondaire']
+                [
+                    'required' => false,
+                    'accept'   => ['image/*', '.png', '.jpg', '.gif'],
+                    'label'    => 'filePhotoSecondaire',
+                    'help'     => $translator->trans('admin.help.observatoire.photo'),
+                ]
             )
             ->end();
 

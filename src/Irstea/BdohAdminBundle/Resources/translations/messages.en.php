@@ -696,6 +696,7 @@ $various = [
                 'email-info'                               => 'Email of generic conatct of this producer.',
                 'confirm-delete-observatory-info'          => '<strong style="color:red">The listed scales, basins, rivers and/or DOIs will be deleted as well.</strong>',
                 'warning-delete-observatory-info-redirect' => 'This is the current observatory, if you delete it you will be redirected to the home page of all the observatories.',
+                'photo'                                    => "The photo is published under the Etalab Open Licence 2.0, like the data. Upload it only if you are its author, or with the author's consent.",
             ],
             'dataset' => [
                 'contact'                        => "<strong style=\"color:red; font-size: 10px\">[Champ pour Theia/Ozcar]</strong><br>Theia/Ozcar demande la présence obligatoire d'au moins un Project Leader",

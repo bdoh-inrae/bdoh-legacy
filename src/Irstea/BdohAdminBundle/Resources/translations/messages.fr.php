@@ -699,6 +699,7 @@ $various = [
                 'theiaCode-message'                        => "<strong style=\"color:red; font-size: 10px\">[Champ pour Theia/Ozcar]</strong><br>Correspond aux 4 premières lettres en majuscule de l'Observatoire. <br>Les identifiants font références au modèle de données pivot Theia/Ozcar (Annexe 1 page 15) : <a href='https://theia-ozcar.gricad-pages.univ-grenoble-alpes.fr/doc-producer/producer-documentation.html#modele-de-donnees-pivot-description-et-implementation-en-json' target='_blank'>Ici</a> ",
                 'theiaPassword-message'                        => "Le mot de passe ne s'affiche pas dans ce champ pour des raisons de confidentialité. Le laisser en état pour le conserver.",
                 'doi-principal-message'                    => " Theia/Ozcar demande un seul DOI pour ses ressources en ligne. Ajouter ici le DOI principal de l'observatoire. ",
+                'photo'                                    => "La photo est diffusée sous Licence Ouverte 2.0, comme les données. Ne la déposez que si vous en êtes l'auteur, ou avec son accord.",
             ],
             'dataset' => [
                 'contact'                        => "<strong style=\"color:red; font-size: 10px\">[Champ pour Theia/Ozcar]</strong><br>Theia/Ozcar demande la présence obligatoire d'au moins un Project Leader",

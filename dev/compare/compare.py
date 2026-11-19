@@ -1044,18 +1044,21 @@ def cards_checks(base, side, report):
 def terms_checks(side, slug, report):
     """La page des conditions d'utilisation, commune à tout BDOH, sans observatoire dans son adresse (Lou, 2026-11-15),
     que seul le nouveau a : en français et en anglais, la Licence Ouverte et ses textes, les conditions générales des
-    chroniques en accès restreint, le README des exports pour la mention ; et son lien au pied des pages, sur le portail
-    comme sur un observatoire. L'ancienne adresse de chaque observatoire y renvoie (expected.py, règle des conditions)."""
+    chroniques en accès restreint, le README des exports pour la mention, les photographies sous la licence (Lou,
+    2026-11-16), les logos et les coordonnées hors d'elle ; et son lien au pied des pages, sur le portail comme sur un
+    observatoire. L'ancienne adresse de chaque observatoire y renvoie (expected.py, règle des conditions)."""
     problems = []
     wanted = {'fr': ["Licence Ouverte d'Etalab", 'documents/Licence-Ouverte-2.0-fr.pdf', 'documents/Open-Licence-2.0-en.pdf',
-                     'documents/ConditionsGeneralesUtilisation.pdf', 'README.txt'],
-              'en': ['Etalab Open Licence', 'documents/ConditionsGeneralesUtilisation.pdf', 'README.txt']}
+                     'documents/ConditionsGeneralesUtilisation.pdf', 'README.txt',
+                     'et les photographies des observatoires sont sous la même licence, sauf les logos et les coordonnées'],
+              'en': ['Etalab Open Licence', 'documents/ConditionsGeneralesUtilisation.pdf', 'README.txt',
+                     'and the photographs of the observatories are under the same licence, except logos and contact details']}
     for language, words in wanted.items():
         guest = Client(side, None, slug)
         if language == 'en':
             guest.get('/select_lang/en')
         status, headers, body = guest.get('/terms_of_use')
-        text = html.unescape(body.decode('utf-8', 'replace'))
+        text = re.sub(r'[ \t\r\n]+', ' ', html.unescape(body.decode('utf-8', 'replace')))
         if status != 200:
             problems.append(f'{language} : statut {status}')
             continue
@@ -1128,10 +1131,12 @@ def help_legal_checks(base, side, slug, report):
     wanted = {
         'fr': (["La notice d'utilisation de BDOH", 'href="/user_manual"', 'bdoh.support@listes.inrae.fr', '« Gestionnaires »'],
                ['Éditeur', 'Publication', 'Hébergement', 'Données personnelles', 'Crédits', 'id="accessibilite"', 'GNU AGPL',
-                'non conforme', 'Défenseur des droits', 'cil-dpo@inrae.fr', 'effacement']),
+                'non conforme', 'Défenseur des droits', 'cil-dpo@inrae.fr', 'effacement',
+                'Les logos appartiennent à leurs titulaires. Les photographies des observatoires sont sous Licence Ouverte 2.0']),
         'en': (['The BDOH user manual', 'href="/user_manual"', 'bdoh.support@listes.inrae.fr', '“Managers”'],
                ['Publisher', 'Publication', 'Hosting', 'Personal data', 'Credits', 'id="accessibilite"', 'GNU AGPL',
-                'not compliant', 'Défenseur des droits', 'cil-dpo@inrae.fr', 'erased']),
+                'not compliant', 'Défenseur des droits', 'cil-dpo@inrae.fr', 'erased',
+                'The logos belong to their holders. The photographs of the observatories are under the Etalab Open Licence 2.0']),
     }
     for language, (help_words, legal_words) in wanted.items():
         guest = Client(side, None, slug)
@@ -1139,7 +1144,7 @@ def help_legal_checks(base, side, slug, report):
             guest.get('/select_lang/en')
         for path, words, problems in (('/help', help_words, help_problems), ('/legal', legal_words, legal_problems)):
             status, _, body = guest.get(path)
-            text = html.unescape(body.decode('utf-8', 'replace'))
+            text = re.sub(r'[ \t\r\n]+', ' ', html.unescape(body.decode('utf-8', 'replace')))
             if status != 200:
                 problems.append(f'{language} {path} : statut {status}')
                 continue
