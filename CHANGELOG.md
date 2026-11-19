@@ -4,6 +4,10 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/). Numéros de v
 
 ## Non publié
 
+### Modifié
+
+- Les seuils de volume d'un export se règlent dans l'environnement de la machine, sans nouvelle version. Le second seuil des valeurs calculées passe de 1 million à 1 200 000 : un export que l'ancien BDOH acceptait n'est jamais refusé, au plus il demande un compte.
+
 ## 0.8.0 - 2026-11-19
 
 Les chroniques réservées dites pour ce qu'elles sont, un export réglé sur son volume plutôt que sur sa période, l'unité dans chaque fichier CSV, une invitation à créer un compte, les photographies sous Licence Ouverte, et les textes relus en français et en anglais.

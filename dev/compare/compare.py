@@ -2390,7 +2390,14 @@ def open_data_checks(side, console, runner, base, checks):
           ('valeurs calculées', 'sans compte, la limite est de 100 000'), exportType='mean', meanCumulStep='6')
     asked('moyenne, au-delà du premier seuil, acceptée avec un compte', owner, visible, True, exportType='mean', meanCumulStep='6')
     asked('cumul, au-delà du second seuil des valeurs calculées, refusé avec un compte', owner, visible, False,
-          ('valeurs calculées', 'la limite est de 1 000 000 par demande'), exportType='cumulative', meanCumulStep='5')
+          ('valeurs calculées', 'la limite est de 1 200 000 par demande'), exportType='cumulative', meanCumulStep='5')
+    # La limite de l'ancien, qui doit passer avec un compte (dev/decisions.md, « Ouverture des données ») : au pas de
+    # 5 minutes (pasechantillonnage 1), un peu moins de 11 ans, moment tronquant l'écart à l'année entière
+    old_limit = dict(exportType='mean', meanCumulStep='1', beginDate='2013-01-01T00:00:00Z', endDate='2023-12-31T23:55:00Z')
+    asked('moyenne au pas de 5 minutes sur 11 ans moins 5 minutes, la limite de l’ancien, acceptée avec un compte', owner, visible, True,
+          **old_limit)
+    asked('la même, refusée sans compte', anonymous, visible, False, ('1 156 896 valeurs', 'sans compte, la limite est de 100 000'),
+          **old_limit)
     asked('moyenne journalière, sous le premier seuil, acceptée sans compte', anonymous, visible, True, exportType='mean', meanCumulStep='7')
     asked('moyenne d’un événement, une seule valeur, acceptée sans compte', anonymous, visible, True, exportType='mean', meanCumulStep='10')
     status = export(anonymous, slug, visible, exportType='mean', meanCumulStep='')[0]

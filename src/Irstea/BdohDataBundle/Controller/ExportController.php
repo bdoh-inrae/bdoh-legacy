@@ -31,6 +31,7 @@ use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\RateLimiter\RateLimiterFactoryInterface;
 use Symfony\Component\Security\Core\Authorization\AuthorizationCheckerInterface;
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\Validator\Constraints\Count;
 use Symfony\Component\Validator\Constraints\GreaterThan;
 use Symfony\Component\Validator\Constraints\GreaterThanOrEqual;
@@ -43,21 +44,6 @@ use Symfony\Component\Validator\Constraints\NotBlank;
  */
 class ExportController extends Controller
 {
-    /**
-     * Le volume d'une demande, en valeurs écrites, quels que soient son type et le nombre de ses chroniques, et ses deux
-     * seuils (Lou, 2026-11-16 ; dev/plans/2026-11-16_reopening.md, point 2b) : au-delà du premier, un compte est
-     * demandé ; au-delà du second, la demande est refusée, pour qu'elle ne retienne pas la file ni ne remplisse le
-     * dossier temporaire, où les fichiers s'écrivent avant l'archive. Les valeurs lues (export à l'identique, valeurs
-     * interpolées) s'écrivent à 90 000 par seconde, et pèsent 56 octets en CSV ; les valeurs calculées (moyenne, cumul)
-     * à 640 par seconde, d'où des seuils cinquante fois plus bas : le second vaut alors la limite de l'ancien, 2 ans par
-     * minute de pas, soit 1 051 200 valeurs. Mesuré sur le poste le 16 novembre 2026 : le second seuil est provisoire,
-     * à régler sur la machine de production (dev/differences.md, « Le volume d'un export »).
-     */
-    private const VOLUME_LIMITS = [
-        'read'     => [5000000, 50000000],
-        'computed' => [100000, 1000000],
-    ];
-
     /**
      * Sans compte, ce qui peut attendre dans la file des exports : un seul visiteur ne doit pas la saturer pour tous.
      */
@@ -83,7 +69,21 @@ class ExportController extends Controller
         FormFactoryInterface $formFactory,
         AuthorizationCheckerInterface $authChecker,
         private ExportFiles $exportFiles,
-        private RateLimiterFactoryInterface $exportIpLimiter
+        private RateLimiterFactoryInterface $exportIpLimiter,
+        /*
+         * Le volume d'une demande, en valeurs écrites, quels que soient son type et le nombre de ses chroniques, et ses
+         * deux seuils (Lou, 2026-11-16 et 19 ; dev/plans/2026-11-16_reopening.md, point 2b) : au-delà du premier, un
+         * compte est demandé ; au-delà du second, la demande est refusée, pour qu'elle ne retienne pas la file ni ne
+         * remplisse le dossier temporaire, où les fichiers s'écrivent avant l'archive. Les valeurs lues (export à
+         * l'identique, valeurs interpolées) s'écrivent à 90 000 par seconde sur le poste, et pèsent 56 octets en CSV ;
+         * les valeurs calculées (moyenne, cumul) à 640 par seconde, d'où un second jeu de seuils. Ils se règlent dans
+         * l'environnement de la machine (.env.example), par défaut ceux de services.yml ; le second des valeurs
+         * calculées reste au-dessus de ce que l'ancien acceptait, 1 157 112 (dev/decisions.md, « Ouverture des données »).
+         */
+        #[Autowire('%env(int:EXPORT_READ_WITHOUT_ACCOUNT)%')] private int $readWithoutAccount,
+        #[Autowire('%env(int:EXPORT_READ_MAX)%')] private int $readMax,
+        #[Autowire('%env(int:EXPORT_COMPUTED_WITHOUT_ACCOUNT)%')] private int $computedWithoutAccount,
+        #[Autowire('%env(int:EXPORT_COMPUTED_MAX)%')] private int $computedMax
     ) {
         $this->jobManager = $jobManager;
         $this->formFactory = $formFactory;
@@ -162,7 +162,9 @@ class ExportController extends Controller
             return $this->refuse($request, 'measure.export.tooMany');
         }
         $kind = \in_array($params['exportType'], ['mean', 'cumulative'], true) ? 'computed' : 'read';
-        [$withoutAccount, $atMost] = self::VOLUME_LIMITS[$kind];
+        [$withoutAccount, $atMost] = $kind === 'computed'
+            ? [$this->computedWithoutAccount, $this->computedMax]
+            : [$this->readWithoutAccount, $this->readMax];
         $limit = $user === null ? $withoutAccount : $atMost;
         $volume = $this->volume($params, $chroniques->toArray(), $beginDate, $endDate, $limit);
         if ($volume > $limit) {

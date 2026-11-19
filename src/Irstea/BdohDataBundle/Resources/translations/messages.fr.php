@@ -72,7 +72,7 @@ HELP
         // Ce qu'un compte apporte, dit à qui exporte sans compte : dans la fenêtre d'export et sur la page de suivi
         // (Lou, 2026-11-16 ; dev/plans/2026-11-16_reopening.md, point 4)
         'account'      => 'Avec un compte, le lien de l\'export arrive par e-mail, et vos chroniques se gardent en favoris, rangées par étiquettes, pour les exporter d\'un coup : <a href="%register%">créer un compte</a> ou <a href="%login%">se connecter</a>.',
-        // Le volume d'une demande et ses deux seuils (ExportController::VOLUME_LIMITS ; Lou, 2026-11-16)
+        // Le volume d'une demande et ses deux seuils (ExportController, réglés dans l'environnement ; Lou, 2026-11-16)
         'tooHeavy'     => "Cet export compte %volume% %what% : sans compte, la limite est de %max%. Connectez-vous (le lien de l'export arrive alors par e-mail), ou réduisez la période, le nombre de chroniques, ou augmentez le pas de temps.",
         'tooLarge'     => "Cet export compte %volume% %what% : la limite est de %max% par demande, pour que la file des exports reste disponible à tous. Réduisez la période, le nombre de chroniques, ou augmentez le pas de temps, quitte à exporter en plusieurs fois.",
         'values'       => [

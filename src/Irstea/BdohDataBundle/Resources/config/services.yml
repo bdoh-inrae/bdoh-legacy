@@ -14,6 +14,12 @@ parameters:
 
     # La place des archives d'export en attente d'être téléchargées : 20 Go par défaut (ExportFiles)
     env(EXPORTS_MAX_BYTES): '21474836480'
+    # Les seuils de volume d'un export, en valeurs écrites (ExportController, .env.example) : valeurs lues (à
+    # l'identique, interpolées) et valeurs calculées (moyenne, cumul), sans compte, puis par demande
+    env(EXPORT_READ_WITHOUT_ACCOUNT): '5000000'
+    env(EXPORT_READ_MAX): '50000000'
+    env(EXPORT_COMPUTED_WITHOUT_ACCOUNT): '100000'
+    env(EXPORT_COMPUTED_MAX): '1200000'
 
     # A map of formats and their specific exporters
     irstea_bdoh_data.measure_export.exporters:

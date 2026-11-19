@@ -134,7 +134,7 @@ Chaque étape s'annonce à l'heure ; la sauvegarde et les deux contrôles de la 
 
 ## Mesurer les exports
 
-Les seuils de volume d'un export (`ExportController::VOLUME_LIMITS` ; `dev/differences.md`, « Le volume d'un export ») ont été posés d'après le poste de développement : le second est provisoire. Sur la VM, mesurer ce que durent une lecture et un calcul, et la place du dossier temporaire, pour le régler. La sortie des commandes est jetée : rien ne s'écrit, la file n'est pas touchée, et seuls s'affichent des durées, un nombre de lignes et un nombre d'octets. À un moment calme, dans le dossier de l'instance :
+Les seuils de volume d'un export (`dev/differences.md`, « Le volume d'un export ») ont été posés d'après le poste de développement : le second est provisoire. Sur la VM, mesurer ce que durent une lecture et un calcul, et la place du dossier temporaire, pour le régler. Ils se règlent dans le `.env` de l'instance, sans nouvelle version ni redémarrage : `EXPORT_READ_WITHOUT_ACCOUNT`, `EXPORT_READ_MAX`, `EXPORT_COMPUTED_WITHOUT_ACCOUNT`, `EXPORT_COMPUTED_MAX` (`.env.example`) ; une ligne absente garde la valeur par défaut. La sortie des commandes est jetée : rien ne s'écrit, la file n'est pas touchée, et seuls s'affichent des durées, un nombre de lignes et un nombre d'octets. À un moment calme, dans le dossier de l'instance :
 
 ```
 df -h /tmp
@@ -153,7 +153,7 @@ mesure bdoh:export:mean 1 $AN ID
 mesure bdoh:export:cumulative 1 $AN ID
 ```
 
-Sur le poste, le 16 novembre : 1,3 s (128 000 lignes), 6,1 s (526 000), 15 s (9 500), 164 s (106 000) et 163 s. Le second seuil des valeurs lues (50 millions) vaut la place de `/tmp` : 56 octets par valeur en CSV, que l'export écrit sans compression avant l'archive, à côté des imports. Celui des valeurs calculées (1 million) vaut une durée de file : la dernière commande, multipliée par dix, donne celle d'un export au seuil.
+Sur le poste, le 16 novembre : 1,3 s (128 000 lignes), 6,1 s (526 000), 15 s (9 500), 164 s (106 000) et 163 s. Le second seuil des valeurs lues (50 millions) vaut la place de `/tmp` : 56 octets par valeur en CSV, que l'export écrit sans compression avant l'archive, à côté des imports. Celui des valeurs calculées (1 200 000) vaut une durée de file : la dernière commande, multipliée par onze, donne celle d'un export au seuil (une demi-heure sur le poste). Il reste au-dessus de 1 157 112, ce que l'ancien acceptait ; si la mesure le montre déraisonnable sur la VM, on en reparle avec Lou (`dev/decisions.md`, « Ouverture des données »).
 
 ## À l'ouverture au public
 
