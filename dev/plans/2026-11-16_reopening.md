@@ -93,7 +93,7 @@ Voulu par Lou (16 novembre), pour la confiance après l'ouverture : une liste te
 
 ### 6. Les statistiques d'usage
 
-Décidé (Lou, 12 et 16 novembre) : sans compte devant les données, il reste à montrer qu'elles servent, aux observatoires et à leurs financeurs. En public, les consultations et les téléchargements de chaque chronique ; pour les gestionnaires, la vie de l'observatoire. Les téléchargements et la vie de l'observatoire se tirent de l'historique ; les consultations demandent un compteur, donc une table et sa migration, à part. La présentation se montre à Lou en captures avant d'être finie.
+Décidé (Lou, 12 et 16 novembre) : sans compte devant les données, il reste à montrer qu'elles servent, aux observatoires et à leurs financeurs. En public, les consultations et les téléchargements de chaque chronique ; pour les gestionnaires, la vie de l'observatoire. Les téléchargements et la vie de l'observatoire se tirent de l'historique ; les consultations demandent un compteur, donc une table et sa migration, à part.
 - Pour les gestionnaires, la vie de l'observatoire, par année : comptes, chroniques et stations créés, imports de mesures et de points de contrôle, exports ; par chronique, les mesures ajoutées chaque année. Le but (Lou, 16 novembre) : des chiffres utiles, clairs et cohérents, que les chercheurs et chercheuses montrent pour construire des projets autour de BDOH ; le script R de Lou (`analyse.R`, hors dépôt) est un point de départ, pas un modèle à copier. L'historique remonte au 6 février 2013, mais change de nomenclature le 20 novembre 2018 : avant, l'action est écrite en clair, en français ou en anglais (« Création », « Create »), et la date sans heure ; après, une clé de traduction (`historique.actions.UtilisateurCreate`). La sorte de l'entrée (`dtype`) ne change pas. Dans la base complète anonymisée : 44 à 79 comptes créés par an de 2014 à 2025, 1 100 à 2 900 chroniques exportées par an de 2015 à 2025 ; 593 lignes d'export n'ont plus leur chronique, supprimée depuis.
 - En public, les consultations et les téléchargements de chaque chronique, comme dans Dataverse. Make Data Count n'est pas un service prêt à brancher : c'est une norme (le Code of Practice for Research Data de COUNTER), un outil qui lit les journaux du site (Counter Processor) et l'envoi de rapports à DataCite, par DOI ([guide de Dataverse](https://guides.dataverse.org/en/6.6/admin/make-data-count.html), [DataCite](https://support.datacite.org/docs/counter-code-of-practice)). La plupart des chroniques n'ont pas de DOI, et ceux des observatoires sont enregistrés hors de BDOH : un comptage à nous, selon les règles de COUNTER (robots écartés, doubles clics), sans donnée personnelle ; les téléchargements tirés de l'historique, les consultations d'un compteur par chronique et par jour. Make Data Count est laissé de côté pour cette version de BDOH (Lou, 16 novembre).
 
@@ -112,12 +112,10 @@ Ajouté par Lou le 16 novembre au soir, pour la migration globale : retirer le l
 - Sur l'accueil d'un observatoire, son logo passe à gauche du bloc de citation, au lieu d'être à côté du titre : il s'y intègre mieux.
 - Sur l'accueil de BDOH, le logo de chaque observatoire à gauche de son titre, le titre centré en hauteur par rapport au logo.
 
-À faire avec la première partie, et à montrer à Lou en captures.
-
 Revu par Lou le 19 novembre, sur les captures de `../bdoh_reference/browser/reopening/point-7bis/` :
 - Le logo à gauche du bloc de citation, sur l'accueil d'un observatoire : gardé.
 - Les logos des fiches de l'accueil de BDOH : retirés (Lou : pas beau). La fiche ne garde que le nom, le début de la présentation et le nombre de stations. `CHANGELOG.md`, "Non publié", à reprendre en conséquence.
-- Les onglets d'un observatoire (Présentation, Partenaires, Gestionnaires) quittent la ligne du titre, à droite : ils changent la zone de texte sous la carte, et il faut aller les chercher loin d'elle. Ils passent juste au-dessus de cette zone, alignés à gauche, dans un style intégré à la page : celui des pastilles du 16 novembre au matin (4df998b, "onglets en pastilles sous le titre"), qui allait bien à Lou. Captures pour Lou avant de finir.
+- Les onglets d'un observatoire (Présentation, Partenaires, Gestionnaires) quittent la ligne du titre, à droite : ils changent la zone de texte sous la carte, et il faut aller les chercher loin d'elle. Ils passent juste au-dessus de cette zone, alignés à gauche, dans un style intégré à la page : celui des pastilles du 16 novembre au matin (4df998b, "onglets en pastilles sous le titre"), qui allait bien à Lou.
 
 ### 8. Les messages
 
@@ -135,11 +133,11 @@ Revu par Lou le 19 novembre, sur les captures de `../bdoh_reference/browser/reop
 
 ## Pour reprendre
 
-Méthode : celle de [2026-11-16_before-kit.md](2026-11-16_before-kit.md), « Méthode » (les passes de `compare.py` à la fin, une fois les changements faits ; entre-temps, les tests de l'outil, `lint:twig`, `lint:container`, des captures ; ce qui se voit se montre à Lou avant d'aller plus loin). Chaque écart avec l'ancien s'inscrit dans `dev/differences.md` et, s'il est admis, dans `dev/compare/expected.py`. Le poste a dans `public/uploads/` les images de la production, pour les captures des accueils : les mettre de côté le temps de chaque passe d'`admin`, puis les remettre (copies dans `../bdoh_reference/uploads/`).
+Méthode : celle de [2026-11-16_before-kit.md](2026-11-16_before-kit.md), « Méthode » (les passes de `compare.py` à la fin, une fois les changements faits ; entre-temps, les tests de l'outil, `lint:twig`, `lint:container`, des captures ). Chaque écart avec l'ancien s'inscrit dans `dev/differences.md` et, s'il est admis, dans `dev/compare/expected.py`. Le poste a dans `public/uploads/` les images de la production, pour les captures des accueils : les mettre de côté le temps de chaque passe d'`admin`, puis les remettre (copies dans `../bdoh_reference/uploads/`).
 
 Les huit modes, l'un après l'autre (une heure et demie sur le poste, 19 novembre) : `dev/compare/compare.py pages --old reference-17 --new new --base bdoh_small --server bdoh-db` (7 min) ; `exports --old reference --new new --base bdoh_small` (16 min) ; `state`, `queue`, `imports`, `accounts`, `admin`, chacun avec `--base bdoh_small` (7, 7, 19, 2 et 6 min) ; `theia --base bdoh` (17 min, ses envois ne vont au bout que sur la base complète). Puis `make assets` et `make browser-check`. Pour mettre une règle au point, `--only TEXTE` rejoue les seuls cas dont le nom contient ce texte ; le fichier d'un cas différent commence par les lignes qu'aucune règle n'admet.
 
-L'ordre de la suite, et ce que fait Lou : `ROADMAP.md`, « À faire ». Une session par sujet (Lou, 19 novembre : chacune dans un contexte propre).
+L'ordre de la suite, et ce que fait Lou : `ROADMAP.md`, « À faire ».
 
 ## Suivi
 

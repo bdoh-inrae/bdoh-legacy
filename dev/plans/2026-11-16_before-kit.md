@@ -13,7 +13,7 @@
 ## Méthode
 
 - Les passes à la fin, une fois les changements faits (`dev/decisions.md`, « Essayer une passe, et écrire à côté ») ; entre-temps, les tests de l'outil à chaque règle changée, `lint:twig`, `lint:container`, et des captures.
-- Ce qui se voit se montre à Lou en captures avant d'aller plus loin ; elle tranche. Les captures se font sur le poste (base réduite, Playwright de `.python_env`), sans erreur de la console.
+- Les captures se font sur le poste (base réduite, Playwright de `.python_env`), sans erreur de la console.
 - Après un changement de gabarit ou de traduction : `cache:clear` ; de `public/` d'un bundle (`stations-map.js`, `homes.css`) : `assets:install` (les bundles sont copiés, pas liés) ; d'une feuille LESS : effacer `public/css/themes/*.css`.
 
 ## Les décisions (Lou, nuit du 15 au 16 novembre)
