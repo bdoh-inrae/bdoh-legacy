@@ -2,7 +2,7 @@ Objet : BDOH : en avant-première pour {observatoire}
 
 Salut à vous,
 
-Avant de l'envoyer à tous les gestionnaires le 1er décembre, je vous fais passer en premier le message et le tableau de votre observatoire. Faites ce qu'il demande (le tableau, puis le site), et dites-moi tout ce qui cloche, dans le site comme dans le message ou le tableau, d'ici le {date} : je corrige avant l'envoi à tous.
+Avant de l'envoyer à tous les gestionnaires le 1er décembre, je vous fais passer en premier le message et le tableau de votre observatoire. Dites-moi tout ce qui cloche d'ici le {date} : je corrige avant l'envoi à tous.
 
 Merci !
 Lou
