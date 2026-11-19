@@ -21,7 +21,7 @@ return [
     'timezone'                         => 'Fuseau horaire',
     'stationExutoire'                  => 'Station exutoire',
     'personneTheia'                    => 'Personne Theia',
-    'rolePersonneTheia'                => 'Rôle de la Personne Theia',
+    'rolePersonneTheia'                => 'Rôle de la personne Theia',
     'utilisateur'                      => 'Utilisateur BDOH',
     'chronique'                        => 'Chronique',
 
@@ -45,7 +45,7 @@ return [
     'dataCollectors'                      => 'Data Collectors',
     'projectMembers'                      => 'Project Members',
     'doi'                                 => 'DOI',
-    'keywords'                            => 'Mots Clés',
+    'keywords'                            => 'Mots-clés',
     'contact'                             => 'Contacts',
     'info'                                => 'Informations Principales',
 
@@ -113,7 +113,7 @@ return [
     'dateDebutMesures'                                      => 'Début des mesures',
     'dateFinMesures'                                        => 'Fin des mesures',
     'parametre'                                             => 'Paramètre',
-    'parametre.familleParametres'                           => 'Famille Paramètre',
+    'parametre.familleParametres'                           => 'Famille de paramètres',
     'station'                                               => 'Station',
     'stations'                                              => 'Stations',
     'station.sites'                                         => 'Site',
@@ -123,7 +123,7 @@ return [
     'producteur'                                            => 'Producteur (Partenaire)',
     'measures'                                              => 'Nb mesures',
     'measuresShort'                                         => 'Mesures',
-    'allowValueLimits'                                      => 'Cette chronique peut contenir des des limites de quantification et de détection (lq/ld)',
+    'allowValueLimits'                                      => 'Cette chronique peut contenir des limites de quantification et de détection (lq/ld)',
     'valueLimitTransformationType'                          => 'Transformation des limites de quantification / détection',
     'valueLimitPlaceholder'                                 => 'Valeur de remplacement',
     'chronique.lq_ld'                                       => [

@@ -177,13 +177,25 @@
 
 {##
  # Macro to display an entity's label either with default locale or in English
+ #
+ # Un texte simple, saisi dans un champ de texte, garde ses retours à la ligne, écrits en <br>. Un texte mis en forme
+ # (html), saisi dans l'éditeur des descriptions d'un observatoire et d'un site, porte ses sauts de ligne en balises :
+ # ses retours à la ligne ne font que présenter le code, et les écrire en <br> doublait l'espace entre deux paragraphes
+ # et coupait les lignes d'un texte collé depuis Word (dev/differences.md, « Descriptions mises en forme »).
  #}
-{% macro i18nEntityLabel(entity, property, defaultMessage) %}
+{% macro i18nEntityLabel(entity, property, defaultMessage, html = false) %}
 {% apply spaceless %}
     {% if app.session.get('_locale')|slice(0, 2) == 'en' %}
-        {{ attribute(entity, property~'En')|default(attribute(entity, property))|default(defaultMessage|trans)|replace({"\n":"<br>"})|raw }}
+        {% set value = attribute(entity, property~'En')|default(attribute(entity, property)) %}
     {% else %}
-        {{ attribute(entity, property)|default(defaultMessage|trans)|replace({"\n":"<br>"})|raw }}
+        {% set value = attribute(entity, property) %}
+    {% endif %}
+    {% if value is empty %}
+        {{ defaultMessage|trans }}
+    {% elseif html %}
+        {{ value|raw }}
+    {% else %}
+        {{ value|replace({"\n":"<br>"})|raw }}
     {% endif %}
 {% endapply %}
 {% endmacro %}

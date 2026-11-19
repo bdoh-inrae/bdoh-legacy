@@ -57,7 +57,7 @@ $export = [
         <li>only one time series can be downloaded at a time</li>
         <li>the period no longer depends on the time step: the whole time series can be requested at once, within the volume limit described below</li>
         <li>data are downloaded through a link, valid for 7 days; with an account, this link also arrives by e-mail</li>
-        <li>the options for fiexed time step calculation are: (i) for linear interpolation, a time step between 1 and 1440 minutes; (ii) for mean and sum calculations, one of the time steps available in the drop-down list. The interpolated values start at a round time. Option “\u{a0}event\u{a0}” calculates the mean or sum of the values in the time range of the event (1 output value).</li>
+        <li>the options for fixed time step calculation are: (i) for linear interpolation, a time step between 1 and 1440 minutes; (ii) for mean and sum calculations, one of the time steps available in the drop-down list. The interpolated values start at a round time. Option “\u{a0}event\u{a0}” calculates the mean or sum of the values in the time range of the event (1 output value).</li>
     </ul>
     <li>One separate file is downloaded for each time series.</li>
     <li>The volume of a download is counted in written values, all time series together. Above a first threshold, an account is required; above a second one, ten times higher, the request is refused, and the message gives the requested volume and the limit: reduce the period, the number of time series, or increase the time step, splitting the download if needed. Means and sums, much longer to compute, have lower thresholds.</li>
@@ -93,7 +93,7 @@ HELP
             'keep(%days%)'      => 'Keep the address of this page, as a bookmark or by copying it: without an account, it is what leads to your download, until %days% days after it is done.',
         ],
         'error'        => [
-            'abort'                               => "For technical reasons the download couldn't be achieved.",
+            'abort'                               => 'For technical reasons, the download could not be done.',
             'badExportType'                       => 'Download of the time series: incorrect time step for extraction.',
             'badTimeStep'                         => 'Download of the time series: incorrect time step.',
             'badTimeStep(%min%, %max%)'           => 'Download of the time series: the time step must be between %min% and %max%.',
@@ -184,16 +184,16 @@ HELP
     ],
     'bareme.export'   => [
         'report' => [
-            'main(%format%, %date%, %chronicle%)' => "Download from %date% UTC for the calculated time series “\u{a0}%chronicle%\u{a0}”\n" .
+            'main(%format%, %date%, %chronicle%)' => "Download made on %date% UTC for the calculated time series “\u{a0}%chronicle%\u{a0}”\n" .
                 "Qualities are in the format “\u{a0}%format%\u{a0}”",
             'bareme'                              => [
-                'base(%bareme%, %dateCreation%, %inputUnit%, %outputUnit%, %number%, %min%, %max%)' => "\n\nScale “\u{a0}%bareme%\u{a0}” created the %dateCreation% UTC\n" .
+                'base(%bareme%, %dateCreation%, %inputUnit%, %outputUnit%, %number%, %min%, %max%)' => "\n\nScale “\u{a0}%bareme%\u{a0}” created on %dateCreation% UTC\n" .
                     "    -> Input unit: %inputUnit%\n" .
                     "    -> Output unit: %outputUnit%\n" .
-                    "    -> %number% downloaded lines for values in abscissa ranging from %min% to %max%\n",
+                    "    -> %number% exported lines for values in abscissa ranging from %min% to %max%\n",
                 'parentChronicle(%parentChronicle%)'                                                => "    -> Parent time series: “\u{a0}%parentChronicle%\u{a0}”\n",
-                'applyFromTo(%dateBegin%, %dateEnd%)'                                               => "    -> Apply from %dateBegin% UTC to %dateEnd% UTC\n",
-                'applyFrom(%dateBegin%)'                                                            => "    -> Apply from %dateBegin% UTC\n",
+                'applyFromTo(%dateBegin%, %dateEnd%)'                                               => "    -> Applied from %dateBegin% UTC to %dateEnd% UTC\n",
+                'applyFrom(%dateBegin%)'                                                            => "    -> Applied from %dateBegin% UTC\n",
                 'notApplied'                                                                        => "    -> Not applied for this calculated time series\n",
                 'outputFile(%file%)'                                                                => '    -> File: %file%',
             ],

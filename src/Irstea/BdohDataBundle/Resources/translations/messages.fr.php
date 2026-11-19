@@ -95,9 +95,9 @@ HELP
         'error'        => [
             'abort'                               => "Pour des raisons techniques l'export de mesures n'a pas pu se faire.",
             'badExportType'                       => "Export de chronique(s) : échantillonnage à l'export incorrect.",
-            'badTimeStep'                         => 'Export de chronique(s) : Pas de temps incorrect.',
-            'badTimeStep(%min%, %max%)'           => 'Export de chronique(s) : Le pas de temps doit être compris entre %min% et %max%.',
-            'badTimeStepForExportType'            => "Export de chronique(s) : Pas de temps incorrect pour ce type d'export.",
+            'badTimeStep'                         => 'Export de chronique(s) : pas de temps incorrect.',
+            'badTimeStep(%min%, %max%)'           => 'Export de chronique(s) : le pas de temps doit être compris entre %min% et %max%.',
+            'badTimeStepForExportType'            => "Export de chronique(s) : pas de temps incorrect pour ce type d'export.",
             'badTimezone'                         => 'Export de chronique(s) : fuseau horaire incorrect.',
             'badBeginDate'                        => 'Export de chronique(s) : date de début incorrecte.',
             'badCumulStartTime'                   => 'Export de chronique(s) : heure de début des cumuls incorrecte.',
@@ -107,7 +107,7 @@ HELP
             'badChronique(%chroniqueId%)'         => "La chronique %chroniqueId% n'existe pas ou n'est pas accessible.\n",
             'isNotSupported(%chronique%, Plage)'  => "La chronique continue «\u{a0}%chronique%\u{a0}» n'est pas supportée par ce format d'export.\n",
             'isNotSupported(%chronique%, Mesure)' => "La chronique discontinue «\u{a0}%chronique%\u{a0}» n'est pas supportée par ce format d'export.\n",
-            'measureDirectionNotSpecified'        => 'Choix des date à exporter (en début ou fin des intervalles) non spécifié.',
+            'measureDirectionNotSpecified'        => 'Choix des dates à exporter (en début ou fin des intervalles) non spécifié.',
             'timeStepNotSpecified'                => 'Pas de temps non spécifié.',
             'noStartingTime'                      => "Veuillez préciser à quel type d'instant les mesures exportées doivent commencer.",
         ],
@@ -168,7 +168,7 @@ HELP
 
                 'bareme' => [
                     'header(%bareme%)'             => "Barème «\u{a0}%bareme%\u{a0}»",
-                    'created(%dateCreation%)'      => ', crée le %dateCreation% UTC',
+                    'created(%dateCreation%)'      => ', créé le %dateCreation% UTC',
                     'applied'                      => ', appliqué ',
                     'from(%dateDebut%)'            => 'à partir du %dateDebut% UTC',
                     'range(%dateDebut%,%dateFin%)' => 'du %dateDebut% UTC au %dateFin% UTC',

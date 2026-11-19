@@ -202,7 +202,7 @@
         <!-- First pill : presentation -->
         <div id="description" class="tab-pane active">
             <h2>{{ i18nEntityLabel(observatoire, 'titre', 'noDescription') }}</h2>
-            {{ i18nEntityLabel(observatoire, 'description', 'noDescription') }}
+            {{ i18nEntityLabel(observatoire, 'description', 'noDescription', true) }}
 
             {% if observatoire.lien and observatoire.lien != 'http://' %}
                 <div>
@@ -256,7 +256,7 @@
                         <strong>
                             {{ countChroniquesBySite[site.id] != 0 ? advancedSearch_link('site', site.nom) : site.nom }}
                         </strong>
-                        <div class="read-more">{{ i18nEntityLabel(site, 'description', 'noDescription') }}</div>
+                        <div class="read-more">{{ i18nEntityLabel(site, 'description', 'noDescription', true) }}</div>
                     </li>
                 {% endfor %}
             </ul>

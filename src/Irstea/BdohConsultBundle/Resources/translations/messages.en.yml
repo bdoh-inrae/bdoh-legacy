@@ -1,4 +1,4 @@
-recalculate: Update data Completeness statistics
+recalculate: Update data completeness statistics
 recalculationInProgress: Calculation in progress
 canTakeAWhile: This operation can take several minutes
 pleaseWait: Please wait...
@@ -12,13 +12,13 @@ dataCountByMonth: Number of data values starting in the month
 emptyChronique: Delete data
 emptyChroniqueContinueInfo: >+
     For a continuous time series the removal period is inclusive, all the data points over the
-    period will be replaced by gap values unless the removal period includes a bondary of the time series,
+    period will be replaced by gap values unless the removal period includes a boundary of the time series,
     in which case the data points are removed.
 emptyChroniqueDiscontinueInfo: >+
-    For a discontinuous time series, the removal period includes all the data range that overlap
+    For a discontinuous time series, the removal period includes all the data ranges that overlap
     the removal period except for the data that overlap the period
-    only on one bondary and which are not a point. The data range are removed
-    entierly they are not truncated.
+    only on one boundary and which are not a point. The data ranges concerned are removed
+    entirely; they are not truncated.
 empty: Empty
 doEmpty: Empty
 removedMeasures(%removed%): >+
@@ -32,7 +32,7 @@ changedMeasures(%changed%): >+
 consult:
     help:
         chronique:
-            noGenealogie: Empty
+            noGenealogie: No genealogy
             notVisible: Time series reserved for the members of the observatory
             display-checkpoints: Display checkpoints
             time-step-depends-on-span: The accumulation step follows the length of the period.
@@ -40,7 +40,7 @@ consult:
             checkpointsOnCumulative: Checkpoints are not displayed on cumulative representations.
         station:
             notActive: This station is closed
-            noCommentaire: Empty
+            noCommentaire: No comment
     buttons:
         view: View
         export-image: Display as image
@@ -50,7 +50,7 @@ consult:
     fillingRateMesure: value|values
 chroniqueCalculee:
     baremes(%chronique%): "Scale sets history for “ %chronique% ”"
-    baremesChroniqueMere: "Scale sets used for the time series:"
+    baremesChroniqueMere: "Scale sets for the parent time series:"
 chroniqueConvertie:
     seeConversionLogs: See the gap threshold history
     conversions(%chronique%): Gap threshold history of “ %chronique% ”
@@ -58,7 +58,7 @@ chroniqueConvertie:
     paramConversion: "Gap threshold:"
 activeJobsInfo(%jobPageLink%): >+
     <b>Warning:</b> at least one job directly about this time series is in progress,
-    the displayed information may not be not up to date.
+    the displayed information may not be up to date.
     You may check the end of this(these) job(s) from <a href="%jobPageLink%">the job page</a>.
 checkpointStats(%num%, %first%, %last%): >+
     %num% point<br/>
@@ -67,11 +67,11 @@ checkpointStats(%num%, %first%, %last%): >+
     <span style="padding:0 0 0 15px">from the %first% <sup>UTC</sup></span><br/>
     <span style="padding:0 0 0 15px">to the %last% <sup>UTC</sup></span>
 checkpointsInfo: >+
-    Checpoints are one-time data, collected in situ, that can be
+    Checkpoints are one-time data, collected in situ, that can be
     superimposed on the time series to check the validity of the data.
 searchInfo: >+
     The search also includes, for each time series, all the information of the station including
-    the comment, the town, the experimental sites and the close rivers and close basins.
+    the comment, the town, the experimental sites and nearby rivers and basins.
 advancedSearch:
     stations: Stations
     enActivite: Active stations
@@ -79,7 +79,7 @@ advancedSearch:
     sites: Experimental sites
     producteurs: Producers
     typesChroniques: Types of time series
-    famillesParametres: Parameters categories
+    famillesParametres: Parameter categories
     typesParametres: Parameters
     bassins: Basins
     courseau: Rivers

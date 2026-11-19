@@ -5,8 +5,8 @@ select-and-drag-chronicles: |
     To add time series, please select them in the list and drag and drop them to the window on the right.
 click-cross-remove-chronicle: To remove a time series, please click on the corresponding close button icon.
 chronicles-must-be-compatible: |
-    Warning: only time series of the same parameter and
-    same unit can be displayed together.
+    Warning: an axis can only show time series with the same physical unit and
+    the same orientation of the Y axis.
 available-chronicles: Available time series
 selected-chronicles: Selected time series
 select-at-least-one-chronicle: Please select at least one time series
@@ -34,15 +34,15 @@ selector:
     graph: Graph
     chroniques:
         emptySelection: Please select a station.
-        noChronicles: Those stations hove no time series.
+        noChronicles: These stations have no time series.
         noMoreChronicles: No time series have data on the selected time range.
         noCompatibleChronicles: No time series left to display on this axis.
 consult.help.range:
     too-small: Please select at least a one-day-long time range.
     too-big: Please select a time range less than 5 years.
-subsampledInfo(%num%): 'Lightened display: out of %num% measures, the graph shows the highest and the lowest of each time slice. Narrow the period to see every measure.'
-subsampledShort(%num%): 'Lightened display, %num% measures'
-subsampledHelp: 'Beyond 50,000 valid measures (25,000 for means), the graph is lightened: no peak is lost, and every change of quality shows.'
+subsampledInfo(%num%): 'Lightened display: out of %num% values, the graph shows the highest and the lowest of each time slice. Narrow the period to see every value.'
+subsampledShort(%num%): 'Lightened display, %num% values'
+subsampledHelp: 'Beyond 50,000 valid values (25,000 for means), the graph is lightened: no peak is lost, and every change of quality shows.'
 chroniqueTitle(%station%, %typeParam%): >+
     Station: %station%<br/>Parameter: %typeParam%
 hideDisplayButton: Show/hide this time series

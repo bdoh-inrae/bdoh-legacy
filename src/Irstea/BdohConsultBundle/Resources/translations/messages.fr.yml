@@ -15,7 +15,7 @@ emptyChroniqueContinueInfo: >+
     période seront remplacés par des points en lacune sauf si la période de suppression inclut une borne de la chronique,
     dans ce cas, les points de mesure sont supprimés.
 emptyChroniqueDiscontinueInfo: >+
-    Pour une chronique discontinue la periode de suppression inclut toutes les plages de mesures qui chevauchent
+    Pour une chronique discontinue la période de suppression inclut toutes les plages de mesures qui chevauchent
     entièrement ou en partie la période de suppression à l'exception des plages qui ne chevauchent la période de
     suppression que sur une borne et qui ne sont pas des points. Les plages de mesures concernées sont entièrement
     supprimées, elles ne sont pas tronquées.
@@ -83,4 +83,4 @@ advancedSearch:
     typesParametres: Paramètres étudiés
     bassins: Bassins
     courseau: Cours d'eau
-    dataset: Jeu de données
+    dataset: Jeux de données
