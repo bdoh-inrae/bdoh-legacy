@@ -2,7 +2,7 @@
 
 État : en cours, ouvert le 2026-11-16. Le plan que Lou a rapporté de son point du 16 novembre avec sa responsable : plus de temps pour les gestionnaires, plus d'accompagnement de l'ouverture des données, une réouverture mi-décembre. Il prend la suite de [2026-11-16_before-kit.md](2026-11-16_before-kit.md), terminé avec la 0.7.1 (publiée et installée sur la VM, au nom `bdoh.inrae.fr`) ; les décisions de ses points 10 (relecture du contenu) et 12 (photographies) y restent, leur réalisation se suit ici (point 7).
 
-Fait sur `main`, sans version encore : les points 1 à 4, l'unité du point 2d, le point 7 bis et la relecture des textes (point 7), toutes les passes comprises (Suivi). Ce qui attendait Lou est tranché le 19 novembre, chaque décision à son point. L'ordre de la suite : `ROADMAP.md`, « À faire ».
+Publiés dans la 0.8.0 : les points 1 à 4, l'unité du point 2d, le point 7 bis et la relecture des textes (point 7), toutes les passes comprises (Suivi). Ce qui attendait Lou est tranché le 19 novembre, chaque décision à son point. L'ordre de la suite : `ROADMAP.md`, « À faire ».
 
 ## Le calendrier (Lou, 16 novembre)
 
@@ -141,6 +141,7 @@ L'ordre de la suite, et ce que fait Lou : `ROADMAP.md`, « À faire ».
 
 ## Suivi
 
+- 2026-11-19, soir : **la 0.8.0**, faite de « Non publié », les logos retirés des fiches de l'accueil de BDOH (7 bis) ; `pages` 491/0/0/1096/0, `make browser-check` sans problème ; les autres modes sur le code du 19 après-midi, que seule la ligne des logos change. Avant, un nettoyage des fichiers de reprise : `ROADMAP.md` tient seul la liste de ce qui reste.
 - 2026-11-19, soir, **session de conception avec Lou**, sans code, à côté de la session des passes : tout ce qui attendait Lou dans ce plan est tranché, chaque décision à son point. Le refus d'une chronique réservée et les incitations à la demande d'accès (point 1) ; les seuils d'export rejoués sur l'historique des exports depuis 2018, et la règle de ne jamais refuser ce que l'ancien acceptait (2b, `dev/decisions.md`) ; deux README par archive et la colonne `parameter` (2c, 2d) ; la fenêtre d'export, la licence sans l'usage commercial, la date de mise à jour dans l'export, l'inscription et les données personnelles (point 4) ; les logos et les onglets de l'accueil (7 bis) ; le message des essais et le mot du pré-essai, écrits (point 8, `dev/test-kit/`). Calendrier : pré-essai au plus tard le lundi 24 novembre, essais le 1er décembre, le site ouvert à Internet derrière le mot de passe d'accès. La place des exports à surveiller pendant les essais : `dev/plans/2026-10-26_deployment.md`, "Après". Ce qui reste à coder : "Pour reprendre".
 - 2026-11-19, après-midi : **les passes de la relecture remises d'aplomb**, sans régression de BDOH : la règle de comparaison des textes relus n'admettait pas tous les écarts voulus ; toutes les passes passent ([2026-11-19_review.md](2026-11-19_review.md), Suivi).
 - 2026-11-19, **point 7, la relecture**, dans sa propre session, élargie par Lou aux textes de l'interface : [2026-11-19_review.md](2026-11-19_review.md), avec son registre, ses questions pour Lou et sa reprise.

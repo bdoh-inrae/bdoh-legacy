@@ -4,11 +4,15 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/). Numéros de v
 
 ## Non publié
 
+## 0.8.0 - 2026-11-19
+
+Les chroniques réservées dites pour ce qu'elles sont, un export réglé sur son volume plutôt que sur sa période, l'unité dans chaque fichier CSV, une invitation à créer un compte, les photographies sous Licence Ouverte, et les textes relus en français et en anglais.
+
 ### Modifié
 
 - Les chroniques en accès restreint sont dites réservées aux membres de leur observatoire, pour son travail interne : la page des conditions, l'accueil de BDOH, l'inscription, le courriel de bienvenue, l'aide, la fenêtre d'export des favoris et la bulle du cadenas ne proposent plus au public d'en demander l'accès, et renvoient aux partenaires qui en portent la diffusion. La demande d'accès reste, pour les membres, et sa page le dit.
 - Un export à pas de temps fixe n'est plus limité à 2 ans par minute de pas : toute la période se demande d'un coup. À la place, le serveur compte le volume de chaque demande en valeurs écrites, toutes chroniques réunies : au-delà d'un premier seuil, un compte est demandé ; au-delà d'un second, la demande est refusée, et le message donne le volume, la limite et quoi faire. Les seuils : 5 et 50 millions de valeurs lues (à l'identique, interpolées), 100 000 et 1 million de valeurs calculées (moyenne, cumul) ; le second est provisoire, à régler sur la machine de production.
-- Sur l'accueil d'un observatoire, son logo est à gauche du bloc de citation, et non plus à côté de son nom ; sur l'accueil de BDOH, le logo de chaque observatoire est à gauche de son nom.
+- Sur l'accueil d'un observatoire, son logo est à gauche du bloc de citation, et non plus à côté de son nom. Sur l'accueil de BDOH, les fiches des observatoires n'ont plus de logo : le nom, le début de la présentation et le nombre de stations.
 - Les fichiers de données d'un export CSV portent l'unité de chaque valeur, dans une colonne `unit`, entre `value` et `quality` : un fichier se lit sans les métadonnées, et le format long garde l'unité de chaque ligne.
 - L'historique affiche « Sans compte » pour un export fait sans compte, au lieu de « Utilisateur supprimé depuis ».
 - La page de suivi d'un export sans compte dit de garder son adresse, qui seule mène à l'export, jusqu'à 7 jours après sa fin.

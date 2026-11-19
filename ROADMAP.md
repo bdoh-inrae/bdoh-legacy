@@ -6,7 +6,7 @@ Code de référence : commit `523cf8e32` de l'ancien dépôt (version 5.0.3, fé
 
 ## En cours
 
-La réouverture de BDOH, mi-décembre, après un pré-essai par deux gestionnaires et deux semaines d'essais par tous et toutes ; les essais deviennent la production s'ils passent. Le calendrier, chaque point, ce qui est décidé et son avancée : [dev/plans/2026-11-16_reopening.md](dev/plans/2026-11-16_reopening.md). La VM est à la 0.7.1, au nom `bdoh.inrae.fr`, derrière le VPN et un mot de passe d'accès. Ce qui est fait, version par version : `CHANGELOG.md`.
+La réouverture de BDOH, mi-décembre, après un pré-essai par deux gestionnaires et deux semaines d'essais par tous et toutes ; les essais deviennent la production s'ils passent. Le calendrier, chaque point, ce qui est décidé et son avancée : [dev/plans/2026-11-16_reopening.md](dev/plans/2026-11-16_reopening.md). La VM répond au nom `bdoh.inrae.fr`, derrière le VPN et un mot de passe d'accès. Ce qui est fait, version par version : `CHANGELOG.md`.
 
 ## À faire
 
@@ -14,7 +14,7 @@ La réouverture de BDOH, mi-décembre, après un pré-essai par deux gestionnair
 
 Les numéros renvoient aux points du plan de la réouverture.
 
-1. Les décisions du 19 novembre : le refus d'une chronique réservée et ce qui l'accompagne (1), les seuils d'export dans le `.env` (2b), la fenêtre d'export et l'inscription (4), les logos et les onglets de l'accueil (7 bis), `kit.py` (8).
+1. Les décisions du 19 novembre : le refus d'une chronique réservée et ce qui l'accompagne (1), les seuils d'export dans le `.env` (2b), la fenêtre d'export et l'inscription (4), les onglets d'un observatoire au-dessus de sa zone de texte (7 bis), `kit.py` (8).
 2. Les trois défauts du JavaScript, avant que le site s'ouvre à Internet (`dev/local/security.md`, "À corriger").
 3. L'export : deux README par archive, la colonne `parameter`, la date de mise à jour de chaque chronique (2c, 2d, 4).
 4. La migration de la relecture du contenu, sur la branche `content-review`, à fusionner sur l'accord de Lou ; puis les logos des partenaires ([dev/plans/2026-11-19_review.md](dev/plans/2026-11-19_review.md)).

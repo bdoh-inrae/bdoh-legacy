@@ -37,8 +37,6 @@
 .observatory-card:hover, .observatory-card:focus, .observatory-card.map-lit {
     border-color: currentColor; background: #f6f8fb; color: inherit; text-decoration: none;
 }
-.observatory-card-head { display: flex; align-items: center; gap: 10px; min-height: 32px; }
-.observatory-card-logo { flex: none; max-height: 32px; max-width: 110px; object-fit: contain; }
 .observatory-card-name { margin: 0; font-size: 16px; }
 .observatory-card-text { flex: 1; color: #555; }
 .observatory-card-count { color: #777; font-size: 11px; }
