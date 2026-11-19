@@ -10,7 +10,7 @@ use Doctrine\Migrations\AbstractMigration;
 /**
  * La relecture du contenu (dev/plans/2026-11-19_review.md, « Contenu de la base ») : ce qui est faux sans discussion
  * possible, ou décidé avec Lou, dans les descriptions des observatoires et des sites, les logos, les DOI, les
- * référentiels communs à tous (paramètres, familles, unités permises, qualités, catégories de compte) et quelques
+ * référentiels communs à tous (paramètres, familles, unités et unités permises, qualités, catégories de compte) et quelques
  * titres. Ce qui demande de connaître le terrain part aux gestionnaires, pas ici.
  *
  * Chaque changement vise une ligne par son ancienne valeur, pas par son identifiant : sur la VM, OTHU est fondu dans
@@ -96,6 +96,16 @@ final class Version20261119120000 extends AbstractMigration
         ['qualite', 'libelleen', 'Uncertain', 'Rebuilt', "code = 'r' AND libelle = 'Reconstituée' AND jeu_id IN (SELECT id FROM jeuqualite WHERE nom = 'Biche')"],
         ['qualite', 'libelleen', 'Missing', 'Undetermined', "code = '1' AND libelle = 'Indéterminée' AND jeu_id IN (SELECT id FROM jeuqualite WHERE nom = 'Biche')"],
         ['categorie', 'libelleen', ' Private individual', 'Private individual'],
+        // Unités faites de mots, sans libellé anglais : l'anglais (page d'une chronique, export CSV) écrivait le français.
+        // Le libellé français ne change pas : un fichier d'import cite l'unité telle quelle.
+        ['unite', 'libelleen', null, 'pH unit', "libelle = 'Unité pH'"],
+        ['unite', 'libelleen', null, 'hour', "libelle = 'heure'"],
+        ['unite', 'libelleen', null, 'manufacturer unit', "libelle = 'unite constructeur'"],
+        ['unite', 'libelleen', null, 'g/L of SiO2', "libelle = 'g/L de SiO2'"],
+        ['unite', 'libelleen', null, 'copies/100mL', "libelle = 'nb copies/100mL'"],
+        ['unite', 'libelleen', null, 'MPN/100mL', "libelle = 'NPP/100mL'"],
+        ['unite', 'libelleen', null, 'CFU/100mL', "libelle = 'UFC/100mL'"],
+        ['unite', 'libelleen', null, '1/10 mm', "libelle = '1/10° mm'"],
         // Partenaires : l'unité s'écrit RiverLy
         ['partenaire', 'nom', 'INRAE  RiverLy', 'INRAE RiverLy'],
         ['partenaire', 'nom', 'INRAE UR Riverly', 'INRAE UR RiverLy'],
@@ -113,7 +123,7 @@ final class Version20261119120000 extends AbstractMigration
 
     /** Les colonnes uniques : une valeur nouvelle qui y existe déjà laisse la ligne telle quelle. */
     private const UNIQUE = ['typeparametre.nom', 'typeparametre.nomen', 'familleparametres.nom', 'familleparametres.nomen',
-                            'categorie.libelleen', 'partenaire.nom'];
+                            'categorie.libelleen', 'partenaire.nom', 'unite.libelleen'];
 
     /** Les DOI principaux (Lou, 16 novembre), déjà dans la liste de l'observatoire. */
     private const MAIN_DOIS = ['LONES-DE-L-AIN' => '10.17180/OBS.LONES-AIN', 'ORACLE' => '10.17180/obs.oracle',
@@ -194,7 +204,7 @@ final class Version20261119120000 extends AbstractMigration
                           AND t.parametre_id = l.row_id AND t.unite_id = l.new_value::integer");
         // Les valeurs, dans l'ordre inverse, et seulement là où la nouvelle valeur est encore en place
         foreach (['observatoire', 'siteexperimental', 'typeparametre', 'familleparametres', 'qualite', 'categorie',
-                  'partenaire', 'dataset', 'doi', 'chronique'] as $table) {
+                  'unite', 'partenaire', 'dataset', 'doi', 'chronique'] as $table) {
             foreach ($this->columns($table) as $column) {
                 $cast = $column === 'doiprincipal_id' ? '::integer' : '';
                 $this->addSql("UPDATE $table t SET $column = l.old_value$cast FROM (
