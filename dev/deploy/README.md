@@ -21,13 +21,13 @@ Puis le système, une version LTS à la fois, en redémarrant après chacune : `
 
 ## 1. Le dépôt et la machine, une fois
 
-`make` et `git` d'abord, puis le clone de la production, à la version voulue (un tag, jamais `main`) :
+`make` et `git` d'abord, puis le clone de la production, à la version voulue (un tag, jamais `main` ; la dernière publiée, dans `CHANGELOG.md`) :
 
 ```
 sudo apt-get install -y make git
 sudo git clone https://github.com/bdoh-inrae/bdoh-legacy /var/www/bdoh-prod
 cd /var/www/bdoh-prod
-sudo git -c advice.detachedHead=false checkout v0.3.5
+sudo git -c advice.detachedHead=false checkout vX.Y.Z
 sudo make vm-deps
 ```
 
@@ -85,7 +85,7 @@ Les trois partenaires d'OTHU arrivent avec la fusion, après les migrations : le
 sudo make vm-apache
 ```
 
-Écrit le site Apache (`config/deploy/apache-site.conf`), demande le mot de passe d'accès des essais (compte `test`, partagé avec les testeurs ; il se change par `sudo htpasswd /etc/apache2/bdoh-prod.htpasswd test`), et recharge Apache. Le certificat est celui, auto-signé, du paquet `ssl-cert`, jusqu'à ce que le port 443 soit ouvert à Internet et que le nom mène à la VM : celui du nom public se fait alors sur la VM, par `mod_md` (« À l'ouverture au public »).
+Écrit le site Apache (`config/deploy/apache-site.conf`), demande le mot de passe d'accès des essais (compte `test`, partagé avec les testeurs ; rien ne s'affiche pendant la frappe, et deux Entrée laissent un fichier sans le compte, que `vm-apache` relancé ne redemande pas ; il se pose ou se change par `sudo htpasswd /etc/apache2/bdoh-prod.htpasswd test`), et recharge Apache. Le certificat est celui, auto-signé, du paquet `ssl-cert`, jusqu'à ce que le port 443 soit ouvert à Internet et que le nom mène à la VM : celui du nom public se fait alors sur la VM, par `mod_md` ("À l'ouverture au public").
 
 ## 4. Courriels, file de tâches, sauvegardes
 
