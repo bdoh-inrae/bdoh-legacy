@@ -54,24 +54,25 @@ final class Usage
      */
     public function forChronique(Chronique $chronique): array
     {
+        // Le début du compteur se lit à chaque page, sur l'index de series_views.day : en cache, un compteur encore vide
+        // (à sa mise en service, ou vidé à l'ouverture) laisserait les consultations sans date pendant l'heure du cache
         $row = $this->connection->fetchAssociative(
             "SELECT (SELECT coalesce(sum(views), 0) FROM series_views WHERE chronique_id = :id) AS views,
+                    (SELECT min(day) FROM series_views) AS views_since,
                     (SELECT count(*) FROM historique WHERE dtype = 'donneesExport' AND chronique_id = :id) AS downloads",
             ['id' => $chronique->getId()]
         );
-        // Les débuts du compteur et de l'historique, les mêmes pour toutes les chroniques : une heure en cache, plutôt
-        // qu'un parcours de tout l'historique à chaque page
-        [$viewsSince, $downloadsSince] = $this->cache->get('usage-since', function (ItemInterface $item) {
+        // Le début de l'historique, le même pour toutes les chroniques : une heure en cache, plutôt qu'un parcours de tout
+        // l'historique à chaque page
+        $downloadsSince = $this->cache->get('usage-downloads-since', function (ItemInterface $item) {
             $item->expiresAfter(3600);
 
-            return array_values($this->connection->fetchNumeric(
-                "SELECT (SELECT min(day) FROM series_views), (SELECT to_char(min(date), 'YYYY') FROM historique)"
-            ));
+            return $this->connection->fetchOne("SELECT to_char(min(date), 'YYYY') FROM historique");
         });
 
         return [
             'views'          => (int) $row['views'],
-            'viewsSince'     => $viewsSince,
+            'viewsSince'     => $row['views_since'],
             'downloads'      => (int) $row['downloads'],
             'downloadsSince' => $downloadsSince,
         ];

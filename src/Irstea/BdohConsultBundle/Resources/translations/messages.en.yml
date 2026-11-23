@@ -99,10 +99,14 @@ reserved:
         connected: A member of the observatory? Request access from your account menu.
 # Usage statistics (Statistics\Usage, StatisticsController; Lou, 2026-11-12 and 16)
 usage:
-    views(%views%): "Views: %views%"
-    since(%date%): since %date%
-    downloads(%downloads%): "Downloads: %downloads%"
-    sinceYear(%year%): since %year%
+    title: Metrics
+    views: "{1} view|[0,Inf[ views"
+    viewsSince(%date%): since %date%
+    downloads: "{1} download|[0,Inf[ downloads"
+    downloadsSince(%year%): since %year%
+    help: >-
+        A view: this page opened, counted once per hour and per visitor, robots excluded.
+        A download: an export of this series.
 statistics:
     title: Usage statistics
     menu: Statistics

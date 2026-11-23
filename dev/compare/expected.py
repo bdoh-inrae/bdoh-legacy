@@ -487,6 +487,15 @@ FAVORITES = 'Favoris et étiquettes'
 # le reste se vérifie à part (« nouveau seul : statistiques » dans state)
 STATISTICS = "Statistiques d'usage"
 STATISTICS_MENU = (RX(rf'\+A {OBS}/statistics'), '+T Statistiques', '+T Statistics')
+# Leurs textes, dans les traductions pour le JavaScript (/translations/messages.js), qui portent tout le catalogue
+STATISTICS_KEYS = """statistics.allBdoh | statistics.bySeries | statistics.byYear | statistics.csv | statistics.csvBySeries
+    statistics.intro | statistics.menu | statistics.notes | statistics.seeAll | statistics.seeObservatory(%name%) | statistics.title
+    statistics.columns.accounts_created | statistics.columns.anonymous_requests | statistics.columns.checkpoint_imports
+    statistics.columns.computations | statistics.columns.downloaded_values | statistics.columns.downloading_accounts
+    statistics.columns.downloads | statistics.columns.imported_values | statistics.columns.imports
+    statistics.columns.observatory | statistics.columns.series | statistics.columns.series_created
+    statistics.columns.station | statistics.columns.stations_created | statistics.columns.views | statistics.columns.year
+    usage.title | usage.views | usage.viewsSince(%date%) | usage.downloads | usage.downloadsSince(%year%) | usage.help"""
 # L'entrée du menu du compte, sur toute page d'un compte connecté, et l'étoile d'une chronique, dans les pages de
 # consultation (dev/plans/2026-11-12_favorites.md) ; le reste se vérifie à part (« nouveau seul : favoris » dans accounts)
 FAVORITE_MENU = ('+A /favorites', '+T Mes favoris', '+T My favourites')
@@ -810,6 +819,7 @@ RULES = [
         RX(r"\+T Ces données sont utilisées à des fins scientifiques .*\.Les données ouvertes sont accessibles à tous, gratuitement et sans inscription, sous Licence Ouverte Etalab 2\.0 ; quelques chroniques, données intermédiaires d'un observatoire, sont réservées à ses membres\."))),
     Rule('pages', rf'{ROLE} /translations/messages\.js', OPEN,
          lines=(translation('-', GONE_KEYS), translation(r'\+', NEW_KEYS), translation('[-+]', CHANGED_KEYS))),
+    Rule('pages', rf'{ROLE} /translations/messages\.js', STATISTICS, lines=(translation(r'\+', STATISTICS_KEYS),)),
     # Les clés de l'en-tête : « Consultation des données » devenu « Recherche avancée », le titre du portail sans
     # guillemets, le lien vers le site d'un observatoire
     Rule('pages', rf'{ROLE} /translations/messages\.js', HEADER, lines=(

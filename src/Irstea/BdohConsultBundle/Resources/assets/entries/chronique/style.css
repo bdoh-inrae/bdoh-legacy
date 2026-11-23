@@ -95,3 +95,16 @@ div#viewer div.graph div.jqplot-table-legend-swatch{
 h3.panel-title i[class^='fam-']{
     vertical-align:text-top;
 }
+/* La boîte des métriques (Lou, 2026-11-23) : le chiffre d'abord, en plus grand, comme le bloc « Metrics » de Dataverse */
+#series-usage .series-usage-line{
+    margin-bottom:4px;
+}
+#series-usage .series-usage-count{
+    font-size:1.5em;
+    font-weight:600;
+    margin-right:2px;
+}
+#series-usage .help-block{
+    margin:8px 0 0;
+    font-size:0.9em;
+}

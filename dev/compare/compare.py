@@ -2382,8 +2382,11 @@ def usage_checks(side, console, base):
     # La page dit ses chiffres : ceux de la base
     downloads = query(base, f"SELECT count(*) FROM historique WHERE dtype = 'donneesExport' AND chronique_id = {cid}", NEW_SERVER)[0][0]
     shown = ' '.join(html.unescape(re.sub(r'<[^>]+>', ' ', guest.get(page, None, browser)[2].decode('utf-8', 'replace'))).split())
-    for wanted in (f'Consultations : {tool}', f"Téléchargements : {format(int(downloads), ',').replace(',', ' ')} depuis "):
-        if wanted not in shown:
+    # La boîte « Métriques » (Lou, 2026-11-23) : chaque chiffre avec sa date de départ, le compteur n'étant plus vide
+    number = lambda n: format(int(n), ',').replace(',', ' ')
+    for wanted in (rf'Métriques {number(tool)} consultations? depuis le \d\d/\d\d/\d{{4}} ',
+                   rf'{number(downloads)} téléchargements? depuis \d{{4}} '):
+        if not re.search(wanted, shown):
             problems.append(f'page de la chronique : "{wanted}" absent')
     # La page des statistiques
     if Client(side, None, slug).get(f'/{slug}/statistics')[0] not in (302, 401, 403):

@@ -98,10 +98,14 @@ reserved:
         connected: Membre de l'observatoire ? Demandez-en l'accès depuis le menu de votre compte.
 # Les statistiques d'usage (Statistics\Usage, StatisticsController ; Lou, 2026-11-12 et 16)
 usage:
-    views(%views%): "Consultations : %views%"
-    since(%date%): depuis le %date%
-    downloads(%downloads%): "Téléchargements : %downloads%"
-    sinceYear(%year%): depuis %year%
+    title: Métriques
+    views: "{0,1} consultation|]1,Inf[ consultations"
+    viewsSince(%date%): depuis le %date%
+    downloads: "{0,1} téléchargement|]1,Inf[ téléchargements"
+    downloadsSince(%year%): depuis %year%
+    help: >-
+        Une consultation : cette page ouverte, comptée une fois par heure et par visiteur, sans les robots.
+        Un téléchargement : un export de cette chronique.
 statistics:
     title: Statistiques d'usage
     menu: Statistiques
