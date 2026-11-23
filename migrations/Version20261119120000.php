@@ -110,9 +110,11 @@ final class Version20261119120000 extends AbstractMigration
         ['partenaire', 'nom', 'INRAE  RiverLy', 'INRAE RiverLy'],
         ['partenaire', 'nom', 'INRAE UR Riverly', 'INRAE UR RiverLy'],
         ['partenaire', 'nom', 'INRAE Riverly', 'INRAE RiverLy'],
-        // Titres de jeux de données sans DOI (ceux qui en ont un suivent leur fiche)
-        ['dataset', 'titre', "Suvi d'humidité et de la température du sol à la station de  Lambert", "Suivi d'humidité et de la température du sol à la station de Lambert", 'doi_id IS NULL'],
-        ['dataset', 'titre', "Suvi d'humidité et de la température du sol à la station de  Portanière", "Suivi d'humidité et de la température du sol à la station de Portanière", 'doi_id IS NULL'],
+        // Titres anglais de jeux de données sans DOI (ceux qui en ont un suivent leur fiche). Pas le titre français :
+        // l'adresse de la page d'un jeu de données en est tirée (DataSet::getUuid), et BDOH la cherche dans la colonne
+        // uuid, que cette migration ne change pas ; la changer casserait l'ancienne adresse, que Theia peut citer
+        // (dev/decisions.md, « L'adresse d'un jeu de données suit son titre »). Les deux « Suvi » de Réal Collobrier
+        // vont à ses gestionnaires (relevé par « nouveau seul : citations, repli de BDOH », 23 novembre).
         ['dataset', 'titreen', 'Hydrometric monitoring in Valecure catchment', 'Hydrometric monitoring in Valescure catchment', 'doi_id IS NULL'],
         ['observatoire', 'titreen', 'French Guyana', 'French Guiana', "slug = 'GUYANE'"],
         // Les logos d'INRAE pris pour logos d'observatoire, uniformisés (Lou, 19 et 23 novembre) : un seul, sans la

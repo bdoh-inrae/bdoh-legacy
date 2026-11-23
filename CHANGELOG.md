@@ -13,7 +13,7 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/). Numéros de v
 
 ### Corrigé
 
-- Le contenu de la base relu : les descriptions d'observatoire et de site perdent ce que Word y avait laissé (code invisible, paragraphes vides) sans changer de texte ; les référentiels communs (paramètres, familles, unités, qualités, catégories de compte) corrigés en français et en anglais, et les unités sans libellé anglais en reçoivent un ; quelques titres et noms de partenaires ; les DOI écrits avec leur résolveur ramenés à l'identifiant, et le DOI principal de trois observatoires renseigné. Chaque changement est inscrit dans la base (`content_review_log`), pour la trace et le retour arrière.
+- Le contenu de la base relu : les descriptions d'observatoire et de site perdent ce que Word y avait laissé (code invisible, paragraphes vides) sans changer de texte ; les référentiels communs (paramètres, familles, unités, qualités, catégories de compte) corrigés en français et en anglais, et les unités sans libellé anglais en reçoivent un ; quelques titres anglais et noms de partenaires ; les DOI écrits avec leur résolveur ramenés à l'identifiant, et le DOI principal de trois observatoires renseigné. Chaque changement est inscrit dans la base (`content_review_log`), pour la trace et le retour arrière.
 
 ## 0.9.0 - 2026-11-23
 
