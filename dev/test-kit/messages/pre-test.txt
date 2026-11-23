@@ -1,8 +1,8 @@
-Objet : BDOH : en avant-première pour {observatoire}
+Objet : BDOH en avant-première pour {observatoire}
 
 Salut à vous,
 
-Avant de l'envoyer à tous les gestionnaires le 1er décembre, je vous fais passer en premier le message et le tableau de votre observatoire. Dites-moi tout ce qui cloche d'ici le {date} : je corrige avant l'envoi à tous.
+Avant de l'envoyer à tous les gestionnaires le 1er décembre, je vous fais passer en premier le message et le tableau de votre observatoire. Dites-moi tout ce qui semble bizarre d'ici le vendredi 27 novembre, je corrige avant l'envoi à tous.
 
 Merci !
 Lou

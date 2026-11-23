@@ -34,24 +34,24 @@ TO_FILL = '[à compléter]'
 # d'utilisation (dev/audits/2026-11-13_terms-of-use.md)
 SPECIAL = {
     'OTHU': (
-        "OTHU rejoint BDOH : ce n'est plus un serveur à part, mais un observatoire de BDOH, au même site que les autres "
+        "OTHU rejoint BDOH. Ce n'est plus un serveur à part, mais un observatoire de BDOH, au même site que les autres "
         "(data.othu.org y renverra). Vos données et vos droits sont repris tels quels. Un compte qui existait déjà dans "
         "BDOH sous la même adresse ne fait plus qu'un avec lui. Quelques libellés "
-        "suivent désormais les listes communes de BDOH : \"m3/s\" au lieu de \"m³/s\", \"m3\" au lieu de \"m³\", "
-        "\"mm/j\" au lieu de \"mm/jour\", \"m3.m-3\" au lieu de \"cm3/cm3\", et \"Ensoleillement\" devient \"Puissance de "
+        "suivent désormais les listes communes de BDOH (\"m3/s\" au lieu de \"m³/s\", \"m3\" au lieu de \"m³\", "
+        "\"mm/j\" au lieu de \"mm/jour\", \"m3.m-3\" au lieu de \"cm3/cm3\"), et \"Ensoleillement\" devient \"Puissance de "
         "rayonnement solaire\". Vos comptes d'administration deviennent gestionnaires d'OTHU. Les listes communes "
         "(unités, types de paramètres) passent alors par un administrateur de BDOH. Et vos exports instantanés, qui "
         "sortaient vides (un défaut de votre ancienne base), donnent désormais leurs valeurs.\n\n"
-        "Trois questions : qui a besoin d'administrer OTHU ? À quelle fréquence ajoutez-vous des paramètres ou des "
-        "unités ? Envoyez-vous vos fiches à Theia/OZCAR ? Et vos chroniques ouvertes viennent de l'INSA et de l'UCBL : "
-        "votre \"OK\" vaut leur accord pour une diffusion sous Licence Ouverte."),
+        "Trois questions. Qui a besoin d'administrer OTHU ? À quelle fréquence ajoutez-vous des paramètres ou des "
+        "unités ? Envoyez-vous vos fiches à Theia/OZCAR ? Et vos chroniques ouvertes viennent de l'INSA et de l'UCBL, "
+        "votre \"OK\" vaut donc leur accord pour une diffusion sous Licence Ouverte."),
     'ORACLE': (
-        "Vos conditions d'utilisation : le lien \"Conditions d'utilisation\" de votre accueil servait un PDF propre à "
-        "ORACLE, en fait une copie des conditions de BDOH de 2014 (compte obligatoire, usage non commercial). Elles ne "
-        "peuvent plus valoir pour des données ouvertes, et vos DOI déclarent déjà la Licence Ouverte : elles laissent "
-        "la place aux conditions communes à tout BDOH, au lien \"Conditions d'utilisation\" en bas de chaque page. Si ORACLE a des conditions vraiment à lui, dites-le-moi."),
+        "Le lien \"Conditions d'utilisation\" de votre accueil servait un PDF propre à "
+        "ORACLE, en fait une copie des conditions de BDOH de 2014 (compte obligatoire, usage non commercial). Ces conditions ne "
+        "peuvent plus valoir pour des données ouvertes, et vos DOI déclarent déjà la Licence Ouverte. Elles laissent "
+        "donc la place aux conditions communes à tout BDOH, au lien \"Conditions d'utilisation\" en bas de chaque page. Si ORACLE a des conditions vraiment à lui, dites-le-moi."),
     'ARC-ISERE': (
-        "Certaines de vos chroniques ouvertes viennent d'EDF, une entreprise : ouvertes, elles passent sous Licence "
+        "Certaines de vos chroniques ouvertes viennent d'EDF, une entreprise, et passent donc sous Licence "
         "Ouverte. EDF l'accepte-t-il ? Sinon, on les ferme, comme celles qui le sont déjà."),
 }
 
@@ -184,8 +184,8 @@ def counts_sentence(name, opened, closed):
     if not opened:
         return f"Toutes les chroniques de {name} sont fermées ({closed}), donc rien ne s'ouvre. Si c'est bien ce que vous voulez, un \"OK\" suffit."
     fermees = f'{closed} fermée{"s" if closed > 1 else ""}' if closed else 'aucune fermée'
-    return (f'{name} : {opened} chroniques ouvertes, {fermees}. La seule question : une chronique ouverte est-elle sous accord avec '
-            "un producteur ? Si oui, on la ferme. Un \"OK\" de l'un d'entre vous suffit, sinon dites-moi lesquelles changer.")
+    return (f'{name} a {opened} chroniques ouvertes et {fermees}. La seule question est de savoir si une chronique ouverte est sous accord avec '
+            "un producteur. Si oui, on la ferme. Un \"OK\" de l'un d'entre vous suffit, sinon dites-moi lesquelles changer.")
 
 
 def fill(template, **values):
@@ -224,7 +224,7 @@ def main():
             values = dict(
                 observatoire=name, comptes=counts_sentence(name, opened, closed), date=args.deadline,
                 site=args.site, special=SPECIAL.get(slug, ''),
-                theia="Theia : vos fiches publiées ont des coordonnées décalées de 300 à 700 m, un bogue de l'ancien. C'est corrigé au prochain envoi, à la réouverture. Avant cet envoi, ressaisissez le mot de passe Theia/OZCAR de votre observatoire dans sa fiche (Administration > Observatoires) : BDOH le garde chiffré, et le nouveau ne peut pas relire celui de l'ancien." if theia == "t" and slug not in NOT_ON_THEIA else "")
+                theia="Vos fiches publiées sur Theia/OZCAR ont des coordonnées décalées de 300 à 700 m, un bogue de l'ancien. C'est corrigé au prochain envoi, à la réouverture. Avant cet envoi, ressaisissez le mot de passe Theia/OZCAR de votre observatoire dans sa fiche (Administration > Observatoires), car BDOH le garde chiffré et le nouveau ne peut pas relire celui de l'ancien." if theia == "t" and slug not in NOT_ON_THEIA else "")
             # Les deux messages d'avant le 15 novembre, s'il en reste : un seul part désormais
             for old in ('message-inrae.txt', 'message-hors-inrae.txt'):
                 (folder / old).unlink(missing_ok=True)

@@ -4,7 +4,7 @@ Ce qu'on envoie aux gestionnaires pour les essais, une fois que Lou a fait les s
 
 ```
 make test-contacts SOURCE=…brut.dump     # Lou, dans son terminal : production, puis OTHU
-make test-kit ARGS="--site https://… --deadline 'lundi 23 novembre'"
+make test-kit ARGS="--site https://bdoh.inrae.fr --deadline 'mardi 15 décembre'"
 ```
 
 - `make test-kit` écrit dans `../bdoh_reference/test-kit/<OBSERVATOIRE>/` le tableur et le message, depuis les bases anonymisées. Il ne reste à compléter à la main que le mot de passe d'accès.
@@ -15,7 +15,7 @@ make test-kit ARGS="--site https://… --deadline 'lundi 23 novembre'"
 
 ## Tranché (Lou, 10 novembre)
 
-1. L'objet : « BDOH rouvre : ce qu'il me faut pour {observatoire} », sans durée, qu'on ne maîtrise pas.
+1. L'objet : "BDOH rouvre, ce qu'il me faut pour {observatoire}", sans durée, qu'on ne maîtrise pas (sans deux-points dans le texte, Lou, 23 novembre).
 2. La date limite : deux semaines après l'envoi du 1er décembre (Lou, 16 et 19 novembre, d'abord le 30 novembre ; une semaine le 10 novembre) ; elle s'allonge si des problèmes sérieux apparaissent.
 3. Les destinataires : les gestionnaires de l'observatoire et de ses sites, son contact, le responsable et les gestionnaires de données Theia (ce que tire `contacts.py`). Lou relit la liste avant d'envoyer.
 4. Sans réponse : une relance, puis `estvisible` fait foi, et c'est noté au suivi ; la Licence Ouverte s'applique alors sans validation explicite. Le message ne le dit plus (Lou, 19 novembre, "trop violent") : la relance se fait sans l'annoncer, et on avise si elle reste sans réponse.
@@ -35,4 +35,4 @@ Mis à jour pour la 0.7.1 le 16 novembre, puis pour la réouverture le 19, avec 
 
 ## Le pré-essai
 
-`messages/pre-test.txt` : quelques lignes que Lou met au-dessus du kit de leur observatoire, pour les deux gestionnaires du pré-essai (`dev/local/test-tracking.md`), des collègues proches : le tutoiement collectif, le but et le contexte en deux phrases, sans justification. Le pré-essai part au plus tard le lundi 24 novembre (Lou, 19 novembre) ; `{date}`, celle de leur retour, avant le 1er décembre, se remplit à l'envoi. `kit.py` ne l'écrit pas : Lou le colle à la main.
+`messages/pre-test.txt` : quelques lignes que Lou met au-dessus du kit de leur observatoire, pour les deux gestionnaires du pré-essai (`dev/local/test-tracking.md`), des collègues proches : le tutoiement collectif, le but et le contexte en deux phrases, sans justification. Le pré-essai part au plus tard le lundi 24 novembre (Lou, 19 novembre), avec un retour demandé pour le vendredi 27 novembre (23 novembre). `kit.py` ne l'écrit pas : Lou le colle à la main.
