@@ -180,11 +180,19 @@ def workbook(name, rows, notes, no_coordinates, path):
 
 # --- Les messages ----------------------------------------------------------------------------------------
 
+# L'article des noms qui en demandent un dans une phrase ("pour l'Observatoire des Sédiments du Rhône")
+ARTICLES = {'OBSERVATOIRE-DES-SEDIMENTS-DU-RHONE': "l'", 'SITE-ATELIER-ARDIERES-MORCILLE': 'le '}
+
+
+def in_text(slug, name):
+    return ARTICLES.get(slug, '') + name
+
+
 def counts_sentence(name, opened, closed):
     if not opened:
-        return f"Toutes les chroniques de {name} sont fermées ({closed}), donc rien ne s'ouvre. Si c'est bien ce que vous voulez, un \"OK\" suffit."
+        return f"Toutes les chroniques {('de ' + name).replace('de le ', 'du ')} sont fermées ({closed}), donc rien ne s'ouvre. Si c'est bien ce que vous voulez, un \"OK\" suffit."
     fermees = f'{closed} fermée{"s" if closed > 1 else ""}' if closed else 'aucune fermée'
-    return (f'{name} a {opened} chroniques ouvertes et {fermees}. La seule question est de savoir si une chronique ouverte est sous accord avec '
+    return (f'{name[0].upper()}{name[1:]} a {opened} chroniques ouvertes et {fermees}. La seule question est de savoir si une chronique ouverte est sous accord avec '
             "un producteur. Si oui, on la ferme. Un \"OK\" de l'un d'entre vous suffit, sinon dites-moi lesquelles changer.")
 
 
@@ -222,7 +230,7 @@ def main():
             items = workbook(name, rows, notes.get(slug, []), [row for row in missing if row[0] == slug], folder / f'chroniques-{slug}.xlsx')
             attachment = f'Le second onglet du tableau liste {items} point{"s" if items > 1 else ""} à corriger dans vos données. Ça ne bloque rien'
             values = dict(
-                observatoire=name, comptes=counts_sentence(name, opened, closed), date=args.deadline,
+                observatoire=in_text(slug, name), comptes=counts_sentence(in_text(slug, name), opened, closed), date=args.deadline,
                 site=args.site, special=SPECIAL.get(slug, ''),
                 theia="Vos fiches publiées sur Theia/OZCAR ont des coordonnées décalées de 300 à 700 m, un bogue de l'ancien. C'est corrigé au prochain envoi, à la réouverture. Avant cet envoi, ressaisissez le mot de passe Theia/OZCAR de votre observatoire dans sa fiche (Administration > Observatoires), car BDOH le garde chiffré et le nouveau ne peut pas relire celui de l'ancien." if theia == "t" and slug not in NOT_ON_THEIA else "")
             # Les deux messages d'avant le 15 novembre, s'il en reste : un seul part désormais

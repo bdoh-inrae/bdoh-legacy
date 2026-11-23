@@ -35,4 +35,4 @@ Mis à jour pour la 0.7.1 le 16 novembre, puis pour la réouverture le 19, avec 
 
 ## Le pré-essai
 
-`messages/pre-test.txt` : quelques lignes que Lou met au-dessus du kit de leur observatoire, pour les deux gestionnaires du pré-essai (`dev/local/test-tracking.md`), des collègues proches : le tutoiement collectif, le but et le contexte en deux phrases, sans justification. Le pré-essai part au plus tard le lundi 24 novembre (Lou, 19 novembre), avec un retour demandé pour le vendredi 27 novembre (23 novembre). `kit.py` ne l'écrit pas : Lou le colle à la main.
+`messages/pre-test.txt` : quelques lignes que Lou met au-dessus du kit de leur observatoire, pour les deux gestionnaires du pré-essai (`dev/local/test-tracking.md`), des collègues proches : le tutoiement collectif, le but et le contexte en deux phrases, sans justification. Le pré-essai part au plus tard le lundi 24 novembre (Lou, 19 novembre), avec un retour demandé pour le vendredi 27 novembre (23 novembre). Un kit chacun, celui de leur plus gros observatoire (Lou, 24 novembre) : leurs autres observatoires partent le 1er décembre avec tous les autres. `kit.py` ne l'écrit pas : Lou le colle à la main.
