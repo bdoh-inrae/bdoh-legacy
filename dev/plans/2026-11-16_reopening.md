@@ -175,11 +175,12 @@ Celles qui s'accumulent pendant que Claude avance seul (Lou, 19 novembre au soir
 
 ## Pour reprendre
 
-Après la session du 23 novembre (la 0.9.0, puis la version du pré-essai : Suivi) :
-0. Lire les passes relancées le 23 vers 18 h 30, sur le commit qui sort les deux titres de Réal Collobrier de la migration (celles de 17 h 09 sont arrêtées : `pages` y avait vu ce défaut) : les huit modes dans `../bdoh_reference/compare/` (dossiers du 23 après 18 h 25, `rapport.txt` de chacun), puis `make browser-check`, dont le bilan s'écrit désormais dans le `rapport.txt` de ses captures (`../bdoh_reference/browser/`, le dernier dossier du 23 ; sinon le rejouer, après `make assets`). Tout passe : publier la 0.9.1 ("Non publié"), avec l'accord de Lou, pour la VM. Un mode échoue : lire en tête de chaque fichier de diff les lignes qu'aucune règle n'admet : les nouveautés sont le bouton de menu de l'en-tête (`expected.MENU_BUTTON`), le formulaire d'un compte de l'administration (`ADMIN_CONTACT_FIELDS`), et les données de la relecture (`pages`, `exports`, `admin`, `theia`).
-1. La VM est neuve et vide depuis le 23 novembre (`dev/plans/2026-10-26_deployment.md`, Suivi) : la réinstaller à la 0.9.0, depuis la section 0 de `dev/deploy/README.md`, OTHU compris (section 2 bis), une commande à la fois avec Lou. Puis le vrai site essayé depuis l'extérieur, et, s'il est coupé en route, le message à l'infra (même Suivi).
-2. Le pré-essai, sur la version qui suit la 0.9.0 (la relecture du contenu, les logos d'INRAE uniformisés, l'en-tête sur un téléphone : `CHANGELOG.md`). Lou regarde la page "Statistiques" sur la VM, en gestionnaire.
-3. Puis les listes de diffusion (point 5), sauf point plus urgent (Lou, 23 novembre).
+Après la session du 23 novembre au soir (les passes de la version du pré-essai, toutes vertes : Suivi) :
+0. Les logos des partenaires, dans cette version, avant la VM (Lou, 23 novembre au soir) : [2026-11-19_review.md](2026-11-19_review.md), "Logos des partenaires".
+1. Publier la 0.9.1 ("Non publié"), passes rejouées sur ce que les logos changent.
+2. La VM est neuve et vide depuis le 23 novembre (`dev/plans/2026-10-26_deployment.md`, Suivi) : la réinstaller à la 0.9.1, depuis la section 0 de `dev/deploy/README.md`, OTHU compris (section 2 bis), une commande à la fois avec Lou. Puis le vrai site essayé depuis l'extérieur, et, s'il est coupé en route, le message à l'infra (même Suivi).
+3. Le pré-essai, sur la 0.9.1. Lou regarde la page "Statistiques" sur la VM, en gestionnaire.
+4. Puis les listes de diffusion (point 5), sauf point plus urgent (Lou, 23 novembre).
 
 Méthode : celle de [2026-11-16_before-kit.md](2026-11-16_before-kit.md), « Méthode » (les passes de `compare.py` à la fin, une fois les changements faits ; entre-temps, les tests de l'outil, `lint:twig`, `lint:container`, des captures ). Chaque écart avec l'ancien s'inscrit dans `dev/differences.md` et, s'il est admis, dans `dev/compare/expected.py`. Le poste a dans `public/uploads/` les images de la production, pour les captures des accueils : les mettre de côté le temps de chaque passe d'`admin`, puis les remettre (copies dans `../bdoh_reference/uploads/`).
 
@@ -189,6 +190,7 @@ L'ordre de la suite, et ce que fait Lou : `ROADMAP.md`, « À faire ».
 
 ## Suivi
 
+- 2026-11-23, soir, **les passes de la version du pré-essai**, sur c8a5968 : `pages` 492/0/0/1101/0, `state` 100/0/0/2/0, `queue` 11/0/0/0/0, `imports` 68/0/0/51/0, `accounts` 49/0/0/16/0, `admin` 114/0/0/564/0, `theia` 19/0/0/19/0, `make browser-check` 83 étapes sans problème. `exports` avait 62 cas différents, tous du même trou de l'outil : le DOI d'Yzeron que la migration de la relecture change sort à une autre place dans le rapport de l'ancien, qui ne trie pas ses DOI (`dev/differences.md`, "Listes sans tri"). `report_facts` les trie des deux côtés ; rejouée : 40/0/0/384/0. La session s'est arrêtée avec la mise en veille du poste, pendant cette passe, qui a repris au réveil sans écart. Puis, sur la décision de Lou, les logos des partenaires avant la VM ("Pour reprendre", 0).
 - 2026-11-23, après la 0.9.0, **la version du pré-essai**, sur les réponses de Lou (sa liste : "Pour reprendre") :
   - la migration de la relecture reprise pour la décision de Lou sur les logos d'INRAE, puis fusionnée (70964c1) : les trois observatoires dont le logo était celui d'INRAE prennent le même, net, sans la Marianne, chacun sa copie ([2026-11-19_review.md](2026-11-19_review.md), Suivi). Éprouvée sur la base complète anonymisée : aller, puis retour, les douze tables touchées identiques au bit près. Appliquée à `bdoh` et `bdoh_small`.
   - l'en-tête se replie sous un bouton de menu sous 768 pixels (`ROADMAP.md`, "Modernisations", fait), vérifié par une étape de `make browser-check` à 390 pixels, sans compte et en gestionnaire. Le téléphone et l'adresse quittent le formulaire d'un compte de l'administration (question 2). La boîte "Métriques" dit ce qu'elle compte dans une bulle derrière un "?", au lieu d'une ligne (Lou : plus compacte), ouverte au survol, au doigt et au clavier, et une étape de `make browser-check` l'ouvre.

@@ -1691,7 +1691,10 @@ def report_facts(lines, old=False):
     facts = [*head]
     if kind or steps:
         facts.append(f'rééchantillonnage {kind or "?"}, {steps[0] if steps else "?"}')
-    facts += dois
+    # Les DOI de l'observatoire, triés : l'ancien les écrit dans l'ordre où PostgreSQL rend la relation, sans tri
+    # (dev/differences.md, "Listes sans tri"), qu'une mise à jour d'un DOI change (migration de la relecture,
+    # 2026-11-23) ; leur présence compte, pas leur ordre
+    facts += sorted(dois)
     for chronique in chroniques:
         if old and 'présentes 0' in chronique:
             chronique = ['exportées 0' if fact.startswith('exportées ') else fact for fact in chronique]
