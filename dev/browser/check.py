@@ -751,8 +751,16 @@ def main():
 
     failed = [r for r in results if r[1]]
     noisy = [r for r in results if r[2] and not r[1]]
-    print(f'\n{len(results)} étapes : {len(results) - len(failed) - len(noisy)} sans problème, '
-          f'{len(noisy)} avec des erreurs relevées, {len(failed)} en échec. Captures : {OUT}')
+    summary = (f'{len(results)} étapes : {len(results) - len(failed) - len(noisy)} sans problème, '
+               f'{len(noisy)} avec des erreurs relevées, {len(failed)} en échec.')
+    print(f'\n{summary} Captures : {OUT}')
+    # Le bilan reste à côté des captures, comme rapport.txt de compare.py : celui du 19 novembre au soir, qui ne
+    # s'écrivait qu'à l'écran, s'était perdu avec ses deux étapes en échec
+    lines = [summary, '']
+    for number, (title, failure, problems) in enumerate(results, 1):
+        lines.append(f"{number:3d} {'échec' if failure else 'erreurs' if problems else 'ok':8s} {title}")
+        lines += [f'      {line}' for line in ([failure] if failure else []) + problems]
+    (OUT / 'rapport.txt').write_text('\n'.join(lines) + '\n', encoding='utf-8')
     return 1 if failed or noisy else 0
 
 

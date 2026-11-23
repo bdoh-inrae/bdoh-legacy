@@ -9,6 +9,11 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/). Numéros de v
 - Sur un téléphone, les deux barres de l'en-tête se replient sous un bouton de menu, à droite de "BDOH", et s'ouvrent sur toute la largeur, une entrée par ligne.
 - La boîte "Métriques" dit ce que comptent ses chiffres dans une bulle, derrière un "?" de son titre, qui s'ouvre au survol, au doigt et au clavier, au lieu d'une ligne de texte.
 - Le formulaire d'un compte dans l'administration ne demande plus ni téléphone ni adresse, comme l'inscription.
+- Les observatoires dont le logo était celui d'INRAE (Arc-Isère, Haute-Loire, Ardières-Morcille) ont tous le même : sa version nette, sans la Marianne.
+
+### Corrigé
+
+- Le contenu de la base relu : les descriptions d'observatoire et de site perdent ce que Word y avait laissé (code invisible, paragraphes vides) sans changer de texte ; les référentiels communs (paramètres, familles, unités, qualités, catégories de compte) corrigés en français et en anglais, et les unités sans libellé anglais en reçoivent un ; quelques titres et noms de partenaires ; les DOI écrits avec leur résolveur ramenés à l'identifiant, et le DOI principal de trois observatoires renseigné. Chaque changement est inscrit dans la base (`content_review_log`), pour la trace et le retour arrière.
 
 ## 0.9.0 - 2026-11-23
 

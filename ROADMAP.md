@@ -6,7 +6,7 @@ Code de référence : commit `523cf8e32` de l'ancien dépôt (version 5.0.3, fé
 
 ## En cours
 
-La réouverture de BDOH, mi-décembre, après un pré-essai par deux gestionnaires et deux semaines d'essais par tous et toutes ; les essais deviennent la production s'ils passent. Le calendrier, chaque point, ce qui est décidé et son avancée : [dev/plans/2026-11-16_reopening.md](dev/plans/2026-11-16_reopening.md). La VM répond au nom `bdoh.inrae.fr`, derrière le VPN et un mot de passe d'accès. Ce qui est fait, version par version : `CHANGELOG.md`.
+La réouverture de BDOH, mi-décembre, après un pré-essai par deux gestionnaires et deux semaines d'essais par tous et toutes ; les essais deviennent la production s'ils passent. Le calendrier, chaque point, ce qui est décidé et son avancée : [dev/plans/2026-11-16_reopening.md](dev/plans/2026-11-16_reopening.md). La VM est neuve et vide depuis le 23 novembre, à réinstaller ([dev/plans/2026-10-26_deployment.md](dev/plans/2026-10-26_deployment.md), Suivi). Ce qui est fait, version par version : `CHANGELOG.md`.
 
 ## À faire
 
@@ -14,17 +14,19 @@ La réouverture de BDOH, mi-décembre, après un pré-essai par deux gestionnair
 
 Les numéros renvoient aux points du plan de la réouverture.
 
-Publiés dans la 0.9.0 (`CHANGELOG.md`) : les décisions du 19 novembre, les trois défauts du JavaScript, l'export (deux README, la colonne `parameter`, la date de mise à jour) et les statistiques d'usage. Les statistiques restent à revoir avec Lou sur les captures (plan de la réouverture, point 6, et "Questions pour Lou").
+L'ordre, décidé par Lou le 23 novembre : la version du pré-essai (`CHANGELOG.md`, "Non publié" : la relecture du contenu, les logos d'INRAE uniformisés, l'en-tête sur un téléphone), la VM réinstallée avec elle, le pré-essai, puis les listes de diffusion, sauf point plus urgent.
 
-1. La migration de la relecture du contenu, sur la branche `content-review`, à fusionner sur l'accord de Lou ; puis les logos des partenaires ([dev/plans/2026-11-19_review.md](dev/plans/2026-11-19_review.md)).
-2. Les listes de diffusion (5), une fois connu ce que permet `listes.inrae.fr`.
-3. Les retours du pré-essai, puis ceux des essais.
-4. La validation, pendant les essais : les versions correctives de Doctrine, une passe de couverture, les invariants, les pannes provoquées, une relecture du code que la comparaison n'exécute pas, puis le code gelé et tous les modes sur la base complète et sur OTHU ([dev/plans/2026-11-04_validation.md](dev/plans/2026-11-04_validation.md)).
+1. La VM réinstallée, une commande à la fois avec Lou, depuis la section 0 de `dev/deploy/README.md`, OTHU compris ; puis le vrai site essayé depuis l'extérieur, et le message à l'infra s'il est coupé en route.
+2. Les retours du pré-essai, puis ceux des essais. Les statistiques, Lou les regarde sur la VM, en gestionnaire.
+3. Les listes de diffusion (5), une fois connu ce que permet `listes.inrae.fr`.
+4. Les logos des partenaires ([dev/plans/2026-11-19_review.md](dev/plans/2026-11-19_review.md), "Questions pour Lou", 4).
+5. Une relecture de sécurité et de robustesse de ce que le portage a ajouté (Lou, 23 novembre : dans un futur plus ou moins proche) : le compteur des consultations et la page des statistiques, l'export réglé sur son volume, les favoris, la connexion par lien, et tout texte de la base que le JavaScript insère en HTML. Quatre défauts de cette dernière sorte ont été trouvés et corrigés les 19 et 23 novembre (`dev/local/security.md`) ; la relecture du 15 novembre laissait à lire ce que BDOH passe à jQuery UI, DataTables, Select2 et aux réponses insérées par `.html()`.
+6. La validation, pendant les essais : les versions correctives de Doctrine, une passe de couverture, les invariants, les pannes provoquées, une relecture du code que la comparaison n'exécute pas, puis le code gelé et tous les modes sur la base complète et sur OTHU ([dev/plans/2026-11-04_validation.md](dev/plans/2026-11-04_validation.md)).
 
 ### Ce que fait Lou
 
-- Les questions de la relecture, d'abord les captures de la migration ([dev/plans/2026-11-19_review.md](dev/plans/2026-11-19_review.md), "Questions pour Lou").
-- Sur la VM : installer chaque version (`sudo make vm-update V=…`), mesurer les exports (`dev/deploy/README.md`, "Mesurer les exports"), restaurer une sauvegarde dans une base à part (même fichier, section 4), garder un point zéro de la base avant les essais, puis `make test-kit` et l'envoi ([dev/test-kit/README.md](dev/test-kit/README.md)).
+- Les questions de la relecture qui restent ([dev/plans/2026-11-19_review.md](dev/plans/2026-11-19_review.md), "Questions pour Lou", 2 à 4).
+- Sur la VM : la réinstaller avec Claude, puis installer chaque version (`sudo make vm-update V=…`), mesurer les exports (`dev/deploy/README.md`, "Mesurer les exports"), restaurer une sauvegarde dans une base à part (même fichier, section 4), garder un point zéro de la base avant les essais, puis `make test-kit` et l'envoi ([dev/test-kit/README.md](dev/test-kit/README.md)).
 - Avec l'infra : le port 443 ouvert à Internet, la nouvelle adresse IP dans le DNS, le certificat ([dev/plans/2026-10-26_deployment.md](dev/plans/2026-10-26_deployment.md), Suivi). Les autres réglages de la VM : même plan, "La machine" et "Après".
 - Les essais à l'œil sur la VM : [dev/test-kit/lou-checklist.md](dev/test-kit/lou-checklist.md).
 - Ce que `listes.inrae.fr` permet aux propriétaires de listes (point 5 du plan de la réouverture).
@@ -42,7 +44,6 @@ Ce qui améliore nettement l'expérience, la sécurité ou la maintenance pour p
 
 - **Effacer les hachages des anciens mots de passe**, qui ne servent plus depuis la connexion par lien : une migration (`UPDATE utilisateur SET password = '', salt = ''`), sans retour arrière possible, donc à faire à la bascule, une fois la connexion par lien éprouvée en production. Il n'y aurait alors plus rien à voler.
 - **Écrire aux gestionnaires d'un observatoire sans voir leur adresse** (Lou, 16 novembre), comme Dataverse : un bouton « Contacter » dans l'onglet Gestionnaires de l'accueil, un formulaire, et BDOH envoie le message. Il faut une garde contre les abus (fréquence par adresse IP, comme les exports), sans quoi BDOH devient un relais de spam vers les gestionnaires. Jusque-là, l'adresse se voit une fois connecté.
-- **L'en-tête sur un téléphone.** À 390 pixels de large, les deux barres de l'en-tête s'empilent mal : le menu des observatoires, le nom, la langue et l'aide les uns sous les autres, le logo de BDOH tassé à gauche, "ou" seul sur sa ligne (capture du 19 novembre, accueil d'Arc-Isère). C'est la barre de Bootstrap 3 de l'ancien, que la 0.7.0 a rangée pour un écran large. Un bouton de menu (le "burger" de Bootstrap) sous 768 pixels, à vérifier dans `make browser-check` à cette largeur. Relevé en passant le 19 novembre.
 - **Se déconnecter de tous ses appareils.** Le cookie de 30 jours ne se révoque aujourd'hui qu'en changeant d'adresse. Ajouter `password` (colonne désormais inutilisée) aux `signature_properties` de `remember_me`, et un bouton de la page du compte qui y écrit une valeur aléatoire : tous les cookies du compte cessent de valoir. Une demi-journée, avec un cas de `compare.py accounts`.
 
 ## Plus tard, après la bascule
