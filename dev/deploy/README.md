@@ -63,7 +63,15 @@ sudo make vm-db DUMP=/var/backups/bdoh-sources/….dump
 
 ## 2 bis. OTHU, un observatoire de la production
 
-Une fois la production installée et à la version qui porte la fusion (0.6.0 ou après), le dump brut d'OTHU copié dans `/var/backups/bdoh-sources/` :
+Une fois la production installée et à la version qui porte la fusion (0.6.0 ou après), le dump brut d'OTHU copié dans `/var/backups/bdoh-sources/`.
+
+La fusion est écrite pour la base telle que la laisse la migration `Version20261113120000` (0.6.0). La migration de la relecture (`Version20261119120000`, 0.9.1) a depuis corrigé des libellés des listes communes, que la fusion veut identiques ligne pour ligne à ceux d'OTHU, et elle corrige aussi les lignes d'OTHU une fois fondues : elle passe après la fusion. Sur une installation neuve, où `vm-db` a tout appliqué, on revient donc d'abord à cette version, puis on fusionne, puis on rejoue les migrations suivantes (relecture, compteur des consultations, logos des partenaires ; éprouvé sur la petite base le 24 novembre, après l'échec de la fusion sur la VM, "Liste categorie : 1 ligne(s) d'OTHU sans pareil") :
+
+```
+sudo runuser -u www-data -- php bin/console --env=prod --no-interaction doctrine:migrations:migrate 'DoctrineMigrations\Version20261113120000'
+```
+
+Puis la fusion :
 
 ```
 sudo make vm-merge-othu DUMP=/var/backups/bdoh-sources/bdoh-othu-2026-10-21.dump
@@ -77,7 +85,14 @@ Pour revenir en arrière, en 4 minutes sur le poste, tant que personne n'a écri
 sudo make vm-unmerge-othu
 ```
 
-Les trois partenaires d'OTHU arrivent avec la fusion, après les migrations : leurs logos se déposent dans l'administration (Administration, Partenaires, chacun son formulaire), depuis le poste, `../bdoh_reference/review/logos/othu-by-hand/` (sources dans `SOURCES.md`, à côté).
+Après la fusion, les migrations suivantes, qui doivent dire "31 logos de partenaires posés" :
+
+```
+sudo runuser -u www-data -- php bin/console --env=prod --no-interaction doctrine:migrations:migrate
+sudo runuser -u www-data -- php bin/console --env=prod cache:clear
+```
+
+Les trois partenaires d'OTHU arrivent avec la fusion, après la migration des logos : leurs logos se déposent dans l'administration (Administration, Partenaires, chacun son formulaire), depuis le poste, `../bdoh_reference/review/logos/othu-by-hand/` (sources dans `SOURCES.md`, à côté).
 
 ## 3. Le site
 
