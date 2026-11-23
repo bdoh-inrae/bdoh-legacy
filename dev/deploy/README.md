@@ -113,6 +113,7 @@ sudo runuser -u postgres -- dropdb bdoh_essai
 - Un courriel vers une adresse hors de la liste arrive à `MAILER_DIVERT_TO`, et pas à son destinataire.
 - Un export, un import, et un calcul qui se relance : `systemctl status bdoh-job-worker@prod`, et la page des tâches.
 - Arrêter PostgreSQL 30 s, le relancer : la file repart seule.
+- Depuis l'extérieur, un téléphone en 4G : l'accueil s'ouvre, et `sudo tail -n 5 /var/log/apache2/bdoh-prod-access.log` montre en tête de ligne l'adresse du téléphone. Une adresse privée d'INRAE veut dire qu'un équipement du réseau remplace celle des visiteurs : les limites par adresse vaudraient alors pour tout le site, et le compteur des consultations ne verrait qu'un visiteur. Voir s'il la transmet dans l'en-tête `X-Forwarded-For` (`SYMFONY_TRUSTED_PROXIES`, dans `.env`), sinon le demander à l'infra (`dev/plans/2026-10-26_deployment.md`, Suivi du 23 novembre).
 - Un import en plusieurs étapes, en redémarrant Apache entre deux : le service Apache d'Ubuntu a `PrivateTmp=true`, à voir ce que ça donne.
 
 Ensuite, la liste de Lou : [dev/test-kit/lou-checklist.md](../test-kit/lou-checklist.md).
