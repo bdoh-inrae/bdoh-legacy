@@ -4,6 +4,12 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/). Numéros de v
 
 ## Non publié
 
+### Modifié
+
+- Sur un téléphone, les deux barres de l'en-tête se replient sous un bouton de menu, à droite de "BDOH", et s'ouvrent sur toute la largeur, une entrée par ligne.
+- La boîte "Métriques" dit ce que comptent ses chiffres dans une bulle, derrière un "?" de son titre, qui s'ouvre au survol, au doigt et au clavier, au lieu d'une ligne de texte.
+- Le formulaire d'un compte dans l'administration ne demande plus ni téléphone ni adresse, comme l'inscription.
+
 ## 0.9.0 - 2026-11-23
 
 Les statistiques d'usage de chaque chronique et de chaque observatoire, une page claire pour qui arrive sur une chronique réservée, deux README et le code du paramètre dans chaque export, une inscription sans téléphone ni adresse.

@@ -224,13 +224,19 @@
 
             <div class="col-md-12">
                 {#- Ses consultations et ses téléchargements, en public (Lou, 2026-11-12, 16 et 23 ; Statistics\Usage) : une
-                 # boîte en haut à droite, comme le bloc « Metrics » de Dataverse, chaque chiffre avec sa date de départ.
+                 # boîte en haut à droite, comme le bloc « Metrics » de Dataverse, chaque chiffre avec sa date de départ, et
+                 # ce qu'ils comptent dans une bulle, derrière un « ? » qui s'ouvre au survol, au doigt et au clavier (un
+                 # lien avec tabindex : un bouton ne prend pas le focus sur Safari pour iOS).
                  # Entre deux marques, que la comparaison des pages retire, ses chiffres changeant à chaque visite #}
                 <!-- Usage -->
                 {%- set en = app.request.locale starts with 'en' -%}
                 <div class="panel panel-default" id="series-usage">
                     <div class="panel-heading">
-                        <h3 class="panel-title"><i class="fam-chart-bar"></i> {{ 'usage.title'|trans }}</h3>
+                        <h3 class="panel-title"><i class="fam-chart-bar"></i> {{ 'usage.title'|trans }}
+                            <a tabindex="0" role="button" class="series-usage-help pull-right" data-toggle="popover"
+                               data-trigger="hover focus" data-placement="left" data-content="{{ 'usage.help'|trans }}"
+                               aria-label="{{ 'usage.help'|trans }}"><i class="fam-help"></i></a>
+                        </h3>
                     </div>
                     <div class="panel-body">
                         <div class="series-usage-line">
@@ -243,7 +249,6 @@
                             {{ 'usage.downloads'|trans({'%count%': usage.downloads}) }}
                             {%- if usage.downloadsSince %} <span class="text-muted">{{ 'usage.downloadsSince(%year%)'|trans({'%year%': usage.downloadsSince}) }}</span>{% endif %}
                         </div>
-                        <p class="help-block">{{ 'usage.help'|trans }}</p>
                     </div>
                 </div>
                 <!-- END_Usage -->

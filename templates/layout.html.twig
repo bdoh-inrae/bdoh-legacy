@@ -28,7 +28,13 @@
          # vers le site de l'observatoire passe à côté du titre de son accueil, les logos restent dans ses fiches et
          # dans le pied de page -#}
         <div id="logo"><a class="bdoh-brand" href="{{ path('bdoh_all_home') }}">BDOH</a></div>
-        <div id="header-bars">
+        {#- Sur un téléphone, les deux barres se replient sous ce bouton de menu (Lou, 2026-11-23) ; au-delà, il est
+         # caché et elles restent ouvertes (base.less, « Header ») -#}
+        <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#header-bars"
+                aria-controls="header-bars" aria-expanded="false" aria-label="Menu">
+            <span class="icon-bar"></span><span class="icon-bar"></span><span class="icon-bar"></span>
+        </button>
+        <div id="header-bars" class="collapse">
             {% include "Core/navigation-bar.html.twig" -%}
             {% include "Core/user-bar.html.twig" -%}
         </div>

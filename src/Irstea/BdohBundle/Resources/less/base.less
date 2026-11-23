@@ -201,6 +201,56 @@ h1, .sonata-bc h1 {
     }
 }
 
+// Sur un téléphone, sous @screen-sm-min (Lou, 2026-11-23 : la version téléphone utilisable) : « BDOH » et le bouton de
+// menu sur une ligne, les deux barres repliées dessous, qui s'ouvrent sur toute la largeur, une entrée par ligne, sans
+// les séparateurs ni le « ou » entre connexion et inscription. Au-delà, le bouton est caché (Bootstrap) et les barres
+// restent ouvertes, comme avant.
+@media (min-width: @screen-sm-min) {
+    #header-bars.collapse {
+        display: block !important;
+        height: auto !important;
+    }
+}
+@media (max-width: @screen-xs-max) {
+    #header {
+        flex-wrap: wrap;
+        #logo {
+            flex: 1 1 auto;
+            padding: 6px 15px;
+        }
+        #header-bars {
+            flex: 1 1 100%;
+            padding: 0 5px;
+        }
+        .navbar-toggle {
+            display: block;
+            float: none;
+            margin: 0 15px 0 0;
+            border-color: @inkColor;
+            .icon-bar {
+                background-color: @inkColor;
+            }
+        }
+    }
+    // Plus précis que les règles générales, qui viennent après
+    #logo a.bdoh-brand {
+        font-size: 40px;
+    }
+    #header-bars {
+        .navbar {
+            margin-bottom: 6px;
+        }
+        .navbar-nav > .divider,
+        .navbar-nav > .navbar-text {
+            display: none;
+        }
+    }
+    #header #navbar .current-observatoire > a {
+        max-width: none;
+        white-space: normal;
+    }
+}
+
 // « BDOH » à la place d'un logo (2026-11-12, Lou) : en Inter, au plus gras (900, la limite d'Inter), à la hauteur des
 // deux barres ; il mène au portail. Sa taille suit la fenêtre, pour laisser leur place aux barres.
 a.bdoh-brand {

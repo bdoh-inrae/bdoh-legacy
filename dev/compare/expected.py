@@ -83,6 +83,9 @@ PRIVACY_FORM = (f"+T Données personnelles : {PRIVACY_NOTICE}",)
 # Le téléphone et l'adresse quittent l'inscription et la page du compte (Lou, 2026-11-19)
 CONTACT_FIELDS = ('-T N° de téléphone', '-T Adresse',
                   RX(r'-I (?:textarea|input text) irstea_bdohsecuritybundle_\w+\[(?:adresse|telephone)\](?: .*)?'))
+# … et le formulaire d'un compte dans l'administration (Lou, 2026-11-23 : trop identifiants, sans bénéfice)
+ADMIN_CONTACT_FIELDS = ('-T N° de téléphone', '-T Adresse',
+                        RX(r'-I (?:textarea|input text) s<uniqid>\[(?:adresse|telephone)\](?: .*)?'))
 
 # La page de la demande d'accès : son titre, et à qui la demande est réservée (Lou, 2026-11-16). Seul un compte sans
 # droit la voit : celui que crée accounts ; les comptes de pages y sont renvoyés à la recherche.
@@ -295,6 +298,7 @@ CSV_OPTION = ('+O Csv selected', '+T CSV')  # sélectionné par défaut (Lou, 20
 LANG_FLAG = re.compile(r'G /images/i18n/\w+\.png')
 DATA_LINK = {'T Consultation des données': 'T Recherche', 'T See our data': 'T Search'}
 SEARCH = {'T Recherche avancée': 'T Recherche', 'T Advanced search': 'T Search'}
+MENU_BUTTON = ('+D button data-target=#header-bars data-toggle=collapse', '+I button button')
 EDIT_TIP = re.compile(r'D li data-original-title=(.+) data-placement=bottom data-toggle=tooltip')
 DROPDOWN = ['A #', 'D a data-toggle=dropdown']
 CRUMB_HOME = ('T Accueil', 'T Home')
@@ -664,6 +668,9 @@ RULES = [
     # (theia aussi, pour la page du contrôle des fiches, qu'il n'avait pas rejouée depuis le 11 novembre)
     *(Rule(mode, r'.*', HEADER, rewrite=header) for mode in ('pages', 'admin', 'imports', 'accounts', 'theia')),
     *(Rule(mode, r'.*', HEADER, rewrite=footer) for mode in ('pages', 'admin', 'imports', 'accounts', 'theia')),
+    # Le bouton de menu, qui replie les deux barres sur un téléphone (Lou, 2026-11-23), sur toutes les pages
+    *(Rule(mode, r'.*', HEADER, lines=MENU_BUTTON)
+      for mode in ('pages', 'admin', 'imports', 'accounts', 'theia', 'state')),
     # Les textes corrigés par la relecture, sur toute page et tout courriel de ces modes (2026-11-19 ; pas theia, dont les
     # pages ne montrent aucun texte relu : « Règle sans écart » le 19 novembre, sur bdoh)
     *(Rule(mode, r'.*', REVIEW, rewrite=reviewed) for mode in ('pages', 'admin', 'imports', 'accounts', 'state')),
@@ -763,6 +770,7 @@ RULES = [
     Rule('pages', rf'{ROLE} {OBS}/user/(?:new|edit)', PRIVACY, lines=CONTACT_FIELDS),
     # Le formulaire réaffiché après une inscription refusée
     Rule('accounts', r'inscription, .*', PRIVACY, lines=CONTACT_FIELDS),
+    Rule('admin', rf'(?:{ROLE} {OBS}/admin/utilisateur/(?:create|\d+/edit)|utilisateur : .*)', PRIVACY, lines=ADMIN_CONTACT_FIELDS),
     # L'adresse des conditions d'un observatoire, où l'ancien servait un PDF, renvoie à la page commune à tout BDOH
     # (Lou, 2026-11-15), que « nouveau seul : conditions d'utilisation » lit ; compare.py n'en compare que les deux
     # premières lignes, le statut et le type ou la redirection

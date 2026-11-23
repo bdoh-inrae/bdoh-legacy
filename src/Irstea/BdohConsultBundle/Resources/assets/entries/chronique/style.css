@@ -104,7 +104,10 @@ h3.panel-title i[class^='fam-']{
     font-weight:600;
     margin-right:2px;
 }
-#series-usage .help-block{
-    margin:8px 0 0;
-    font-size:0.9em;
+#series-usage .series-usage-help{
+    cursor:pointer;
+    color:inherit;
+}
+#series-usage .series-usage-line:last-child{
+    margin-bottom:0;
 }

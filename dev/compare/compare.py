@@ -4871,10 +4871,10 @@ ADMINS = {
     # Un compte que l'administrateur peut modifier : pas un compte technique (OTHU en a dès son premier compte)
     'utilisateur': {'table': 'utilisateur', 'state': ACCOUNT_QUERIES['utilisateur'], 'nodelete': True,
                     'pick': "SELECT min(id) FROM utilisateur WHERE roleadmin IS DISTINCT FROM 'TECH'",
-                    'change': {'[telephone]': '0102030405'},
+                    # Ni téléphone ni adresse dans le nouveau (Lou, 2026-11-23) : l'organisme, que les deux ont
+                    'change': {'[organisme]': 'INRAE, RiverLy'},
                     'create': {'[email]': 'compte-admin@example.invalid', '[prenom]': 'Camille', '[nom]': 'Essai',
-                               '[organisme]': 'INRAE', '[categorie]': FIRST, '[telephone]': '0102030405',
-                               '[adresse]': '1 rue de l’Essai'}},
+                               '[organisme]': 'INRAE', '[categorie]': FIRST}},
     'categorie': {'table': 'categorie'},
     'objectifrecherche': {'table': 'objectifrecherche'},
     'typetravaux': {'table': 'typetravaux'},
@@ -5525,8 +5525,7 @@ def run_admin(args):
         if manager:
             lines = send(f'/{manager_slug}/admin/utilisateur/create', '/utilisateur/create',
                          {'[email]': 'cree-par-gestionnaire@example.invalid', '[prenom]': 'Camille', '[nom]': 'Essai',
-                          '[organisme]': 'INRAE', '[categorie]': FIRST, '[telephone]': '0102030405',
-                          '[adresse]': '1 rue de l’Essai'}, 'btn_create_and_edit', who=manager)
+                          '[organisme]': 'INRAE', '[categorie]': FIRST}, 'btn_create_and_edit', who=manager)
             created = query(base, "SELECT count(*) FROM utilisateur WHERE email = 'cree-par-gestionnaire@example.invalid'", NEW_SERVER)[0][0]
             next_status = next((line for line in lines if line.startswith('statut ')), '')
             results['nouveau seul : un gestionnaire crée un compte'] = (

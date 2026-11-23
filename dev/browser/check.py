@@ -289,6 +289,15 @@ def public_steps(s, station, chronique):
     s.step('chronique, fenêtre d’export : CSV et toute la période par défaut', f'/{SLUG}/{station}/{chronique}', export_defaults)
 
     s.step('chronique, taux de remplissage et graphique', f'/{SLUG}/{station}/{chronique}', chart_step)
+
+    # La boîte « Métriques » : ce que comptent ses chiffres, dans une bulle derrière un « ? », au clavier comme au survol
+    # (Lou, 2026-11-23)
+    def metrics_help(page):
+        page.locator('#series-usage .series-usage-help').focus()
+        visible(page, '.popover')
+        assert 'consultation' in page.locator('.popover').inner_text(), page.locator('.popover').inner_text()
+
+    s.step('chronique, boîte Métriques : la bulle du « ? »', f'/{SLUG}/{station}/{chronique}', metrics_help)
     s.step('chronique, graphique dès l’ouverture et bande de toute la chronique', f'/{SLUG}/{station}/{chronique}', overview_step)
 
     def stations_map(page):
@@ -380,6 +389,29 @@ def public_steps(s, station, chronique):
                  lambda item, s: s['observatoire'] == item.get_attribute('data-map-observatoire'))
 
     s.step('carte des stations de l’observatoire', f'/{SLUG}/', observatory_home)
+
+    # Sur un téléphone, les deux barres de l'en-tête se replient sous un bouton de menu (Lou, 2026-11-23)
+    def phone_menu(page):
+        size = page.viewport_size
+        page.set_viewport_size({'width': 390, 'height': 800})
+        try:
+            page.reload(wait_until='networkidle')
+            toggle = page.locator('#header .navbar-toggle')
+            assert toggle.is_visible(), 'pas de bouton de menu'
+            assert not page.locator('#navbar').is_visible(), 'les barres sont ouvertes avant le bouton'
+            toggle.click()
+            visible(page, '#navbar')
+            assert page.locator('#userbar').is_visible(), 'la barre du compte reste fermée'
+            assert toggle.get_attribute('aria-expanded') == 'true', 'aria-expanded ne suit pas'
+            assert page.evaluate('document.documentElement.scrollWidth') <= 390, 'la page déborde en largeur'
+        finally:
+            page.set_viewport_size(size)
+        # Sur un écran large, plus de bouton, les barres ouvertes
+        page.reload(wait_until='networkidle')
+        assert not page.locator('#header .navbar-toggle').is_visible(), 'bouton de menu sur un écran large'
+        assert page.locator('#navbar').is_visible() and page.locator('#userbar').is_visible(), 'barres fermées sur un écran large'
+
+    s.step('en-tête sur un téléphone : le menu replié, puis ouvert', f'/{SLUG}/', phone_menu)
     s.step('carte des stations du portail', '/', portal_home)
 
     def complex_viewer(page):

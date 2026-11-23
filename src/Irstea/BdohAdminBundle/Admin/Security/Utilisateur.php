@@ -13,7 +13,6 @@ use Sonata\AdminBundle\Route\RouteCollectionInterface;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\Extension\Core\Type\DateType;
 use Symfony\Component\Form\Extension\Core\Type\EmailType;
-use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Mime\Email;
 
@@ -78,10 +77,10 @@ class Utilisateur extends Admin
                 'required'      => true,
                 'choice_label'  => $categoryProperty,
                 'query_builder' => $categoryQueryBuilder,
-            ])
-            // Facultatifs, comme à l'inscription (dev/differences.md, « Données personnelles des comptes »)
-            ->add('telephone', TextType::class, ['required' => false])
-            ->add('adresse', TextareaType::class, ['required' => false, 'attr' => ['class' => 'col-md-10', 'style' => 'height: 80px;']]);
+            ]);
+        // Ni téléphone ni adresse, comme à l'inscription depuis le 19 novembre : rien ne s'en sert (Lou, 2026-11-23 :
+        // trop identifiants, sans bénéfice). Les valeurs déjà en base restent, en attendant la déléguée à la protection
+        // des données (dev/differences.md, « Données personnelles des comptes »).
     }
 
     /**

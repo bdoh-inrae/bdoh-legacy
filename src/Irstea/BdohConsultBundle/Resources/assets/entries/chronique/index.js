@@ -18,4 +18,6 @@ $(() => {
     initFillingRates('#fillingRates');
     $('sup.checkpointsInfo').tooltip();
     $('a.viewChroniqueMere').tooltip();
+    // Ce que comptent les chiffres de la boîte « Métriques » : une bulle au survol, au doigt et au clavier
+    $('#series-usage [data-toggle="popover"]').popover({container: 'body'});
 });
