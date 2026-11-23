@@ -219,7 +219,7 @@ cmd_mail() {
     unset user pass
     # La file lit .env à son démarrage
     systemctl try-restart "bdoh-job-worker@$NOM" || true
-    echo "MAILER_DIVERT_TO et MAILER_DSN écrits. Puis : sudo make vm-mail-test NOM=$NOM TO=…"
+    echo "MAILER_DIVERT_TO et MAILER_DSN écrits. Puis : sudo make vm-mail-test, qui doit arriver à MAILER_DIVERT_TO"
 }
 
 # Avant la file de tâches, qui enverra les courriels des tâches restées en attente dans le dump : ce
