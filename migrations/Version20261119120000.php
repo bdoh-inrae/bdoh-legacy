@@ -115,11 +115,20 @@ final class Version20261119120000 extends AbstractMigration
         ['dataset', 'titre', "Suvi d'humidité et de la température du sol à la station de  Portanière", "Suivi d'humidité et de la température du sol à la station de Portanière", 'doi_id IS NULL'],
         ['dataset', 'titreen', 'Hydrometric monitoring in Valecure catchment', 'Hydrometric monitoring in Valescure catchment', 'doi_id IS NULL'],
         ['observatoire', 'titreen', 'French Guyana', 'French Guiana', "slug = 'GUYANE'"],
-        // Logos d'INRAE pris pour logos d'observatoire (Lou, 16 novembre) : INRAE est un partenaire
-        ['observatoire', 'pathlogo', 'uploads/ARC-ISERE-logo.jpg', null, "slug = 'ARC-ISERE'"],
-        ['observatoire', 'pathlogo', 'uploads/HAUTE-LOIRE-logo.jpg', null, "slug = 'HAUTE-LOIRE'"],
-        ['observatoire', 'pathlogo', 'uploads/SITE-ATELIER-ARDIERES-MORCILLE-logo.png', null, "slug = 'SITE-ATELIER-ARDIERES-MORCILLE'"],
+        // Les logos d'INRAE pris pour logos d'observatoire, uniformisés (Lou, 19 et 23 novembre) : un seul, sans la
+        // Marianne, net, tiré du logo vectoriel (self::INRAE_LOGO), au lieu d'un JPEG flou pour deux et du bloc Marianne
+        // et INRAE pour le troisième. Chacun sa copie (postUp) : déposer un nouveau logo supprime le fichier en place
+        // (IrsteaBdohDataBundle::uploadFile), qui ne doit donc pas être partagé.
+        ['observatoire', 'pathlogo', 'uploads/ARC-ISERE-logo.jpg', 'uploads/ARC-ISERE-logo-inrae.png', "slug = 'ARC-ISERE'"],
+        ['observatoire', 'pathlogo', 'uploads/HAUTE-LOIRE-logo.jpg', 'uploads/HAUTE-LOIRE-logo-inrae.png', "slug = 'HAUTE-LOIRE'"],
+        ['observatoire', 'pathlogo', 'uploads/SITE-ATELIER-ARDIERES-MORCILLE-logo.png', 'uploads/SITE-ATELIER-ARDIERES-MORCILLE-logo-inrae.png', "slug = 'SITE-ATELIER-ARDIERES-MORCILLE'"],
     ];
+
+    /** Le logo d'INRAE des observatoires, dans le dépôt (public/images/inrae_logo.svg en PNG, 600 × 205, fond transparent). */
+    private const INRAE_LOGO = 'images/inrae-logo-observatoire.png';
+
+    /** Les copies de ce logo, une par observatoire : `uploads/<slug>-logo-inrae.png`. */
+    private const INRAE_COPY = '~^uploads/[A-Z0-9-]+-logo-inrae\.png$~';
 
     /** Les colonnes uniques : une valeur nouvelle qui y existe déjà laisse la ligne telle quelle. */
     private const UNIQUE = ['typeparametre.nom', 'typeparametre.nomen', 'familleparametres.nom', 'familleparametres.nomen',
@@ -214,6 +223,46 @@ final class Version20261119120000 extends AbstractMigration
             }
         }
         $this->addSql('DROP TABLE ' . self::LOG);
+    }
+
+    /**
+     * Après up(), dans sa transaction : la copie du logo d'INRAE de chaque observatoire qui y mène désormais, là où elle
+     * manque. Une copie qui échoue arrête la migration, et la transaction annule tout : pas de logo sans fichier.
+     */
+    public function postUp(Schema $schema): void
+    {
+        $source = $this->publicDir() . self::INRAE_LOGO;
+        foreach ($this->inraeCopies() as $path) {
+            $target = $this->publicDir() . $path;
+            $this->abortIf(!is_file($target) && !@copy($source, $target), "Logo d'INRAE non copié : $source vers $target");
+        }
+    }
+
+    /** Après down() : les copies qu'aucun observatoire ne cite plus, et rien d'autre. */
+    public function postDown(Schema $schema): void
+    {
+        $cited = $this->inraeCopies();
+        foreach (glob($this->publicDir() . 'uploads/*-logo-inrae.png') ?: [] as $file) {
+            $path = 'uploads/' . basename($file);
+            if (preg_match(self::INRAE_COPY, $path) && !in_array($path, $cited, true)) {
+                unlink($file);
+            }
+        }
+    }
+
+    /** Les logos d'observatoire qui sont une copie du logo d'INRAE. */
+    private function inraeCopies(): array
+    {
+        return array_values(array_filter(
+            $this->connection->fetchFirstColumn('SELECT pathlogo FROM observatoire WHERE pathlogo IS NOT NULL'),
+            fn (string $path) => preg_match(self::INRAE_COPY, $path) === 1
+        ));
+    }
+
+    /** Le dossier public, à côté de migrations/ ; pathlogo y est relatif. */
+    private function publicDir(): string
+    {
+        return \dirname(__DIR__) . '/public/';
     }
 
     /** Les colonnes que up() peut changer dans une table. */
