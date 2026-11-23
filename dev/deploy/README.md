@@ -85,7 +85,7 @@ Les trois partenaires d'OTHU arrivent avec la fusion, après les migrations : le
 sudo make vm-apache
 ```
 
-Écrit le site Apache (`config/deploy/apache-site.conf`), demande le mot de passe d'accès des essais (compte `test`, partagé avec les testeurs ; il se change par `sudo htpasswd /etc/apache2/bdoh-prod.htpasswd test`), et recharge Apache. Le certificat est celui, auto-signé, du paquet `ssl-cert`, tant que l'infra n'en fournit pas.
+Écrit le site Apache (`config/deploy/apache-site.conf`), demande le mot de passe d'accès des essais (compte `test`, partagé avec les testeurs ; il se change par `sudo htpasswd /etc/apache2/bdoh-prod.htpasswd test`), et recharge Apache. Le certificat est celui, auto-signé, du paquet `ssl-cert`, jusqu'à ce que le port 443 soit ouvert à Internet et que le nom mène à la VM : celui du nom public se fait alors sur la VM, par `mod_md` (« À l'ouverture au public »).
 
 ## 4. Courriels, file de tâches, sauvegardes
 

@@ -26,7 +26,7 @@ L'ordre, décidé par Lou le 23 novembre : la version du pré-essai (la 0.9.1), 
 
 - Les questions de la relecture qui restent ([dev/plans/2026-11-19_review.md](dev/plans/2026-11-19_review.md), "Questions pour Lou", 2 à 4).
 - Sur la VM : la réinstaller avec Claude, puis installer chaque version (`sudo make vm-update V=…`), mesurer les exports (`dev/deploy/README.md`, "Mesurer les exports"), restaurer une sauvegarde dans une base à part (même fichier, section 4), garder un point zéro de la base avant les essais, puis `make test-kit` et l'envoi ([dev/test-kit/README.md](dev/test-kit/README.md)).
-- Avec l'infra : le port 443 ouvert à Internet, la nouvelle adresse IP dans le DNS, le certificat ([dev/plans/2026-10-26_deployment.md](dev/plans/2026-10-26_deployment.md), Suivi). Les autres réglages de la VM : même plan, "La machine" et "Après".
+- Avec l'infra : le port 443 ouvert à Internet, la nouvelle adresse IP dans le DNS. Le certificat, on le fait nous-mêmes ensuite, sur la VM, par `mod_md` (Let's Encrypt) ([dev/plans/2026-10-26_deployment.md](dev/plans/2026-10-26_deployment.md), Suivi). Les autres réglages de la VM : même plan, "La machine" et "Après".
 - Les essais à l'œil sur la VM : [dev/test-kit/lou-checklist.md](dev/test-kit/lou-checklist.md).
 - Ce que `listes.inrae.fr` permet aux propriétaires de listes (point 5 du plan de la réouverture).
 - OTHU et OHGE : réunir leurs données dans l'instance, et faire mener `data.othu.org` aux mêmes adresses de BDOH ([dev/plans/2026-11-13_othu-merge.md](dev/plans/2026-11-13_othu-merge.md)).
