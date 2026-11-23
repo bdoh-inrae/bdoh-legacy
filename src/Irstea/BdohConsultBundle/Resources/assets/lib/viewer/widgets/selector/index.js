@@ -126,8 +126,9 @@ define([
             _setStations(stations) {
                 const list = this._stationList;
                 list.empty();
+                // Les noms et les codes, écrits dans l'administration, s'échappent : la liste est construite en HTML
                 $.each(stations, (id, station) => {
-                    $(`<li class="station"><strong>${station.name}</strong> - ${station.code}</li>`)
+                    $(`<li class="station"><strong>${_.escape(station.name)}</strong> - ${_.escape(station.code)}</li>`)
                         .toggleClass('has-measures', station.hasMeasures)
                         .data('station', station)
                         .appendTo(list);
@@ -195,8 +196,8 @@ define([
                 }
 
                 $.each(chroniques, (id, chronique) => {
-                    const widget = $(`<li class="chronique"><strong>${chronique}</strong> - ${ 
-                        chronique.paramName} [${chronique.unitLabel}]</li>`)
+                    const widget = $(`<li class="chronique"><strong>${_.escape(chronique)}</strong> - ${
+                        _.escape(chronique.paramName)} [${_.escape(chronique.unitLabel)}]</li>`)
                         .data('chronique', chronique)
                         .toggleClass('has-measures', chronique.hasMeasures)
                         .appendTo(list);
@@ -214,8 +215,8 @@ define([
                 const list = this._selectionList;
                 list.empty();
                 $.each(chroniques, (id, chronique) => {
-                    const c = $(`<li class="chronique"><button class="close pull-right">&times;</button>${ 
-                        chronique} [${chronique.unitLabel}]</li>`)
+                    const c = $(`<li class="chronique"><button class="close pull-right">&times;</button>${
+                        _.escape(chronique)} [${_.escape(chronique.unitLabel)}]</li>`)
                         .data('chronique', chronique)
                         .appendTo(list);
                 });

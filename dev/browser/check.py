@@ -677,11 +677,34 @@ def main():
         j.every_admin_form(managing, SLUG)
         j.every_admin_form(admin_session, SLUG)
 
-        # La bulle du titre d'une chronique, dans le visualiseur, est en HTML (pour le saut de ligne de sa traduction) :
-        # le nom de la station s'y échappe (y-axis/index.js ; dev/local/security.md). En dernier, la base étant changée.
+        # Le visualiseur construit en HTML la liste des stations de sa fenêtre de choix, et la bulle du titre d'une
+        # chronique (pour le saut de ligne de sa traduction) : le nom de la station s'y échappe (selector/index.js,
+        # y-axis/index.js ; dev/local/security.md). Il ne lit pas son adresse (son état est en commentaire depuis
+        # l'ancien, « marche trop mal ») : la chronique s'y choisit comme le ferait quelqu'un. En dernier, la base
+        # étant changée.
         one(f"UPDATE station SET nom = nom || ' <i>essai</i>' WHERE code = '{station_code}' RETURNING id")
 
         def escaped_title(page):
+            page.locator('.set-min').first.click()
+            page.locator('.set-max').nth(1).click()
+            page.locator('a.submit.validated').first.click()
+            visible(page, 'button.select', timeout=60000)
+            page.locator('button.select').first.click()
+            dialog = '.selector.modal.in'
+            station = page.locator(f'{dialog} .stations li.station.has-measures', has_text=f' - {station_code}').first
+            station.wait_for(timeout=60000)
+            assert '<i>essai</i>' in station.inner_text(), f'liste des stations : {station.inner_text()}'
+            assert page.locator(f'{dialog} .stations li.station i').count() == 0, 'le nom rendu en HTML dans la liste'
+            station.click()
+            series = page.locator(f'{dialog} .chroniques li.chronique.has-measures').first
+            series.wait_for()
+            # Glisser la chronique dans la sélection, par petits pas : jQuery UI suit les mouvements de la souris
+            series.hover()
+            page.mouse.down()
+            target = page.locator(f'{dialog} .selection .list').bounding_box()
+            page.mouse.move(target['x'] + target['width'] / 2, target['y'] + 10, steps=20)
+            page.mouse.up()
+            page.locator(f'{dialog} button.confirm').click()
             visible(page, '.chronique .title', timeout=60000)
             page.wait_for_load_state('networkidle')
             titles = page.locator('.chronique .title').evaluate_all(
@@ -690,8 +713,8 @@ def main():
             assert not any('<i>essai' in title for title in titles), f'bulle en HTML : {titles}'
             assert page.locator('.tooltip i:text-is("essai")').count() == 0, 'le nom rendu en HTML'
 
-        anonymous.step('visualiseur, nom de station échappé dans la bulle du titre',
-                       f'/{SLUG}/viewer#2024010100000020250101000000/{chronique_id}|', escaped_title)
+        anonymous.step('visualiseur, nom de station échappé dans la liste et dans la bulle du titre',
+                       f'/{SLUG}/viewer', escaped_title)
         browser.close()
 
     failed = [r for r in results if r[1]]

@@ -64,20 +64,20 @@ def new_account(trip):
     email = f'parcours-{int(time.time())}@example.invalid'
     field = lambda page, name: page.locator(f'[name$="[{name}]"]').first
 
-    def fill_form(page, phone):
-        field(page, 'email').fill(email)
+    # Ni téléphone ni adresse depuis le 19 novembre (dev/plans/2026-11-16_reopening.md, point 4) : le refus vient d'une
+    # adresse déjà prise, que le serveur seul peut voir
+    def fill_form(page, address):
+        field(page, 'email').fill(address)
         field(page, 'prenom').fill('Camille')
         field(page, 'nom').fill('Parcours')
         field(page, 'organisme').fill('INRAE')
-        field(page, 'telephone').fill(phone)
-        field(page, 'adresse').fill('Lyon')
         field(page, 'categorie').select_option(index=1)
 
     def refused_then_created(page):
-        fill_form(page, '01')
+        fill_form(page, trip.one('SELECT email FROM utilisateur ORDER BY id LIMIT 1'))
         submit(page)
-        assert 'user/new' in page.url and page.locator('.has-error, .help-block, .form-error').count() > 0, 'le téléphone trop court passe'
-        fill_form(page, '0102030405')
+        assert 'user/new' in page.url and page.locator('.has-error, .help-block, .form-error').count() > 0, "l'adresse déjà prise passe"
+        fill_form(page, email)
         submit(page)
         assert '/login' in page.url, f'pas de renvoi à la connexion : {page.url}'
         assert 'e-mail vient de vous' in notice(page) or 'e-mail' in notice(page), f'pas de message : {notice(page)[:200]}'
@@ -106,9 +106,9 @@ def new_account(trip):
     s.step('le même lien ne sert pas deux fois', None, link_only_once)
 
     def edit_account(page):
-        field(page, 'telephone').fill('0607080910')
+        field(page, 'organisme').fill('INRAE, RiverLy')
         submit(page)
-        assert trip.one(f"SELECT telephone FROM utilisateur WHERE email = '{email}'") == '0607080910', 'téléphone non enregistré'
+        assert trip.one(f"SELECT organisme FROM utilisateur WHERE email = '{email}'") == 'INRAE, RiverLy', 'organisme non enregistré'
 
     s.step('modifier son compte', f'/{slug}/user/edit', edit_account)
 

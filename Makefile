@@ -54,7 +54,7 @@ composer: ## Lance Composer pour le nouveau BDOH : make composer ARGS="require u
 phpstan: ## Analyse statique du nouveau BDOH
 	docker exec bdoh-app php -d memory_limit=-1 vendor/bin/phpstan analyse --no-progress
 
-browser-check: ## Essaie l'interface dans un navigateur (.python_env, dev/browser/README.md) : make browser-check [ARGS="--only TEXTE"]
+browser-check: mail-start ## Essaie l'interface dans un navigateur (.python_env, dev/browser/README.md) : make browser-check [ARGS="--only TEXTE"]
 	.python_env/bin/python dev/browser/check.py $(ARGS)
 
 test-kit: ## Prépare les tableurs et les messages des essais, par observatoire : make test-kit [ARGS="--site … --deadline …"]
