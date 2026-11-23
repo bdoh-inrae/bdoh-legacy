@@ -14,7 +14,7 @@ La réouverture de BDOH, mi-décembre, après un pré-essai par deux gestionnair
 
 Les numéros renvoient aux points du plan de la réouverture.
 
-Codés depuis la 0.8.0 (`CHANGELOG.md`, "Non publié") : les décisions du 19 novembre, les trois défauts du JavaScript, l'export (deux README, la colonne `parameter`, la date de mise à jour) et les statistiques d'usage, à revoir avec Lou sur les captures (plan de la réouverture, point 6, et "Questions pour Lou").
+Publiés dans la 0.9.0 (`CHANGELOG.md`) : les décisions du 19 novembre, les trois défauts du JavaScript, l'export (deux README, la colonne `parameter`, la date de mise à jour) et les statistiques d'usage. Les statistiques restent à revoir avec Lou sur les captures (plan de la réouverture, point 6, et "Questions pour Lou").
 
 1. La migration de la relecture du contenu, sur la branche `content-review`, à fusionner sur l'accord de Lou ; puis les logos des partenaires ([dev/plans/2026-11-19_review.md](dev/plans/2026-11-19_review.md)).
 2. Les listes de diffusion (5), une fois connu ce que permet `listes.inrae.fr`.

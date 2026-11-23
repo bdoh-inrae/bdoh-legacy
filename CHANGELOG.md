@@ -4,9 +4,13 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/). Numéros de v
 
 ## Non publié
 
+## 0.9.0 - 2026-11-23
+
+Les statistiques d'usage de chaque chronique et de chaque observatoire, une page claire pour qui arrive sur une chronique réservée, deux README et le code du paramètre dans chaque export, une inscription sans téléphone ni adresse.
+
 ### Ajouté
 
-- Les statistiques d'usage, la contrepartie de l'ouverture des données. La page de chaque chronique dit combien de fois elle a été consultée et téléchargée. Un compteur des consultations suit les règles de COUNTER (un visiteur une fois par heure, sans les robots), sans garder de donnée personnelle ni poser de cookie. Une page "Statistiques", pour qui voit l'historique, donne la vie de l'observatoire par année et par chronique, en tableaux téléchargeables en CSV ; pour qui gère tous les observatoires, celle de tout BDOH.
+- Les statistiques d'usage, la contrepartie de l'ouverture des données. La page de chaque chronique a une boîte "Métriques" : combien de fois elle a été consultée et téléchargée, chaque chiffre depuis sa date de départ. Un compteur des consultations suit les règles de COUNTER (un visiteur une fois par heure, sans les robots), sans garder de donnée personnelle ni poser de cookie. Une page "Statistiques", pour qui voit l'historique, donne la vie de l'observatoire par année et par chronique, en tableaux téléchargeables en CSV ; pour qui gère tous les observatoires, celle de tout BDOH.
 
 ### Modifié
 
@@ -21,7 +25,7 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/). Numéros de v
 
 ### Corrigé
 
-- Trois textes saisis dans l'administration (nom d'une station, nom d'une chronique) sont échappés là où une bulle ou une page les affiche en HTML.
+- Des textes saisis dans l'administration (nom d'une station, nom d'une chronique) sont échappés là où une bulle, une page ou la fenêtre qui choisit les chroniques du visualiseur les affiche en HTML.
 - L'adresse d'une chronique inconnue, ou sous une station inconnue, répond "page introuvable" (404) au lieu d'une erreur interne.
 
 ## 0.8.0 - 2026-11-19

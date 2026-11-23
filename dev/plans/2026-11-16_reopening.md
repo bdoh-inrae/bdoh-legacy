@@ -2,7 +2,7 @@
 
 État : en cours, ouvert le 2026-11-16. Le plan que Lou a rapporté de son point du 16 novembre avec sa responsable : plus de temps pour les gestionnaires, plus d'accompagnement de l'ouverture des données, une réouverture mi-décembre. Il prend la suite de [2026-11-16_before-kit.md](2026-11-16_before-kit.md), terminé avec la 0.7.1 (publiée et installée sur la VM, au nom `bdoh.inrae.fr`) ; les décisions de ses points 10 (relecture du contenu) et 12 (photographies) y restent, leur réalisation se suit ici (point 7).
 
-Publiés dans la 0.8.0 : les points 1 à 4, l'unité du point 2d, le point 7 bis et la relecture des textes (point 7), toutes les passes comprises (Suivi). Ce qui attendait Lou est tranché le 19 novembre, chaque décision à son point. L'ordre de la suite : `ROADMAP.md`, « À faire ».
+Publiés dans la 0.8.0 : les points 1 à 4, l'unité du point 2d, le point 7 bis et la relecture des textes (point 7), toutes les passes comprises (Suivi). Ce qui attendait Lou est tranché le 19 novembre, chaque décision à son point. Publiés dans la 0.9.0 : ces décisions, les trois défauts du JavaScript (point 9), l'export (2c, 2d, la date de mise à jour du point 4) et les statistiques (6). L'ordre de la suite : `ROADMAP.md`, « À faire ».
 
 ## Le calendrier (Lou, 16 novembre)
 
@@ -175,10 +175,9 @@ Celles qui s'accumulent pendant que Claude avance seul (Lou, 19 novembre au soir
 
 ## Pour reprendre
 
-Après la session du 19 novembre au soir (fusion 7e60a08) :
-1. Lire le résultat de la série de passes lancée après la fusion (rapports dans `../bdoh_reference/compare/`, du 19 au soir ou du 20, `pages` à `theia`, puis `make browser-check`). Un mode qui échoue : lire en tête de chaque fichier de diff les lignes qu'aucune règle n'admet ; les nouveautés de la fusion sont la colonne `parameter`, les deux README, `updated`, la ligne des chiffres d'une chronique (`USAGE_BLOCK`), l'entrée "Statistiques" du menu (`STATISTICS_MENU`), et les cas "nouveau seul : statistiques", "… transformation enregistrée, nom échappé", "… filles échappées dans la bulle" de `state`.
-2. Si tout passe et que ce n'est pas fait : pousser `main`, publier la 0.9.0 ("Non publié" devient la 0.9.0, tag `v0.9.0`), pour le pré-essai du lundi 24 ; Lou l'installe (`sudo make vm-update V=v0.9.0`), la migration du compteur s'applique avec. Retirer la copie de travail : `git worktree remove ../bdoh-legacy-exports` et `git branch -d exports-readme`.
-2b. Après la passe complète d'une version, pas avant : la migration de la relecture (`content-review`) attend l'accord de Lou sur ses captures.
+Après la session du 23 novembre (la 0.9.0, Suivi) :
+1. La VM est neuve et vide depuis le 23 novembre (`dev/plans/2026-10-26_deployment.md`, Suivi) : la réinstaller à la 0.9.0, depuis la section 0 de `dev/deploy/README.md`, OTHU compris (section 2 bis), une commande à la fois avec Lou. Puis le vrai site essayé depuis l'extérieur, et, s'il est coupé en route, le message à l'infra (même Suivi).
+2. La migration de la relecture (`content-review`) : la reprendre pour la décision de Lou sur les logos d'INRAE ([2026-11-19_review.md](2026-11-19_review.md), "Décision de Lou, 19 novembre au soir"), refaire ses captures, puis l'accord de Lou avant de la fusionner.
 3. Montrer à Lou, en captures, la ligne des chiffres d'une chronique et la page "Statistiques" (point 6, conception à revoir avec Lou), et les "Questions pour Lou" ci-dessus.
 
 Méthode : celle de [2026-11-16_before-kit.md](2026-11-16_before-kit.md), « Méthode » (les passes de `compare.py` à la fin, une fois les changements faits ; entre-temps, les tests de l'outil, `lint:twig`, `lint:container`, des captures ). Chaque écart avec l'ancien s'inscrit dans `dev/differences.md` et, s'il est admis, dans `dev/compare/expected.py`. Le poste a dans `public/uploads/` les images de la production, pour les captures des accueils : les mettre de côté le temps de chaque passe d'`admin`, puis les remettre (copies dans `../bdoh_reference/uploads/`).
@@ -189,6 +188,7 @@ L'ordre de la suite, et ce que fait Lou : `ROADMAP.md`, « À faire ».
 
 ## Suivi
 
+- 2026-11-23, **la 0.9.0**, après une reprise qui a vérifié la fin de la session du 19 au soir. Restaient trois trous de l'outil, aucun de BDOH : `pages` avait 5 cas différents, les clés des statistiques dans `/translations/messages.js`, qu'aucune règle n'admettait ; `make browser-check`, dont le bilan n'avait pas été gardé, échouait sur deux étapes (le parcours d'inscription remplissait encore le téléphone et l'adresse, et le cas de la bulle du titre, ajouté le 19, n'avait jamais pu passer : il demandait la chronique par l'adresse du visualiseur, qui ne la lit pas). En réécrivant ce cas, trouvé et corrigé un défaut de même nature dans la fenêtre de choix du visualiseur (`dev/local/security.md`, 23 novembre). Le retour arrière de la migration du compteur éprouvé sur la base complète anonymisée, dans les deux sens. Sur la remarque de Lou, les chiffres d'une chronique passent dans une boîte "Métriques" en haut à droite, chacun avec sa date de départ (captures : `../bdoh_reference/browser/reopening/metrics/`). Passes : `pages` 492/0/0/1101/0, `state` 100/0/0/2/0, `make browser-check` 79 étapes sans problème ; les autres modes sur ef55707 (19 au soir), que ces changements ne touchent pas : `exports` 40/0/0/384/0, `queue` 11/0/0/0/0, `imports` 68/0/0/51/0, `accounts` 49/0/0/16/0, `admin` 114/0/0/564/0, `theia` 19/0/0/19/0.
 - 2026-11-19, nuit, **les décisions du 19 novembre codées** (`ROADMAP.md`, "À faire", 1), dans une session en autonomie (Lou : avancer sans attendre, les questions au fil de l'eau dans "Questions pour Lou") :
   - point 8, `kit.py` : "fermée" reste le mot (Lou, le soir), sans relance annoncée, aux guillemets droits ; une chronique fermée se dit réservée aux membres de l'observatoire (31cdc39) ;
   - point 2b : les quatre seuils dans l'environnement (`EXPORT_READ_WITHOUT_ACCOUNT`, `EXPORT_READ_MAX`, `EXPORT_COMPUTED_WITHOUT_ACCOUNT`, `EXPORT_COMPUTED_MAX`), le second des valeurs calculées à 1 200 000, et un cas de `state` à la limite de l'ancien, acceptée avec un compte (f304bc7) ;
