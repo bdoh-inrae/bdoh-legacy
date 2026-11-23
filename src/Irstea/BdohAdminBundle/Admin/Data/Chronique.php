@@ -260,8 +260,10 @@ class Chronique extends Admin
             ->add('minimumValide', PreciseNumberType::class, ['required' => false])
             ->add('maximumValide', PreciseNumberType::class, ['required' => false])
             ->add('unite', null, ['required' => true, 'help' => $this->getUniteHelp($translator), 'help_html' => true])
+            // Triés par identifiant, l'ordre de leur création : sans tri, l'ordre suivait la place des lignes dans la
+            // table, qu'une mise à jour change (dev/differences.md, "Listes sans tri")
             ->add('producteur', ModelType::class, ['btn_add' => $translator->trans('button.add'),
-                'required'                                      => false, 'query' => $repoPartenaire->createQueryBuilder(), ]);
+                'required'                                      => false, 'query' => $repoPartenaire->createQueryBuilder()->orderBy('p.id'), ]);
 
         // Check whether the current "chronique"'s measures contain at least one
         // "value limit" (quality order = 600 or 700)

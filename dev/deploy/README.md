@@ -52,21 +52,14 @@ Reste `MAILER_ALLOWED_RECIPIENTS` (`sudo nano .env`) : vide pour les essais de L
 
 Le site relit `.env` à chaque requête : pas de cache à vider. La file de tâches, elle, le lit à son démarrage : après un changement, `sudo systemctl restart bdoh-job-worker@prod` (sinon, elle le reprend à sa relance d'heure en heure).
 
-Les dumps bruts et les fichiers déposés se copient depuis le poste dans `/var/backups/bdoh-sources/`, que `vm-deps` a créé pour le compte d'administration (pas dans son dossier personnel : `/home` fait 1 Go). Le dossier passe ensuite à root, les dumps bruts contenant les comptes :
+Les dumps bruts et les fichiers déposés se copient depuis le poste dans `/var/backups/bdoh-sources/`, que `vm-deps` a créé pour le compte d'administration (pas dans son dossier personnel : `/home` fait 1 Go) : les deux dumps, et les deux archives de `../bdoh_reference/uploads/`, `bdoh-uploads-prod.tar.gz` (les logos et images de la production) et `bdoh-uploads-partners.tar.gz` (les logos des partenaires ajoutés le 23 novembre, avec leurs sources, hors du dépôt : `dev/decisions.md`, « Logos des partenaires hors du dépôt »). Le dossier passe ensuite à root, les dumps bruts contenant les comptes :
 
 ```
 sudo chown -R root:root /var/backups/bdoh-sources
 sudo make vm-db DUMP=/var/backups/bdoh-sources/….dump
 ```
 
-`vm-db` restaure le dump dans une base neuve (`--locale=en_US.UTF-8`), la donne au rôle de l'instance (`dev/reference/own-by-bdoh.sql`), applique les migrations entre deux contrôles, et pour la production déballe les logos et images (`bdoh-uploads-prod.tar.gz`). À lire à la fin : `inspect.sql` ne change que sur la ligne « séquences en retard », qui passe de 7 à 0 ; l'empreinte ne lit que les mesures (`dev/reference/fingerprint.sql`), que les migrations ne touchent pas : aucune chronique ne doit y être listée. C'est ce qu'a donné la production le 10 novembre.
-
-Si l'archive des logos n'était pas encore dans `/var/backups/bdoh-sources/`, la déballer ensuite, dans `/var/www/bdoh-prod` :
-
-```
-sudo tar -xzf /var/backups/bdoh-sources/bdoh-uploads-prod.tar.gz --strip-components=1 -C public web/uploads
-sudo chown -R www-data:www-data public/uploads
-```
+`vm-db` refuse de commencer sans les deux archives. Il restaure le dump dans une base neuve (`--locale=en_US.UTF-8`), la donne au rôle de l'instance (`dev/reference/own-by-bdoh.sql`), déballe les deux archives dans `public/uploads/`, puis applique les migrations entre deux contrôles : celle des logos des partenaires s'arrête si l'un de ses fichiers manque, et dit combien elle en a posé (31). À lire à la fin : `inspect.sql` ne change que sur la ligne « séquences en retard », qui passe de 7 à 0 ; l'empreinte ne lit que les mesures (`dev/reference/fingerprint.sql`), que les migrations ne touchent pas : aucune chronique ne doit y être listée. C'est ce qu'a donné la production le 10 novembre.
 
 ## 2 bis. OTHU, un observatoire de la production
 
@@ -83,6 +76,8 @@ Pour revenir en arrière, en 4 minutes sur le poste, tant que personne n'a écri
 ```
 sudo make vm-unmerge-othu
 ```
+
+Les trois partenaires d'OTHU arrivent avec la fusion, après les migrations : leurs logos se déposent dans l'administration (Administration, Partenaires, chacun son formulaire), depuis le poste, `../bdoh_reference/review/logos/othu-by-hand/` (sources dans `SOURCES.md`, à côté).
 
 ## 3. Le site
 
@@ -129,6 +124,13 @@ sudo make vm-update V=vX.Y.Z
 ```
 
 La mise à jour part du script de la version installée : depuis la 0.7.0, elle demande encore `sudo make vm-update NOM=prod V=…`, une dernière fois ; ensuite, `NOM` n'est plus à donner.
+
+Une instance installée avant la 0.9.1 qui passe à la 0.9.1 ou après : déballer d'abord les logos des partenaires, que sa migration demande (section 2), dans `/var/www/bdoh-prod` :
+
+```
+sudo tar -xzf /var/backups/bdoh-sources/bdoh-uploads-partners.tar.gz --strip-components=1 -C public web/uploads
+sudo chown -R www-data:www-data public/uploads
+```
 
 Chaque étape s'annonce à l'heure ; la sauvegarde et les deux contrôles de la base, muets, prennent quelques minutes chacun sur la base complète. Arrête la file, sauvegarde la base sous un nom à part (`/var/backups/bdoh-kept/prod-avant-…`, que la sauvegarde de la nuit ne vide pas ; jusqu'à la 0.6.0, `/var/backups/bdoh/`, vidé au bout de 8 jours), passe au tag, puis laisse la suite au script de la version installée : il reconstruit, applique les migrations entre deux contrôles, recharge Apache et relance la file. Les thèmes compilés se recompilent avec la nouvelle version. Pour revenir en arrière : la version précédente par la même commande, et, si les migrations ont touché la base, ce dump.
 

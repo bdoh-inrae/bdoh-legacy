@@ -145,6 +145,11 @@ cmd_db() {
     instance
     [[ -f ${DUMP:-} ]] || die "Préciser DUMP= : le dump brut de l'instance, dans $sources"
     [[ -f .env ]] || die "D'abord : make vm-env"
+    # Les logos et images de la production, et les logos des partenaires que cite une migration (Version20261123220000)
+    local archive archives=(bdoh-uploads-prod.tar.gz bdoh-uploads-partners.tar.gz)
+    for archive in "${archives[@]}"; do
+        [[ -f $sources/$archive ]] || die "D'abord : copier $archive dans $sources (dev/deploy/README.md, section 2)"
+    done
     [[ -z $(pg -Atc "SELECT 1 FROM pg_database WHERE datname = '$base'") ]] \
         || die "La base $base existe déjà : rien n'est restauré"
     runuser -u postgres -- createdb -T template0 -E UTF8 --locale=en_US.UTF-8 "$base"
@@ -158,20 +163,18 @@ cmd_db() {
     pg -d "$base" -qc 'VACUUM ANALYZE'
     step "Contrôle de la base avant les migrations (comptes et empreinte des mesures, quelques minutes)"
     controle avant
+    # Avant les migrations : celle des logos des partenaires s'arrête sur un logo sans fichier
+    for archive in "${archives[@]}"; do
+        tar -xzf "$sources/$archive" --strip-components=1 -C public web/uploads
+    done
+    chown -R www-data:www-data public/uploads
+    echo "Logos et images déballés : $(find public/uploads -type f | wc -l) fichiers."
     step "Migrations"
     console doctrine:migrations:migrate
     console cache:clear
     step "Contrôle de la base après les migrations (quelques minutes)"
     controle apres
     changes
-    # Les logos et images de la production (OTHU n'en a pas)
-    if [[ $NOM == prod && -f $sources/bdoh-uploads-prod.tar.gz ]]; then
-        tar -xzf "$sources/bdoh-uploads-prod.tar.gz" --strip-components=1 -C public web/uploads
-        chown -R www-data:www-data public/uploads
-        echo "Logos et images déballés : $(find public/uploads -type f | wc -l) fichiers."
-    elif [[ $NOM == prod ]]; then
-        echo "Pas de $sources/bdoh-uploads-prod.tar.gz : logos et images à déballer à part (dev/deploy/README.md)."
-    fi
     echo "Base $base prête."
 }
 

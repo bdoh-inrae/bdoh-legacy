@@ -6,7 +6,7 @@ Code de référence : commit `523cf8e32` de l'ancien dépôt (version 5.0.3, fé
 
 ## En cours
 
-La réouverture de BDOH, mi-décembre, après un pré-essai par deux gestionnaires et deux semaines d'essais par tous et toutes ; les essais deviennent la production s'ils passent. Le calendrier, chaque point, ce qui est décidé et son avancée : [dev/plans/2026-11-16_reopening.md](dev/plans/2026-11-16_reopening.md). La VM est neuve et vide depuis le 23 novembre, à réinstaller ([dev/plans/2026-10-26_deployment.md](dev/plans/2026-10-26_deployment.md), Suivi). Ce qui est fait, version par version : `CHANGELOG.md`.
+La réouverture de BDOH, mi-décembre, après un pré-essai par deux gestionnaires et deux semaines d'essais par tous et toutes ; les essais deviennent la production s'ils passent. Le calendrier, chaque point, ce qui est décidé et son avancée : [dev/plans/2026-11-16_reopening.md](dev/plans/2026-11-16_reopening.md). La VM est neuve et vide depuis le 23 novembre, à réinstaller à la 0.9.1 ([dev/plans/2026-10-26_deployment.md](dev/plans/2026-10-26_deployment.md), Suivi). Ce qui est fait, version par version : `CHANGELOG.md`.
 
 ## À faire
 
@@ -14,14 +14,13 @@ La réouverture de BDOH, mi-décembre, après un pré-essai par deux gestionnair
 
 Les numéros renvoient aux points du plan de la réouverture.
 
-L'ordre, décidé par Lou le 23 novembre : la version du pré-essai (`CHANGELOG.md`, "Non publié" : la relecture du contenu, les logos d'INRAE uniformisés, l'en-tête sur un téléphone ; et, le soir, les logos des partenaires), la VM réinstallée avec elle, le pré-essai, puis les listes de diffusion, sauf point plus urgent.
+L'ordre, décidé par Lou le 23 novembre : la version du pré-essai (la 0.9.1), la VM réinstallée avec elle, le pré-essai, puis les listes de diffusion, sauf point plus urgent.
 
-1. Les logos des partenaires, dans la version du pré-essai ([dev/plans/2026-11-19_review.md](dev/plans/2026-11-19_review.md), "Logos des partenaires").
-2. La VM réinstallée, une commande à la fois avec Lou, depuis la section 0 de `dev/deploy/README.md`, OTHU compris ; puis le vrai site essayé depuis l'extérieur, et le message à l'infra s'il est coupé en route.
-3. Les retours du pré-essai, puis ceux des essais. Les statistiques, Lou les regarde sur la VM, en gestionnaire.
-4. Les listes de diffusion (5), une fois connu ce que permet `listes.inrae.fr`.
-5. Une relecture de sécurité et de robustesse de ce que le portage a ajouté (Lou, 23 novembre : dans un futur plus ou moins proche) : le compteur des consultations et la page des statistiques, l'export réglé sur son volume, les favoris, la connexion par lien, et tout texte de la base que le JavaScript insère en HTML. Quatre défauts de cette dernière sorte ont été trouvés et corrigés les 19 et 23 novembre (`dev/local/security.md`) ; la relecture du 15 novembre laissait à lire ce que BDOH passe à jQuery UI, DataTables, Select2 et aux réponses insérées par `.html()`.
-6. La validation, pendant les essais : les versions correctives de Doctrine, une passe de couverture, les invariants, les pannes provoquées, une relecture du code que la comparaison n'exécute pas, puis le code gelé et tous les modes sur la base complète et sur OTHU ([dev/plans/2026-11-04_validation.md](dev/plans/2026-11-04_validation.md)).
+1. La VM réinstallée à la 0.9.1, une commande à la fois avec Lou, depuis la section 0 de `dev/deploy/README.md` (les deux dumps et les deux archives de `../bdoh_reference/uploads/` à copier), OTHU compris, avec les logos de ses trois partenaires à déposer (section 2 bis) ; puis le vrai site essayé depuis l'extérieur, et le message à l'infra s'il est coupé en route.
+2. Les retours du pré-essai, puis ceux des essais. Les statistiques, Lou les regarde sur la VM, en gestionnaire.
+3. Les listes de diffusion (5), une fois connu ce que permet `listes.inrae.fr`.
+4. Une relecture de sécurité et de robustesse de ce que le portage a ajouté (Lou, 23 novembre : dans un futur plus ou moins proche) : le compteur des consultations et la page des statistiques, l'export réglé sur son volume, les favoris, la connexion par lien, et tout texte de la base que le JavaScript insère en HTML. Quatre défauts de cette dernière sorte ont été trouvés et corrigés les 19 et 23 novembre (`dev/local/security.md`) ; la relecture du 15 novembre laissait à lire ce que BDOH passe à jQuery UI, DataTables, Select2 et aux réponses insérées par `.html()`.
+5. La validation, pendant les essais : les versions correctives de Doctrine, une passe de couverture, les invariants, les pannes provoquées, une relecture du code que la comparaison n'exécute pas, puis le code gelé et tous les modes sur la base complète et sur OTHU ([dev/plans/2026-11-04_validation.md](dev/plans/2026-11-04_validation.md)).
 
 ### Ce que fait Lou
 

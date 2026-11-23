@@ -394,6 +394,32 @@ FOOTER_LINKS = {
            'A /legal#accessibilite', 'T Accessibility: not compliant', f'A {SOURCE}', 'T Source code (AGPL-3.0)'],
 }
 
+PRODUCERS = 'I select s<uniqid>[producteur]'
+OPTION = re.compile(r'O (\d+)(?: selected)?')
+
+
+def producers(lines):
+    """La liste des producteurs du formulaire d'une chronique, dans l'ordre des identifiants, où le nouveau la trie
+    (2026-11-23) : l'ancien la rend dans l'ordre des lignes de la table, qu'une mise à jour change ("Listes sans
+    tri"). Chaque option, son identifiant puis son nom s'il en a un ; l'option vide reste en tête."""
+    out, i = [], 0
+    while i < len(lines):
+        out.append(lines[i])
+        i += 1
+        if lines[i - 1] != PRODUCERS:
+            continue
+        head, options = [], []
+        while i < len(lines) and (lines[i] == 'O' or OPTION.fullmatch(lines[i])):
+            option = [lines[i]]
+            i += 1
+            if i < len(lines) and lines[i].startswith('T '):
+                option.append(lines[i])
+                i += 1
+            (options if option[0] != 'O' else head).append(option)
+        options.sort(key=lambda option: int(OPTION.fullmatch(option[0]).group(1)))
+        out += [line for option in head + options for line in option]
+    return out
+
 
 def footer(lines):
     """Le pied de page de l'ancien comme le nouveau le montre (Lou, 2026-11-16) : la ligne des liens de tout BDOH
@@ -668,6 +694,8 @@ RULES = [
     # (theia aussi, pour la page du contrôle des fiches, qu'il n'avait pas rejouée depuis le 11 novembre)
     *(Rule(mode, r'.*', HEADER, rewrite=header) for mode in ('pages', 'admin', 'imports', 'accounts', 'theia')),
     *(Rule(mode, r'.*', HEADER, rewrite=footer) for mode in ('pages', 'admin', 'imports', 'accounts', 'theia')),
+    # La liste des producteurs du formulaire d'une chronique, triée par le nouveau (2026-11-23)
+    Rule('admin', r'.*', 'Listes sans tri', rewrite=producers),
     # Le bouton de menu, qui replie les deux barres sur un téléphone (Lou, 2026-11-23), sur toutes les pages
     *(Rule(mode, r'.*', HEADER, lines=MENU_BUTTON)
       for mode in ('pages', 'admin', 'imports', 'accounts', 'theia', 'state')),
