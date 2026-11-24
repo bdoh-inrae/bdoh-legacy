@@ -16,7 +16,7 @@ Les numéros renvoient aux points du plan de la réouverture.
 
 L'ordre, décidé par Lou le 23 novembre : la version du pré-essai (la 0.9.1), la VM réinstallée avec elle, le pré-essai, puis les listes de diffusion, sauf point plus urgent.
 
-1. La VM, réinstallée à la 0.9.1 la nuit du 23 au 24 novembre, OTHU compris : restent la section 5 de `dev/deploy/README.md` et les logos des trois partenaires d'OTHU (section 2 bis) ; puis le vrai site essayé depuis l'extérieur, et le message à l'infra s'il est coupé en route.
+1. La VM, réinstallée à la 0.9.1 la nuit du 23 au 24 novembre, OTHU compris : restent quelques vérifications de la section 5 de `dev/deploy/README.md` (`dev/plans/2026-10-26_deployment.md`, Suivi), et le passage au nom quand le DNS suit ; puis le vrai site essayé depuis l'extérieur, et le message à l'infra s'il est coupé en route.
 2. Les retours du pré-essai, puis ceux des essais. Les statistiques, Lou les regarde sur la VM, en gestionnaire.
 3. Les listes de diffusion (5), une fois connu ce que permet `listes.inrae.fr`.
 4. Une relecture de sécurité et de robustesse de ce que le portage a ajouté (Lou, 23 novembre : dans un futur plus ou moins proche) : le compteur des consultations et la page des statistiques, l'export réglé sur son volume, les favoris, la connexion par lien, et tout texte de la base que le JavaScript insère en HTML. Quatre défauts de cette dernière sorte ont été trouvés et corrigés les 19 et 23 novembre (`dev/local/security.md`) ; la relecture du 15 novembre laissait à lire ce que BDOH passe à jQuery UI, DataTables, Select2 et aux réponses insérées par `.html()`.
