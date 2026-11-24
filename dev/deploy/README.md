@@ -114,11 +114,15 @@ sudo make vm-worker
 sudo make vm-backup
 ```
 
-Les tâches restées « en cours » dans le dump passent alors en « incomplètes », relançables. Les sauvegardes partent chaque nuit dans `/var/backups/bdoh/` (base) et `/var/backups/bdoh-files/` (`.env`, dont la clé Theia, et fichiers déposés), gardées 8 jours ; une sauvegarde qui échoue ne prévient personne : `systemctl --failed`. Une sauvegarde ne vaut qu'une fois restaurée : l'essayer une fois dans une base à part, où `inspect.sql` doit donner les mêmes comptes, puis la supprimer, seule base qu'on supprime :
+Les tâches restées « en cours » dans le dump passent alors en « incomplètes », relançables. Les sauvegardes partent chaque nuit dans `/var/backups/bdoh/` (base) et `/var/backups/bdoh-files/` (`.env`, dont la clé Theia, et fichiers déposés), gardées 8 jours ; une sauvegarde qui échoue ne prévient personne : `systemctl --failed`. Une sauvegarde ne vaut qu'une fois restaurée : l'essayer une fois dans une base à part, où `inspect.sql` doit donner les mêmes comptes, puis la supprimer, seule base qu'on supprime. La base restaurée prend presque autant que la production (45 Go pour 46, le 24 novembre) : `df -h /var` d'abord. Le tout dure plusieurs dizaines de minutes, dans `tmux`, après `sudo -v` pour que le mot de passe ne soit pas demandé au milieu :
 
 ```
 sudo runuser -u postgres -- createdb -T template0 -E UTF8 --locale=en_US.UTF-8 bdoh_essai
 sudo runuser -u postgres -- pg_restore -d bdoh_essai --no-owner --no-privileges /var/backups/bdoh/prod-AAAA-MM-JJ.dump
+sudo runuser -u postgres -- psql -qAt -F '|' -d bdoh_prod < dev/reference/inspect.sql > ~/inspect-prod.txt
+sudo runuser -u postgres -- psql -qAt -F '|' -d bdoh_essai < dev/reference/inspect.sql > ~/inspect-essai.txt
+wc -l ~/inspect-prod.txt ~/inspect-essai.txt
+diff ~/inspect-prod.txt ~/inspect-essai.txt && echo "identiques"
 sudo runuser -u postgres -- dropdb bdoh_essai
 ```
 

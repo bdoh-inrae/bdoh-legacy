@@ -25,8 +25,8 @@ L'ordre, décidé par Lou le 23 novembre : le pré-essai, sur la 0.9.1, puis les
 ### Ce que fait Lou
 
 - Les questions de la relecture qui restent ([dev/plans/2026-11-19_review.md](dev/plans/2026-11-19_review.md), "Questions pour Lou", 2 à 4).
-- Le pré-essai, le 24 novembre : garder d'abord la sauvegarde de la nuit comme point zéro, puis envoyer les deux courriels ([dev/plans/2026-11-16_reopening.md](dev/plans/2026-11-16_reopening.md), "Pour reprendre"). Le 1er décembre, le kit régénéré avec les retours du pré-essai (`make test-kit`), et l'envoi à tous ([dev/test-kit/README.md](dev/test-kit/README.md)).
-- Sur la VM : installer chaque version (`sudo make vm-update V=…`), mesurer les exports (`dev/deploy/README.md`, "Mesurer les exports"), restaurer une sauvegarde dans une base à part (même fichier, section 4), supprimer la sauvegarde de la fusion avortée du 23 novembre (`/var/backups/bdoh-kept/prod-avant-fusion-othu-2026-11-23-2358.dump`).
+- Le pré-essai, le 24 novembre : le point zéro gardé et sa restauration éprouvée ; restent un import essayé sur la VM, puis les deux courriels ([dev/plans/2026-11-16_reopening.md](dev/plans/2026-11-16_reopening.md), "Pour reprendre"). Le 1er décembre, le kit régénéré avec les retours du pré-essai (`make test-kit`), et l'envoi à tous ([dev/test-kit/README.md](dev/test-kit/README.md)).
+- Sur la VM : installer chaque version (`sudo make vm-update V=…`), mesurer les exports (`dev/deploy/README.md`, "Mesurer les exports"), supprimer la sauvegarde de la fusion avortée du 23 novembre (`/var/backups/bdoh-kept/prod-avant-fusion-othu-2026-11-23-2358.dump`).
 - Avec l'infra : la nouvelle adresse IP dans le DNS (le port 443 est annoncé ouvert le 24 novembre, à vérifier au téléphone). Le certificat, on le fait nous-mêmes ensuite, sur la VM, par `mod_md` (Let's Encrypt) ([dev/plans/2026-10-26_deployment.md](dev/plans/2026-10-26_deployment.md), Suivi). Les autres réglages de la VM : même plan, "La machine" et "Après".
 - Les essais à l'œil sur la VM : [dev/test-kit/lou-checklist.md](dev/test-kit/lou-checklist.md).
 - Ce que `listes.inrae.fr` permet aux propriétaires de listes (point 5 du plan de la réouverture).
