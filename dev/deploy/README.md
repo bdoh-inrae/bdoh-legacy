@@ -48,7 +48,11 @@ sudo make vm-build
 sudo make vm-mail RELAIS=hôte:587 RENVOI=adresse-de-Lou
 ```
 
-Reste `MAILER_ALLOWED_RECIPIENTS` (`sudo nano .env`) : vide pour les essais de Lou ; la ligne de `allowed-recipients.env` (`dev/test-kit/README.md`) quand les gestionnaires essaient, pour que chacun reçoive ses propres liens.
+Reste `MAILER_ALLOWED_RECIPIENTS` (`sudo nano .env`) : vide pour les essais de Lou ; la ligne de `allowed-recipients.env` (`dev/test-kit/README.md`) quand les gestionnaires essaient, pour que chacun reçoive ses propres liens. Une adresse ajoutée à la main se met au bout de la ligne, au format de `contacts.py` (`(?i)prenom[.]nom@inrae[.]fr`, séparée par une virgule). Lou reçoit alors une copie de chaque courriel, même de ceux qui partent aussi à leur destinataire, sans que son adresse paraisse dans les en-têtes : le renvoi n'agit que sur l'enveloppe (`EnvelopeListener` de Symfony). Pour savoir si une adresse passe, sur la VM :
+
+```
+sudo php -r 'require "vendor/autoload.php"; (new Symfony\Component\Dotenv\Dotenv())->load(".env"); $a = "prenom.nom@inrae.fr"; foreach (str_getcsv($_ENV["MAILER_ALLOWED_RECIPIENTS"] ?? "", ",", "\"", "") as $r) { if (preg_match("{\A" . $r . "\z}", $a)) { exit("Une règle laisse passer cette adresse.\n"); } } echo "Aucune règle ne laisse passer cette adresse.\n";'
+```
 
 Le site relit `.env` à chaque requête : pas de cache à vider. La file de tâches, elle, le lit à son démarrage : après un changement, `sudo systemctl restart bdoh-job-worker@prod` (sinon, elle le reprend à sa relance d'heure en heure).
 

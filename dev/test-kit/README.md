@@ -7,7 +7,8 @@ make test-contacts SOURCE=…brut.dump     # Lou, dans son terminal : production
 make test-kit ARGS="--site https://bdoh.inrae.fr --deadline 'mardi 15 décembre'"
 ```
 
-- `make test-kit` écrit dans `../bdoh_reference/test-kit/<OBSERVATOIRE>/` le tableur et le message, depuis les bases anonymisées. Il ne reste à compléter à la main que le mot de passe d'accès.
+- `make test-kit` écrit dans `../bdoh_reference/test-kit/<OBSERVATOIRE>/` le tableur et le message, depuis les bases anonymisées. Il ne reste à compléter à la main que le mot de passe d'accès. Il se relance après tout changement de `kit.py`, des messages ou de `dev/local/test-kit-notes.csv`, et une fois avant l'envoi du 1er décembre, avec les retours du pré-essai : `--site` au nom si le DNS mène `bdoh.inrae.fr` à la VM, sinon l'adresse IP de la VM, comme le pré-essai (`dev/plans/2026-10-26_deployment.md`, Suivi).
+- `make test-contacts` ne se relance que si les contacts changent dans la base (gestionnaires, contacts Theia), sur un dump brut de la VM, que Lou passe par le script : la ligne qu'il écrit remplace alors celle du `.env` de la VM, en y rajoutant les adresses ajoutées à la main (deux collègues d'INRAE, 24 novembre : `dev/local/test-tracking.md`).
 - Lou relit la liste des destinataires de chaque observatoire, puis envoie les messages.
 - `make test-contacts` écrit dans `../bdoh_reference/private-test-contacts/` les adresses par observatoire, et `allowed-recipients.env`, celles à laisser passer pendant les essais (la ligne `MAILER_ALLOWED_RECIPIENTS` du `.env` de la VM). Claude ne lit pas ce dossier : les bases qu'il ouvre n'ont que des adresses anonymisées, et ce script n'affiche que des comptes.
 - Les réponses se suivent dans `dev/local/test-tracking.md`, ignoré par Git et sans aucune adresse. Une chronique à changer se change dans l'administration de la VM, qui deviendra la production.
