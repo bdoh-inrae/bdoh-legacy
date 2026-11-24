@@ -2,7 +2,7 @@
 
 État : en cours, ouvert le 2026-11-16. Le plan que Lou a rapporté de son point du 16 novembre avec sa responsable : plus de temps pour les gestionnaires, plus d'accompagnement de l'ouverture des données, une réouverture mi-décembre. Il prend la suite de [2026-11-16_before-kit.md](2026-11-16_before-kit.md), terminé avec la 0.7.1 (publiée et installée sur la VM, au nom `bdoh.inrae.fr`) ; les décisions de ses points 10 (relecture du contenu) et 12 (photographies) y restent, leur réalisation se suit ici (point 7).
 
-Publiés dans la 0.8.0 : les points 1 à 4, l'unité du point 2d, le point 7 bis et la relecture des textes (point 7), toutes les passes comprises (Suivi). Ce qui attendait Lou est tranché le 19 novembre, chaque décision à son point. Publiés dans la 0.9.0 : ces décisions, les trois défauts du JavaScript (point 9), l'export (2c, 2d, la date de mise à jour du point 4) et les statistiques (6). L'ordre de la suite : `ROADMAP.md`, « À faire ».
+Publiés dans la 0.8.0 : les points 1 à 4, l'unité du point 2d, le point 7 bis et la relecture des textes (point 7), toutes les passes comprises (Suivi). Ce qui attendait Lou est tranché le 19 novembre, chaque décision à son point. Publiés dans la 0.9.0 : ces décisions, les trois défauts du JavaScript (point 9), l'export (2c, 2d, la date de mise à jour du point 4) et les statistiques (6). Publiés dans la 0.9.1, la version du pré-essai, installée sur la VM neuve dans la nuit du 23 au 24 : la relecture du contenu de la base (7), les logos d'INRAE uniformisés et ceux des partenaires, l'en-tête replié sur un téléphone. Restent le pré-essai, les essais du 1er décembre et les listes de diffusion (5). L'ordre de la suite : `ROADMAP.md`, « À faire ».
 
 ## Le calendrier (Lou, 16 novembre)
 
