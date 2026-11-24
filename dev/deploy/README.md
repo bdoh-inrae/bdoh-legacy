@@ -2,7 +2,7 @@
 
 Sur la VM, BDOH est un clone du dépôt (`/var/www/bdoh-prod`), et chaque étape une cible du Makefile, lancée en root dans ce dossier : `sudo make vm-…`. Le code s'y lit par tous, comme sur GitHub (`make help`) ; seuls `.env` et `var/` sont fermés aux autres comptes que root et Apache (`vm-build`). Jusqu'à la 0.5.0, `vm-build` fermait tout le dossier. La 0.6.0 de la VM a été construite par le script de la 0.5.0, qui ne passait pas encore la main à celui de la version installée : son dossier est resté fermé (constaté le 15 novembre). D'ici la mise à jour vers la 0.7.0, `make` y va donc lui-même, `sudo make -C /var/www/bdoh-prod vm-… NOM=prod` ; ensuite, `cd /var/www/bdoh-prod` suffit. Les commandes elles-mêmes sont dans [config/deploy/vm.sh](../../config/deploy/vm.sh), les fichiers qu'elles installent à côté ; ce guide dit l'ordre, et ce qu'il faut regarder entre deux. Le pourquoi des choix : [dev/plans/2026-10-26_deployment.md](../plans/2026-10-26_deployment.md) et `dev/decisions.md` (« Déploiement par `git clone` et Makefile »).
 
-Écrit pour Ubuntu 26.04 (PHP 8.5, PostgreSQL 18, PostGIS 3.6), et suivi de bout en bout le 10 novembre pour installer la production (`dev/plans/2026-10-26_deployment.md`, Suivi). `vm-update` est éprouvé le 13 novembre (0.3.2 vers 0.5.0). Restent à éprouver : la fusion d'OTHU (section 2 bis), la restauration d'une sauvegarde, et la section 5. Ce qui accroche se corrige ici.
+Écrit pour Ubuntu 26.04 (PHP 8.5, PostgreSQL 18, PostGIS 3.6), et suivi de bout en bout le 10 novembre pour installer la production, puis les 23 et 24 novembre sur une VM neuve, fusion d'OTHU comprise (`dev/plans/2026-10-26_deployment.md`, Suivi). `vm-update` est éprouvé le 13 novembre (0.3.2 vers 0.5.0). Restent à éprouver : la restauration d'une sauvegarde, et une partie de la section 5. Ce qui accroche se corrige ici.
 
 Aucune étape ne supprime une base, et aucune ne restaure dans une base qui existe. Une erreur s'arrête et se lit : ne pas relancer à l'aveugle.
 
@@ -77,13 +77,7 @@ Puis la fusion :
 sudo make vm-merge-othu DUMP=/var/backups/bdoh-sources/bdoh-othu-2026-10-21.dump
 ```
 
-À lancer hors de la sauvegarde de la nuit (vers 2 h), et dans `tmux`, un terminal qui vit sur la VM et non dans la connexion ssh : une coupure du VPN arrêterait sinon tout en route. `tmux new -s fusion` ouvre une session (une barre verte en bas) ; on y lance la commande, suivie de `2>&1 | tee ~/fusion-othu.log` pour en garder le compte rendu, fait de comptes et de libellés de listes ; Ctrl+b puis `d` s'en détache, la fusion continuant ; `tmux attach -t fusion` y revient, après une reconnexion s'il le faut ; Ctrl+b puis `[` remonte dans ce qui a défilé (`q` en sort) ; `exit` ferme la session. Ferme le site et arrête la file jusqu'à la fin, vérifie qu'il reste 60 Go libres, sauvegarde la base dans `/var/backups/bdoh-kept/`, que la sauvegarde de la nuit ne vide pas (`prod-avant-fusion-othu-…`, à supprimer à la main une fois les essais passés), restaure OTHU dans une base temporaire, la charge à part dans la production, puis la fond en une seule transaction (`dev/merge-othu/merge.sql`) : une erreur, et rien n'a changé. Le script vérifie l'empreinte de chaque chronique d'OTHU avant de valider, et dit ce qu'il a ajouté et rapproché : comptes, unités, paramètres, communes (`dev/plans/2026-11-13_othu-merge.md`). À lire ensuite : aucune chronique de la production dans l'empreinte changée. 48 minutes sur le poste avec les copies anonymisées, dont 39 pour la fusion elle-même (106 millions de mesures versées dans une table qui en a 257 millions) ; sans doute plus sur la VM. Ses trois fonctions SQL disparaissent avec sa base : les exports d'OTHU suivent celles de la production.
-
-Pour revenir en arrière, en 4 minutes sur le poste, tant que personne n'a écrit sur OTHU (un export n'y écrit rien) et que rien dans la production ne cite ce que la fusion a ajouté (un rôle donné à un ancien compte d'OTHU, par exemple) : sinon la commande le dit et ne change rien, et le retour se fait par la sauvegarde d'avant la fusion :
-
-```
-sudo make vm-unmerge-othu
-```
+À lancer hors de la sauvegarde de la nuit (vers 2 h), et dans `tmux`, un terminal qui vit sur la VM et non dans la connexion ssh : une coupure du VPN arrêterait sinon tout en route. `tmux new -s fusion` ouvre une session (une barre verte en bas) ; on y lance la commande, suivie de `2>&1 | tee ~/fusion-othu.log` pour en garder le compte rendu, fait de comptes et de libellés de listes ; Ctrl+b puis `d` s'en détache, la fusion continuant ; `tmux attach -t fusion` y revient, après une reconnexion s'il le faut ; Ctrl+b puis `[` remonte dans ce qui a défilé (`q` en sort) ; `exit` ferme la session. Ferme le site et arrête la file jusqu'à la fin, vérifie qu'il reste 60 Go libres, sauvegarde la base dans `/var/backups/bdoh-kept/`, que la sauvegarde de la nuit ne vide pas (`prod-avant-fusion-othu-…`, à supprimer à la main une fois les essais passés), restaure OTHU dans une base temporaire, la charge à part dans la production, puis la fond en une seule transaction (`dev/merge-othu/merge.sql`) : une erreur, et rien n'a changé. Le script vérifie l'empreinte de chaque chronique d'OTHU avant de valider, et dit ce qu'il a ajouté et rapproché : comptes, unités, paramètres, communes (`dev/plans/2026-11-13_othu-merge.md`). À lire ensuite : aucune chronique de la production dans l'empreinte changée. 48 minutes sur le poste avec les copies anonymisées, dont 39 pour la fusion elle-même (106 millions de mesures versées dans une table qui en a 257 millions) ; 44 minutes sur la VM neuve, le 24 novembre. Ses trois fonctions SQL disparaissent avec sa base : les exports d'OTHU suivent celles de la production.
 
 Après la fusion, les migrations suivantes, qui doivent dire "31 logos de partenaires posés" :
 
@@ -91,6 +85,14 @@ Après la fusion, les migrations suivantes, qui doivent dire "31 logos de parten
 sudo runuser -u www-data -- php bin/console --env=prod --no-interaction doctrine:migrations:migrate
 sudo runuser -u www-data -- php bin/console --env=prod cache:clear
 ```
+
+Pour revenir en arrière, en 4 minutes sur le poste, tant que personne n'a écrit sur OTHU (un export n'y écrit rien) et que rien dans la production ne cite ce que la fusion a ajouté (un rôle donné à un ancien compte d'OTHU, par exemple) : sinon la commande le dit et ne change rien, et le retour se fait par la sauvegarde d'avant la fusion :
+
+```
+sudo make vm-unmerge-othu
+```
+
+Une fois les migrations suivantes rejouées, ce retour par `vm-unmerge-othu` n'est pas éprouvé : la sauvegarde d'avant la fusion reste alors le chemin sûr.
 
 Les trois partenaires d'OTHU arrivent avec la fusion, après la migration des logos : leurs logos se déposent dans l'administration (Administration, Partenaires, chacun son formulaire), depuis le poste, `../bdoh_reference/review/logos/othu-by-hand/` (sources dans `SOURCES.md`, à côté).
 
