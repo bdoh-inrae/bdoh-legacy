@@ -6,7 +6,7 @@ La base de la VM deviendra la production : un essai qui écrit se fait sur une c
 
 ## D'abord, l'installation
 
-- [ ] Les vérifications de la section 5 du guide (`dev/deploy/README.md`, « Vérifier ») : la file qui repart après un arrêt de PostgreSQL, un import en plusieurs étapes avec Apache redémarré entre deux, un courriel hors de la liste qui arrive à `MAILER_DIVERT_TO`.
+- [ ] Les vérifications de la section 5 du guide (`dev/deploy/README.md`, « Vérifier ») : la file qui repart après un arrêt de PostgreSQL, un import en plusieurs étapes avec Apache redémarré entre deux, un courriel hors de la liste qui arrive à `MAILER_DIVERT_TO`. L'import avec Apache redémarré entre deux : fait le 24 novembre, il va au bout (`dev/plans/2026-10-26_deployment.md`, Suivi).
 - [x] La première sauvegarde de la nuit, restaurée une fois dans une base à part (même guide, section 4). Faite le 24 novembre sur le point zéro : mêmes comptes que la production (`dev/plans/2026-10-26_deployment.md`, Suivi).
 
 ## À l'œil
