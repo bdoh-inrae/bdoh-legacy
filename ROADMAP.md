@@ -6,7 +6,7 @@ Code de référence : commit `523cf8e32` de l'ancien dépôt (version 5.0.3, fé
 
 ## En cours
 
-La réouverture de BDOH, mi-décembre, après un pré-essai par deux gestionnaires et deux semaines d'essais par tous et toutes ; les essais deviennent la production s'ils passent. Le calendrier, chaque point, ce qui est décidé et son avancée : [dev/plans/2026-11-16_reopening.md](dev/plans/2026-11-16_reopening.md). La VM est réinstallée depuis le 24 novembre, à la 0.9.5 depuis le 25, et le DNS y mène `bdoh.inrae.fr` depuis le 25 ([dev/plans/2026-10-26_deployment.md](dev/plans/2026-10-26_deployment.md), Suivi). Ce qui est fait, version par version : `CHANGELOG.md`.
+La réouverture de BDOH, mi-décembre, après un pré-essai par deux gestionnaires et deux semaines d'essais par tous et toutes ; les essais deviennent la production s'ils passent. Le calendrier, chaque point, ce qui est décidé et son avancée : [dev/plans/2026-11-16_reopening.md](dev/plans/2026-11-16_reopening.md). La VM est réinstallée depuis le 24 novembre, à la 0.9.6 depuis le 25, et le DNS y mène `bdoh.inrae.fr` depuis le 25 ([dev/plans/2026-10-26_deployment.md](dev/plans/2026-10-26_deployment.md), Suivi). Ce qui est fait, version par version : `CHANGELOG.md`.
 
 ## À faire
 
@@ -14,7 +14,7 @@ La réouverture de BDOH, mi-décembre, après un pré-essai par deux gestionnair
 
 Les numéros renvoient aux points du plan de la réouverture.
 
-L'ordre, décidé par Lou le 23 novembre : le pré-essai (sur la 0.9.5, installée le 25), puis les listes de diffusion, sauf point plus urgent.
+L'ordre, décidé par Lou le 23 novembre : le pré-essai (parti le 25 novembre ; la VM à la 0.9.6 le même soir), puis les listes de diffusion, sauf point plus urgent.
 
 1. La VM, réinstallée à la 0.9.1 la nuit du 23 au 24 novembre, OTHU compris : restent quelques vérifications de la section 5 de `dev/deploy/README.md`, dont l'adresse des visiteurs vue depuis un téléphone en 4G, puis le certificat (`make vm-certificate`, 0.9.2), tous deux en attente du port 443, toujours fermé depuis Internet le 25 novembre malgré l'annonce de l'infra. Le DNS mène au nom depuis le 25 novembre (`dev/plans/2026-10-26_deployment.md`, Suivi).
 2. Les retours du pré-essai, puis ceux des essais. Les statistiques, Lou les regarde sur la VM, en gestionnaire.
@@ -26,7 +26,7 @@ L'ordre, décidé par Lou le 23 novembre : le pré-essai (sur la 0.9.5, install�
 
 - Les questions de la relecture qui restent ([dev/plans/2026-11-19_review.md](dev/plans/2026-11-19_review.md), "Questions pour Lou", 2 et 3).
 - Le pré-essai : le point zéro gardé et sa restauration éprouvée, un import essayé sur la VM (24 novembre) ; les courriels partis le 25 novembre, sous VPN, celui d'Yzeron à 13 h 38 ([dev/plans/2026-11-16_reopening.md](dev/plans/2026-11-16_reopening.md), "Pour reprendre"). Un premier retour sur le message, le jour même, repris avec Lou dans `dev/test-kit/messages/message.txt`. Le 1er décembre, le kit régénéré avec les retours du pré-essai (`make test-kit`), et l'envoi à tous ([dev/test-kit/README.md](dev/test-kit/README.md)).
-- Sur la VM : installer chaque version (`sudo make vm-update V=…`), la 0.9.5 installée le 25 novembre, la 0.9.6 à installer ; mesurer les exports (`dev/deploy/README.md`, "Mesurer les exports"), supprimer la sauvegarde de la fusion avortée du 23 novembre (`/var/backups/bdoh-kept/prod-avant-fusion-othu-2026-11-23-2358.dump`).
+- Sur la VM : installer chaque version (`sudo make vm-update V=…`), la 0.9.6 installée le 25 novembre au soir ; mesurer les exports (`dev/deploy/README.md`, "Mesurer les exports"), supprimer la sauvegarde de la fusion avortée du 23 novembre (`/var/backups/bdoh-kept/prod-avant-fusion-othu-2026-11-23-2358.dump`).
 - Avec l'infra : le port 443, annoncé ouvert le 24 novembre mais fermé depuis Internet le 25 (check-host.net), relancée par Lou dans la nuit du 25 avec le constat de check-host.net (le DNS suit depuis le 25). Le certificat, on le fait nous-mêmes ensuite, sur la VM : la 0.9.5 installée et `vm-apache` relancé le 25 novembre, reste `sudo make vm-certificate` ([dev/plans/2026-10-26_deployment.md](dev/plans/2026-10-26_deployment.md), Suivi). Les autres réglages de la VM : même plan, "La machine" et "Après".
 - Les essais à l'œil sur la VM : [dev/test-kit/lou-checklist.md](dev/test-kit/lou-checklist.md).
 - Ce que `listes.inrae.fr` permet aux propriétaires de listes (point 5 du plan de la réouverture).
