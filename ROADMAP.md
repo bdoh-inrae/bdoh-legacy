@@ -6,7 +6,7 @@ Code de référence : commit `523cf8e32` de l'ancien dépôt (version 5.0.3, fé
 
 ## En cours
 
-La réouverture de BDOH, mi-décembre, après un pré-essai par deux gestionnaires et deux semaines d'essais par tous et toutes ; les essais deviennent la production s'ils passent. Le calendrier, chaque point, ce qui est décidé et son avancée : [dev/plans/2026-11-16_reopening.md](dev/plans/2026-11-16_reopening.md). La VM est réinstallée à la 0.9.1 depuis le 24 novembre, et le DNS y mène `bdoh.inrae.fr` depuis le 25 ([dev/plans/2026-10-26_deployment.md](dev/plans/2026-10-26_deployment.md), Suivi). Ce qui est fait, version par version : `CHANGELOG.md`.
+La réouverture de BDOH, mi-décembre, après un pré-essai par deux gestionnaires et deux semaines d'essais par tous et toutes ; les essais deviennent la production s'ils passent. Le calendrier, chaque point, ce qui est décidé et son avancée : [dev/plans/2026-11-16_reopening.md](dev/plans/2026-11-16_reopening.md). La VM est réinstallée depuis le 24 novembre, à la 0.9.5 depuis le 25, et le DNS y mène `bdoh.inrae.fr` depuis le 25 ([dev/plans/2026-10-26_deployment.md](dev/plans/2026-10-26_deployment.md), Suivi). Ce qui est fait, version par version : `CHANGELOG.md`.
 
 ## À faire
 
@@ -26,7 +26,7 @@ L'ordre, décidé par Lou le 23 novembre : le pré-essai, sur la 0.9.1, puis les
 
 - Les questions de la relecture qui restent ([dev/plans/2026-11-19_review.md](dev/plans/2026-11-19_review.md), "Questions pour Lou", 2 à 4).
 - Le pré-essai : le point zéro gardé et sa restauration éprouvée, un import essayé sur la VM (24 novembre) ; restent les deux courriels, passés au nom le 25 novembre, que Lou envoie le matin du 26, sous VPN ([dev/plans/2026-11-16_reopening.md](dev/plans/2026-11-16_reopening.md), "Pour reprendre"). Le 1er décembre, le kit régénéré avec les retours du pré-essai (`make test-kit`), et l'envoi à tous ([dev/test-kit/README.md](dev/test-kit/README.md)).
-- Sur la VM : installer chaque version (`sudo make vm-update V=…`), la prochaine étant la 0.9.5, suivie de `sudo make vm-apache` ; mesurer les exports (`dev/deploy/README.md`, "Mesurer les exports"), supprimer la sauvegarde de la fusion avortée du 23 novembre (`/var/backups/bdoh-kept/prod-avant-fusion-othu-2026-11-23-2358.dump`).
+- Sur la VM : installer chaque version (`sudo make vm-update V=…`), la 0.9.5 installée le 25 novembre ; mesurer les exports (`dev/deploy/README.md`, "Mesurer les exports"), supprimer la sauvegarde de la fusion avortée du 23 novembre (`/var/backups/bdoh-kept/prod-avant-fusion-othu-2026-11-23-2358.dump`).
 - Avec l'infra : le port 443, annoncé ouvert le 24 novembre mais fermé depuis Internet le 25 (check-host.net), relancée par Lou dans la nuit du 25 avec le constat de check-host.net (le DNS suit depuis le 25). Le certificat, on le fait nous-mêmes ensuite, sur la VM : la 0.9.2 installée, `sudo make vm-apache`, puis `sudo make vm-certificate` ([dev/plans/2026-10-26_deployment.md](dev/plans/2026-10-26_deployment.md), Suivi). Les autres réglages de la VM : même plan, "La machine" et "Après".
 - Les essais à l'œil sur la VM : [dev/test-kit/lou-checklist.md](dev/test-kit/lou-checklist.md).
 - Ce que `listes.inrae.fr` permet aux propriétaires de listes (point 5 du plan de la réouverture).
