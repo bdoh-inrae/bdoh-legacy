@@ -14,7 +14,7 @@ La réouverture de BDOH, mi-décembre, après un pré-essai par deux gestionnair
 
 Les numéros renvoient aux points du plan de la réouverture.
 
-L'ordre, décidé par Lou le 23 novembre : le pré-essai, sur la 0.9.1, puis les listes de diffusion, sauf point plus urgent.
+L'ordre, décidé par Lou le 23 novembre : le pré-essai (sur la 0.9.5, installée le 25), puis les listes de diffusion, sauf point plus urgent.
 
 1. La VM, réinstallée à la 0.9.1 la nuit du 23 au 24 novembre, OTHU compris : restent quelques vérifications de la section 5 de `dev/deploy/README.md`, dont l'adresse des visiteurs vue depuis un téléphone en 4G, puis le certificat (`make vm-certificate`, 0.9.2), tous deux en attente du port 443, toujours fermé depuis Internet le 25 novembre malgré l'annonce de l'infra. Le DNS mène au nom depuis le 25 novembre (`dev/plans/2026-10-26_deployment.md`, Suivi).
 2. Les retours du pré-essai, puis ceux des essais. Les statistiques, Lou les regarde sur la VM, en gestionnaire.
