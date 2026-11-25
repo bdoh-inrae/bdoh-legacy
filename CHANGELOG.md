@@ -4,6 +4,14 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/). Numéros de v
 
 ## Non publié
 
+## 0.9.4 - 2026-11-25
+
+Le chevron des pastilles de l'accueil, rapproché du nombre.
+
+### Modifié
+
+- Sur l'accueil de BDOH, le chevron de chaque pastille d'observatoire est à un pixel du nombre, et non plus à trois (Lou).
+
 ## 0.9.3 - 2026-11-25
 
 Twig corrigé, et un chemin vers chaque observatoire depuis la carte de l'accueil.

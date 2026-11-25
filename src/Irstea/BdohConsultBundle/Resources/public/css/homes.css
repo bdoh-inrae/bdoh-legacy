@@ -37,7 +37,7 @@
 .stations-map-pill > .stations-map-site, .stations-map-pill > .stations-map-site:hover,
 .stations-map-pill > .stations-map-site:focus, .stations-map-pill > .stations-map-site.map-lit,
 .stations-map-pill > .stations-map-site[aria-pressed="true"] {
-    border: 0; background: transparent; padding-right: 3px;
+    border: 0; background: transparent; padding-right: 1px;
 }
 .stations-map-page {
     position: relative; display: inline-flex; align-items: center; justify-content: center;
