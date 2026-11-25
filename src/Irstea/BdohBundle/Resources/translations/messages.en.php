@@ -214,6 +214,7 @@ $map = [
     'map.onMap'           => '{0}No station placed on the map|{1}One station on the map|]1,Inf[%count% stations on the map',
     'map.sites'           => 'Sites:',
     'map.observatories'   => 'Observatories:',
+    'map.observatoryPage' => 'Observatory page: %name%',
     'readMore'            => 'Read more',
     'readLess'            => 'Show less',
     'overview.title'      => 'The whole time series',

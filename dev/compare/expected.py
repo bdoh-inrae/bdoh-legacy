@@ -865,7 +865,7 @@ RULES = [
     Rule('pages', rf'{ROLE} /translations/messages\.js', SEARCH_NAME, lines=(translation('[-+]', 'advancedSearch'),)),
     # Les flèches des photos d'un observatoire, et le libellé des pastilles du portail (Lou, 2026-11-15)
     Rule('pages', rf'{ROLE} /translations/messages\.js', HOMES,
-         lines=(translation(r'\+', 'photo.previous | photo.next | map.observatories'),)),
+         lines=(translation(r'\+', 'photo.previous | photo.next | map.observatories | map.observatoryPage'),)),
     # Les blocs de citation (Lou, 2026-11-16)
     Rule('pages', rf'{ROLE} /translations/messages\.js', CITATIONS, lines=(
         translation(r'\+', 'cite.observatoryTitle | cite.datasetTitle | cite.partOf | cite.otherDois'),

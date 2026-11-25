@@ -32,11 +32,18 @@
         {% if observatories|default([]) is not empty %}
             <div class="stations-map-sites">
                 <span class="text-muted">{{ 'map.observatories'|trans }}</span>
+                {# Le bouton cadre la carte, la flèche mène à la page de l'observatoire : un lien ne peut pas être
+                 # dans un bouton, les deux se suivent, d'une seule forme (Lou, 2026-11-25) #}
                 {% for obs in observatories %}
                     {% set count = placed|filter(s => s.observatoire == obs.nom)|length %}
-                    <button type="button" class="stations-map-site" data-map-observatoire="{{ obs.nom }}"{{ count ? '' : ' disabled' }}>
-                        {{- obs.nom }} · {{ count -}}
-                    </button>
+                    <span class="stations-map-pill">
+                        <button type="button" class="stations-map-site" data-map-observatoire="{{ obs.nom }}"{{ count ? '' : ' disabled' }}>
+                            {{- obs.nom }} · {{ count -}}
+                        </button>
+                        {% set label = 'map.observatoryPage'|trans({'%name%': obs.nom}) %}
+                        <a class="stations-map-page" href="{{ path('bdoh_home', {'_observatoire': obs.slug}) }}"
+                           title="{{ label }}" aria-label="{{ label }}"><span aria-hidden="true">→</span></a>
+                    </span>
                 {% endfor %}
             </div>
         {% endif %}

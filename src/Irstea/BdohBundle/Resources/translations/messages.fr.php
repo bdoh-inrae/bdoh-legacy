@@ -212,6 +212,7 @@ $map = [
     'map.onMap'           => '{0}Aucune station placée sur la carte|{1}Une station sur la carte|]1,Inf[%count% stations sur la carte',
     'map.sites'           => 'Sites :',
     'map.observatories'   => 'Observatoires :',
+    'map.observatoryPage' => 'Page de l\'observatoire %name%',
     'readMore'            => 'Lire la suite',
     'readLess'            => 'Réduire',
     'overview.title'      => 'Toute la chronique',

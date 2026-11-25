@@ -387,6 +387,20 @@ def public_steps(s, station, chronique):
                    lambda item, s: s['observatoire'] == item.get_attribute('data-map-observatoire'))
         map_zoom(page, 'button.stations-map-site[data-map-observatoire]:not([disabled])',
                  lambda item, s: s['observatoire'] == item.get_attribute('data-map-observatoire'))
+        # La flèche de chaque pastille mène à la page de l'observatoire (Lou, 2026-11-25) : un nom pour les lecteurs
+        # d'écran, une cible d'au moins 24 pixels de côté (WCAG 2.2, 2.5.8)
+        pills = page.locator('.stations-map-pill')
+        assert pills.count() == page.locator('button.stations-map-site[data-map-observatoire]').count(), \
+            'une pastille d’observatoire sans sa flèche'
+        arrow = pills.first.locator('a.stations-map-page')
+        assert arrow.get_attribute('aria-label'), 'la flèche d’une pastille n’a pas de nom'
+        box = arrow.bounding_box()
+        assert box['width'] >= 24 and box['height'] >= 24, f'flèche de {box["width"]:.0f} × {box["height"]:.0f} pixels'
+        href = arrow.get_attribute('href')
+        with page.expect_navigation():
+            arrow.click()
+        # /X/home, l'adresse des fiches, renvoie vers /X/
+        assert page.url.endswith(href.removesuffix('home')), f'la flèche mène à {page.url}, et non à {href}'
 
     s.step('carte des stations de l’observatoire', f'/{SLUG}/', observatory_home)
 
