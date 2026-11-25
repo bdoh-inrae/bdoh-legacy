@@ -4,6 +4,10 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/). Numéros de v
 
 ## Non publié
 
+## 0.9.6 - 2026-11-25
+
+La page des favoris parle de sélection.
+
 ### Modifié
 
 - La page "Mes favoris" parle de sélection, comme son bouton "Exporter la sélection", au lieu des "cochés" : "Ajouter l'étiquette à la sélection", "Retirer l'étiquette de la sélection", "Retirer la sélection des favoris", et une aide et une introduction réécrites en phrases simples. Même chose en anglais.
