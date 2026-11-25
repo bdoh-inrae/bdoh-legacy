@@ -6,7 +6,7 @@ Code de référence : commit `523cf8e32` de l'ancien dépôt (version 5.0.3, fé
 
 ## En cours
 
-La réouverture de BDOH, mi-décembre, après un pré-essai par deux gestionnaires et deux semaines d'essais par tous et toutes ; les essais deviennent la production s'ils passent. Le calendrier, chaque point, ce qui est décidé et son avancée : [dev/plans/2026-11-16_reopening.md](dev/plans/2026-11-16_reopening.md). La VM est réinstallée à la 0.9.1 depuis le 24 novembre, le site sur son adresse IP le temps que le DNS suive ([dev/plans/2026-10-26_deployment.md](dev/plans/2026-10-26_deployment.md), Suivi). Ce qui est fait, version par version : `CHANGELOG.md`.
+La réouverture de BDOH, mi-décembre, après un pré-essai par deux gestionnaires et deux semaines d'essais par tous et toutes ; les essais deviennent la production s'ils passent. Le calendrier, chaque point, ce qui est décidé et son avancée : [dev/plans/2026-11-16_reopening.md](dev/plans/2026-11-16_reopening.md). La VM est réinstallée à la 0.9.1 depuis le 24 novembre, et le DNS y mène `bdoh.inrae.fr` depuis le 25 ([dev/plans/2026-10-26_deployment.md](dev/plans/2026-10-26_deployment.md), Suivi). Ce qui est fait, version par version : `CHANGELOG.md`.
 
 ## À faire
 
@@ -16,7 +16,7 @@ Les numéros renvoient aux points du plan de la réouverture.
 
 L'ordre, décidé par Lou le 23 novembre : le pré-essai, sur la 0.9.1, puis les listes de diffusion, sauf point plus urgent.
 
-1. La VM, réinstallée à la 0.9.1 la nuit du 23 au 24 novembre, OTHU compris : restent quelques vérifications de la section 5 de `dev/deploy/README.md`, le passage au nom quand le DNS suit, et l'adresse des visiteurs vue depuis un téléphone en 4G, le port 443 étant annoncé ouvert à Internet le 24 novembre (`dev/plans/2026-10-26_deployment.md`, Suivi).
+1. La VM, réinstallée à la 0.9.1 la nuit du 23 au 24 novembre, OTHU compris : restent quelques vérifications de la section 5 de `dev/deploy/README.md`, dont l'adresse des visiteurs vue depuis un téléphone en 4G (le port 443 annoncé ouvert à Internet le 24 novembre), puis le certificat par `mod_md`. Le DNS mène au nom depuis le 25 novembre (`dev/plans/2026-10-26_deployment.md`, Suivi).
 2. Les retours du pré-essai, puis ceux des essais. Les statistiques, Lou les regarde sur la VM, en gestionnaire.
 3. Les listes de diffusion (5), une fois connu ce que permet `listes.inrae.fr`.
 4. Une relecture de sécurité et de robustesse de ce que le portage a ajouté (Lou, 23 novembre : dans un futur plus ou moins proche) : le compteur des consultations et la page des statistiques, l'export réglé sur son volume, les favoris, la connexion par lien, et tout texte de la base que le JavaScript insère en HTML. Quatre défauts de cette dernière sorte ont été trouvés et corrigés les 19 et 23 novembre (`dev/local/security.md`) ; la relecture du 15 novembre laissait à lire ce que BDOH passe à jQuery UI, DataTables, Select2 et aux réponses insérées par `.html()`.
@@ -25,9 +25,9 @@ L'ordre, décidé par Lou le 23 novembre : le pré-essai, sur la 0.9.1, puis les
 ### Ce que fait Lou
 
 - Les questions de la relecture qui restent ([dev/plans/2026-11-19_review.md](dev/plans/2026-11-19_review.md), "Questions pour Lou", 2 à 4).
-- Le pré-essai, le 24 novembre : le point zéro gardé et sa restauration éprouvée, un import essayé sur la VM ; restent les deux courriels ([dev/plans/2026-11-16_reopening.md](dev/plans/2026-11-16_reopening.md), "Pour reprendre"). Le 1er décembre, le kit régénéré avec les retours du pré-essai (`make test-kit`), et l'envoi à tous ([dev/test-kit/README.md](dev/test-kit/README.md)).
+- Le pré-essai : le point zéro gardé et sa restauration éprouvée, un import essayé sur la VM (24 novembre) ; restent les deux courriels, passés au nom le 25 novembre ([dev/plans/2026-11-16_reopening.md](dev/plans/2026-11-16_reopening.md), "Pour reprendre"). Le 1er décembre, le kit régénéré avec les retours du pré-essai (`make test-kit`), et l'envoi à tous ([dev/test-kit/README.md](dev/test-kit/README.md)).
 - Sur la VM : installer chaque version (`sudo make vm-update V=…`), mesurer les exports (`dev/deploy/README.md`, "Mesurer les exports"), supprimer la sauvegarde de la fusion avortée du 23 novembre (`/var/backups/bdoh-kept/prod-avant-fusion-othu-2026-11-23-2358.dump`).
-- Avec l'infra : la nouvelle adresse IP dans le DNS (le port 443 est annoncé ouvert le 24 novembre, à vérifier au téléphone). Le certificat, on le fait nous-mêmes ensuite, sur la VM, par `mod_md` (Let's Encrypt) ([dev/plans/2026-10-26_deployment.md](dev/plans/2026-10-26_deployment.md), Suivi). Les autres réglages de la VM : même plan, "La machine" et "Après".
+- Avec l'infra : le port 443, annoncé ouvert le 24 novembre, à vérifier au téléphone (le DNS suit depuis le 25). Le certificat, on le fait nous-mêmes ensuite, sur la VM, par `mod_md` (Let's Encrypt) ([dev/plans/2026-10-26_deployment.md](dev/plans/2026-10-26_deployment.md), Suivi). Les autres réglages de la VM : même plan, "La machine" et "Après".
 - Les essais à l'œil sur la VM : [dev/test-kit/lou-checklist.md](dev/test-kit/lou-checklist.md).
 - Ce que `listes.inrae.fr` permet aux propriétaires de listes (point 5 du plan de la réouverture).
 - OTHU et OHGE : réunir leurs données dans l'instance, et faire mener `data.othu.org` aux mêmes adresses de BDOH ([dev/plans/2026-11-13_othu-merge.md](dev/plans/2026-11-13_othu-merge.md)).
