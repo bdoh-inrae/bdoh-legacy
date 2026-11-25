@@ -213,6 +213,7 @@ $map = [
     'map.sites'           => 'Sites :',
     'map.observatories'   => 'Observatoires :',
     'map.observatoryPage' => 'Page de l\'observatoire %name%',
+    'map.siteSearch'      => 'Données du site %name%',
     'readMore'            => 'Lire la suite',
     'readLess'            => 'Réduire',
     'overview.title'      => 'Toute la chronique',

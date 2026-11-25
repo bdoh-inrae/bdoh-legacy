@@ -215,6 +215,7 @@ $map = [
     'map.sites'           => 'Sites:',
     'map.observatories'   => 'Observatories:',
     'map.observatoryPage' => 'Observatory page: %name%',
+    'map.siteSearch'      => 'Data of the site %name%',
     'readMore'            => 'Read more',
     'readLess'            => 'Show less',
     'overview.title'      => 'The whole time series',

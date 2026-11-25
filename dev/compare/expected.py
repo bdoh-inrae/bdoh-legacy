@@ -755,6 +755,8 @@ RULES = [
     Rule('pages', rf'{ROLE} (?!/INCONNU/){OBS}/(?:home)?', HOMES, lines=(
         '+L stylesheet /bundles/irsteabdohconsult/css/homes.css', '+S /bundles/irsteabdohconsult/js/read-more.js',
         RX(r'\+I button button(?: disabled)?'), RX(r'\+D button data-map-site=\d+'), RX(r'\+T Sites ?: .+'),
+        # le chevron des sites qui ont des chroniques, vers la recherche de leurs données (Lou, 2026-11-25)
+        RX(rf'\+A {OBS}/nos-donnees\?site=.+'),
         RX(r'\+D li data-map-site=\d+'),
         RX(r'\+D div data-read-less=(?:Réduire|Show less) data-read-more=(?:Lire la suite|Read more)'),
         RX(r'[-+]D div data-interval=false data-ride=carousel'), RX(r'[-+]G /uploads/\S+ .+'), RX(r'[-+]A #photos'),
@@ -865,7 +867,7 @@ RULES = [
     Rule('pages', rf'{ROLE} /translations/messages\.js', SEARCH_NAME, lines=(translation('[-+]', 'advancedSearch'),)),
     # Les flèches des photos d'un observatoire, et le libellé des pastilles du portail (Lou, 2026-11-15)
     Rule('pages', rf'{ROLE} /translations/messages\.js', HOMES,
-         lines=(translation(r'\+', 'photo.previous | photo.next | map.observatories | map.observatoryPage'),)),
+         lines=(translation(r'\+', 'photo.previous | photo.next | map.observatories | map.observatoryPage | map.siteSearch'),)),
     # Les blocs de citation (Lou, 2026-11-16)
     Rule('pages', rf'{ROLE} /translations/messages\.js', CITATIONS, lines=(
         translation(r'\+', 'cite.observatoryTitle | cite.datasetTitle | cite.partOf | cite.otherDois'),

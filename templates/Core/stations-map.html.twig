@@ -8,6 +8,8 @@
  # france : la vue s'ajuste aux stations de la France métropolitaine, et non à toutes ; celles qui sont placées
  # ailleurs, souvent par une erreur de saisie, restent dessinées.
  # sites : les sites de l'observatoire, en boutons sous la carte, qui allument leurs stations (data-map-site).
+ # siteSeries : le nombre de chroniques de chaque site, par son identifiant : un site qui en a reçoit un chevron vers
+ # la recherche de ses données, comme son nom dans la liste des sites (Lou, 2026-11-25).
  # observatories : de même, les observatoires du portail (data-map-observatoire, leur nom), pour voir l'emprise de
  # chacun sans descendre jusqu'à sa fiche (Lou, 2026-11-15).
  # title : false garde le titre pour les lecteurs d'écran seulement ; height : la hauteur de la carte, en pixels.
@@ -52,9 +54,21 @@
                 <span class="text-muted">{{ 'map.sites'|trans }}</span>
                 {% for site in sites %}
                     {% set count = placed|filter(s => site.id in s.sites)|length %}
-                    <button type="button" class="stations-map-site" data-map-site="{{ site.id }}"{{ count ? '' : ' disabled' }}>
-                        {{- site.nom }} · {{ count -}}
-                    </button>
+                    {% set button %}
+                        <button type="button" class="stations-map-site" data-map-site="{{ site.id }}"{{ count ? '' : ' disabled' }}>
+                            {{- site.nom }} · {{ count -}}
+                        </button>
+                    {% endset %}
+                    {% if siteSeries[site.id]|default(0) %}
+                        <span class="stations-map-pill">
+                            {{ button }}
+                            {% set label = 'map.siteSearch'|trans({'%name%': site.nom}) %}
+                            <a class="stations-map-page" href="{{ path('bdoh_consult_advancedSearch', {site: site.nom|trim}) }}"
+                               title="{{ label }}" aria-label="{{ label }}"><span aria-hidden="true">→</span></a>
+                        </span>
+                    {% else %}
+                        {{ button }}
+                    {% endif %}
                 {% endfor %}
             </div>
         {% endif %}

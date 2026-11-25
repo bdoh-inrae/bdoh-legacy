@@ -142,10 +142,12 @@
             });
         };
         items.forEach((item) => {
-            item.addEventListener('mouseenter', () => light(item));
-            item.addEventListener('focusin', () => light(item));
-            item.addEventListener('mouseleave', () => light(pinned));
-            item.addEventListener('focusout', () => light(pinned));
+            // Une pastille d'observatoire a, à côté de son bouton, le chevron vers sa page : le survol vaut pour les deux
+            const zone = item.closest('.stations-map-pill') || item;
+            zone.addEventListener('mouseenter', () => light(item));
+            zone.addEventListener('focusin', () => light(item));
+            zone.addEventListener('mouseleave', () => light(pinned));
+            zone.addEventListener('focusout', () => light(pinned));
             if (item.tagName === 'BUTTON') {
                 item.addEventListener('click', () => {
                     pinned = pinned === item ? null : item;

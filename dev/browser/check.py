@@ -380,6 +380,16 @@ def public_steps(s, station, chronique):
             before = text.bounding_box()['height']
             toggle.click()
             assert text.bounding_box()['height'] > before, 'une description repliée ne se déplie pas'
+        # Le chevron d'un site qui a des chroniques mène à la recherche de ses données (Lou, 2026-11-25)
+        arrow = page.locator('.stations-map-pill a.stations-map-page').first
+        assert arrow.count(), 'aucun site avec son chevron sous la carte'
+        assert arrow.get_attribute('aria-label'), 'le chevron d’un site n’a pas de nom'
+        href = arrow.get_attribute('href')
+        assert 'nos-donnees?site=' in href, href
+        arrow.scroll_into_view_if_needed()
+        with page.expect_navigation():
+            arrow.click()
+        assert '/nos-donnees' in page.url, f'le chevron d’un site mène à {page.url}'
 
     def portal_home(page):
         stations_map(page)
@@ -392,6 +402,17 @@ def public_steps(s, station, chronique):
         pills = page.locator('.stations-map-pill')
         assert pills.count() == page.locator('button.stations-map-site[data-map-observatoire]').count(), \
             'une pastille d’observatoire sans sa flèche'
+        # Survoler le chevron garde allumées les stations de sa pastille (Lou, 2026-11-25)
+        stations = json.loads(page.locator('.stations-map').first.get_attribute('data-stations'))
+        pill = pills.filter(has=page.locator('button:not([disabled])')).first
+        name = pill.locator('button').get_attribute('data-map-observatoire')
+        page.mouse.move(2, 2)  # arriver de l'extérieur : l'étape d'avant laisse la souris sur une pastille
+        page.wait_for_timeout(200)
+        pill.locator('a.stations-map-page').hover()
+        page.wait_for_timeout(200)
+        lit = page.locator('.stations-map path.leaflet-interactive[fill-opacity="1"]').count()
+        wanted = sum(s['observatoire'] == name for s in stations)
+        assert lit == wanted, f'chevron de {name} survolé : {lit} stations allumées pour {wanted}'
         arrow = pills.first.locator('a.stations-map-page')
         assert arrow.get_attribute('aria-label'), 'la flèche d’une pastille n’a pas de nom'
         box = arrow.bounding_box()

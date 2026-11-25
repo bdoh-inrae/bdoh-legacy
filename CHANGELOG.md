@@ -4,6 +4,18 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/). Numéros de v
 
 ## Non publié
 
+## 0.9.5 - 2026-11-25
+
+Les sites aussi ont leur chevron, et le survol tient jusqu'au chevron.
+
+### Ajouté
+
+- Sur l'accueil d'un observatoire, chaque pastille de site sous la carte, si le site a des chroniques, a à sa fin un chevron qui mène à la recherche de ses données, comme son nom dans la liste des sites.
+
+### Corrigé
+
+- Survoler le chevron d'une pastille garde allumées ses stations sur la carte : elles s'éteignaient dès qu'on quittait le nom.
+
 ## 0.9.4 - 2026-11-25
 
 Le chevron des pastilles de l'accueil, rapproché du nombre.
