@@ -106,7 +106,15 @@ Les trois partenaires d'OTHU arrivent avec la fusion, après la migration des lo
 sudo make vm-apache
 ```
 
-Écrit le site Apache (`config/deploy/apache-site.conf`), demande le mot de passe d'accès des essais (compte `test`, partagé avec les testeurs ; rien ne s'affiche pendant la frappe, et deux Entrée laissent un fichier sans le compte, que `vm-apache` relancé ne redemande pas ; il se pose ou se change par `sudo htpasswd /etc/apache2/bdoh-prod.htpasswd test`), et recharge Apache. Le certificat est celui, auto-signé, du paquet `ssl-cert`, jusqu'à ce que le port 443 soit ouvert à Internet et que le nom mène à la VM : celui du nom public se fait alors sur la VM, par `mod_md` ("À l'ouverture au public").
+Écrit le site Apache (`config/deploy/apache-site.conf`), demande le mot de passe d'accès des essais (compte `test`, partagé avec les testeurs ; rien ne s'affiche pendant la frappe, et deux Entrée laissent un fichier sans le compte, que `vm-apache` relancé ne redemande pas ; il se pose ou se change par `sudo htpasswd /etc/apache2/bdoh-prod.htpasswd test`), et recharge Apache. Le site prend le nom de `DEFAULT_URI` (`ServerName`). Son certificat est d'abord celui, auto-signé, du paquet `ssl-cert`.
+
+Le certificat du nom public, une fois le nom mené à la VM et le port 443 ouvert à Internet (section 5, "Depuis Internet, le port") :
+
+```
+sudo make vm-certificate
+```
+
+Apache le demande à Let's Encrypt et le renouvelle seul, par son module `mod_md`. Le nom se valide par le port 443 (méthode TLS-ALPN-01), le 80 étant fermé depuis Internet. Tant qu'il n'a pas de certificat, `mod_md` répond 503 à tout le site : sans certificat au bout de trois minutes, l'étape retire le module, le site revient au certificat auto-signé, et elle affiche ce qu'en dit `mod_md`. Un certificat renouvelé attend dans `/etc/apache2/md/staging/`, et prend effet au rechargement d'Apache que logrotate fait chaque nuit. Revenir au certificat auto-signé, une fois le vrai en place : `sudo a2dismod md && sudo systemctl restart apache2` ; mais l'en-tête HSTS dit aux navigateurs passés entre-temps de refuser pendant un an un certificat qui n'est pas valide.
 
 ## 4. Courriels, file de tâches, sauvegardes
 
@@ -152,6 +160,8 @@ sudo make vm-update V=vX.Y.Z
 
 La mise à jour part du script de la version installée : depuis la 0.7.0, elle demande encore `sudo make vm-update NOM=prod V=…`, une dernière fois ; ensuite, `NOM` n'est plus à donner.
 
+Une instance qui passe à la 0.9.2 ou après : `sudo make vm-apache` après la mise à jour, qui donne son nom au site Apache, puis `sudo make vm-certificate` (section 3).
+
 Une instance installée avant la 0.9.1 qui passe à la 0.9.1 ou après : déballer d'abord les logos des partenaires, que sa migration demande (section 2), dans `/var/www/bdoh-prod` :
 
 ```
@@ -186,7 +196,7 @@ Sur le poste, le 16 novembre : 1,3 s (128 000 lignes), 6,1 s (526 000), 15 s (9 
 
 ## À l'ouverture au public
 
-Retirer le bloc `<Location />` du site (`config/deploy/apache-site.conf`) ; vider `MAILER_DIVERT_TO` et `MAILER_ALLOWED_RECIPIENTS` ; le certificat du nom public, par `mod_md` une fois le port ouvert à Internet ; `SYMFONY_TRUSTED_HOSTS` réduit au nom, l'ancienne adresse IP retirée. Le nom est dans `DEFAULT_URI` et `SYMFONY_TRUSTED_HOSTS` depuis le 16 novembre (`dev/plans/2026-10-26_deployment.md`, Suivi) : `vm-env` ne réécrit pas un `.env` existant, ces deux lignes se changent à la main, points échappés dans `SYMFONY_TRUSTED_HOSTS` (`'^(nom\.public|adresse\.ip)$'`), puis la file se relance ; le flux vers Theia/OZCAR ; le reste dans `dev/plans/2026-10-26_deployment.md`.
+Retirer le bloc `<Location />` du site (`config/deploy/apache-site.conf`) ; vider `MAILER_DIVERT_TO` et `MAILER_ALLOWED_RECIPIENTS` ; le certificat du nom public (`make vm-certificate`, section 3), s'il n'est pas déjà fait ; `SYMFONY_TRUSTED_HOSTS` réduit au nom, l'ancienne adresse IP retirée. Le nom est dans `DEFAULT_URI` et `SYMFONY_TRUSTED_HOSTS` depuis le 16 novembre (`dev/plans/2026-10-26_deployment.md`, Suivi) : `vm-env` ne réécrit pas un `.env` existant, ces deux lignes se changent à la main, points échappés dans `SYMFONY_TRUSTED_HOSTS` (`'^(nom\.public|adresse\.ip)$'`), puis la file se relance ; le flux vers Theia/OZCAR ; le reste dans `dev/plans/2026-10-26_deployment.md`.
 
 Le compteur des consultations a compté les essais : le vider, pour que le compte public parte de la réouverture (la page d'une chronique dit "depuis" la première date du compteur) :
 

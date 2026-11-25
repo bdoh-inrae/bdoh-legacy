@@ -178,9 +178,19 @@ cmd_db() {
     echo "Base $base prête."
 }
 
+# Le nom du site, celui de DEFAULT_URI (.env)
+site_name() {
+    local name
+    name=$(sed -n 's|^DEFAULT_URI=https\?://\([^:/]*\).*|\1|p' .env)
+    [[ -n $name ]] || die "DEFAULT_URI introuvable dans .env"
+    printf '%s' "$name"
+}
+
 cmd_apache() {
     instance
-    sed -e "s/@NOM@/$NOM/g" -e "s/@PORT@/$port/g" config/deploy/apache-site.conf \
+    local name
+    name=$(site_name)
+    sed -e "s/@NOM@/$NOM/g" -e "s/@PORT@/$port/g" -e "s/@NAME@/$name/g" config/deploy/apache-site.conf \
         > "/etc/apache2/sites-available/bdoh-$NOM.conf"
     local access=/etc/apache2/bdoh-$NOM.htpasswd
     [[ -f $access ]] || { echo "Mot de passe d'accès des essais, compte « test » :"; htpasswd -c "$access" test; }
@@ -189,6 +199,50 @@ cmd_apache() {
     apache2ctl configtest
     systemctl reload apache2
     echo "Site en ligne sur le port $port, derrière le mot de passe d'accès."
+}
+
+# Le certificat du nom public, par mod_md (dev/deploy/README.md, section 3), une fois le nom mené à la VM et le
+# port 443 ouvert à Internet. Tant qu'il n'a pas de certificat, mod_md répond 503 au nom : sans certificat au bout
+# de trois minutes, le module est retiré, et le site revient au certificat auto-signé.
+has_certificate() {
+    [[ -f /etc/apache2/md/domains/$1/pubcert.pem || -f /etc/apache2/md/staging/$1/pubcert.pem ]]
+}
+
+md_off() {
+    a2dismod -q md
+    systemctl restart apache2
+    die "$1 mod_md retiré : le site est revenu au certificat auto-signé."
+}
+
+cmd_certificate() {
+    instance
+    local name i
+    name=$(site_name)
+    [[ ! $name =~ ^[0-9.]+$ ]] || die "DEFAULT_URI porte une adresse IP ($name) : le certificat demande le nom"
+    grep -q "ServerName $name\$" "/etc/apache2/sites-available/bdoh-$NOM.conf" \
+        || die "Le site Apache ne porte pas le nom $name : sudo make vm-apache d'abord"
+    a2enmod -q md
+    apache2ctl configtest || md_off "Configuration refusée."
+    # Chargé, mod_md ne se met au travail qu'au rechargement suivant
+    systemctl reload apache2
+    systemctl reload apache2
+    step "Demande du certificat de $name à Let's Encrypt (trois minutes au plus)"
+    for ((i = 0; i < 90; i++)); do
+        has_certificate "$name" && break
+        sleep 2
+    done
+    if ! has_certificate "$name"; then
+        echo "Ce qu'en dit mod_md :"
+        grep -F '[md:' /var/log/apache2/error.log | tail -n 15 || true
+        md_off "Pas de certificat."
+    fi
+    # Un certificat obtenu ou renouvelé attend dans md/staging, et prend effet au rechargement d'Apache :
+    # maintenant, puis celui que logrotate fait chaque nuit
+    systemctl reload apache2
+    sleep 2
+    echo | openssl s_client -connect 127.0.0.1:443 -servername "$name" 2>/dev/null \
+        | openssl x509 -noout -subject -issuer -enddate || true
+    step "Certificat en place pour $name"
 }
 
 # Une ligne du .env remplacée, la valeur lue sur l'entrée standard : rien ne passe par la ligne de commande,
@@ -380,5 +434,5 @@ cmd_status() {
 }
 
 [[ $(id -u) == 0 ]] || die "En root : sudo make vm-…"
-[[ $# -eq 1 && $(type -t "cmd_${1//-/_}") == function ]] || die "Étapes : deps env build db apache mail mail-test worker backup update merge-othu unmerge-othu status"
+[[ $# -eq 1 && $(type -t "cmd_${1//-/_}") == function ]] || die "Étapes : deps env build db apache certificate mail mail-test worker backup update merge-othu unmerge-othu status"
 "cmd_${1//-/_}"; exit

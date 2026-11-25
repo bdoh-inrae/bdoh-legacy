@@ -4,6 +4,18 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/). Numéros de v
 
 ## Non publié
 
+## 0.9.2 - 2026-11-25
+
+Le certificat du site, que la VM demande et renouvelle elle-même.
+
+### Ajouté
+
+- `make vm-certificate` demande à Let's Encrypt le certificat du nom public, par le module `mod_md` d'Apache, qui le renouvelle ensuite seul. Le nom se valide par le port 443, le 80 restant fermé depuis Internet. Les navigateurs n'avertissent plus d'un risque de sécurité. Sans certificat au bout de trois minutes, le site revient de lui-même au certificat auto-signé.
+
+### Modifié
+
+- Le site Apache porte le nom de `DEFAULT_URI` : `make vm-apache` est à relancer après la mise à jour.
+
 ## 0.9.1 - 2026-11-23
 
 La version du pré-essai : le contenu de la base relu, les logos des partenaires ajoutés et ceux d'INRAE uniformisés, l'en-tête replié sur un téléphone.
