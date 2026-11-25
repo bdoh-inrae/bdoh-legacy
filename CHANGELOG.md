@@ -4,6 +4,10 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/). Numéros de v
 
 ## Non publié
 
+### Sécurité
+
+- Twig passe à 3.31.1, qui corrige neuf avis publiés les 23 et 24 novembre. Un seul peut toucher BDOH : une variable nommée comme l'alias d'un import de macros pouvait échapper à l'échappement automatique. Les huit autres visent le bac à sable de Twig, que BDOH n'emploie pas.
+
 ## 0.9.2 - 2026-11-25
 
 Le certificat du site, que la VM demande et renouvelle elle-même.
