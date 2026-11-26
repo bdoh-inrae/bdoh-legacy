@@ -176,8 +176,10 @@ def page_cases(base):
          WHERE n = 1 ORDER BY slug, id""")
     for slug, station, code, cid in chroniques:
         paths.append(f'/{slug}/{station}/{code}')
+        # Trois jours : moins de valeurs que le seuil d'allègement (GRAPH_MAX_POINTS, 2 114 au plus sur bdoh_small),
+        # pour comparer les valeurs exactes à celles de l'ancien ; l'allègement a son propre cas (thinned_checks)
         paths.append(f'/{slug}/chronique/{cid}/measures?beginDate=2024-03-01T00:00:00Z'
-                     '&endDate=2024-04-01T00:00:00Z')
+                     '&endDate=2024-03-04T00:00:00Z')
     # Le visualiseur d'une chronique visible de chaque échantillonnage et de chaque direction : une moyenne sans
     # direction se dessine « en avance », un cumul a ses propres séries (ChroniqueContinueRepository::getOneChronicleViewerData)
     for slug, station, code, cid in query(base, f"""
@@ -187,7 +189,7 @@ def page_cases(base):
                AND EXISTS (SELECT 1 FROM mesure m WHERE m.chronique_id = c.id AND m.date >= '2024-03-01' AND m.date < '2024-04-01')
              ORDER BY e.code, coalesce(ch.directionmesure, ''), c.id"""):
         paths += [f'/{slug}/{station}/{code}', f'/{slug}/chronique/{cid}/measures?beginDate=2024-03-01T00:00:00Z'
-                                               '&endDate=2024-04-01T00:00:00Z']
+                                               '&endDate=2024-03-04T00:00:00Z']
     # Les configurations incomplètes relevées par l'inspection des bases, qui doivent s'afficher : la
     # première chronique calculée sans première transformation, et la page des transformations qui
     # la décrit ; la première chronique convertie sans conversion
@@ -212,7 +214,7 @@ def page_cases(base):
              WHERE {CHRONIQUE_IN_VIEW} AND r.utilisateur_id = (SELECT min(u.id) FROM utilisateur u WHERE {CHRONIQUE_USER})
              ORDER BY c.id LIMIT 1"""):
         paths += [f'/{slug}/{station}/{code}', f'/{slug}/viewer/load?start=2024-03-01T00:00:00Z&end=2024-04-01T00:00:00Z',
-                  f'/{slug}/chronique/{cid}/measures?beginDate=2024-03-01T00:00:00Z&endDate=2024-04-01T00:00:00Z']
+                  f'/{slug}/chronique/{cid}/measures?beginDate=2024-03-01T00:00:00Z&endDate=2024-03-04T00:00:00Z']
     for slug in observatoires[:3]:
         paths.append(f'/{slug}/viewer/load?start=2024-03-01T00:00:00Z&end=2024-04-01T00:00:00Z')
         # Les pages des imports et des transformations (module 4)
@@ -1446,9 +1448,9 @@ def overview_checks(base, side, report):
 
 def thinned_checks(base, side, report):
     """Le graphique allégé d'une chronique, que le nouveau calcule autrement (2026-11-12, dev/differences.md, « Graphique
-    d'une chronique ») : pour la chronique continue visible qui a le plus de mesures valides en 2024, au-delà de
-    50 000, toute l'année, sans compte. La réponse se dit allégée et compte les mesures valides de la base ; ses points
-    valides sont de vraies mesures (date et valeur), 50 000 au plus ; la plus petite et la plus grande valeur valide de
+    d'une chronique ») : pour la chronique continue visible qui a le plus de mesures valides en 2024, au-delà du seuil
+    (GRAPH_MAX_POINTS), toute l'année, sans compte. La réponse se dit allégée et compte les mesures valides de la base ; ses
+    points valides sont de vraies mesures (date et valeur), au plus autant que le seuil ; la plus petite et la plus grande valeur valide de
     l'année y sont : aucun pic ne se perd. Les points des lacunes et des invalides, qui raccordent les séries, ne se
     vérifient que par leur date."""
     label = 'nouveau seul : graphique allégé, pics et mesures de la base'
@@ -1459,7 +1461,7 @@ def thinned_checks(base, side, report):
                               JOIN station s ON s.id = c.station_id JOIN stations_sites ss ON ss.station_id = s.id
                               JOIN siteexperimental si ON si.id = ss.site_id JOIN observatoire o ON o.id = si.observatoire_id
                              WHERE c.estvisible AND c.dtype = 'continue'
-                             GROUP BY o.slug, c.id HAVING count(*) FILTER (WHERE q.ordre NOT IN (100, 200)) > 50000
+                             GROUP BY o.slug, c.id HAVING count(*) FILTER (WHERE q.ordre NOT IN (100, 200)) > {GRAPH_MAX_POINTS}
                              ORDER BY 3 DESC, c.id LIMIT 1""")
     if not found:
         report.add(label, [NO_CASE], [NO_CASE])
@@ -1484,7 +1486,7 @@ def thinned_checks(base, side, report):
         values = [v for _, v in measures]
         if not data['tooManyPoints'] or data['validMeasureCount'] != int(valid):
             problems.append(f"allègement {data['tooManyPoints']}, {data['validMeasureCount']} mesures valides pour {valid}")
-        if not 0 < len(points) <= 50000:
+        if not 0 < len(points) <= GRAPH_MAX_POINTS:
             problems.append(f'{len(points)} points valides')
         if any(point not in measures for point in points):
             problems.append(f'{sum(point not in measures for point in points)} points qui ne sont pas des mesures')
@@ -2036,6 +2038,8 @@ def other_tables_lines(base, known):
     return [*lines, f'schéma temp\t{temp} tables']
 
 
+# Le seuil d'allègement des graphiques du nouveau, celui de sa configuration (GRAPH_MAX_POINTS, services.yml de BdohDataBundle)
+GRAPH_MAX_POINTS = 5000
 SINK_HOST, SINK_PORT = '172.30.26.1', 2525  # smtp_sink(), sur la passerelle du réseau de compose.yaml
 MAILPIT = 'http://172.30.26.25:8025'  # service mailpit de compose.yaml (make mail-start)
 
