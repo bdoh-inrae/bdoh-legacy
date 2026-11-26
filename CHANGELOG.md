@@ -4,9 +4,18 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/). Numéros de v
 
 ## Non publié
 
+## 0.9.8 - 2026-11-26
+
+Symfony corrigé, le port 80 renvoyé vers https, et les courriels retenus pendant les essais marqués.
+
 ### Ajouté
 
 - Le port 80 renvoie tout vers le site en https, chemin compris (`make vm-apache`) : le nom tapé seul, un lien en http ou une adresse IP y mènent, au lieu de la page par défaut d'Ubuntu.
+- Pendant les essais, un courriel dont un destinataire n'est pas dans la liste (`MAILER_ALLOWED_RECIPIENTS`) le dit en tête de son objet, en majuscules : "[ESSAIS : NON ENVOYÉ À …]". L'adresse de détournement reçoit toujours tout, mais distingue ainsi un courriel retenu d'un courriel bien arrivé.
+
+### Sécurité
+
+- Symfony 7.4.24, contre quinze avis du 25 novembre sur neuf de ses paquets, qui font échouer les contrôles de GitHub (`composer audit`) depuis le 26. Neuf touchent ce dont BDOH se sert : l'envoi des courriels (`require_tls` contournable, réponses injectées par un intermédiaire), les redirections et la génération d'adresses vers un autre hôte, les jetons du cookie de connexion, le contrôle d'accès, le sérialiseur.
 
 ## 0.9.7 - 2026-11-26
 
