@@ -4,6 +4,10 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/). Numéros de v
 
 ## Non publié
 
+## 0.10.2 - 2026-11-26
+
+Les boutons de la bande du graphique, de nouveau cliquables à la semaine, et la bulle de l'allègement qui dit le bon seuil.
+
 ### Corrigé
 
 - Sur le graphique d'une chronique, à la semaine et en deçà, les dates de l'axe, qui portent alors l'heure et s'écrivent plus longues à la verticale, débordaient sous le graphique : elles couvraient la ligne de la bande, et ses boutons de période ne se cliquaient plus. La place sous la grille suit désormais la longueur des dates, dans la même hauteur de graphique : la bande ne bouge pas. La grille s'arrête aussi à la même verticale que la bande, à droite, comme le zoom à la molette le supposait.
