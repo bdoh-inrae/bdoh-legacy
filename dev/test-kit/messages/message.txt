@@ -24,7 +24,6 @@ Il me faut deux choses de votre part avant le {date} :
    identifiant : test
    mot de passe : [à compléter]
    C'est l'accès au site d'essai. Ensuite, on se connecte à BDOH comme d'habitude, avec son adresse.
-   Votre navigateur vous avertira d'abord d'un risque de sécurité : le site d'essai n'a pas encore son vrai certificat. Passez outre ("Paramètres avancés" ou "Avancé", puis "Continuer" ou "Accepter le risque").
    Faites ce que vous faites d'habitude, un import, un export, et regardez la carte de votre observatoire, une station mal placée s'y voit. C'est la vraie base de données. Ce que vous y écrivez reste, et ce site deviendra le vrai BDOH. Si vous faites une modification destructrice (une suppression, un import qui écrase des mesures), dites-le-moi et je la réparerai depuis la sauvegarde faite avant les essais. Pour le reste, ne me dites que ce qui cloche.
 
 {onglet}
