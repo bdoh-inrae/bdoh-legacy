@@ -143,7 +143,7 @@ sudo runuser -u postgres -- dropdb bdoh_essai
 - `sudo make vm-status` : version, services, et l'accueil qui répond 401 (derrière le mot de passe d'accès).
 - L'accueil, dans un navigateur ; les logos sont là ; OTHU parmi les observatoires.
 - Un lien de connexion arrive sur une adresse INRAE et sur une adresse extérieure, et le bouton connecte. Une messagerie qui ouvre les liens pour les analyser ne doit pas le consommer.
-- Un courriel vers une adresse hors de la liste arrive à `MAILER_DIVERT_TO`, et pas à son destinataire.
+- Un courriel vers une adresse hors de la liste arrive à `MAILER_DIVERT_TO`, et pas à son destinataire, son objet commençant par `[ESSAIS : NON ENVOYÉ À …]` (0.9.8). Celui d'une adresse de la liste arrive aux deux, l'objet inchangé.
 - Un export, un import, et un calcul qui se relance : `systemctl status bdoh-job-worker@prod`, et la page des tâches.
 - Arrêter PostgreSQL 30 s, le relancer : la file repart seule.
 - Depuis Internet, le port : l'API de check-host.net, `https://check-host.net/check-tcp?host=ADRESSE-IP:443&max_nodes=4` avec l'en-tête `Accept: application/json`, puis `https://check-host.net/check-result/<request_id>` quelques secondes après. "Connection timed out" : bloqué en chemin ; "Connection refused" : arrivé à la VM, rien n'écoute. Un navigateur à qui l'on tape le nom seul se rabat sur `http`, donc sur le port 80, tant que le certificat n'est pas valide : il ne dit rien du 443.

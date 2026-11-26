@@ -36,6 +36,8 @@ import contextlib
 import datetime
 import decimal
 import difflib
+import email.parser
+import email.policy
 import hashlib
 import html
 import html.parser
@@ -3990,7 +3992,7 @@ LOGIN_LINK = re.compile(r'(<site>)?/[\w-]+/login_check\?[^\s"<]+')
 
 @contextlib.contextmanager
 def smtp_sink():
-    """Un serveur SMTP réduit, le temps du bloc : rend la liste où s'ajoute chaque (destinataires réels) reçu. Mailpit
+    """Un serveur SMTP réduit, le temps du bloc : rend la liste où s'ajoute chaque (destinataires réels, objet) reçu. Mailpit
     ne les dit pas : il lit l'en-tête To, que le détournement laisse tel quel. Il écoute sur la passerelle du réseau."""
     received = []
 
@@ -4004,9 +4006,11 @@ def smtp_sink():
                     recipients += re.findall(r'<([^>]+)>', line.decode('utf-8', 'replace'))
                 if command == 'DATA':
                     self.wfile.write(b'354 go\r\n')
-                    while self.rfile.readline().rstrip(b'\r\n') != b'.':
-                        pass
-                    received.append(recipients)
+                    data = b''
+                    while (chunk := self.rfile.readline()).rstrip(b'\r\n') != b'.':
+                        data += chunk
+                    headers = email.parser.BytesParser(policy=email.policy.default).parsebytes(data, headersonly=True)
+                    received.append((recipients, str(headers['subject'] or '')))
                     recipients = []
                 self.wfile.write(b'221 bye\r\n' if command == 'QUIT' else b'250 ok\r\n')
                 if command == 'QUIT':
@@ -4622,8 +4626,13 @@ def run_accounts(args):
                 time.sleep(0.25)
         ENV_LOCAL.write_text(f'DATABASE_URL="{NEW_URL.format(base)}"\nMAILER_DSN=smtp://mailpit:1025\n')
         check('courriels détournés pendant les essais, sauf la liste',
-              len(received) == 2 and sorted(received[0]) == sorted(['essais@example.invalid', kept])
-              and received[1] == ['essais@example.invalid'], f'reçus : {received}')
+              len(received) == 2 and sorted(received[0][0]) == sorted(['essais@example.invalid', kept])
+              and received[1][0] == ['essais@example.invalid'], f'reçus : {received}')
+        # L'objet le dit quand un destinataire n'est pas dans la liste, pour que la copie d'un courriel retenu se
+        # distingue de celle d'un courriel arrivé (TrialMailMarker)
+        check("objet d'un courriel retenu marqué, pendant les essais",
+              len(received) == 2 and not received[0][1].startswith('[ESSAIS')
+              and received[1][1].startswith(f'[ESSAIS : NON ENVOYÉ À {diverted}] '), f'objets : {[r[1] for r in received]}')
 
         # Changer d'adresse déconnecte, et un lien part vers la nouvelle
         user = Client(side, NEW_EMAIL, slug)
