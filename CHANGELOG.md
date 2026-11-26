@@ -4,6 +4,19 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/). Numéros de v
 
 ## Non publié
 
+## 0.10.0 - 2026-11-26
+
+Les robots d'IA écartés, les humains et les moteurs de recherche admis.
+
+### Ajouté
+
+- Anubis devant BDOH sur la VM (`make vm-anubis`, avant `make vm-apache`) : les robots d'IA connus et les navigateurs sans écran refusés, les moteurs de recherche admis, vérifiés par leurs adresses, et tout autre visiteur mis au défi, quelques secondes de calcul dans le navigateur à la première visite. Un script (curl, Python) n'atteint plus les pages.
+- Une limite par adresse IP sur les données des graphiques, qui rendaient sans compte jusqu'à 50 000 valeurs par requête : 600 requêtes par heure (`GRAPH_DATA_PER_HOUR`), puis 429.
+
+### Modifié
+
+- `robots.txt` admet Google, Bing, Qwant, DuckDuckGo et Apple, hors des données, des exports et des pages de compte, et refuse tout autre robot, l'entraînement des IA de Google et d'Apple compris. Il donne l'adresse du support pour un accès en masse.
+
 ## 0.9.8 - 2026-11-26
 
 Symfony corrigé, le port 80 renvoyé vers https, et les courriels retenus pendant les essais marqués.
