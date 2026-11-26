@@ -34,6 +34,8 @@ parameters:
     # Le détournement des courriels pendant les essais (.env.example) ; vides, rien n'est détourné
     env(MAILER_DIVERT_TO): ''
     env(MAILER_ALLOWED_RECIPIENTS): ''
+    # Les requêtes de données des graphiques par adresse IP et par heure (GraphDataLimiter, rate_limiter.yaml)
+    env(GRAPH_DATA_PER_HOUR): '600'
 
     absent_quality_codes:
         VALID:     a

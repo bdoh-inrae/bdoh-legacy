@@ -965,6 +965,10 @@ def run_pages(args):
         for profile, email in profiles(args.base).items():
             if args.profile and profile != args.profile:
                 continue
+            # Les données des graphiques sont limitées par adresse IP (GraphDataLimiter), et toutes les pages viennent
+            # d'une seule : le compteur repart de zéro pour chaque compte
+            if new.login_link:
+                subprocess.run([*new.console, 'cache:pool:clear', 'cache.rate_limiter', '--env=prod'], check=True, capture_output=True)
             clients = Client(old, email, slug), Client(new, email, slug)
 
             def fetch(path):

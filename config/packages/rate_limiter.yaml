@@ -26,3 +26,9 @@ framework:
             policy: sliding_window
             limit: 20
             interval: '1 hour'
+        # Les données des graphiques, sans compte (GraphDataLimiter) : de quoi parcourir des centaines de
+        # chroniques dans l'heure, pas de tout aspirer depuis une adresse. GRAPH_DATA_PER_HOUR, dans .env.
+        graph_data_ip:
+            policy: sliding_window
+            limit: '%env(int:GRAPH_DATA_PER_HOUR)%'
+            interval: '1 hour'
