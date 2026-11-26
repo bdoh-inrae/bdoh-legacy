@@ -4,6 +4,10 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/). Numéros de v
 
 ## Non publié
 
+### Ajouté
+
+- Le port 80 renvoie tout vers le site en https, chemin compris (`make vm-apache`) : le nom tapé seul, un lien en http ou une adresse IP y mènent, au lieu de la page par défaut d'Ubuntu.
+
 ## 0.9.7 - 2026-11-26
 
 Le certificat du site peut se demander sous le service Apache d'Ubuntu 26.04.
