@@ -6,7 +6,7 @@ Code de référence : commit `523cf8e32` de l'ancien dépôt (version 5.0.3, fé
 
 ## En cours
 
-La réouverture de BDOH, mi-décembre, après un pré-essai par deux gestionnaires et deux semaines d'essais par tous et toutes ; les essais deviennent la production s'ils passent. Le calendrier, chaque point, ce qui est décidé et son avancée : [dev/plans/2026-11-16_reopening.md](dev/plans/2026-11-16_reopening.md). La VM est réinstallée depuis le 24 novembre, à la 0.9.6 depuis le 25, et le DNS y mène `bdoh.inrae.fr` depuis le 25 ([dev/plans/2026-10-26_deployment.md](dev/plans/2026-10-26_deployment.md), Suivi). Ce qui est fait, version par version : `CHANGELOG.md`.
+La réouverture de BDOH, mi-décembre, après un pré-essai par deux gestionnaires et deux semaines d'essais par tous et toutes ; les essais deviennent la production s'ils passent. Le calendrier, chaque point, ce qui est décidé et son avancée : [dev/plans/2026-11-16_reopening.md](dev/plans/2026-11-16_reopening.md). La VM, réinstallée le 24 novembre, est ouverte à Internet depuis le 26, derrière le mot de passe des essais, avec son certificat et Anubis devant BDOH ; sa version et ce qui y reste à faire : [dev/plans/2026-10-26_deployment.md](dev/plans/2026-10-26_deployment.md), Suivi. Ce qui est fait, version par version : `CHANGELOG.md`.
 
 ## À faire
 
@@ -14,20 +14,20 @@ La réouverture de BDOH, mi-décembre, après un pré-essai par deux gestionnair
 
 Les numéros renvoient aux points du plan de la réouverture.
 
-L'ordre, décidé par Lou le 23 novembre : le pré-essai (parti le 25 novembre ; la VM à la 0.9.6 le même soir), puis les listes de diffusion, sauf point plus urgent.
+L'ordre, décidé par Lou le 23 novembre : le pré-essai (parti le 25 novembre), puis les listes de diffusion, sauf point plus urgent.
 
 1. La VM, réinstallée à la 0.9.1 la nuit du 23 au 24 novembre, OTHU compris. Ouverte à Internet le 26 novembre : le port 443, l'adresse des visiteurs qui arrive intacte, et le certificat de Let's Encrypt, avec la 0.9.7 (`dev/plans/2026-10-26_deployment.md`, Suivi du 26 novembre). Restent deux vérifications de la section 5 de `dev/deploy/README.md` : PostgreSQL arrêté 30 s, un courriel vers une adresse hors de la liste.
 2. Les retours du pré-essai, puis ceux des essais. Les statistiques, Lou les regarde sur la VM, en gestionnaire.
 3. Les listes de diffusion (5), une fois connu ce que permet `listes.inrae.fr`.
 4. Une relecture de sécurité et de robustesse de ce que le portage a ajouté (Lou, 23 novembre : dans un futur plus ou moins proche) : le compteur des consultations et la page des statistiques, l'export réglé sur son volume, les favoris, la connexion par lien, et tout texte de la base que le JavaScript insère en HTML. Quatre défauts de cette dernière sorte ont été trouvés et corrigés les 19 et 23 novembre (`dev/local/security.md`) ; la relecture du 15 novembre laissait à lire ce que BDOH passe à jQuery UI, DataTables, Select2 et aux réponses insérées par `.html()`.
 5. La validation, pendant les essais : les versions correctives de Doctrine, une passe de couverture, les invariants, les pannes provoquées, une relecture du code que la comparaison n'exécute pas, puis le code gelé et tous les modes sur la base complète et sur OTHU ([dev/plans/2026-11-04_validation.md](dev/plans/2026-11-04_validation.md)).
-6. Les robots d'IA écartés, avant que le mot de passe des essais parte (`dev/decisions.md`, 26 novembre) : `robots.txt`, Anubis devant le site, une limite sur les données des graphiques. Le chantier, ses étapes et son avancée : [dev/plans/2026-11-26_ai-robots.md](dev/plans/2026-11-26_ai-robots.md).
+6. Les robots d'IA écartés (`dev/decisions.md`, 26 novembre) : `robots.txt`, Anubis devant le site, une limite sur les données des graphiques, en service sur la VM depuis le 26 novembre. Reste, après l'ouverture, à lire dans les journaux ce que les robots tentent ([dev/plans/2026-11-26_ai-robots.md](dev/plans/2026-11-26_ai-robots.md)).
 
 ### Ce que fait Lou
 
 - Les questions de la relecture qui restent ([dev/plans/2026-11-19_review.md](dev/plans/2026-11-19_review.md), "Questions pour Lou", 2 et 3).
 - Le pré-essai : le point zéro gardé et sa restauration éprouvée, un import essayé sur la VM (24 novembre) ; les courriels partis le 25 novembre, sous VPN, celui d'Yzeron à 13 h 38 ([dev/plans/2026-11-16_reopening.md](dev/plans/2026-11-16_reopening.md), "Pour reprendre"). Un premier retour sur le message, le jour même, repris avec Lou dans `dev/test-kit/messages/message.txt`. Le 1er décembre, le kit régénéré avec les retours du pré-essai (`make test-kit`), et l'envoi à tous ([dev/test-kit/README.md](dev/test-kit/README.md)).
-- Sur la VM : installer chaque version (`sudo make vm-update V=…`), la 0.9.6 installée le 25 novembre au soir ; mesurer les exports (`dev/deploy/README.md`, "Mesurer les exports"), supprimer la sauvegarde de la fusion avortée du 23 novembre (`/var/backups/bdoh-kept/prod-avant-fusion-othu-2026-11-23-2358.dump`).
+- Sur la VM : installer chaque version (`sudo make vm-update V=…`, puis ce qu'elle demande : `dev/deploy/README.md`, "Installer une nouvelle version") ; mesurer les exports (`dev/deploy/README.md`, "Mesurer les exports"), supprimer la sauvegarde de la fusion avortée du 23 novembre (`/var/backups/bdoh-kept/prod-avant-fusion-othu-2026-11-23-2358.dump`).
 - Le site ouvert sans VPN, avec son certificat, et `SYMFONY_TRUSTED_HOSTS` réduit au nom (26 novembre) : un mot aux deux du pré-essai et aux deux collègues qui ont l'accès ; l'accueil vu depuis un téléphone en 4G ([dev/plans/2026-10-26_deployment.md](dev/plans/2026-10-26_deployment.md), Suivi). Avec l'infra, sans urgence : refermer le port 8443, qui ne sert plus. Les autres réglages de la VM : même plan, "La machine" et "Après".
 - Les essais à l'œil sur la VM : [dev/test-kit/lou-checklist.md](dev/test-kit/lou-checklist.md).
 - Ce que `listes.inrae.fr` permet aux propriétaires de listes (point 5 du plan de la réouverture).

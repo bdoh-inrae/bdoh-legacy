@@ -201,7 +201,7 @@ Sur le poste, le 16 novembre : 1,3 s (128 000 lignes), 6,1 s (526 000), 15 s (9 
 
 ## À l'ouverture au public
 
-Retirer le bloc `<Location />` du site (`config/deploy/apache-site.conf`) ; vider `MAILER_DIVERT_TO` et `MAILER_ALLOWED_RECIPIENTS` ; le certificat du nom public (`make vm-certificate`, section 3), s'il n'est pas déjà fait ; `SYMFONY_TRUSTED_HOSTS` réduit au nom, fait le 26 novembre. Le nom est dans `DEFAULT_URI` et `SYMFONY_TRUSTED_HOSTS` depuis le 16 novembre (`dev/plans/2026-10-26_deployment.md`, Suivi) : `vm-env` ne réécrit pas un `.env` existant, ces deux lignes se changent à la main, points échappés dans `SYMFONY_TRUSTED_HOSTS` (`'^(nom\.public|adresse\.ip)$'`), puis la file se relance ; le flux vers Theia/OZCAR ; le reste dans `dev/plans/2026-10-26_deployment.md`.
+Retirer le bloc `<Location />` du site (`config/deploy/apache-site.conf`, par une version, puis `make vm-apache`) ; vider `MAILER_DIVERT_TO` et `MAILER_ALLOWED_RECIPIENTS` dans `.env`, puis relancer la file ; ouvrir le flux vers Theia/OZCAR. Anubis et `robots.txt` restent (`dev/plans/2026-11-26_ai-robots.md`). Déjà faits, le 26 novembre : le certificat du nom public, et `SYMFONY_TRUSTED_HOSTS` réduit au nom. Le reste dans `dev/plans/2026-10-26_deployment.md`.
 
 Le compteur des consultations a compté les essais : le vider, pour que le compte public parte de la réouverture (la page d'une chronique dit "depuis" la première date du compteur) :
 
