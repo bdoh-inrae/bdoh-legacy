@@ -165,7 +165,7 @@ sudo make vm-update V=vX.Y.Z
 
 La mise à jour part du script de la version installée : depuis la 0.7.0, elle demande encore `sudo make vm-update NOM=prod V=…`, une dernière fois ; ensuite, `NOM` n'est plus à donner.
 
-Une instance qui passe à la 0.9.2 ou après : `sudo make vm-apache` après la mise à jour, qui donne son nom au site Apache, puis `sudo make vm-certificate` (section 3). De même pour la 0.9.7, qui met le magasin de `mod_md` sous `/var` : `vm-certificate` refuse un site Apache qui ne l'a pas. Pour la 0.9.8, `sudo make vm-apache` seul, qui ajoute le renvoi du port 80 vers `https`. Pour la 0.10.0, `sudo make vm-anubis` puis `sudo make vm-apache`, qui met Anubis devant BDOH.
+Une instance qui passe à la 0.9.2 ou après : `sudo make vm-apache` après la mise à jour, qui donne son nom au site Apache, puis `sudo make vm-certificate` (section 3). De même pour la 0.9.7, qui met le magasin de `mod_md` sous `/var` : `vm-certificate` refuse un site Apache qui ne l'a pas. Pour la 0.9.8, `sudo make vm-apache` seul, qui ajoute le renvoi du port 80 vers `https`. Pour la 0.10.0, `sudo make vm-anubis` puis `sudo make vm-apache`, qui met Anubis devant BDOH. Pour la 0.10.1, `sudo make vm-anubis`, qui réécrit ses réglages (son journal réduit à ses avertissements).
 
 Une instance installée avant la 0.9.1 qui passe à la 0.9.1 ou après : déballer d'abord les logos des partenaires, que sa migration demande (section 2), dans `/var/www/bdoh-prod` :
 

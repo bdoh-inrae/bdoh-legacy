@@ -1,7 +1,7 @@
 # BDOH, base de données des observatoires en hydrologie (INRAE).
-# Les données sont libres de réutilisation, sous Licence Ouverte, par le site.
+# Les chroniques ouvertes sont libres de réutilisation, sous Licence Ouverte, par le site.
 # Les robots d'IA n'y sont pas admis. Pour un accès en masse : bdoh.support@listes.inrae.fr
-# The data are free to reuse, under the Etalab Open Licence, through this site.
+# The open time series are free to reuse, under the Etalab Open Licence, through this site.
 # AI crawlers are not allowed. For bulk access: bdoh.support@listes.inrae.fr
 
 # Les moteurs de recherche : tout le site, sauf les données des graphiques, les exports et les pages
