@@ -4,6 +4,15 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/). Numéros de v
 
 ## Non publié
 
+## 0.9.7 - 2026-11-26
+
+Le certificat du site peut se demander sous le service Apache d'Ubuntu 26.04.
+
+### Corrigé
+
+- `make vm-certificate` arrêtait Apache : le service d'Ubuntu 26.04 rend `/etc` en lecture seule, où `mod_md` rangeait ses comptes et ses certificats. Ils vont dans `/var/lib/apache2/md`, et `make vm-apache` est à relancer avant l'étape.
+- Si Apache s'arrête en chargeant `mod_md`, l'étape retire le module et le relance, au certificat auto-signé, au lieu de laisser le site hors ligne. Elle ne commence pas si Apache ne tourne pas.
+
 ## 0.9.6 - 2026-11-25
 
 La page des favoris parle de sélection.
