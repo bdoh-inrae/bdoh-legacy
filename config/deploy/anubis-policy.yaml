@@ -1,0 +1,46 @@
+# La règle d'Anubis devant BDOH, copiée par make vm-anubis dans /etc/anubis/bdoh-@NOM@.botPolicies.yaml.
+# Plus fermée que celle par défaut d'Anubis (dev/plans/2026-11-26_ai-robots.md) : les robots d'IA refusés, les
+# moteurs de recherche admis, et tout le reste passe le défi, y compris ce qui ne se dit pas navigateur (curl,
+# scripts), que la règle par défaut laisserait passer. Une règle s'applique dès qu'elle correspond, dans l'ordre.
+# Les fichiers (data)/… sont ceux d'Anubis 1.28.2 (/usr/share/doc/anubis/data/).
+
+bots:
+  # Refusés : les robots pathologiques, les robots d'IA connus, les navigateurs sans écran
+  - import: (data)/bots/_deny-pathological.yaml
+  - import: (data)/bots/aggressive-brazilian-scrapers.yaml
+  - import: (data)/common/domain-fronting.yaml
+  - import: (data)/meta/ai-block-aggressive.yaml
+  - import: (data)/crawlers/xai.yaml
+  - import: (data)/bots/headless-browsers.yaml
+
+  # Admis : les moteurs de recherche, chacun vérifié par ses adresses, et l'outil de citation de Wikipédia.
+  # Écartés de la liste par défaut d'Anubis, des portes à rouvrir une à une si on le veut : Common Crawl, la
+  # source des corpus d'entraînement, Internet Archive, Yandex et les petits moteurs.
+  - import: (data)/crawlers/googlebot.yaml
+  - import: (data)/crawlers/bingbot.yaml
+  - import: (data)/crawlers/qwantbot.yaml
+  - import: (data)/crawlers/duckduckbot.yaml
+  - import: (data)/crawlers/applebot.yaml
+  - import: (data)/crawlers/wikimedia-citoid.yaml
+
+  # Admis : robots.txt, favicon, /.well-known/
+  - import: (data)/common/keep-internet-working.yaml
+
+  # Tout le reste passe le défi : quelques secondes de calcul dans le navigateur, puis un cookie de 7 jours, lié
+  # à l'adresse du visiteur
+  - name: tout-le-reste
+    path_regex: .*
+    action: CHALLENGE
+    challenge:
+      algorithm: fast
+      difficulty: 4
+
+# Les mesures d'Anubis, sur l'interface locale seulement
+metrics:
+  bind: "127.0.0.1:9090"
+  network: tcp
+
+dnsbl: false
+
+store:
+  backend: memory

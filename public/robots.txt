@@ -1,4 +1,39 @@
-# www.robotstxt.org/
-# www.google.com/support/webmasters/bin/answer.py?hl=en&answer=156449
+# BDOH, base de données des observatoires en hydrologie (INRAE).
+# Les données sont libres de réutilisation, sous Licence Ouverte, par le site.
+# Les robots d'IA n'y sont pas admis. Pour un accès en masse : bdoh.support@listes.inrae.fr
+# The data are free to reuse, under the Etalab Open Licence, through this site.
+# AI crawlers are not allowed. For bulk access: bdoh.support@listes.inrae.fr
 
+# Les moteurs de recherche : tout le site, sauf les données des graphiques, les exports et les pages
+# de compte ou trop lourdes
+User-agent: Googlebot
+User-agent: Bingbot
+User-agent: Qwantbot
+User-agent: DuckDuckBot
+User-agent: Applebot
+Disallow: /*/chronique/*/measures
+Disallow: /*/chronique/*/overview
+Disallow: /*/viewer/load
+Disallow: /*/mesure/export
+Disallow: /*/favorites
+Disallow: /favorites
+Disallow: /*/historique
+Disallow: /*/jobs/
+Disallow: /*/statistics
+Disallow: /*/besoin/
+Disallow: /*/user/
+Disallow: /user/
+Disallow: /*/login
+Disallow: /login
+Disallow: /*/resetting/
+Disallow: /select_lang/
+Allow: /
+
+# L'entraînement des IA de Google et d'Apple, que leurs moteurs de recherche servent aussi
+User-agent: Google-Extended
+User-agent: Applebot-Extended
+Disallow: /
+
+# Tous les autres robots
 User-agent: *
+Disallow: /

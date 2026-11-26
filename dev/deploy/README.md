@@ -103,10 +103,14 @@ Les trois partenaires d'OTHU arrivent avec la fusion, après la migration des lo
 ## 3. Le site
 
 ```
+sudo make vm-anubis
 sudo make vm-apache
 ```
 
-Écrit le site Apache (`config/deploy/apache-site.conf`), demande le mot de passe d'accès des essais (compte `test`, partagé avec les testeurs ; rien ne s'affiche pendant la frappe, et deux Entrée laissent un fichier sans le compte, que `vm-apache` relancé ne redemande pas ; il se pose ou se change par `sudo htpasswd /etc/apache2/bdoh-prod.htpasswd test`), et recharge Apache. Le site prend le nom de `DEFAULT_URI` (`ServerName`). Sur le port 80, il renvoie tout vers ce nom en `https`, chemin compris (0.9.8) : le nom tapé seul, un lien en `http`, une adresse IP. Son certificat est d'abord celui, auto-signé, du paquet `ssl-cert`.
+`vm-anubis` installe Anubis, qui écarte les robots d'IA (`dev/plans/2026-11-26_ai-robots.md`) : le paquet du projet, qu'Ubuntu 26.04 n'a pas, à la version et à l'empreinte fixées dans `config/deploy/vm.sh`, puis ses réglages et sa règle (`config/deploy/anubis.env`, `anubis-policy.yaml`) et le service `anubis@bdoh-prod`, sur l'interface locale. À relancer quand ces fichiers changent. `vm-apache` refuse sans lui : le site lui passe tout.
+
+
+Écrit le site Apache (`config/deploy/apache-site.conf`) : le port 443 termine le HTTPS et passe tout à Anubis, qui passe à BDOH, sur `127.0.0.1:3001`, ce qu'il laisse entrer. Il demande le mot de passe d'accès des essais (compte `test`, partagé avec les testeurs ; rien ne s'affiche pendant la frappe, et deux Entrée laissent un fichier sans le compte, que `vm-apache` relancé ne redemande pas ; il se pose ou se change par `sudo htpasswd /etc/apache2/bdoh-prod.htpasswd test`), et recharge Apache. Le site prend le nom de `DEFAULT_URI` (`ServerName`). Sur le port 80, il renvoie tout vers ce nom en `https`, chemin compris (0.9.8) : le nom tapé seul, un lien en `http`, une adresse IP. Son certificat est d'abord celui, auto-signé, du paquet `ssl-cert`.
 
 Le certificat du nom public, une fois le nom mené à la VM et le port 443 ouvert à Internet (section 5, "Depuis Internet, le port") :
 
@@ -148,6 +152,7 @@ sudo runuser -u postgres -- dropdb bdoh_essai
 - Arrêter PostgreSQL 30 s, le relancer : la file repart seule.
 - Depuis Internet, le port : l'API de check-host.net, `https://check-host.net/check-tcp?host=ADRESSE-IP:443&max_nodes=4` avec l'en-tête `Accept: application/json`, puis `https://check-host.net/check-result/<request_id>` quelques secondes après. "Connection timed out" : bloqué en chemin ; "Connection refused" : arrivé à la VM, rien n'écoute. Un navigateur à qui l'on tape le nom seul se rabat sur `http`, donc sur le port 80, tant que le certificat n'est pas valide : il ne dit rien du 443.
 - Depuis l'extérieur, un téléphone en 4G : l'accueil s'ouvre, et `sudo tail -n 5 /var/log/apache2/bdoh-prod-access.log` montre en tête de ligne l'adresse du téléphone. Une adresse privée d'INRAE veut dire qu'un équipement du réseau remplace celle des visiteurs : les limites par adresse vaudraient alors pour tout le site, et le compteur des consultations ne verrait qu'un visiteur. Voir s'il la transmet dans l'en-tête `X-Forwarded-For` (`SYMFONY_TRUSTED_PROXIES`, dans `.env`), sinon le demander à l'infra (`dev/plans/2026-10-26_deployment.md`, Suivi du 23 novembre).
+- Anubis : un navigateur qui arrive voit une fois la page de défi ("Making sure you're not a bot", ou en français selon le navigateur), puis le site ; `sudo tail -n 5 /var/log/apache2/bdoh-prod-app-access.log` montre en tête de ligne l'adresse des visiteurs qu'il laisse entrer ; `systemctl status anubis@bdoh-prod`. Le lien de connexion d'un courriel et le lien d'un export passent aussi par le défi.
 - Un import en plusieurs étapes, en redémarrant Apache entre deux : le service Apache d'Ubuntu a `PrivateTmp=true`, à voir ce que ça donne.
 
 Ensuite, la liste de Lou : [dev/test-kit/lou-checklist.md](../test-kit/lou-checklist.md).
@@ -160,7 +165,7 @@ sudo make vm-update V=vX.Y.Z
 
 La mise à jour part du script de la version installée : depuis la 0.7.0, elle demande encore `sudo make vm-update NOM=prod V=…`, une dernière fois ; ensuite, `NOM` n'est plus à donner.
 
-Une instance qui passe à la 0.9.2 ou après : `sudo make vm-apache` après la mise à jour, qui donne son nom au site Apache, puis `sudo make vm-certificate` (section 3). De même pour la 0.9.7, qui met le magasin de `mod_md` sous `/var` : `vm-certificate` refuse un site Apache qui ne l'a pas. Pour la 0.9.8, `sudo make vm-apache` seul, qui ajoute le renvoi du port 80 vers `https`.
+Une instance qui passe à la 0.9.2 ou après : `sudo make vm-apache` après la mise à jour, qui donne son nom au site Apache, puis `sudo make vm-certificate` (section 3). De même pour la 0.9.7, qui met le magasin de `mod_md` sous `/var` : `vm-certificate` refuse un site Apache qui ne l'a pas. Pour la 0.9.8, `sudo make vm-apache` seul, qui ajoute le renvoi du port 80 vers `https`. Pour la 0.10.0, `sudo make vm-anubis` puis `sudo make vm-apache`, qui met Anubis devant BDOH.
 
 Une instance installée avant la 0.9.1 qui passe à la 0.9.1 ou après : déballer d'abord les logos des partenaires, que sa migration demande (section 2), dans `/var/www/bdoh-prod` :
 

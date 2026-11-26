@@ -186,19 +186,57 @@ site_name() {
     printf '%s' "$name"
 }
 
+# Anubis devant BDOH, qui écarte les robots d'IA (dev/plans/2026-11-26_ai-robots.md) : le paquet du projet,
+# qu'Ubuntu 26.04 n'a pas, à la version et à l'empreinte fixées ici ; ses réglages et sa règle, tirés du dépôt.
+# À relancer quand config/deploy/anubis* change, ou pour changer de version (les deux lignes ci-dessous).
+anubis_version=1.28.2
+anubis_sha256=fbcd0f3ec8cad426eacc1873b0073285d824dafb4163fcfe3e1261f7d8190701
+
+cmd_anubis() {
+    instance
+    local name dir
+    name=$(site_name)
+    if [[ $(dpkg-query -W -f '${Version}' anubis 2>/dev/null) != "$anubis_version" ]]; then
+        dir=$(mktemp -d)
+        step "Téléchargement d'Anubis $anubis_version"
+        curl -fsSL -o "$dir/anubis.deb" \
+            "https://github.com/TecharoHQ/anubis/releases/download/v$anubis_version/anubis_${anubis_version}_amd64.deb"
+        echo "$anubis_sha256  $dir/anubis.deb" | sha256sum -c --quiet \
+            || die "Le paquet d'Anubis n'a pas l'empreinte attendue : rien n'est installé ($dir)"
+        apt-get install -y "$dir/anubis.deb"
+        rm -rf "$dir"
+    fi
+    sed -e "s/@NOM@/$NOM/g" -e "s/@NAME@/$name/g" config/deploy/anubis.env > "/etc/anubis/bdoh-$NOM.env"
+    sed -e "s/@NOM@/$NOM/g" config/deploy/anubis-policy.yaml > "/etc/anubis/bdoh-$NOM.botPolicies.yaml"
+    # Le service tourne sous un compte créé à son lancement (DynamicUser) : sa règle doit lui être lisible
+    chmod 644 "/etc/anubis/bdoh-$NOM.env" "/etc/anubis/bdoh-$NOM.botPolicies.yaml"
+    systemctl enable -q "anubis@bdoh-$NOM"
+    systemctl restart "anubis@bdoh-$NOM"
+    sleep 2
+    systemctl is-active --quiet "anubis@bdoh-$NOM" \
+        || { journalctl -u "anubis@bdoh-$NOM" -n 20 --no-pager; die "Anubis ne démarre pas"; }
+    step "Anubis en service sur 127.0.0.1:8923. Puis sudo make vm-apache, qui lui passe le site"
+}
+
 cmd_apache() {
     instance
     local name
     name=$(site_name)
+    # Le site passe tout à Anubis : sans lui, il répondrait 503
+    systemctl is-active --quiet "anubis@bdoh-$NOM" || die "Anubis ne tourne pas : sudo make vm-anubis d'abord"
     sed -e "s/@NOM@/$NOM/g" -e "s/@PORT@/$port/g" -e "s/@NAME@/$name/g" config/deploy/apache-site.conf \
         > "/etc/apache2/sites-available/bdoh-$NOM.conf"
     local access=/etc/apache2/bdoh-$NOM.htpasswd
     [[ -f $access ]] || { echo "Mot de passe d'accès des essais, compte « test » :"; htpasswd -c "$access" test; }
     chgrp www-data "$access" && chmod 640 "$access"
+    a2enmod -q proxy proxy_http remoteip headers
     a2ensite -q "bdoh-$NOM"
     apache2ctl configtest
     systemctl reload apache2
-    echo "Site en ligne sur le port $port, derrière le mot de passe d'accès."
+    # Un rechargement accepté peut finir en arrêt d'Apache, une fois la configuration relue (Suivi du 26 novembre)
+    sleep 3
+    systemctl is-active --quiet apache2 || die "Apache s'est arrêté en rechargeant : journalctl -u apache2"
+    echo "Site en ligne sur le port $port, derrière Anubis et le mot de passe d'accès."
 }
 
 # Le certificat du nom public, par mod_md (dev/deploy/README.md, section 3), une fois le nom mené à la VM et le
@@ -439,10 +477,10 @@ cmd_unmerge_othu() {
 cmd_status() {
     instance
     echo "Version : $(git describe --tags --always)"
-    systemctl is-active postgresql@18-main apache2 "bdoh-job-worker@$NOM" || true
+    systemctl is-active postgresql@18-main apache2 "anubis@bdoh-$NOM" "bdoh-job-worker@$NOM" || true
     curl -sk -o /dev/null -w "Accueil : %{http_code} (401 : en ligne, derrière le mot de passe d'accès)\n" "https://127.0.0.1:$port/"
 }
 
 [[ $(id -u) == 0 ]] || die "En root : sudo make vm-…"
-[[ $# -eq 1 && $(type -t "cmd_${1//-/_}") == function ]] || die "Étapes : deps env build db apache certificate mail mail-test worker backup update merge-othu unmerge-othu status"
+[[ $# -eq 1 && $(type -t "cmd_${1//-/_}") == function ]] || die "Étapes : deps env build db anubis apache certificate mail mail-test worker backup update merge-othu unmerge-othu status"
 "cmd_${1//-/_}"; exit
