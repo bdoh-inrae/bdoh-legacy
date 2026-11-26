@@ -203,15 +203,27 @@ cmd_apache() {
 
 # Le certificat du nom public, par mod_md (dev/deploy/README.md, section 3), une fois le nom mené à la VM et le
 # port 443 ouvert à Internet. Tant qu'il n'a pas de certificat, mod_md répond 503 au nom : sans certificat au bout
-# de trois minutes, le module est retiré, et le site revient au certificat auto-signé.
+# de trois minutes, ou si Apache s'arrête en chargeant le module, celui-ci est retiré, et le site revient au
+# certificat auto-signé. Le magasin de mod_md : MDStoreDir, dans config/deploy/apache-site.conf.
+md_store=/var/lib/apache2/md
+
 has_certificate() {
-    [[ -f /etc/apache2/md/domains/$1/pubcert.pem || -f /etc/apache2/md/staging/$1/pubcert.pem ]]
+    [[ -f $md_store/domains/$1/pubcert.pem || -f $md_store/staging/$1/pubcert.pem ]]
 }
 
 md_off() {
+    echo "Ce qu'en dit mod_md :"
+    grep -F -e '[md:' -e 'AH00020' /var/log/apache2/error.log | tail -n 6 || true
     a2dismod -q md
     systemctl restart apache2
     die "$1 mod_md retiré : le site est revenu au certificat auto-signé."
+}
+
+# Un rechargement accepté peut finir en arrêt d'Apache, une fois la configuration relue : systemd ne le dit qu'après
+md_reload() {
+    systemctl reload apache2 || md_off "Rechargement refusé."
+    sleep 3
+    systemctl is-active --quiet apache2 || md_off "Apache s'est arrêté en rechargeant."
 }
 
 cmd_certificate() {
@@ -221,25 +233,23 @@ cmd_certificate() {
     [[ ! $name =~ ^[0-9.]+$ ]] || die "DEFAULT_URI porte une adresse IP ($name) : le certificat demande le nom"
     grep -q "ServerName $name\$" "/etc/apache2/sites-available/bdoh-$NOM.conf" \
         || die "Le site Apache ne porte pas le nom $name : sudo make vm-apache d'abord"
+    grep -q "MDStoreDir $md_store\$" "/etc/apache2/sites-available/bdoh-$NOM.conf" \
+        || die "Le site Apache n'a pas le magasin de mod_md sous /var : sudo make vm-apache d'abord"
+    systemctl is-active --quiet apache2 || die "Apache ne tourne pas : sudo systemctl start apache2 d'abord"
     a2enmod -q md
     apache2ctl configtest || md_off "Configuration refusée."
     # Chargé, mod_md ne se met au travail qu'au rechargement suivant
-    systemctl reload apache2
-    systemctl reload apache2
+    md_reload
+    md_reload
     step "Demande du certificat de $name à Let's Encrypt (trois minutes au plus)"
     for ((i = 0; i < 90; i++)); do
         has_certificate "$name" && break
         sleep 2
     done
-    if ! has_certificate "$name"; then
-        echo "Ce qu'en dit mod_md :"
-        grep -F '[md:' /var/log/apache2/error.log | tail -n 15 || true
-        md_off "Pas de certificat."
-    fi
+    has_certificate "$name" || md_off "Pas de certificat."
     # Un certificat obtenu ou renouvelé attend dans md/staging, et prend effet au rechargement d'Apache :
     # maintenant, puis celui que logrotate fait chaque nuit
-    systemctl reload apache2
-    sleep 2
+    md_reload
     echo | openssl s_client -connect 127.0.0.1:443 -servername "$name" 2>/dev/null \
         | openssl x509 -noout -subject -issuer -enddate || true
     step "Certificat en place pour $name"

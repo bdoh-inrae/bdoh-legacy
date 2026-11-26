@@ -114,7 +114,7 @@ Le certificat du nom public, une fois le nom mené à la VM et le port 443 ouver
 sudo make vm-certificate
 ```
 
-Apache le demande à Let's Encrypt et le renouvelle seul, par son module `mod_md`. Le nom se valide par le port 443 (méthode TLS-ALPN-01), le 80 étant fermé depuis Internet. Tant qu'il n'a pas de certificat, `mod_md` répond 503 à tout le site : sans certificat au bout de trois minutes, l'étape retire le module, le site revient au certificat auto-signé, et elle affiche ce qu'en dit `mod_md`. Un certificat renouvelé attend dans `/etc/apache2/md/staging/`, et prend effet au rechargement d'Apache que logrotate fait chaque nuit. Revenir au certificat auto-signé, une fois le vrai en place : `sudo a2dismod md && sudo systemctl restart apache2` ; mais l'en-tête HSTS dit aux navigateurs passés entre-temps de refuser pendant un an un certificat qui n'est pas valide.
+Apache le demande à Let's Encrypt et le renouvelle seul, par son module `mod_md`. Le nom se valide par le port 443 (méthode TLS-ALPN-01), le 80 étant fermé depuis Internet. Tant qu'il n'a pas de certificat, `mod_md` répond 503 à tout le site : sans certificat au bout de trois minutes, ou si Apache s'arrête en chargeant le module, l'étape retire le module, le site revient au certificat auto-signé, et elle affiche ce qu'en dit `mod_md`. Ses comptes et ses certificats sont dans `/var/lib/apache2/md` (`MDStoreDir`) : le service Apache d'Ubuntu 26.04 rend `/etc` en lecture seule, et Apache s'arrêtait en chargeant le module avec le magasin par défaut, `/etc/apache2/md` (0.9.6, `dev/plans/2026-10-26_deployment.md`, Suivi du 26 novembre). Un certificat renouvelé attend dans `/var/lib/apache2/md/staging/`, et prend effet au rechargement d'Apache que logrotate fait chaque nuit. Revenir au certificat auto-signé, une fois le vrai en place : `sudo a2dismod md && sudo systemctl restart apache2` ; mais l'en-tête HSTS dit aux navigateurs passés entre-temps de refuser pendant un an un certificat qui n'est pas valide.
 
 ## 4. Courriels, file de tâches, sauvegardes
 
@@ -160,7 +160,7 @@ sudo make vm-update V=vX.Y.Z
 
 La mise à jour part du script de la version installée : depuis la 0.7.0, elle demande encore `sudo make vm-update NOM=prod V=…`, une dernière fois ; ensuite, `NOM` n'est plus à donner.
 
-Une instance qui passe à la 0.9.2 ou après : `sudo make vm-apache` après la mise à jour, qui donne son nom au site Apache, puis `sudo make vm-certificate` (section 3).
+Une instance qui passe à la 0.9.2 ou après : `sudo make vm-apache` après la mise à jour, qui donne son nom au site Apache, puis `sudo make vm-certificate` (section 3). De même pour la 0.9.7, qui met le magasin de `mod_md` sous `/var` : `vm-certificate` refuse un site Apache qui ne l'a pas.
 
 Une instance installée avant la 0.9.1 qui passe à la 0.9.1 ou après : déballer d'abord les logos des partenaires, que sa migration demande (section 2), dans `/var/www/bdoh-prod` :
 
