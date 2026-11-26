@@ -42,7 +42,7 @@ consult.help.range:
     too-big: Please select a time range less than 5 years.
 subsampledInfo(%num%): 'Lightened display: out of %num% values, the graph shows the highest and the lowest of each time slice. Narrow the period to see every value.'
 subsampledShort(%num%): 'Lightened display, %num% values'
-subsampledHelp: 'Beyond 50,000 valid values (25,000 for means), the graph is lightened: no peak is lost, and every change of quality shows.'
+subsampledHelp(%max%,%half%): 'Beyond %max% valid values (%half% for means), the graph is lightened: no peak is lost, and every change of quality shows.'
 chroniqueTitle(%station%, %typeParam%): >+
     Station: %station%<br/>Parameter: %typeParam%
 hideDisplayButton: Show/hide this time series

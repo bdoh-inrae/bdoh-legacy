@@ -88,14 +88,19 @@ define([
                 this.element
                     .find('.divNoticeTimeStep')
                     .toggle(measures.samplingType === 'cumulative');
-                // L'allègement en peu de mots ; son explication dans la bulle du « i »
-                const count = Number(measures.validCount).toLocaleString(Translator.locale);
+                // L'allègement en peu de mots ; son explication dans la bulle du « i », avec le seuil que donne la page
+                // (GRAPH_MAX_POINTS), moitié moins en moyennes, qui demandent deux points par mesure
+                // (ChroniqueContinueRepository::seriesInstantaneousOrMeanSampling)
+                const number = (n) => Number(n).toLocaleString(Translator.locale);
+                const count = number(measures.validCount);
+                const max = Number(this.element.data('max-points'));
                 this.element
                     .find('.divNoticeSubsampledText')
                     .text(Translator.trans('subsampledShort(%num%)', {'num': count}, 'viewer'));
                 this.element
                     .find('.divNoticeSubsampled .graph-info')
-                    .attr('title', `${Translator.trans('subsampledInfo(%num%)', {'num': count}, 'viewer')} ${Translator.trans('subsampledHelp', {}, 'viewer')}`);
+                    .attr('title', `${Translator.trans('subsampledInfo(%num%)', {'num': count}, 'viewer')} ${
+                        Translator.trans('subsampledHelp(%max%,%half%)', {'max': number(max), 'half': number(Math.floor(max / 2))}, 'viewer')}`);
                 this.element
                     .find('.divNoticeSubsampled')
                     .toggle(measures.downSampled);
@@ -134,9 +139,12 @@ define([
                             width: this.element.width(),
                             height: 520,
                             default: {
-                                // Sous la grille : les dates, inclinées, et le titre de l'axe ; la légende est dans la
-                                // ligne d'état
-                                gridPadding: { left: 70, bottom: 125 },
+                                // Sous la grille, la place que prennent les dates et le titre de l'axe, mesurée par
+                                // jqPlot (null) : écrites à la verticale, une date avec l'heure est plus longue, et une
+                                // place fixe la laissait déborder sur la bande, dont elle couvrait les boutons. La
+                                // hauteur du graphique ne change pas : la bande reste en place. À droite, les 10 pixels
+                                // de la bande (overview, GRID_RIGHT)
+                                gridPadding: { left: 70, right: 10, bottom: null },
                                 axes: {
                                     xaxis: {
                                         tickOptions: {
@@ -149,10 +157,12 @@ define([
                                 cursor: {
                                     constrainZoomTo: 'none'
                                 },
+                                // Dessinée dans la grille, que jqPlot ne réduit pas pour elle : elle passe aussitôt dans
+                                // la ligne d'état (plus haut)
                                 legend: {
                                     show: true,
                                     location: 's',
-                                    placement: 'outsideGrid',
+                                    placement: 'insideGrid',
                                     renderer:$.jqplot.EnhancedLegendRenderer,
                                     rendererOptions: {
                                         numberRows: 1,

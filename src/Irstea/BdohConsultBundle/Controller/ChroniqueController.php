@@ -181,6 +181,8 @@ class ChroniqueController extends Controller
             'childrenList'            => $childrenList,
             'childrenCount'           => $childrenCount,
             'chroniqueContinue'       => $chronique->isContinue(),
+            // Le seuil d'allègement du graphique (GRAPH_MAX_POINTS), que dit la bulle de l'allègement (simple.js)
+            'graphMaxPoints'          => (int) $this->getParameter('irstea_bdoh_data.viewers.max_valid_display_points'),
             'hasActiveJobs'           => $hasActiveJobs,
             'jobPage'                 => $this->generateUrl('bdoh_job_list'),
             'conversions'             => $conversions,

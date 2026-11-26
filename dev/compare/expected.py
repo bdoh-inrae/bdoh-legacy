@@ -777,10 +777,11 @@ RULES = [
         RX(r'-A https?://(?:dx\.)?doi\.org/\S+'), RX(r'-T .*https?://(?:dx\.)?doi\.org/\S+')),
         must=('+S /bundles/irsteabdohconsult/js/read-more.js',)),
     # La bande de toute la chronique, sous son graphique : un élément de plus sur la page d'une chronique, que le
-    # JavaScript remplit (« nouveau seul : bande de toute la chronique » vérifie sa route)
+    # JavaScript remplit (« nouveau seul : bande de toute la chronique » vérifie sa route). Le graphique porte son seuil
+    # d'allègement, que dit la bulle de l'allègement (2026-11-26) : le reste de sa ligne ne change pas.
     Rule('pages', rf'{ROLE} {OBS}/[^/ ]+/[^/ ]+', GRAPH, lines=(
         RX(rf'\+D div data-hint=.+ data-title=.+ data-url={OBS}/chronique/\d+/overview'), *FIVE_YEARS, *DATE_TIP,
-        *STATUS_LINE)),
+        *STATUS_LINE), masks=((r'^(D div data-chronique-id=.*) data-max-points=\d+(?= data-measure-url=)', r'\1'),)),
     # La limite de 5 ans du choix des dates part avec son avertissement, sur la page d'une chronique et dans le visualiseur
     Rule('pages', rf'{ROLE} {OBS}/viewer', GRAPH, lines=(*FIVE_YEARS, *DATE_TIP), must=FIVE_YEARS[:1]),
     # L'astuce de saisie des dates passe dans la bulle des champs, sur la recherche avancée aussi

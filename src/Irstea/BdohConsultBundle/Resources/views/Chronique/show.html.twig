@@ -339,6 +339,7 @@
                         data-min-date="{{ dateFirst | default(null) | e('html_attr') }}"
                         data-max-date="{{ dateLast | default(null) | e('html_attr') }}"
                         data-measure-url="{{ url('bdoh_data_chronique_measures', {id: '-ID-'}) | e('html_attr') }}"
+                        data-max-points="{{ graphMaxPoints }}"
                     >
                         {{ block('viewerDateRangePicker') }}
 

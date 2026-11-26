@@ -22,7 +22,7 @@ define([
     const PRESETS = [[1, 'week', '1w'], [1, 'month', '1m'], [3, 'months', '3m'], [6, 'months', '6m'], [1, 'year', '1y'],
         [5, 'years', '5y']];
     const FORMAT = 'YYYY-MM-DDTHH:mm:ss[Z]';
-    // La grille du graphique dans son cadre (simple.js : gridPadding.left 70 ; jqPlot : 10 à droite)
+    // La grille du graphique dans son cadre (simple.js, gridPadding : 70 à gauche, 10 à droite)
     const GRID_LEFT = 70;
     const GRID_RIGHT = 10;
 

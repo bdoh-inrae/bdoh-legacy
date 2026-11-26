@@ -137,7 +137,7 @@ class ChroniqueContinueRepository extends ChroniqueRepository
      *
      * @return array
      */
-    public function getOneChronicleViewerData(ChroniqueContinue $chronique, $beginDate, $endDate, $rightsForCheckpoints, $maxValidPoints = 50000)
+    public function getOneChronicleViewerData(ChroniqueContinue $chronique, $beginDate, $endDate, $rightsForCheckpoints, $maxValidPoints)
     {
         if (!($beginDate instanceof \DateTime)) {
             $beginDate = new \DateTime($beginDate ?: '0000-01-01 UTC');
@@ -259,7 +259,7 @@ class ChroniqueContinueRepository extends ChroniqueRepository
         $endDate,
         $mean,
         $ahead,
-        $maxAllowedPoints = 50000
+        $maxAllowedPoints
     ) {
         // vérification de la présence de mesures sur l'intervalle
         $nbMesures = $chronique->getNbMesures();

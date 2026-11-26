@@ -639,9 +639,9 @@ SQL;
      */
     public function getMultipleChroniquesViewerData(
         $chroniquesAndRights,
-        ?\DateTime $beginDate = null,
-        ?\DateTime $endDate = null,
-        $maxValidPoints = 50000
+        ?\DateTime $beginDate,
+        ?\DateTime $endDate,
+        $maxValidPoints
     ) {
         $data = [
             'xMin'       => $this->formatTimestampAtUtc($beginDate),
@@ -675,7 +675,7 @@ SQL;
         \DateTime $beginDate,
         \DateTime $endDate,
         bool $rightsForCheckpoints,
-        $maxValidPoints = 50000
+        $maxValidPoints
     ) {
         /** @var ChroniqueContinue|ChroniqueDiscontinue $chronique */
         /** @var ChroniqueContinueRepository|ChroniqueDiscontinueRepository $chroRepo */

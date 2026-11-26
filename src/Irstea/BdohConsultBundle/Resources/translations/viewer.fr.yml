@@ -42,7 +42,7 @@ consult.help.range:
     too-big: Veuillez sélectionner un intervalle de moins de 5 ans.
 subsampledInfo(%num%): 'Affichage allégé : sur %num% mesures, le graphique montre la plus haute et la plus basse de chaque tranche de temps. Resserrez la période pour voir chaque mesure.'
 subsampledShort(%num%): 'Affichage allégé, %num% mesures'
-subsampledHelp: 'Au-delà de 50 000 mesures valides (25 000 en moyennes), le graphique est allégé : aucun pic ne se perd, et chaque changement de qualité se voit.'
+subsampledHelp(%max%,%half%): 'Au-delà de %max% mesures valides (%half% en moyennes), le graphique est allégé : aucun pic ne se perd, et chaque changement de qualité se voit.'
 chroniqueTitle(%station%, %typeParam%): >+
     Station : %station%<br/>Paramètre : %typeParam%
 hideDisplayButton: Afficher/masquer la chronique

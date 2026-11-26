@@ -4,6 +4,11 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/). Numéros de v
 
 ## Non publié
 
+### Corrigé
+
+- Sur le graphique d'une chronique, à la semaine et en deçà, les dates de l'axe, qui portent alors l'heure et s'écrivent plus longues à la verticale, débordaient sous le graphique : elles couvraient la ligne de la bande, et ses boutons de période ne se cliquaient plus. La place sous la grille suit désormais la longueur des dates, dans la même hauteur de graphique : la bande ne bouge pas. La grille s'arrête aussi à la même verticale que la bande, à droite, comme le zoom à la molette le supposait.
+- La bulle de l'allègement du graphique disait encore "au-delà de 50 000 mesures valides" : elle dit le seuil réglé (`GRAPH_MAX_POINTS`, 5 000 par défaut), et le suivra s'il change.
+
 ## 0.10.1 - 2026-11-26
 
 Le graphique allégé au-delà de 5 000 valeurs, et le site qui dit sa règle aux humains comme aux robots.

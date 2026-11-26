@@ -201,6 +201,28 @@ def overview_step(page):
     visible(page, '.graph canvas')
 
 
+def axis_step(page):
+    """À la semaine, les dates portent l'heure, plus longues à la verticale : l'axe reste dans le graphique, et les
+    boutons de la bande, qu'il couvrait, se cliquent (2026-11-26, simple.js, gridPadding). Sur toute la chronique,
+    allégée, la bulle dit le seuil que donne la page (GRAPH_MAX_POINTS), et non un nombre écrit dans sa traduction."""
+    visible(page, '.graph canvas', timeout=60000)
+    visible(page, '.graph-overview-preset')
+    presets = page.locator('.graph-overview-preset')
+    presets.first.click(timeout=5000)
+    page.wait_for_load_state('networkidle')
+    page.wait_for_timeout(1000)
+    chart, axis = page.locator('.graph > div').bounding_box(), page.locator('.graph .jqplot-xaxis').bounding_box()
+    beyond = axis['y'] + axis['height'] - chart['y'] - chart['height']
+    assert beyond < 1, f'l’axe des dates déborde du graphique de {beyond:.0f} px'
+    presets.last.click(timeout=5000)  # « Tout » : un clic que l'axe interceptait
+    page.wait_for_load_state('networkidle')
+    visible(page, '.divNoticeSubsampled')
+    limit = int(page.get_attribute('#viewer', 'data-max-points'))
+    bubble = page.get_attribute('.divNoticeSubsampled .graph-info', 'title')
+    wanted = [f'{n:,}'.replace(',', ' ') for n in (limit, limit // 2)]
+    assert all(n in bubble for n in wanted), f'la bulle ne dit pas le seuil de la page ({limit}) : {bubble}'
+
+
 # Une chronique visible dont les lacunes de 2024 tombent dans deux mois au moins, et dont le mois de la première a des
 # valeurs bien au-dessus du minimum de l'année : le serveur y demande ses lacunes à deux hauteurs différentes
 GAPS_CHRONIQUE = """
@@ -698,6 +720,11 @@ def main():
             found = other_kind(where)
             if found:
                 anonymous.step(f'chronique {label}, graphique', f'/{found[0]}/{found[1]}/{found[2]}', chart_step)
+        # La plus fournie des continues visibles : allégée sur toute sa durée
+        found = other_kind("ch.estvisible AND ch.dtype = 'continue'")
+        if found:
+            anonymous.step('graphique à la semaine, axe dans le graphique, et seuil de la bulle de l’allègement',
+                           f'/{found[0]}/{found[1]}/{found[2]}', axis_step)
         gaps = c.query(BASE, GAPS_CHRONIQUE, c.NEW_SERVER)
         if gaps:
             slug, station, code, first, last = gaps[0]
