@@ -32,8 +32,10 @@ parameters:
         # General
         Bdoh      : Irstea\BdohDataBundle\Exporter\Measure\BdohExporter
 
-    # Parameters for the viewers
-    irstea_bdoh_data.viewers.max_valid_display_points: 50000
+    # Les valeurs exactes qu'un graphique reçoit au plus ; au-delà, le minimum et le maximum de chaque tranche
+    # (ChroniqueContinueRepository), et le graphique se dit allégé. GRAPH_MAX_POINTS, dans .env
+    env(GRAPH_MAX_POINTS): '50000'
+    irstea_bdoh_data.viewers.max_valid_display_points: '%env(int:GRAPH_MAX_POINTS)%'
 
 services:
     _defaults:
