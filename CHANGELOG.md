@@ -4,6 +4,16 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/). Numéros de v
 
 ## Non publié
 
+## 0.10.1 - 2026-11-26
+
+Le graphique allégé au-delà de 5 000 valeurs, et le site qui dit sa règle aux humains comme aux robots.
+
+### Modifié
+
+- Le graphique d'une chronique s'allège au-delà de 5 000 valeurs au lieu de 50 000 (`GRAPH_MAX_POINTS`) : à l'œil, le même dessin, pics et qualités compris, dix fois plus léger, et dix fois plus long à aspirer. Il se dit allégé plus souvent ; les valeurs exactes reviennent en zoomant.
+- Les conditions d'utilisation des données disent, sous « L'accès par des programmes », que le site est fait pour des personnes et les moteurs de recherche, que les robots qui collectent en masse n'y sont pas admis sans que cela change la licence, et où écrire pour un accès en masse. Les mentions légales citent le cookie du contrôle anti-robots et la limite des données des graphiques.
+- Anubis n'écrit plus dans le journal du système que ses avertissements : les adresses IP restent dans le seul journal d'accès d'Apache (`make vm-anubis` à relancer).
+
 ## 0.10.0 - 2026-11-26
 
 Les robots d'IA écartés, les humains et les moteurs de recherche admis.
